@@ -1,0 +1,1647 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EduCenter ERP</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pri:#0d9488;--pri-d:#115e4e;--pri-dd:#0c4a3e;--pri-l:#ccfbf1;--pri-ll:#f0fdfa;
+  --g950:#0a0a0a;--g900:#171717;--g800:#262626;--g700:#404040;--g600:#525252;--g500:#737373;--g400:#a3a3a3;--g300:#d4d4d4;--g200:#e5e5e5;--g100:#f5f5f5;--g50:#fafafa;--w:#fff;
+  --ok:#059669;--ok-l:#d1fae5;--ok-ll:#ecfdf5;--warn:#d97706;--warn-l:#fef3c7;--warn-ll:#fffbeb;--err:#dc2626;--err-l:#fee2e2;--err-ll:#fef2f2;--info:#2563eb;--info-l:#dbeafe;--info-ll:#eff6ff;
+  --side-w:250px;--r:8px;--rs:6px;--rl:12px;
+  --sh:0 1px 3px rgba(0,0,0,.05);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--g900);background:var(--g100);line-height:1.5;-webkit-font-smoothing:antialiased}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.8rem}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+
+/* Layout */
+.app{display:grid;grid-template-columns:var(--side-w) 1fr;min-height:100vh}
+
+/* Sidebar */
+.side{background:var(--g900);color:var(--g400);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:30}
+.side::-webkit-scrollbar{width:3px}.side::-webkit-scrollbar-thumb{background:var(--g700);border-radius:3px}
+.brand{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--g800)}
+.brand-icon{width:30px;height:30px;border-radius:var(--rs);background:var(--pri);color:var(--w);display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0}
+.brand b{font-size:14px;color:var(--w)}.brand small{display:block;font-size:10px;color:var(--g500);margin-top:1px}
+.side-user{margin:10px 10px 6px;padding:10px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.05)}
+.side-user .su-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:3px;background:var(--pri-d);color:var(--pri-l);display:inline-block;margin-bottom:4px}
+.side-user .su-name{font-weight:600;color:var(--w);font-size:13px}
+.side-user .su-route{font-size:10px;color:var(--g500);margin-top:1px;font-family:'JetBrains Mono',monospace}
+.nav-group{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--g600);padding:14px 16px 4px;font-weight:600}
+.side nav{display:flex;flex-direction:column;gap:1px;padding:0 8px;flex:1;overflow-y:auto}
+.side nav button{background:0;border:0;color:var(--g400);text-align:left;padding:8px 12px;border-radius:var(--rs);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;transition:background .1s,color .1s;width:100%}
+.side nav button .nav-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+.side nav button:hover{background:rgba(255,255,255,.06);color:var(--g200)}
+.side nav button.on{background:var(--pri-d);color:var(--w);font-weight:600}
+.side-foot{margin-top:auto;padding:10px 14px;border-top:1px solid var(--g800);font-size:11px;color:var(--g600)}
+
+/* Topbar */
+.main-wrap{display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--w);border-bottom:1px solid var(--g200);padding:0 20px;height:52px;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+.seg{display:flex;background:var(--g100);border-radius:var(--rs);padding:2px;gap:1px;flex-wrap:wrap}
+.seg button{border:0;background:0;padding:5px 11px;border-radius:5px;color:var(--g600);font-weight:500;font-size:12px;white-space:nowrap;transition:all .1s}
+.seg button:hover{color:var(--g900)}.seg button.on{background:var(--w);color:var(--g900);font-weight:600;box-shadow:var(--sh)}
+.top-r{display:flex;align-items:center;gap:8px}
+.top-r .perm{font-size:11px;color:var(--pri-d);background:var(--pri-ll);border:1px solid var(--pri-l);padding:4px 10px;border-radius:99px;font-weight:500;white-space:nowrap}
+.bell-btn{position:relative;background:var(--w);border:1px solid var(--g200);border-radius:var(--rs);padding:6px 10px;font-size:13px;color:var(--g700);transition:border-color .1s}
+.bell-btn:hover{border-color:var(--g300)}.bell-btn b{position:absolute;top:-5px;right:-5px;background:var(--err);color:var(--w);border-radius:99px;font-size:9px;min-width:16px;height:16px;display:grid;place-items:center}
+.acct-btn{background:var(--pri-d);color:var(--w);border:0;border-radius:99px;width:30px;height:30px;font-weight:700;font-size:12px;display:grid;place-items:center}
+
+/* Main */
+.main{padding:20px 24px 56px;max-width:1320px;width:100%;margin:0 auto}
+.screen{display:none}.screen.active{display:block;animation:fin .15s ease-out}
+@keyframes fin{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Typography */
+.pg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+h1{font-size:1.25rem;font-weight:700;line-height:1.3;letter-spacing:-.01em}
+.sub{color:var(--g500);margin-top:2px;font-size:13px}
+h2{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* Cards */
+.card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rl);padding:18px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+.st{background:var(--w);border:1px solid var(--g200);border-radius:var(--rl);padding:14px 16px;position:relative}
+.st::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--pri)}
+.st .n{font-size:1.4rem;font-weight:700;line-height:1.2;margin-bottom:1px}.st span{color:var(--g500);font-size:12px}
+.st.w::before{background:var(--warn)}.st.r::before{background:var(--err)}.st.i::before{background:var(--info)}.st.g::before{background:var(--ok)}
+
+.g2{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
+.g2eq{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.g3{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}
+
+/* Buttons */
+.btn{border:1px solid var(--g200);background:var(--w);color:var(--g700);padding:7px 14px;border-radius:var(--rs);font-weight:500;font-size:13px;display:inline-flex;align-items:center;gap:5px;transition:all .1s;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--g50);border-color:var(--g300)}
+.btn.p{background:var(--pri);border-color:var(--pri);color:var(--w)}.btn.p:hover:not(:disabled){background:var(--pri-d)}
+.btn.dark{background:var(--g900);border-color:var(--g900);color:var(--w)}.btn.dark:hover:not(:disabled){background:var(--g800)}
+.btn.danger{background:var(--err-ll);border-color:var(--err-l);color:var(--err)}.btn.danger:hover:not(:disabled){background:var(--err-l)}
+.btn.warn{background:var(--warn-ll);border-color:var(--warn-l);color:var(--warn)}
+.btn.sm{padding:4px 10px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-group{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Tables */
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--g100);vertical-align:middle;font-size:13px}
+th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--g500);background:var(--g50);border-bottom-color:var(--g200);white-space:nowrap}
+tr:last-child td{border-bottom:0}tbody tr{transition:background .08s}tbody tr:hover{background:var(--g50)}
+.tw{overflow-x:auto}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:500;background:var(--g100);color:var(--g600);white-space:nowrap}
+.tag.ok{background:var(--ok-l);color:var(--ok)}.tag.w{background:var(--warn-l);color:var(--warn)}.tag.r{background:var(--err-l);color:var(--err)}.tag.i{background:var(--info-l);color:var(--info)}
+
+/* Forms */
+label{display:block;font-size:12px;font-weight:500;color:var(--g600);margin:10px 0 3px}label:first-child{margin-top:0}
+input,select,textarea{width:100%;padding:7px 10px;border:1px solid var(--g200);border-radius:var(--rs);background:var(--w);color:var(--g900);font-size:13px;transition:border-color .1s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 2px var(--pri-ll)}
+input:disabled,select:disabled,textarea:disabled{background:var(--g50);color:var(--g400);cursor:not-allowed}
+td input,td select{padding:5px 8px}textarea{min-height:70px;resize:vertical}
+.form-row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.form-row>*{flex:1;min-width:0}
+.field-note{font-size:11px;color:var(--g500);margin-top:2px}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--g200);margin-bottom:16px}
+.tabs button{background:0;border:0;padding:8px 16px;font-size:13px;font-weight:500;color:var(--g500);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .1s;white-space:nowrap}
+.tabs button:hover{color:var(--g700)}.tabs button.on{color:var(--pri-d);border-bottom-color:var(--pri);font-weight:600}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* Utility */
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row-b{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)}.item:last-child{border-bottom:0}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{border:1px solid var(--g200);background:var(--w);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:500;cursor:pointer;transition:all .1s}
+.chip:hover{border-color:var(--g300)}.chip.on{background:var(--pri-ll);border-color:var(--pri);color:var(--pri-d);font-weight:600}
+.hint{background:var(--pri-ll);border:1px solid var(--pri-l);color:var(--pri-d);padding:10px 14px;border-radius:var(--r);margin-bottom:12px;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.warn-box{background:var(--err-ll);border:1px solid var(--err-l);color:var(--err);padding:10px 14px;border-radius:var(--r);margin-bottom:12px;font-size:13px;font-weight:500}
+.info-box{background:var(--info-ll);border:1px solid var(--info-l);color:var(--info);padding:10px 14px;border-radius:var(--r);margin-bottom:12px;font-size:13px}
+.empty-state{text-align:center;padding:32px 16px;color:var(--g400)}.empty-state p{margin-top:4px;font-size:13px}
+
+/* Workflow Stepper */
+.wf{display:flex;align-items:center;gap:4px;margin-bottom:16px;overflow-x:auto;padding:2px 0}
+.wf .ws{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px;font-weight:500;color:var(--g500);padding:6px 12px;border-radius:99px;background:var(--g50);border:1px solid var(--g200);cursor:pointer;transition:all .1s}
+.wf .ws.on{background:var(--pri);color:var(--w);border-color:var(--pri)}.wf .ws.done{background:var(--ok-l);color:var(--ok);border-color:var(--ok-l)}
+.wf .wa{color:var(--g300);font-size:16px;flex-shrink:0}
+
+/* Permission Accordion */
+.perm-sum{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.perm-sum .ps{text-align:center;padding:10px 16px;background:var(--g50);border-radius:var(--r);border:1px solid var(--g200)}
+.perm-sum .ps .n{font-size:1.2rem;font-weight:700}.perm-sum .ps span{font-size:11px;color:var(--g500)}
+.perm-card{border:1px solid var(--g200);border-radius:var(--r);margin-bottom:6px;overflow:hidden}
+.perm-card .pc-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;background:var(--w);transition:background .1s}
+.perm-card .pc-head:hover{background:var(--g50)}.perm-card .pc-head b{font-size:13px}
+.perm-card .pc-tags{display:flex;gap:4px;flex-wrap:wrap}.perm-card .pc-arrow{transition:transform .15s;color:var(--g400)}
+.perm-card .pc-body{display:none;padding:10px 14px;background:var(--g50);border-top:1px solid var(--g200)}
+.perm-card.open .pc-body{display:flex;gap:16px;flex-wrap:wrap}.perm-card.open .pc-arrow{transform:rotate(180deg)}
+.perm-card .pc-body label{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--g700);margin:0;cursor:pointer}
+.perm-card .pc-body input[type=checkbox]{width:15px;height:15px;accent-color:var(--pri)}
+
+/* Banner */
+.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:var(--g900);color:var(--w);border-radius:var(--rl);padding:18px 22px;margin-bottom:14px}
+.banner h2{color:var(--w);margin:0;font-size:1rem}.banner p{color:var(--g400);font-size:13px;margin:0}
+.banner .time{font-size:1.5rem;font-weight:700;color:var(--pri-l)}
+
+/* Charts */
+.bars{display:flex;align-items:flex-end;gap:14px;height:130px;padding:12px 6px 26px}
+.bars i{flex:1;background:var(--pri-d);border-radius:4px 4px 0 0;position:relative;min-width:28px;transition:opacity .1s}
+.bars i:hover{opacity:.85}.bars i:last-child{background:var(--pri)}
+.bars i::after{content:attr(data-m);position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:10px;font-weight:500;color:var(--g500)}
+.bars i::before{content:attr(data-v);position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:10px;font-weight:600;color:var(--g700)}
+
+/* Modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:100;place-items:center}
+.modal-ov.show{display:grid}
+.modal-box{background:var(--w);border-radius:var(--rl);padding:24px;max-width:560px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.15);max-height:85vh;overflow-y:auto}
+.modal-box h3{font-size:16px;margin-bottom:14px}.modal-box .modal-act{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--g200)}
+
+/* Notif Panel */
+.notif-panel{position:fixed;top:0;right:-360px;width:360px;height:100vh;background:var(--w);border-left:1px solid var(--g200);z-index:50;transition:right .2s ease;display:flex;flex-direction:column}
+.notif-panel.open{right:0}.np-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--g200)}
+.np-head h3{font-size:15px}.np-close{background:0;border:0;font-size:18px;color:var(--g500);padding:4px}
+.np-list{flex:1;overflow-y:auto}.np-item{padding:12px 16px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .08s}
+.np-item:hover{background:var(--g50)}.np-item.unread{background:var(--pri-ll);border-left:3px solid var(--pri)}
+.np-item b{font-size:13px;display:block;margin-bottom:2px}.np-item p{font-size:12px;color:var(--g500);margin:0}.np-item time{font-size:11px;color:var(--g400)}
+
+/* Toast */
+.toast{position:fixed;bottom:16px;right:20px;background:var(--g900);color:var(--w);padding:12px 18px;border-radius:var(--r);display:none;max-width:400px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.2);border-left:3px solid var(--pri)}
+
+/* API Bar */
+.api-bar{position:fixed;bottom:0;left:var(--side-w);right:0;background:var(--g900);color:var(--g400);padding:5px 20px;font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:30;border-top:1px solid var(--g800)}
+.api-bar .m{background:var(--ok);color:var(--w);font-family:'JetBrains Mono',monospace;font-weight:600;padding:1px 6px;border-radius:3px;font-size:10px}
+.sk td{color:transparent;background:linear-gradient(90deg,var(--g100),var(--g50),var(--g100));background-size:200% 100%;animation:shim 1.2s ease-in-out infinite}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:1024px){.g2,.g2eq,.g3{grid-template-columns:1fr}}
+@media(max-width:768px){
+  :root{--side-w:0px}.app{grid-template-columns:1fr}
+  .side{position:fixed;left:-280px;width:280px;transition:left .2s;z-index:40}.side.open{left:0}
+  .mob-toggle{display:block!important}.main{padding:16px 14px 52px}.api-bar{left:0}
+  .stats{grid-template-columns:1fr 1fr}.banner{flex-direction:column;text-align:center}
+}
+@media(max-width:480px){.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═════════════ SIDEBAR ═════════════ -->
+<aside class="side" id="sidebar">
+  <div class="brand"><div class="brand-icon">E</div><div><b>EduCenter ERP</b><small>Quản lý Trung tâm Gia sư</small></div></div>
+  <div class="side-user">
+    <span class="su-role" id="sRole">Admin</span>
+    <div class="su-name" id="sName">Trần Quang Huy</div>
+    <div class="su-route" id="sRoute">/admin</div>
+  </div>
+  <div class="nav-group">Chức năng</div>
+  <nav id="nav"></nav>
+  <div class="side-foot">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span>© EduCenter 2026</span>
+      <button class="btn sm" style="background:rgba(255,255,255,.08);border-color:transparent;color:var(--g400)" onclick="toast('Đã đăng xuất khỏi hệ thống.','ok')">Đăng xuất</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════════ MAIN ═════════════ -->
+<div class="main-wrap">
+<header class="topbar">
+  <div class="row">
+    <button class="btn sm mob-toggle" style="display:none" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+    <span style="font-size:11px;font-weight:600;color:var(--g500);white-space:nowrap">Tác nhân:</span>
+    <div class="seg" id="seg"></div>
+  </div>
+  <div class="top-r">
+    <span class="perm" id="permLbl">Toàn quyền</span>
+    <button class="bell-btn" onclick="toggleNotif()">🔔 <b id="nCount">3</b></button>
+    <button class="acct-btn" id="acctBtn" title="Tài khoản">H</button>
+  </div>
+</header>
+
+<main class="main">
+
+<!-- ══════════════════════════════════════
+     ADMIN SCREENS
+     ══════════════════════════════════════ -->
+
+<!-- ADMIN: Tổng quan -->
+<section class="screen" id="admin-dash">
+  <div class="pg-head"><div><h1>Tổng quan hệ thống</h1><p class="sub">Tháng 10/2026 · Dữ liệu tổng hợp toàn chuỗi</p></div></div>
+  <div class="stats">
+    <div class="st"><div class="n">128</div><span>Học viên đang theo học</span></div>
+    <div class="st"><div class="n">56</div><span>Người dạy hoạt động</span></div>
+    <div class="st i"><div class="n">94</div><span>Lớp đang vận hành</span></div>
+    <div class="st w"><div class="n">412.5 tr</div><span>Doanh thu thực thu T10</span></div>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="card">
+        <h2>Doanh thu 4 tháng gần nhất</h2>
+        <div class="bars">
+          <i style="height:52%" data-m="T7" data-v="245tr"></i>
+          <i style="height:68%" data-m="T8" data-v="310tr"></i>
+          <i style="height:84%" data-m="T9" data-v="368tr"></i>
+          <i style="height:100%" data-m="T10" data-v="412tr"></i>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Chờ xử lý</h2>
+        <div class="item"><span>Yêu cầu học mới</span><span class="tag w">2 chờ</span></div>
+        <div class="item"><span>Đề xuất nhân sự chờ xác nhận</span><span class="tag w">1 chờ</span></div>
+        <div class="item"><span>Đơn xin nghỉ chờ duyệt</span><span class="tag w">1 chờ</span></div>
+        <div class="item"><span>Bảng công chờ chốt</span><span class="tag i">2 nhân sự</span></div>
+        <div class="item"><span>Hóa đơn chưa thu đủ</span><span class="tag r">1 HĐ</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Hoạt động gần đây</h2>
+      <div class="item"><div><b>Đề xuất ghép lớp (YC-001)</b><br><span style="font-size:12px;color:var(--g500)">Nguyễn Minh Anh → Toán 9</span></div><span class="tag ok">Đã tạo lớp</span></div>
+      <div class="item"><div><b>Check-in trễ 18 phút</b><br><span style="font-size:12px;color:var(--g500)">Trần Quốc Bảo · Toán 9</span></div><span class="tag r">Cảnh báo</span></div>
+      <div class="item"><div><b>Thu học phí HD-101</b><br><span style="font-size:12px;color:var(--g500)">Nguyễn Văn A · 1.000.000đ</span></div><span class="tag ok">Đã thu</span></div>
+      <div class="item"><div><b>Đơn xin nghỉ</b><br><span style="font-size:12px;color:var(--g500)">PH Nguyễn Thị B · Anh 6</span></div><span class="tag w">Chờ duyệt</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ADMIN: Nhân sự -->
+<section class="screen" id="admin-staff">
+  <div class="pg-head"><div><h1>Nhân sự &amp; Tài khoản</h1><p class="sub">Quản lý tài khoản người dùng, gán vai trò</p></div>
+    <button class="btn p" onclick="openStaffForm()">+ Thêm tài khoản</button>
+  </div>
+  <div class="card">
+    <div class="row-b" style="margin-bottom:12px">
+      <div class="row"><input placeholder="Tìm kiếm theo tên, email..." style="width:260px"><select style="width:150px"><option>Tất cả vai trò</option><option>Admin</option><option>Nhân viên</option><option>Giáo viên</option><option>Gia sư</option><option>Trợ giảng</option></select></div>
+      <span style="font-size:12px;color:var(--g500)" id="staffCount"></span>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Họ tên</th><th>Email</th><th>SĐT</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody id="staffRows"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ADMIN: Danh mục & Cấu hình -->
+<section class="screen" id="admin-catalog">
+  <div class="pg-head"><div><h1>Danh mục &amp; Cấu hình</h1><p class="sub">Quản lý môn học, khối lớp, phòng học, khu vực và cấu hình hệ thống</p></div></div>
+  <div class="tabs" id="catTabs"></div>
+  <div id="catContent"></div>
+</section>
+
+<!-- ADMIN: Phân quyền -->
+<section class="screen" id="admin-perms">
+  <div class="pg-head"><div><h1>Phân quyền hệ thống</h1><p class="sub">Kiểm soát quyền truy cập 9 phân hệ theo nhóm người dùng</p></div>
+    <button class="btn p" onclick="toast('Đã lưu cấu hình phân quyền.','ok')">Lưu phân quyền</button>
+  </div>
+  <div class="card" style="padding:12px 16px;margin-bottom:14px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:500;color:var(--g600)">Chọn nhóm:</span>
+      <div class="chips" id="permRoleTabs"></div>
+    </div>
+  </div>
+  <div class="perm-sum" id="permSumBar"></div>
+  <div class="row-b" style="margin-bottom:10px">
+    <span style="font-size:12px;color:var(--g500)" id="permRoleLabel"></span>
+    <div class="row">
+      <button class="btn sm" onclick="permBatch(1)">Cấp tất cả</button>
+      <button class="btn sm" onclick="permBatch(0)">Bỏ tất cả</button>
+    </div>
+  </div>
+  <div id="permCards"></div>
+</section>
+
+<!-- ADMIN: Chấm công -->
+<section class="screen" id="admin-payroll">
+  <div class="pg-head"><div><h1>Chấm công &amp; Quyết toán thù lao</h1><p class="sub">Chốt công tháng, kiểm tra ca chưa check-out</p></div>
+    <div class="row"><select style="width:160px"><option>Tháng 10/2026</option><option>Tháng 9/2026</option></select></div>
+  </div>
+  <div id="payrollCheckWarn"></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Nhân sự</th><th>Vai trò</th><th>Số buổi</th><th>Bù / Trễ</th><th>Tổng phút</th><th>Thù lao</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody id="payrollBody"></tbody>
+  </table></div></div>
+</section>
+
+<!-- ADMIN: Kiểm toán -->
+<section class="screen" id="admin-audit">
+  <div class="pg-head"><div><h1>Thông báo &amp; Nhật ký kiểm toán</h1><p class="sub">Hàng đợi thông báo và vết chỉnh sửa dữ liệu</p></div></div>
+  <div class="g2">
+    <div class="card">
+      <h2>Nhật ký kiểm toán</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Thời gian</th><th>Người</th><th>Module</th><th>Hành động</th><th>Chi tiết</th></tr></thead>
+        <tbody id="auditBody">
+          <tr><td class="mono">14/10 21:40</td><td>Trần Quang Huy</td><td>Chấm công</td><td>Mở khóa công</td><td>Mở khóa bảng công T9 của Phạm Gia Huy</td></tr>
+          <tr><td class="mono">14/10 19:15</td><td>Nguyễn Minh Anh</td><td>Học vụ</td><td>Lưu buổi học</td><td>Nhập điểm bài giấy 8.5 cho Nguyễn Văn A</td></tr>
+          <tr><td class="mono">14/10 16:05</td><td>Lê Thị Mai</td><td>Học phí</td><td>Ghi nhận thu</td><td>Thu đợt 1: 1.000.000đ (HĐ-101)</td></tr>
+          <tr><td class="mono">13/10 09:20</td><td>Lê Thị Mai</td><td>Tiếp nhận</td><td>Tạo đề xuất</td><td>Đề xuất Trần Quốc Bảo cho YC-002</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Hàng đợi thông báo</h2>
+      <div class="item"><div><b>Đề xuất ghép lớp mới (YC-001)</b><br><span style="font-size:12px;color:var(--g500)">→ Phụ huynh Hoa &amp; Gia sư Minh Anh</span></div><span class="tag ok">Đã gửi</span></div>
+      <div class="item"><div><b>Cảnh báo check-in trễ &gt;15 phút</b><br><span style="font-size:12px;color:var(--g500)">→ Ca Toán 9 · Trần Quốc Bảo</span></div><span class="tag w">Retry lần 2</span></div>
+      <div class="item"><div><b>Phiếu báo học phí T10/2026</b><br><span style="font-size:12px;color:var(--g500)">→ 128 phụ huynh</span></div><span class="tag ok">Hoàn tất</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     STAFF SCREENS
+     ══════════════════════════════════════ -->
+
+<!-- STAFF: Tổng quan -->
+<section class="screen" id="staff-dash">
+  <div class="pg-head"><div><h1>Tổng quan công việc</h1><p class="sub">Các hạng mục cần xử lý hôm nay</p></div></div>
+  <div class="stats">
+    <div class="st w"><div class="n">2</div><span>Yêu cầu học mới</span></div>
+    <div class="st i"><div class="n">1</div><span>Đề xuất chờ xác nhận</span></div>
+    <div class="st"><div class="n">3</div><span>Đơn chờ duyệt</span></div>
+    <div class="st r"><div class="n">1</div><span>Hóa đơn chưa thu đủ</span></div>
+  </div>
+  <div class="card">
+    <h2>Việc cần làm</h2>
+    <div class="item"><span>YC-002 · Lê Hoàng Nam cần gia sư Vật Lý 11</span><div class="row"><span class="tag w">Mới</span><button class="btn sm p" onclick="setPortal('staff');showS('staff-intake')">Xử lý</button></div></div>
+    <div class="item"><span>Đề xuất DX-102 chờ phụ huynh xác nhận</span><span class="tag i">Chờ</span></div>
+    <div class="item"><span>Đơn nghỉ từ PH Nguyễn Thị B · Anh 6 Nhóm</span><div class="row"><span class="tag w">Chờ duyệt</span><button class="btn sm" onclick="showS('staff-approve')">Duyệt</button></div></div>
+    <div class="item"><span>Hóa đơn HD-101 · Nguyễn Văn A · Còn 800.000đ</span><span class="tag r">Nợ</span></div>
+  </div>
+</section>
+
+<!-- STAFF: Tiếp nhận & Ghép lớp -->
+<section class="screen" id="staff-intake">
+  <div class="pg-head"><div><h1>Tiếp nhận &amp; Ghép lớp</h1><p class="sub">Quy trình: Yêu cầu học → Tìm người dạy → Đề xuất → Xác nhận → Tạo lớp</p></div></div>
+  <div class="wf" id="intakeWF">
+    <div class="ws on" onclick="intakeStep(0)"><span>❶</span> Yêu cầu học</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(1)"><span>❷</span> Tìm người dạy</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(2)"><span>❸</span> Đề xuất</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(3)"><span>❹</span> Xác nhận &amp; Tạo lớp</div>
+  </div>
+  <div class="intake-step" id="istep0">
+    <div class="card">
+      <div class="row-b" style="margin-bottom:12px">
+        <h2 style="margin:0">Danh sách yêu cầu học</h2>
+        <button class="btn p sm" onclick="openRequestForm()">+ Yêu cầu mới</button>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Mã</th><th>Học viên</th><th>Phụ huynh / SĐT</th><th>Môn</th><th>Khung giờ</th><th>Khu vực</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody id="reqRows"></tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep1" style="display:none">
+    <div class="g3">
+      <div class="card">
+        <h2 style="margin:0 0 10px">Bộ lọc tìm kiếm</h2>
+        <label>Yêu cầu</label>
+        <select id="matchReqSel" onchange="runMatch()"><option value="YC-001">YC-001 · Nguyễn Văn A (Toán 9)</option><option value="YC-002">YC-002 · Lê Hoàng Nam (Vật Lý 11)</option></select>
+        <label>Khu vực</label><select><option>Thủ Đức</option><option>Quận 3</option></select>
+        <label>Khung giờ mong muốn</label>
+        <div class="chips" style="margin-top:4px"><span class="chip on">T3 18:00–20:00</span><span class="chip on">T5 18:00–20:00</span></div>
+        <label>Mức thù lao tối đa / buổi</label>
+        <select id="budgetSel" onchange="runMatch()"><option value="160000">160.000đ</option><option value="200000" selected>200.000đ</option><option value="300000">300.000đ</option></select>
+        <div style="margin-top:14px"><button class="btn p" style="width:100%;justify-content:center" onclick="runMatch()">Tìm kiếm</button></div>
+      </div>
+      <div class="card">
+        <h2 id="matchTitle">Kết quả tìm kiếm</h2>
+        <div class="hint"><span>Hệ thống tự động loại người dạy bị trùng lịch.</span></div>
+        <div class="tw"><table>
+          <thead><tr><th>Người dạy</th><th>Chuyên môn</th><th>Thù lao/buổi</th><th>Lịch rảnh</th><th></th></tr></thead>
+          <tbody id="matchBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep2" style="display:none">
+    <div class="card">
+      <h2>Danh sách đề xuất nhân sự</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã</th><th>Yêu cầu</th><th>Người dạy đề xuất</th><th>Người dạy xác nhận</th><th>Phụ huynh xác nhận</th><th></th></tr></thead>
+        <tbody id="proposalBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep3" style="display:none">
+    <div class="card">
+      <h2>Đề xuất đã được hai bên đồng ý — Sẵn sàng tạo lớp</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã</th><th>Yêu cầu</th><th>Người dạy</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody id="createClassBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- STAFF: Học viên -->
+<section class="screen" id="staff-students">
+  <div class="pg-head"><div><h1>Quản lý Học viên</h1><p class="sub">Danh sách học viên, thông tin liên hệ phụ huynh</p></div>
+    <button class="btn p" onclick="openStudentForm()">+ Thêm học viên</button>
+  </div>
+  <div class="card">
+    <div class="row-b" style="margin-bottom:12px">
+      <div class="row"><input placeholder="Tìm theo tên, mã HV..." style="width:240px" id="stuSearch" oninput="renderStudents()"><select style="width:140px"><option>Tất cả trạng thái</option><option>Đang học</option><option>Tạm nghỉ</option><option>Đã nghỉ</option></select></div>
+      <span style="font-size:12px;color:var(--g500)" id="stuCount"></span>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Mã HV</th><th>Họ tên</th><th>Khối</th><th>Trường</th><th>Phụ huynh</th><th>SĐT PH</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody id="stuBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- STAFF: Lớp học -->
+<section class="screen" id="staff-classes">
+  <div class="pg-head"><div><h1>Lớp học &amp; Lịch dạy</h1><p class="sub">Quản lý lớp, phân công người dạy, xếp phòng</p></div>
+    <button class="btn p" onclick="openClassForm()">+ Tạo lớp</button>
+  </div>
+  <div class="card">
+    <div class="row-b" style="margin-bottom:12px">
+      <div class="row"><input placeholder="Tìm theo mã lớp, tên..." style="width:220px"><select style="width:140px"><option>Tất cả hình thức</option><option>Kèm 1-1</option><option>Lớp nhóm</option></select></div>
+      <span style="font-size:12px;color:var(--g500)" id="classCount"></span>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Mã lớp</th><th>Hình thức · Phòng</th><th>Lịch học</th><th>Người dạy chính</th><th>Trợ giảng</th><th>Sĩ số</th><th>Thao tác</th></tr></thead>
+      <tbody id="classBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- STAFF: Duyệt đơn -->
+<section class="screen" id="staff-approve">
+  <div class="pg-head"><div><h1>Duyệt đơn</h1><p class="sub">Đơn xin nghỉ, đơn xin hủy lớp, đơn xin lớp từ người dạy</p></div></div>
+  <div class="tabs" id="approveTabs"></div>
+  <div id="approveContent"></div>
+</section>
+
+<!-- STAFF: Học phí -->
+<section class="screen" id="staff-billing">
+  <div class="pg-head"><div><h1>Học phí &amp; Thu tiền</h1><p class="sub">Hóa đơn, phiếu thu, công nợ, hoàn tiền</p></div>
+    <button class="btn p" onclick="toast('Đã phát hành hóa đơn tháng 10 cho toàn bộ học viên.','ok')">+ Kết xuất hóa đơn tháng</button>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <h2>Danh sách hóa đơn</h2>
+      <div class="row" style="margin-bottom:10px"><select style="width:140px"><option>Tất cả</option><option>Chưa TT</option><option>Một phần</option><option>Đã TT</option></select><input placeholder="Tìm học viên..." style="width:180px"></div>
+      <div class="tw"><table>
+        <thead><tr><th>Mã HĐ</th><th>Học viên</th><th>Cách thu</th><th>Phải thu</th><th>Đã thu</th><th>Còn lại</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody id="invBody"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Lập phiếu thu / Hoàn tiền</h2>
+      <div class="hint" id="invBanner"><span>Chọn hóa đơn bên trái để lập phiếu</span></div>
+      <label>Loại giao dịch</label>
+      <select id="payTypeSel"><option value="thu">Thu — Ghi nhận đóng học phí</option><option value="hoan">Hoàn — Hoàn tiền buổi hủy / thôi học</option></select>
+      <label>Số tiền (VNĐ)</label><input type="number" id="payAmt" value="800000" step="50000">
+      <label>Phương thức</label><select><option>Chuyển khoản (VietQR)</option><option>Tiền mặt</option></select>
+      <label>Ghi chú</label><input id="payNote" placeholder="Ghi chú giao dịch...">
+      <div class="btn-group" style="margin-top:14px">
+        <button class="btn p" onclick="doPayment()">Ghi nhận phiếu</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     TEACHING SCREENS (shared: GV, GS, TG)
+     ══════════════════════════════════════ -->
+
+<!-- TEACH: Tổng quan -->
+<section class="screen" id="teach-dash">
+  <div class="pg-head"><div><h1 id="tGreeting">Xin chào, Nguyễn Minh Anh</h1><p class="sub" id="tSubGreeting">Giáo viên · Thứ Tư, 14/10/2026</p></div></div>
+  <div id="teachDashContent"></div>
+</section>
+
+<!-- TEACH: Ca học -->
+<section class="screen" id="teach-session">
+  <div class="pg-head"><div><h1>Ca học hôm nay</h1><p class="sub">Check-in / Check-out và quản lý trạng thái ca dạy</p></div></div>
+  <div class="banner" id="sesBanner">
+    <div>
+      <p style="font-size:10px;text-transform:uppercase;letter-spacing:.06em">Ca dạy tiếp theo</p>
+      <h2 id="sesTitle">Toán 9 (Kèm 1-1) — Nguyễn Văn A</h2>
+      <p>12 Võ Văn Ngân, Thủ Đức</p>
+      <div class="row" style="margin-top:8px">
+        <span class="tag" id="ciTag" style="background:rgba(255,255,255,.12);color:var(--g300)">Chưa check-in</span>
+        <span class="tag" id="gpsTag" style="background:rgba(255,255,255,.08);color:var(--g400)">GPS: Chờ tọa độ</span>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="time">18:00–20:00</div>
+      <div class="row" style="margin-top:8px;justify-content:flex-end">
+        <button class="btn" id="ciBtn" style="background:var(--pri);border-color:var(--pri);color:#fff" onclick="doCheckin(false)">Check-in</button>
+        <button class="btn sm" style="background:rgba(255,255,255,.1);border-color:transparent;color:var(--g300)" onclick="doCheckin(true)">Giả lập trễ</button>
+      </div>
+    </div>
+  </div>
+  <div id="lateWarn" style="display:none" class="warn-box">⚠ Bạn đã check-in trễ hơn 15 phút. Hệ thống đã ghi nhận cảnh báo.</div>
+  <div class="card">
+    <h2>Thông tin ca dạy</h2>
+    <div class="item"><span style="color:var(--g500)">Lớp</span><b id="sesClass">Toán 9 — Nguyễn Văn A</b></div>
+    <div class="item"><span style="color:var(--g500)">Thời gian</span><span>18:00 – 20:00 (120 phút)</span></div>
+    <div class="item"><span style="color:var(--g500)">Người dạy</span><span id="sesTeacher">Nguyễn Minh Anh (Dạy chính)</span></div>
+    <div class="item"><span style="color:var(--g500)">Giờ check-in</span><span id="ciTimeDisp">—</span></div>
+    <div class="item"><span style="color:var(--g500)">Giờ check-out</span><span id="coTimeDisp">—</span></div>
+    <div class="item"><span style="color:var(--g500)">Số phút thực tế</span><span id="realMinsDisp">—</span></div>
+    <div style="margin-top:14px" class="row">
+      <button class="btn p" onclick="showS('teach-log')">Vào sổ buổi học</button>
+      <button class="btn sm" onclick="toast('Đã gửi yêu cầu điều chỉnh giờ check-in cho Giáo vụ.','ok')">Gửi yêu cầu điều chỉnh giờ</button>
+    </div>
+  </div>
+</section>
+
+<!-- TEACH: Sổ buổi học -->
+<section class="screen" id="teach-log">
+  <div class="pg-head"><div><h1>Sổ buổi học</h1><p class="sub">Ghi nhận toàn bộ học vụ trên một màn hình duy nhất</p></div></div>
+  <div id="taRestrict" class="warn-box" style="display:none"><b>Chế độ Trợ giảng:</b> Bạn chỉ được phép cập nhật Điểm danh. Các mục khác đã bị khóa.</div>
+
+  <div class="card" style="background:var(--g50)">
+    <div class="row-b"><div><b>Toán 9 — Nguyễn Văn A</b> · T4, 14/10/2026 · 18:00–20:00</div><span class="tag w">Đang diễn ra</span></div>
+  </div>
+
+  <!-- Hôm nay học gì -->
+  <div class="card">
+    <h2>Hôm nay học gì</h2>
+    <label>Chủ đề bài học</label>
+    <input type="text" class="t-only" id="fTopic" value="Giải bài toán bằng cách lập hệ phương trình (Dạng chuyển động &amp; Năng suất)">
+    <label>Nội dung đã giảng dạy</label>
+    <textarea class="t-only" id="fContent">1. Sửa chi tiết phiếu bài tập giấy BT-102 trực tiếp tại lớp.
+2. Phương pháp chọn ẩn, đặt điều kiện và lập bảng phân tích đại lượng.
+3. Luyện tập 4 bài toán thực tế tại lớp.</textarea>
+    <label>File bài giảng (Slide / PDF)</label>
+    <input type="text" class="t-only" value="/uploads/slides/Toan9_BaiToanLapHePT.pdf">
+  </div>
+
+  <!-- Điểm danh -->
+  <div class="card">
+    <h2>Điểm danh học viên</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Học viên</th><th>Trạng thái</th><th>Bài tập kỳ trước</th><th>Điểm bài giấy</th><th>Nhận xét</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Nguyễn Văn A</b><br><span style="color:var(--g500);font-size:11px">HV-0019</span></td>
+          <td><select id="att1"><option value="co_mat" selected>Có mặt</option><option value="tre">Đi trễ</option><option value="vang_co_phep">Vắng có phép</option><option value="vang_khong_phep">Vắng không phép</option></select></td>
+          <td><span class="tag i">BT-102</span></td>
+          <td><input type="number" class="t-only" min="0" max="10" step="0.25" value="8.75" style="width:75px"></td>
+          <td><input type="text" class="t-only" value="Làm đầy đủ, trình bày rõ ràng."></td>
+        </tr>
+        <tr>
+          <td><b>Trần Minh Khôi</b><br><span style="color:var(--g500);font-size:11px">HV-0024</span></td>
+          <td><select id="att2"><option value="co_mat" selected>Có mặt</option><option value="tre">Đi trễ</option><option value="vang_co_phep">Vắng có phép</option><option value="vang_khong_phep">Vắng không phép</option></select></td>
+          <td><span class="tag i">BT-102</span></td>
+          <td><input type="number" class="t-only" min="0" max="10" step="0.25" value="7.5" style="width:75px"></td>
+          <td><input type="text" class="t-only" value="Hiểu phương pháp nhưng còn nhầm dấu."></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- Giao BTVN -->
+  <div class="card" id="hwSection">
+    <h2>Giao bài tập về nhà <span style="font-size:11px;font-weight:400;color:var(--g500)">(Học sinh làm trên giấy, PH tải PDF về in)</span></h2>
+    <div class="form-row">
+      <div><label>Tiêu đề bài tập</label><input type="text" class="t-only" id="fHwTitle" value="Phiếu BT-103: 10 Bài toán lập hệ PT nâng cao"></div>
+      <div><label>Hạn nộp</label><input type="text" class="t-only" value="Đầu buổi T6, 16/10/2026"></div>
+    </div>
+    <label>Upload file đề bài (PDF / Word)</label>
+    <input type="file" class="t-only">
+  </div>
+
+  <!-- Action -->
+  <div class="card" style="background:var(--g50)">
+    <div class="row-b">
+      <div><b>Hoàn tất vận hành ca dạy</b><p style="color:var(--g500);font-size:12px;margin-top:1px">Lưu học vụ trước khi check-out.</p></div>
+      <div class="row">
+        <button class="btn p" onclick="saveSessionLog()">Lưu học vụ</button>
+        <button class="btn dark" id="coBtn" onclick="doCheckout()">Check-out kết thúc ca</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEACH: Lớp của tôi (phụ trách / kèm / hỗ trợ) -->
+<section class="screen" id="teach-myclasses">
+  <div class="pg-head"><div><h1 id="myClassTitle">Lớp phụ trách</h1><p class="sub" id="myClassSub">Danh sách lớp bạn đang đảm nhiệm</p></div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Mã lớp</th><th>Môn · Khối</th><th>Lịch học</th><th>Vai trò</th><th>Sĩ số</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody id="myClassBody"></tbody>
+  </table></div></div>
+</section>
+
+<!-- TEACH: Lớp đang tuyển / Cơ hội nhận lớp -->
+<section class="screen" id="teach-recruit">
+  <div class="pg-head"><div><h1 id="recruitTitle">Lớp đang tuyển</h1><p class="sub" id="recruitSub">Danh sách lớp/yêu cầu đang cần người dạy phù hợp</p></div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Yêu cầu</th><th>Môn · Khối</th><th>Hình thức</th><th>Lịch học</th><th>Khu vực</th><th>Thù lao/buổi</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody id="recruitBody"></tbody>
+  </table></div></div>
+</section>
+
+<!-- TEACH: Bảng công -->
+<section class="screen" id="teach-paysheet">
+  <div class="pg-head"><div><h1>Bảng công cá nhân</h1><p class="sub">Chi tiết ca dạy và quyết toán thù lao tháng 10/2026</p></div></div>
+  <div class="stats" id="paysheetStats"></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Ngày</th><th>Lớp</th><th>Check-in → Out</th><th>Phút</th><th>Đơn giá</th><th>Trạng thái</th></tr></thead>
+    <tbody id="paysheetBody"></tbody>
+  </table></div></div>
+</section>
+
+<!-- TEACH: Đơn từ -->
+<section class="screen" id="teach-requests">
+  <div class="pg-head"><div><h1>Đơn từ</h1><p class="sub">Quản lý đơn xin nghỉ, đơn xin hủy lớp, đơn xin lớp</p></div></div>
+  <div class="tabs" id="reqTabs"></div>
+  <div id="reqContent"></div>
+</section>
+
+<!-- ══════════════════════════════════════
+     PARENT SCREENS
+     ══════════════════════════════════════ -->
+
+<!-- PARENT: Tổng quan -->
+<section class="screen" id="parent-dash">
+  <div class="pg-head"><div><h1>Tổng quan</h1><p class="sub">Theo dõi tình hình học tập của con</p></div></div>
+  <div class="card" style="padding:12px 16px;margin-bottom:14px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:500;color:var(--g600)">Chọn con:</span>
+      <div class="chips" id="kidChips"></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="card">
+        <h2>Hôm nay học gì</h2>
+        <div class="item"><span style="color:var(--g500)">Chủ đề</span><b id="pTopic"></b></div>
+        <div class="item"><span style="color:var(--g500)">Nội dung</span><span id="pDesc" style="white-space:pre-line;font-size:12px"></span></div>
+        <div class="item"><span style="color:var(--g500)">Tình trạng</span><span id="pArr"></span></div>
+      </div>
+      <div class="card">
+        <h2>Bài tập về nhà</h2>
+        <div class="item"><span style="color:var(--g500)">Bài tập</span><b id="pHw"></b></div>
+        <div class="item"><span style="color:var(--g500)">Hạn nộp</span><span id="pDue"></span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Lịch học sắp tới</h2>
+        <div class="item"><span style="color:var(--g500)">Buổi tới</span><b id="pL1"></b></div>
+        <div class="item"><span style="color:var(--g500)">Buổi sau</span><span id="pL2"></span></div>
+      </div>
+      <div class="card">
+        <h2>Tóm tắt học phí</h2>
+        <div class="item"><span style="color:var(--g500)">Phải thu</span><b id="pFee"></b></div>
+        <div class="item"><span style="color:var(--g500)">Đã thu</span><span id="pPaid"></span></div>
+        <div class="item"><span style="color:var(--g500)">Còn lại</span><span id="pLeft" style="font-weight:700;color:var(--err)"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PARENT: Bài tập & Kết quả -->
+<section class="screen" id="parent-homework">
+  <div class="pg-head"><div><h1>Bài tập &amp; Kết quả học tập</h1><p class="sub">Xem kết quả điểm danh, điểm bài giấy và nhận xét từ giáo viên</p></div></div>
+  <div class="card" style="padding:12px 16px;margin-bottom:14px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:500;color:var(--g600)">Chọn con:</span>
+      <div class="chips" id="kidChips2"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Lịch sử buổi học &amp; Kết quả</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Ngày</th><th>Điểm danh</th><th>Điểm bài giấy</th><th>Nhận xét</th></tr></thead>
+      <tbody id="pResults"></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>Bài tập đang có</h2>
+    <div id="pHwList"></div>
+  </div>
+</section>
+
+<!-- PARENT: Lịch & Xin nghỉ -->
+<section class="screen" id="parent-schedule">
+  <div class="pg-head"><div><h1>Lịch học &amp; Xin nghỉ phép</h1><p class="sub">Xem lịch học và gửi đơn xin nghỉ cho con</p></div></div>
+  <div class="g2">
+    <div class="card">
+      <h2>Lịch học tuần này</h2>
+      <div id="pSchedule"></div>
+    </div>
+    <div class="card">
+      <h2>Gửi đơn xin nghỉ</h2>
+      <label>Chọn con</label>
+      <select id="pLeaveKid"><option>Nguyễn Văn A (Lớp 9)</option><option>Nguyễn Thị B (Lớp 6)</option></select>
+      <label>Buổi học xin nghỉ</label>
+      <select id="pLeaveSes"><option>Toán 9 — T6, 16/10 (18:00–20:00)</option><option>TA 6 Nhóm — T7, 17/10 (09:00–11:00)</option></select>
+      <label>Lý do</label>
+      <textarea id="pLeaveReason" placeholder="Nhập lý do xin nghỉ...">Gia đình có việc bận</textarea>
+      <div style="margin-top:14px"><button class="btn p" onclick="submitLeaveParent()">Gửi đơn xin nghỉ</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- PARENT: Học phí -->
+<section class="screen" id="parent-billing">
+  <div class="pg-head"><div><h1>Học phí</h1><p class="sub">Theo dõi tình hình đóng học phí của con</p></div></div>
+  <div class="card" style="padding:12px 16px;margin-bottom:14px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:500;color:var(--g600)">Chọn con:</span>
+      <div class="chips" id="kidChips3"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Hóa đơn học phí</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Mã HĐ</th><th>Tháng</th><th>Phải thu</th><th>Đã thu</th><th>Còn lại</th><th>Trạng thái</th></tr></thead>
+      <tbody id="pBillBody"></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>Lịch sử thanh toán</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Ngày</th><th>Số tiền</th><th>Phương thức</th><th>Ghi chú</th></tr></thead>
+      <tbody>
+        <tr><td>05/10/2026</td><td><b>1.000.000đ</b></td><td>Chuyển khoản</td><td>Thu đợt 1 HD-101</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+</main>
+</div>
+</div>
+
+<!-- ═════════════ MODAL ═════════════ -->
+<div class="modal-ov" id="modal">
+  <div class="modal-box">
+    <h3 id="mTitle"></h3>
+    <div id="mContent"></div>
+    <div class="modal-act">
+      <button class="btn" onclick="closeModal()">Hủy</button>
+      <button class="btn p" id="mBtn">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification panel -->
+<div class="notif-panel" id="notifPanel">
+  <div class="np-head"><h3>Thông báo</h3><button class="np-close" onclick="toggleNotif()">✕</button></div>
+  <div class="np-list">
+    <div class="np-item unread"><b>Đề xuất ghép lớp (YC-001)</b><p>Nguyễn Minh Anh được đề xuất dạy Toán 9</p><time>2 giờ trước</time></div>
+    <div class="np-item unread"><b>Cảnh báo check-in trễ</b><p>Ca Toán 9 · Trần Quốc Bảo trễ 18 phút</p><time>5 giờ trước</time></div>
+    <div class="np-item unread"><b>Đơn xin nghỉ mới</b><p>PH Nguyễn Thị B xin nghỉ buổi Anh 6</p><time>Hôm qua</time></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- API Bar -->
+<div class="api-bar">
+  <div class="row" style="gap:6px;min-width:0"><span class="m" id="apiM">READY</span><span class="mono" id="apiU" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Hệ thống sẵn sàng</span></div>
+  <div class="row" style="gap:5px;flex-shrink:0"><span style="color:var(--g500)">DB:</span><span class="mono" style="color:var(--pri)" id="apiT">—</span></div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════ */
+const PORTALS={
+  admin:{who:'Trần Quang Huy',role:'Quản trị viên',route:'/admin',perms:'Toàn quyền hệ thống',
+    m:[['admin-dash','📊','Tổng quan'],['admin-staff','👥','Nhân sự'],['admin-catalog','⚙️','Danh mục & Cấu hình'],['admin-perms','🔐','Phân quyền'],['admin-payroll','💰','Chấm công'],['admin-audit','📜','Kiểm toán']]},
+  staff:{who:'Lê Thị Mai',role:'Giáo vụ',route:'/staff',perms:'Xem · Thêm · Sửa · Tải',
+    m:[['staff-dash','📊','Tổng quan'],['staff-intake','📋','Tiếp nhận & Ghép lớp'],['staff-students','🎓','Học viên'],['staff-classes','🏫','Lớp học'],['staff-approve','📝','Duyệt đơn'],['staff-billing','🧾','Học phí']]},
+  teacher:{who:'Nguyễn Minh Anh',role:'Giáo viên',route:'/teacher',perms:'Xem · Thêm · Sửa',
+    m:[['teach-dash','📊','Tổng quan'],['teach-session','⏰','Ca học'],['teach-log','📖','Sổ buổi học'],['teach-myclasses','🏫','Lớp phụ trách'],['teach-recruit','📢','Lớp đang tuyển'],['teach-paysheet','💰','Bảng công'],['teach-requests','📝','Đơn từ']]},
+  tutor:{who:'Trần Quốc Bảo',role:'Gia sư 1:1',route:'/tutor',perms:'Xem · Thêm · Sửa',
+    m:[['teach-dash','📊','Tổng quan'],['teach-session','⏰','Ca học'],['teach-log','📖','Sổ buổi học'],['teach-myclasses','🏫','Lớp kèm của tôi'],['teach-recruit','📢','Cơ hội nhận lớp'],['teach-paysheet','💰','Bảng công'],['teach-requests','📝','Đơn từ']]},
+  ta:{who:'Phạm Gia Huy',role:'Trợ giảng',route:'/ta',perms:'Check-in · Điểm danh',
+    m:[['teach-dash','📊','Tổng quan'],['teach-session','⏰','Ca học'],['teach-log','📖','Sổ buổi học'],['teach-myclasses','🏫','Lớp hỗ trợ'],['teach-paysheet','💰','Bảng công'],['teach-requests','📝','Đơn từ']]},
+  parent:{who:'Nguyễn Thị Hoa',role:'Phụ huynh',route:'/parent',perms:'Xem · Tải · Xin nghỉ',
+    m:[['parent-dash','📊','Tổng quan'],['parent-homework','📚','Bài tập & Kết quả'],['parent-schedule','📅','Lịch & Xin nghỉ'],['parent-billing','🧾','Học phí']]}
+};
+
+let EMPLOYEES=[
+  {id:1,name:'Trần Quang Huy',email:'huy.tq@edu.vn',phone:'0901234567',role:'Admin',active:true},
+  {id:2,name:'Lê Thị Mai',email:'mai.lt@edu.vn',phone:'0912345678',role:'Nhân viên',active:true},
+  {id:3,name:'Nguyễn Minh Anh',email:'anh.nm@edu.vn',phone:'0923456789',role:'Giáo viên',active:true},
+  {id:4,name:'Phạm Gia Huy',email:'huy.pg@edu.vn',phone:'0934567890',role:'Trợ giảng',active:true},
+  {id:5,name:'Trần Quốc Bảo',email:'bao.tq@edu.vn',phone:'0945678901',role:'Gia sư',active:true},
+  {id:6,name:'Lê Văn Cường',email:'cuong.lv@edu.vn',phone:'0956789012',role:'Giáo viên',active:true}
+];
+
+let STUDENTS=[
+  {id:'HV-0019',name:'Nguyễn Văn A',grade:'Lớp 9',school:'THCS Nguyễn Du',parent:'Nguyễn Thị Hoa',parentPhone:'0987654321',status:'dang_hoc'},
+  {id:'HV-0024',name:'Trần Minh Khôi',grade:'Lớp 9',school:'THCS Trần Phú',parent:'Trần Văn Bình',parentPhone:'0976543210',status:'dang_hoc'},
+  {id:'HV-0031',name:'Nguyễn Thị B',grade:'Lớp 6',school:'THCS Lê Lợi',parent:'Nguyễn Văn C',parentPhone:'0965432109',status:'dang_hoc'},
+  {id:'HV-0035',name:'Lê Hoàng Nam',grade:'Lớp 11',school:'THPT Gia Định',parent:'Lê Văn Thắng',parentPhone:'0954321098',status:'dang_hoc'},
+  {id:'HV-0040',name:'Phạm Thu Hà',grade:'Lớp 8',school:'THCS Bạch Đằng',parent:'Phạm Văn Đức',parentPhone:'0943210987',status:'tam_nghi'}
+];
+
+let CATALOG={
+  subjects:['Toán','Vật Lý','Hóa Học','Tiếng Anh','Ngữ Văn','Sinh Học','Tin Học'],
+  grades:['Lớp 1','Lớp 2','Lớp 3','Lớp 4','Lớp 5','Lớp 6','Lớp 7','Lớp 8','Lớp 9','Lớp 10','Lớp 11','Lớp 12'],
+  rooms:['P.201 – Cơ sở 1','P.202 – Cơ sở 1','P.203 – Cơ sở 1','P.204 – Cơ sở 1','P.301 – Cơ sở 2','Tại nhà HV'],
+  areas:['Thủ Đức','Quận 1','Quận 3','Quận 7','Bình Thạnh','Gò Vấp','Tân Bình']
+};
+
+const PERM_MODS=['Xác thực & Tài khoản','Tiếp nhận & Ghép lớp','Lớp học & Lịch dạy','Ca học & Check-in','Học vụ & Điểm danh','Nghỉ phép & Dạy bù','Chấm công & Thù lao','Học phí & Thu tiền','Thông báo & Kiểm toán'];
+const PERM_FLAGS=['Xem','Thêm','Sửa','Xóa','Tải xuống'];
+const ROLE_PERMS={
+  Admin:[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]],
+  'Nhân viên':[[1,0,0,0,0],[1,1,1,0,1],[1,1,1,0,1],[1,1,1,0,1],[1,0,0,0,1],[1,1,1,0,1],[1,0,0,0,1],[1,1,1,0,1],[1,1,0,0,0]],
+  'Giáo viên':[[1,0,1,0,0],[1,0,1,0,0],[1,0,0,0,1],[1,1,1,0,0],[1,1,1,0,1],[1,1,0,0,0],[1,0,0,0,1],[0,0,0,0,0],[1,0,0,0,0]],
+  'Gia sư':[[1,0,1,0,0],[1,0,1,0,0],[1,0,0,0,1],[1,1,1,0,0],[1,1,1,0,1],[1,1,0,0,0],[1,0,0,0,1],[0,0,0,0,0],[1,0,0,0,0]],
+  'Trợ giảng':[[1,0,0,0,0],[0,0,0,0,0],[1,0,0,0,0],[1,1,1,0,0],[1,1,0,0,0],[1,1,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,0]],
+  'Phụ huynh':[[1,0,1,0,0],[1,1,1,0,0],[1,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,1,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,0,0,0,0]]
+};
+let permRole='Admin';
+
+let REQUESTS=[
+  {id:'YC-001',student:'Nguyễn Văn A',parent:'Nguyễn Thị Hoa',phone:'0987654321',subject:'Toán 9',schedule:'T3, T5 (18:00–20:00)',area:'Thủ Đức',budget:200000,status:'dang_xu_ly',date:'10/10/2026'},
+  {id:'YC-002',student:'Lê Hoàng Nam',parent:'Lê Văn Thắng',phone:'0976543210',subject:'Vật Lý 11',schedule:'T2, T6 (19:00–21:00)',area:'Quận 3',budget:250000,status:'moi',date:'13/10/2026'}
+];
+
+const TUTORS=[
+  {name:'Nguyễn Minh Anh',info:'ĐH Sư phạm · 3 năm KN',fee:180000,sched:'Khớp 2/2 (T3, T5)',ok:true},
+  {name:'Trần Quốc Bảo',info:'ĐH KHTN · 2 năm KN',fee:150000,sched:'Khớp 2/2 (T3, T5)',ok:true},
+  {name:'Lê Văn Cường',info:'GV cơ hữu · 5 năm KN',fee:200000,sched:'Trùng lịch T5 18:00',ok:false},
+  {name:'Võ Thanh Dũng',info:'GV Luyện thi · 7 năm KN',fee:260000,sched:'Khớp 2/2 (T3, T5)',ok:true}
+];
+
+let PROPOSALS=[
+  {id:'DX-101',req:'YC-001 · NV A (Toán 9)',tutor:'Nguyễn Minh Anh',ts:'dong_y',tp:'dong_y',done:true},
+  {id:'DX-102',req:'YC-002 · LH Nam (Lý 11)',tutor:'Trần Quốc Bảo',ts:'dong_y',tp:'cho',done:false}
+];
+
+let CLASSES=[
+  {code:'LOP-T9A',type:'Kèm 1-1',room:'Tại nhà HV (Thủ Đức)',sched:'T3, T5 (18:00–20:00)',subject:'Toán 9',main:'Nguyễn Minh Anh',ta:'—',cur:1,max:1},
+  {code:'LOP-E6G',type:'Lớp nhóm',room:'P.204 – Cơ sở 1',sched:'T4, T7 (09:00–11:00)',subject:'Tiếng Anh 6',main:'Lê Văn Cường',ta:'Phạm Gia Huy',cur:11,max:12},
+  {code:'LOP-L11B',type:'Kèm 1-1',room:'P.201 – Cơ sở 1',sched:'T2, T6 (19:00–21:00)',subject:'Vật Lý 11',main:'Trần Quốc Bảo',ta:'—',cur:1,max:1}
+];
+
+let LEAVES=[
+  {who:'HV Nguyễn Thị B (PH gửi)',ses:'Anh 6 Nhóm · 10/10',reason:'Gia đình có việc đột xuất',st:'cho_duyet',type:'nghi'},
+  {who:'GV Trần Quốc Bảo',ses:'Toán 9 · 08/10',reason:'Trùng lịch coi thi tại trường',st:'da_duyet',type:'nghi'},
+  {who:'GV Nguyễn Minh Anh',ses:'LOP-T9A',reason:'Lịch dạy không phù hợp nữa',st:'cho_duyet',type:'huy_lop'},
+  {who:'GV Lê Văn Cường',ses:'LOP-E6G',reason:'Muốn tham gia dạy nhóm TA 6',st:'cho_duyet',type:'xin_lop'}
+];
+
+let PAYROLLS=[
+  {name:'Nguyễn Minh Anh',role:'Giáo viên',buoi:24,extra:'1 bù / 0 trễ',mins:'2.880',total:'4.320.000đ',st:'san_sang',locked:false},
+  {name:'Trần Quốc Bảo',role:'Gia sư',buoi:18,extra:'0 bù / 1 trễ',mins:'2.150',total:'2.700.000đ',st:'chua_co',locked:false},
+  {name:'Phạm Gia Huy',role:'Trợ giảng',buoi:12,extra:'0 bù / 0 trễ',mins:'1.440',total:'1.080.000đ',st:'da_chot',locked:true},
+  {name:'Lê Văn Cường',role:'Giáo viên',buoi:20,extra:'0 bù / 0 trễ',mins:'2.400',total:'3.600.000đ',st:'san_sang',locked:false}
+];
+
+let INVOICES=[
+  {code:'HD-101',student:'Nguyễn Văn A',mode:'Theo buổi',must:1800000,paid:1000000,st:'mot_phan'},
+  {code:'HD-102',student:'Nguyễn Thị B',mode:'Trọn khóa',must:5100000,paid:5100000,st:'da_tt'},
+  {code:'HD-103',student:'Lê Hoàng Nam',mode:'Theo buổi',must:2000000,paid:0,st:'chua_tt'}
+];
+let selInv=0;
+
+const KIDS={
+  1:{n:'Nguyễn Văn A (Lớp 9)',t:'Giải bài toán bằng cách lập hệ phương trình',d:'1. Sửa phiếu BT-102 tại lớp.\n2. Phương pháp chọn ẩn, lập bảng phân tích.\n3. Luyện tập 4 bài thực tế.',a:'Gia sư Minh Anh đã check-in lúc 17:50',hw:'Phiếu BT-103: 10 Bài toán lập hệ PT nâng cao',due:'Nộp giấy đầu buổi T6 16/10',
+    r:[['14/10','Có mặt','ok','8.75','Làm đầy đủ, trình bày rõ ràng.'],['09/10','Có mặt','ok','8.50','Nắm vững phương pháp thế.'],['02/10','Đi trễ','w','7.00','Cần chú ý giờ giấc.']],
+    l1:'Toán 9 (GS Minh Anh) — T6 16/10',l2:'Toán 9 (GS Minh Anh) — T3 20/10',f:'1.800.000đ',p:'1.000.000đ',lf:'800.000đ'},
+  2:{n:'Nguyễn Thị B (Lớp 6)',t:'Unit 3: Present Simple',d:'1. Ôn cấu trúc thì Hiện tại đơn.\n2. Thực hành giao tiếp theo cặp.',a:'Ca T7 (09:00–11:00) tại P.204',hw:'Phiếu Grammar Unit 3 (Tr.12–15)',due:'In ra giấy · Nộp T7 17/10',
+    r:[['10/10','Có mặt','ok','9.25','Phát âm chuẩn, hoàn thành 100%.'],['07/10','Vắng CP','i','—','Đã xếp lịch học bù.']],
+    l1:'Nghỉ',l2:'TA 6 Nhóm (P.204) — T7 17/10',f:'5.100.000đ',p:'5.100.000đ',lf:'0đ'}
+};
+let curKid=1;
+
+let MY_REQUESTS=[
+  {id:'DN-001',type:'nghi',date:'16/10/2026',ses:'Toán 9 — T6 16/10',reason:'Bận công tác đột xuất',st:'cho_duyet'},
+  {id:'DN-002',type:'huy_lop',date:'14/10/2026',ses:'LOP-T9A (Toán 9)',reason:'Chuyển sang dạy môn khác',st:'cho_duyet'}
+];
+
+let RECRUIT_LIST=[
+  {id:'YC-002',subject:'Vật Lý 11',type:'Kèm 1-1',sched:'T2, T6 (19:00–21:00)',area:'Quận 3',fee:'250.000đ',st:'tuyen'},
+  {id:'YC-003',subject:'Tiếng Anh 8',type:'Lớp nhóm',sched:'T3, T5 (14:00–16:00)',area:'Bình Thạnh',fee:'200.000đ',st:'tuyen'},
+  {id:'YC-004',subject:'Toán 10',type:'Kèm 1-1',sched:'T4, T7 (18:00–20:00)',area:'Thủ Đức',fee:'220.000đ',st:'tuyen'}
+];
+
+let curPortal='admin';
+let catTab=0;
+let approveTab=0;
+let reqTab=0;
+const $=id=>document.getElementById(id);
+
+/* ═══════════════════════════════════════
+   UI HELPERS
+   ═══════════════════════════════════════ */
+function toast(msg,type){
+  const t=$('toast');
+  t.style.borderLeftColor=type==='ok'?'var(--pri)':'var(--err)';
+  t.innerHTML=`<div style="font-weight:600;font-size:13px;margin-bottom:2px">${type==='ok'?'✓ Thành công':'⚠ Lỗi'}</div><div style="font-size:12px;color:var(--g400)">${msg}</div>`;
+  t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',3500);
+  $('apiM').textContent=type==='ok'?'OK':'ERR';$('apiM').style.background=type==='ok'?'var(--ok)':'var(--err)';$('apiU').textContent=msg;
+}
+
+function closeModal(){$('modal').classList.remove('show')}
+function toggleNotif(){$('notifPanel').classList.toggle('open')}
+
+function openModal(title,html,btnLabel,onSave,danger){
+  $('mTitle').textContent=title;
+  $('mContent').innerHTML=html;
+  const b=$('mBtn');b.className=danger?'btn danger':'btn p';b.textContent=btnLabel||'Lưu';
+  b.onclick=()=>{if(onSave)onSave();closeModal()};
+  $('modal').classList.add('show');
+}
+
+function showConfirm(title,msg,onOk,danger){
+  openModal(title,`<p style="color:var(--g600);font-size:13px">${msg}</p>`,danger?'Xác nhận xóa':'Xác nhận',onOk,danger);
+}
+
+/* ═══════════════════════════════════════
+   PORTAL / NAV
+   ═══════════════════════════════════════ */
+function setPortal(p){
+  curPortal=p;const c=PORTALS[p];
+  $('seg').innerHTML=Object.entries(PORTALS).map(([k,v])=>`<button class="${k===p?'on':''}" onclick="setPortal('${k}')">${v.role}</button>`).join('');
+  $('sRole').textContent=c.role;$('sName').textContent=c.who;$('sRoute').textContent=c.route;$('permLbl').textContent=c.perms;
+  $('acctBtn').textContent=c.who[0];
+  $('nav').innerHTML=c.m.map(([id,icon,label])=>`<button data-s="${id}" onclick="showS('${id}')"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
+
+  // Teaching role-specific UI
+  const isTA=(p==='ta'),isGS=(p==='tutor'),isGV=(p==='teacher');
+  if($('taRestrict'))$('taRestrict').style.display=isTA?'block':'none';
+  if($('hwSection'))$('hwSection').style.display=isTA?'none':'';
+  document.querySelectorAll('.t-only').forEach(el=>{el.disabled=isTA});
+
+  if(p==='teacher'||p==='tutor'||p==='ta'){
+    const names={teacher:'Nguyễn Minh Anh',tutor:'Trần Quốc Bảo',ta:'Phạm Gia Huy'};
+    const roles={teacher:'Giáo viên',tutor:'Gia sư 1:1',ta:'Trợ giảng'};
+    $('tGreeting').textContent='Xin chào, '+names[p];
+    $('tSubGreeting').textContent=roles[p]+' · Thứ Tư, 14/10/2026';
+
+    // My classes title
+    const titles={teacher:'Lớp phụ trách',tutor:'Lớp kèm của tôi',ta:'Lớp hỗ trợ'};
+    $('myClassTitle').textContent=titles[p];
+    $('myClassSub').textContent=p==='ta'?'Danh sách lớp bạn đang hỗ trợ':(p==='tutor'?'Danh sách lớp kèm 1:1 của bạn':'Danh sách lớp bạn đang đảm nhiệm');
+
+    // Recruit title
+    if($('recruitTitle')){
+      $('recruitTitle').textContent=isGS?'Cơ hội nhận lớp':'Lớp đang tuyển';
+      $('recruitSub').textContent=isGS?'Các yêu cầu kèm 1:1 đang cần gia sư':'Danh sách lớp/yêu cầu đang cần người dạy';
+    }
+
+    // Session info
+    if(isTA){
+      $('sesTitle').textContent='Tiếng Anh 6 — Nhóm CS1 · P.204';
+      $('sesClass').textContent='TA 6 Nhóm CS1';
+      $('sesTeacher').textContent='Phạm Gia Huy (Trợ giảng)';
+    } else if(isGS){
+      $('sesTitle').textContent='Vật Lý 11 (Kèm 1-1) — Lê Hoàng Nam';
+      $('sesClass').textContent='Vật Lý 11 — Lê Hoàng Nam';
+      $('sesTeacher').textContent='Trần Quốc Bảo (Gia sư)';
+    } else {
+      $('sesTitle').textContent='Toán 9 (Kèm 1-1) — Nguyễn Văn A';
+      $('sesClass').textContent='Toán 9 — Nguyễn Văn A';
+      $('sesTeacher').textContent='Nguyễn Minh Anh (Dạy chính)';
+    }
+
+    renderTeachDash();
+    renderMyClasses();
+    renderRecruit();
+    renderPaysheet();
+    renderReqTabs();
+  }
+
+  showS(c.m[0][0]);
+}
+
+function showS(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.s===id));
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════
+   ADMIN: Nhân sự — CRUD Forms
+   ═══════════════════════════════════════ */
+function renderStaff(){
+  $('staffCount').textContent=EMPLOYEES.length+' tài khoản';
+  $('staffRows').innerHTML=EMPLOYEES.map((e,i)=>`<tr>
+    <td><b>${e.name}</b></td><td class="mono">${e.email}</td><td>${e.phone}</td>
+    <td><span class="tag">${e.role}</span></td>
+    <td><span class="tag ${e.active?'ok':'r'}">${e.active?'Hoạt động':'Khóa'}</span></td>
+    <td><div class="row">
+      <button class="btn sm" onclick="openStaffForm(${i})">Sửa</button>
+      <button class="btn sm ${e.active?'danger':'p'}" onclick="toggleStaff(${i})">${e.active?'Khóa':'Mở khóa'}</button>
+      <button class="btn sm" onclick="toast('Đã gửi email reset mật khẩu cho ${e.name}.','ok')">Reset MK</button>
+    </div></td></tr>`).join('');
+}
+
+function openStaffForm(idx){
+  const e=idx!=null?EMPLOYEES[idx]:null;
+  const html=`
+    <div class="form-row"><div><label>Họ tên</label><input id="f_name" value="${e?e.name:''}"></div><div><label>Email</label><input id="f_email" type="email" value="${e?e.email:''}"></div></div>
+    <div class="form-row"><div><label>Số điện thoại</label><input id="f_phone" value="${e?e.phone:''}"></div><div><label>Vai trò</label><select id="f_role"><option ${e&&e.role==='Admin'?'selected':''}>Admin</option><option ${e&&e.role==='Nhân viên'?'selected':''}>Nhân viên</option><option ${e&&e.role==='Giáo viên'?'selected':''}>Giáo viên</option><option ${e&&e.role==='Gia sư'?'selected':''}>Gia sư</option><option ${e&&e.role==='Trợ giảng'?'selected':''}>Trợ giảng</option></select></div></div>
+    ${!e?'<label>Mật khẩu</label><input id="f_pw" type="password" placeholder="Nhập mật khẩu...">':''}`;
+  openModal(e?'Sửa tài khoản':'Thêm tài khoản mới',html,'Lưu',()=>{
+    const d={name:$('f_name').value,email:$('f_email').value,phone:$('f_phone').value,role:$('f_role').value,active:true};
+    if(!d.name||!d.email){toast('Vui lòng điền đầy đủ thông tin.','err');return}
+    if(e){Object.assign(EMPLOYEES[idx],d);toast('Đã cập nhật tài khoản '+d.name+'.','ok')}
+    else{d.id=EMPLOYEES.length+1;EMPLOYEES.push(d);toast('Đã thêm tài khoản '+d.name+'.','ok')}
+    renderStaff();
+  });
+}
+
+function toggleStaff(i){
+  const e=EMPLOYEES[i];
+  showConfirm((e.active?'Khóa':'Mở khóa')+' tài khoản','Bạn có chắc muốn '+(e.active?'khóa':'mở khóa')+' tài khoản '+e.name+'?',()=>{
+    e.active=!e.active;renderStaff();toast('Đã '+(e.active?'mở khóa':'khóa')+' tài khoản '+e.name+'.','ok');
+  },e.active);
+}
+
+/* ═══════════════════════════════════════
+   ADMIN: Danh mục & Cấu hình (Tabs)
+   ═══════════════════════════════════════ */
+function renderCatalog(){
+  const tabs=['Môn học','Khối lớp','Phòng học','Khu vực','Cấu hình'];
+  $('catTabs').innerHTML=tabs.map((t,i)=>`<button class="${i===catTab?'on':''}" onclick="catTab=${i};renderCatalog()">${t}</button>`).join('');
+
+  if(catTab<4){
+    const keys=['subjects','grades','rooms','areas'];
+    const key=keys[catTab];
+    const items=CATALOG[key];
+    $('catContent').innerHTML=`<div class="card">
+      <div class="row-b" style="margin-bottom:12px"><h2 style="margin:0">Danh sách ${tabs[catTab]}</h2><button class="btn p sm" onclick="openCatForm('${key}')">+ Thêm</button></div>
+      <div class="tw"><table><thead><tr><th>#</th><th>Tên</th><th>Thao tác</th></tr></thead>
+      <tbody>${items.map((it,i)=>`<tr><td>${i+1}</td><td><b>${it}</b></td><td><div class="row">
+        <button class="btn sm" onclick="openCatForm('${key}',${i})">Sửa</button>
+        <button class="btn sm danger" onclick="delCat('${key}',${i})">Xóa</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
+  } else {
+    $('catContent').innerHTML=`<div class="card">
+      <h2>Cấu hình hệ thống</h2>
+      <label>Cho phép check-in sớm tối đa (phút)</label>
+      <div class="row"><input type="number" value="30" style="width:90px" id="cfgEarly"><span style="color:var(--g500);font-size:12px">phút trước giờ bắt đầu</span></div>
+      <label>Ngưỡng cảnh báo đi trễ (phút)</label>
+      <div class="row"><input type="number" value="15" style="width:90px" id="cfgLate"><span style="color:var(--g500);font-size:12px">phút sau giờ bắt đầu</span></div>
+      <label>Số buổi tối đa sinh tự động khi tạo lớp</label>
+      <div class="row"><input type="number" value="8" style="width:90px"><span style="color:var(--g500);font-size:12px">buổi / tháng</span></div>
+      <label>Phương thức thanh toán mặc định</label>
+      <select style="width:260px"><option>Chuyển khoản (VietQR)</option><option>Tiền mặt</option></select>
+      <div style="margin-top:14px"><button class="btn p sm" onclick="toast('Đã lưu cấu hình hệ thống.','ok')">Lưu cấu hình</button></div>
+    </div>`;
+  }
+}
+
+function openCatForm(key,idx){
+  const names={subjects:'Môn học',grades:'Khối lớp',rooms:'Phòng học',areas:'Khu vực'};
+  const val=idx!=null?CATALOG[key][idx]:'';
+  openModal((idx!=null?'Sửa':'Thêm')+' '+names[key],
+    `<label>Tên ${names[key]}</label><input id="f_catVal" value="${val}">`,
+    'Lưu',()=>{
+      const v=$('f_catVal').value;if(!v)return;
+      if(idx!=null){CATALOG[key][idx]=v;toast('Đã cập nhật '+names[key]+'.','ok')}
+      else{CATALOG[key].push(v);toast('Đã thêm '+names[key]+': '+v+'.','ok')}
+      renderCatalog();
+    });
+}
+
+function delCat(key,idx){
+  const names={subjects:'Môn học',grades:'Khối lớp',rooms:'Phòng học',areas:'Khu vực'};
+  showConfirm('Xóa '+names[key],'Bạn có chắc muốn xóa "'+CATALOG[key][idx]+'"?',()=>{
+    CATALOG[key].splice(idx,1);renderCatalog();toast('Đã xóa.','ok');
+  },true);
+}
+
+/* ═══════════════════════════════════════
+   ADMIN: Phân quyền (Accordion)
+   ═══════════════════════════════════════ */
+function renderPerms(){
+  const roles=['Admin','Nhân viên','Giáo viên','Gia sư','Trợ giảng','Phụ huynh'];
+  $('permRoleTabs').innerHTML=roles.map(r=>`<button class="chip ${r===permRole?'on':''}" onclick="permRole='${r}';renderPerms()">${r}</button>`).join('');
+  $('permRoleLabel').textContent='Quyền của nhóm '+permRole;
+  const matrix=ROLE_PERMS[permRole];
+  let cView=0,cEdit=0,cDel=0;
+  matrix.forEach(row=>{if(row[0])cView++;if(row[2])cEdit++;if(row[3])cDel++});
+  $('permSumBar').innerHTML=`<div class="ps"><div class="n">${cView}/9</div><span>Có quyền xem</span></div><div class="ps"><div class="n">${cEdit}/9</div><span>Có quyền sửa</span></div><div class="ps"><div class="n">${cDel}/9</div><span>Có quyền xóa</span></div>`;
+  $('permCards').innerHTML=PERM_MODS.map((mod,mi)=>{
+    const flags=matrix[mi];const tags=PERM_FLAGS.filter((_,fi)=>flags[fi]).map(f=>`<span class="tag" style="font-size:11px">${f}</span>`).join('');
+    const checks=PERM_FLAGS.map((f,fi)=>`<label><input type="checkbox" ${flags[fi]?'checked':''} onchange="ROLE_PERMS['${permRole}'][${mi}][${fi}]=this.checked?1:0;renderPerms()"> ${f}</label>`).join('');
+    return `<div class="perm-card" onclick="this.classList.toggle('open')"><div class="pc-head"><div style="display:flex;align-items:center;gap:10px"><b>${mod}</b><div class="pc-tags">${tags||'<span style="font-size:11px;color:var(--g400)">Không có quyền</span>'}</div></div><span class="pc-arrow">▾</span></div><div class="pc-body" onclick="event.stopPropagation()">${checks}</div></div>`;
+  }).join('');
+}
+function permBatch(v){ROLE_PERMS[permRole].forEach(r=>{for(let i=0;i<5;i++)r[i]=v});renderPerms()}
+
+/* ═══════════════════════════════════════
+   UC02: Tiếp nhận & Ghép lớp
+   ═══════════════════════════════════════ */
+let intakeIdx=0;
+function intakeStep(i){
+  intakeIdx=i;
+  document.querySelectorAll('.intake-step').forEach((el,idx)=>el.style.display=idx===i?'block':'none');
+  document.querySelectorAll('#intakeWF .ws').forEach((el,idx)=>el.className='ws'+(idx===i?' on':(idx<i?' done':'')));
+}
+
+function renderRequests(){
+  $('reqRows').innerHTML=REQUESTS.map((r,i)=>`<tr>
+    <td class="mono"><b>${r.id}</b></td><td><b>${r.student}</b></td><td>${r.parent}<br><span style="font-size:12px;color:var(--g500)">${r.phone}</span></td>
+    <td>${r.subject}</td><td style="font-size:12px">${r.schedule}</td><td>${r.area}</td>
+    <td><span class="tag ${r.status==='moi'?'w':'i'}">${r.status==='moi'?'Mới':'Đang xử lý'}</span></td>
+    <td><div class="row"><button class="btn sm p" onclick="intakeStep(1)">Tìm GV</button><button class="btn sm" onclick="openRequestForm(${i})">Sửa</button></div></td></tr>`).join('');
+}
+
+function openRequestForm(idx){
+  const r=idx!=null?REQUESTS[idx]:null;
+  const html=`
+    <div class="form-row"><div><label>Tên học viên</label><input id="f_rStu" value="${r?r.student:''}"></div><div><label>Môn học · Khối</label><input id="f_rSubject" value="${r?r.subject:''}" placeholder="VD: Toán 9"></div></div>
+    <div class="form-row"><div><label>Phụ huynh</label><input id="f_rParent" value="${r?r.parent:''}"></div><div><label>SĐT phụ huynh</label><input id="f_rPhone" value="${r?r.phone:''}"></div></div>
+    <div class="form-row"><div><label>Khung giờ</label><input id="f_rSched" value="${r?r.schedule:''}" placeholder="VD: T3, T5 (18:00–20:00)"></div><div><label>Khu vực</label><select id="f_rArea">${CATALOG.areas.map(a=>`<option ${r&&r.area===a?'selected':''}>${a}</option>`).join('')}</select></div></div>
+    <label>Mức thù lao tối đa (VNĐ/buổi)</label><input id="f_rBudget" type="number" value="${r?r.budget:'200000'}" step="10000">`;
+  openModal(r?'Sửa yêu cầu học':'Tạo yêu cầu học mới',html,'Lưu',()=>{
+    const d={student:$('f_rStu').value,parent:$('f_rParent').value,phone:$('f_rPhone').value,subject:$('f_rSubject').value,schedule:$('f_rSched').value,area:$('f_rArea').value,budget:+$('f_rBudget').value,status:'moi',date:'14/10/2026'};
+    if(!d.student){toast('Vui lòng nhập tên học viên.','err');return}
+    if(r){Object.assign(REQUESTS[idx],d);toast('Đã cập nhật yêu cầu.','ok')}
+    else{d.id='YC-'+String(REQUESTS.length+1).padStart(3,'0');REQUESTS.push(d);toast('Đã tạo yêu cầu '+d.id+'.','ok')}
+    renderRequests();
+  });
+}
+
+function runMatch(){
+  const mx=+$('budgetSel').value;const list=TUTORS.filter(t=>t.fee<=mx);
+  $('matchTitle').textContent=list.length+' người dạy phù hợp';
+  $('matchBody').innerHTML='<tr class="sk"><td>.</td><td>.</td><td>.</td><td>.</td><td>.</td></tr>'.repeat(2);
+  setTimeout(()=>{
+    $('matchBody').innerHTML=list.map(t=>`<tr>
+      <td><b>${t.name}</b><br><span style="font-size:11px;color:var(--g500)">${t.info}</span></td>
+      <td>Toán 9</td><td><b>${t.fee.toLocaleString('vi-VN')}đ</b></td>
+      <td><span class="tag ${t.ok?'ok':'r'}">${t.sched}</span></td>
+      <td><button class="btn sm p" ${t.ok?'':'disabled'} onclick="makeProp('${t.name}')">${t.ok?'Đề xuất':'Trùng lịch'}</button></td></tr>`).join('');
+    toast('Đã tìm '+list.length+' người dạy phù hợp.','ok');
+  },300);
+}
+
+function makeProp(name){
+  PROPOSALS.unshift({id:'DX-'+Math.floor(103+Math.random()*80),req:$('matchReqSel').value,tutor:name,ts:'cho',tp:'cho',done:false});
+  renderProposals();renderCreateClass();intakeStep(2);
+  toast('Đã tạo đề xuất nhân sự cho '+name+'.','ok');
+}
+
+function renderProposals(){
+  const badge=s=>s==='dong_y'?'<span class="tag ok">Đồng ý</span>':'<span class="tag w">Chờ</span>';
+  $('proposalBody').innerHTML=PROPOSALS.map(p=>`<tr>
+    <td class="mono"><b>${p.id}</b></td><td style="font-size:12px">${p.req}</td><td><b>${p.tutor}</b></td>
+    <td>${badge(p.ts)}</td><td>${badge(p.tp)}</td>
+    <td>${p.done?'<span class="tag ok">Đã tạo lớp</span>':''}</td></tr>`).join('');
+}
+
+function renderCreateClass(){
+  const ready=PROPOSALS.filter(p=>p.ts==='dong_y'&&p.tp==='dong_y'&&!p.done);
+  $('createClassBody').innerHTML=(ready.length?ready.map(p=>{
+    const idx=PROPOSALS.indexOf(p);
+    return `<tr><td class="mono"><b>${p.id}</b></td><td>${p.req}</td><td><b>${p.tutor}</b></td><td><span class="tag ok">Hai bên đã đồng ý</span></td>
+    <td><button class="btn sm p" onclick="createClass(${idx})">Tạo lớp & Sinh lịch</button></td></tr>`;
+  }).join(''):'<tr><td colspan="5" class="empty-state"><p>Chưa có đề xuất nào được hai bên đồng ý.</p></td></tr>')+
+  PROPOSALS.filter(p=>p.done).map(p=>`<tr><td class="mono">${p.id}</td><td>${p.req}</td><td>${p.tutor}</td><td><span class="tag ok">Đã tạo lớp</span></td><td>—</td></tr>`).join('');
+}
+
+function createClass(idx){
+  PROPOSALS[idx].done=true;
+  CLASSES.unshift({code:'LOP-NEW'+Date.now()%1000,type:'Kèm 1-1',room:'Tại nhà HV',sched:'T3, T5 (18:00–20:00)',subject:'Toán 9',main:PROPOSALS[idx].tutor,ta:'—',cur:1,max:1});
+  renderCreateClass();renderClasses();
+  toast('Đã tạo lớp và sinh 8 buổi cho '+PROPOSALS[idx].tutor+'.','ok');
+}
+
+function confirmProp(who,st){
+  if(PROPOSALS[1]){if(who==='parent')PROPOSALS[1].tp=st;if(who==='teacher')PROPOSALS[1].ts=st;renderProposals();renderCreateClass()}
+  toast('Đã cập nhật xác nhận: '+st+'.','ok');
+}
+
+/* ═══════════════════════════════════════
+   STAFF: Học viên — CRUD
+   ═══════════════════════════════════════ */
+function renderStudents(){
+  const q=($('stuSearch')?$('stuSearch').value:'').toLowerCase();
+  const list=q?STUDENTS.filter(s=>s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q)):STUDENTS;
+  $('stuCount').textContent=list.length+' học viên';
+  const stLabel=s=>s==='dang_hoc'?'<span class="tag ok">Đang học</span>':(s==='tam_nghi'?'<span class="tag w">Tạm nghỉ</span>':'<span class="tag r">Đã nghỉ</span>');
+  $('stuBody').innerHTML=list.map((s,i)=>{
+    const ri=STUDENTS.indexOf(s);
+    return `<tr><td class="mono"><b>${s.id}</b></td><td><b>${s.name}</b></td><td>${s.grade}</td><td style="font-size:12px">${s.school}</td>
+    <td>${s.parent}</td><td>${s.parentPhone}</td><td>${stLabel(s.status)}</td>
+    <td><div class="row"><button class="btn sm" onclick="openStudentForm(${ri})">Sửa</button><button class="btn sm danger" onclick="delStudent(${ri})">Xóa</button></div></td></tr>`;
+  }).join('');
+}
+
+function openStudentForm(idx){
+  const s=idx!=null?STUDENTS[idx]:null;
+  const html=`
+    <div class="form-row"><div><label>Mã HV</label><input id="f_sid" value="${s?s.id:'HV-'+String(STUDENTS.length+1).padStart(4,'0')}" ${s?'disabled':''}></div><div><label>Họ tên</label><input id="f_sname" value="${s?s.name:''}"></div></div>
+    <div class="form-row"><div><label>Khối lớp</label><select id="f_sgrade">${CATALOG.grades.map(g=>`<option ${s&&s.grade===g?'selected':''}>${g}</option>`).join('')}</select></div><div><label>Trường</label><input id="f_sschool" value="${s?s.school:''}"></div></div>
+    <div class="form-row"><div><label>Phụ huynh</label><input id="f_sparent" value="${s?s.parent:''}"></div><div><label>SĐT phụ huynh</label><input id="f_sphone" value="${s?s.parentPhone:''}"></div></div>
+    <label>Trạng thái</label><select id="f_sstatus"><option value="dang_hoc" ${s&&s.status==='dang_hoc'?'selected':''}>Đang học</option><option value="tam_nghi" ${s&&s.status==='tam_nghi'?'selected':''}>Tạm nghỉ</option><option value="da_nghi" ${s&&s.status==='da_nghi'?'selected':''}>Đã nghỉ</option></select>`;
+  openModal(s?'Sửa thông tin học viên':'Thêm học viên mới',html,'Lưu',()=>{
+    const d={id:$('f_sid').value,name:$('f_sname').value,grade:$('f_sgrade').value,school:$('f_sschool').value,parent:$('f_sparent').value,parentPhone:$('f_sphone').value,status:$('f_sstatus').value};
+    if(!d.name){toast('Vui lòng nhập họ tên.','err');return}
+    if(s){Object.assign(STUDENTS[idx],d);toast('Đã cập nhật thông tin '+d.name+'.','ok')}
+    else{STUDENTS.push(d);toast('Đã thêm học viên '+d.name+'.','ok')}
+    renderStudents();
+  });
+}
+
+function delStudent(i){
+  showConfirm('Xóa học viên','Bạn có chắc muốn xóa học viên '+STUDENTS[i].name+'?',()=>{
+    STUDENTS.splice(i,1);renderStudents();toast('Đã xóa.','ok');
+  },true);
+}
+
+/* ═══════════════════════════════════════
+   STAFF: Lớp học — CRUD
+   ═══════════════════════════════════════ */
+function renderClasses(){
+  $('classCount').textContent=CLASSES.length+' lớp';
+  $('classBody').innerHTML=CLASSES.map((c,i)=>`<tr>
+    <td class="mono"><b>${c.code}</b></td><td>${c.type} · ${c.room}</td><td>${c.sched}</td>
+    <td><span class="tag ok">${c.main}</span></td><td>${c.ta}</td>
+    <td><span class="tag ${c.cur>=c.max?'w':'ok'}">${c.cur}/${c.max}</span></td>
+    <td><div class="row">
+      <button class="btn sm" onclick="openClassForm(${i})">Sửa</button>
+      <button class="btn sm" onclick="addStudent2(${i})">+ HV</button>
+    </div></td></tr>`).join('');
+}
+
+function openClassForm(idx){
+  const c=idx!=null?CLASSES[idx]:null;
+  const html=`
+    <div class="form-row"><div><label>Mã lớp</label><input id="f_ccode" value="${c?c.code:'LOP-'}"></div><div><label>Hình thức</label><select id="f_ctype"><option ${c&&c.type==='Kèm 1-1'?'selected':''}>Kèm 1-1</option><option ${c&&c.type==='Lớp nhóm'?'selected':''}>Lớp nhóm</option></select></div></div>
+    <div class="form-row"><div><label>Môn · Khối</label><input id="f_csubject" value="${c?c.subject:''}"></div><div><label>Phòng / Địa điểm</label><select id="f_croom">${CATALOG.rooms.map(r=>`<option ${c&&c.room===r?'selected':''}>${r}</option>`).join('')}</select></div></div>
+    <label>Lịch học</label><input id="f_csched" value="${c?c.sched:''}" placeholder="VD: T3, T5 (18:00–20:00)">
+    <div class="form-row"><div><label>Người dạy chính</label><select id="f_cmain"><option value="">— Chưa phân công —</option>${EMPLOYEES.filter(e=>e.role==='Giáo viên'||e.role==='Gia sư').map(e=>`<option ${c&&c.main===e.name?'selected':''}>${e.name}</option>`).join('')}</select></div>
+    <div><label>Trợ giảng</label><select id="f_cta"><option value="—">— Không —</option>${EMPLOYEES.filter(e=>e.role==='Trợ giảng').map(e=>`<option ${c&&c.ta===e.name?'selected':''}>${e.name}</option>`).join('')}</select></div></div>
+    <div class="form-row"><div><label>Sĩ số hiện tại</label><input id="f_ccur" type="number" value="${c?c.cur:0}"></div><div><label>Sĩ số tối đa</label><input id="f_cmax" type="number" value="${c?c.max:1}"></div></div>`;
+  openModal(c?'Sửa lớp học':'Tạo lớp mới',html,'Lưu',()=>{
+    const d={code:$('f_ccode').value,type:$('f_ctype').value,subject:$('f_csubject').value,room:$('f_croom').value,sched:$('f_csched').value,main:$('f_cmain').value,ta:$('f_cta').value,cur:+$('f_ccur').value,max:+$('f_cmax').value};
+    if(!d.code){toast('Vui lòng nhập mã lớp.','err');return}
+    if(c){Object.assign(CLASSES[idx],d);toast('Đã cập nhật lớp '+d.code+'.','ok')}
+    else{CLASSES.push(d);toast('Đã tạo lớp '+d.code+'.','ok')}
+    renderClasses();
+  });
+}
+
+function addStudent2(i){
+  const c=CLASSES[i];
+  if(c.cur>=c.max){toast('Sĩ số lớp '+c.code+' đã đạt tối đa ('+c.max+').','err');return}
+  c.cur++;renderClasses();toast('Đã thêm học viên vào lớp '+c.code+'.','ok');
+}
+
+/* ═══════════════════════════════════════
+   STAFF: Duyệt đơn (3 Tabs)
+   ═══════════════════════════════════════ */
+function renderApproveTabs(){
+  const tabs=['Đơn xin nghỉ','Đơn xin hủy lớp','Đơn xin lớp'];
+  $('approveTabs').innerHTML=tabs.map((t,i)=>`<button class="${i===approveTab?'on':''}" onclick="approveTab=${i};renderApproveTabs()">${t}</button>`).join('');
+
+  const filtered=LEAVES.filter(l=>{
+    if(approveTab===0)return l.type==='nghi';
+    if(approveTab===1)return l.type==='huy_lop';
+    return l.type==='xin_lop';
+  });
+
+  $('approveContent').innerHTML=`<div class="card"><div class="tw"><table>
+    <thead><tr><th>Người gửi</th><th>${approveTab===0?'Buổi học':'Lớp'}</th><th>Lý do</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody>${filtered.length?filtered.map((l,i)=>{
+      const gi=LEAVES.indexOf(l);
+      return `<tr><td><b>${l.who}</b></td><td style="font-size:12px">${l.ses}</td><td style="font-size:12px">${l.reason}</td>
+      <td><span class="tag ${l.st==='cho_duyet'?'w':'ok'}">${l.st==='cho_duyet'?'Chờ duyệt':'Đã duyệt'}</span></td>
+      <td>${l.st==='cho_duyet'?`<div class="row"><button class="btn sm p" onclick="approveLeave(${gi})">Duyệt</button><button class="btn sm danger" onclick="rejectLeave(${gi})">Từ chối</button></div>`:'<span class="tag ok">Đã xử lý</span>'}</td></tr>`;
+    }).join(''):'<tr><td colspan="5" class="empty-state"><p>Không có đơn nào.</p></td></tr>'}</tbody></table></div></div>`;
+}
+
+function approveLeave(i){LEAVES[i].st='da_duyet';renderApproveTabs();toast('Đã duyệt đơn.','ok')}
+function rejectLeave(i){
+  showConfirm('Từ chối đơn','Bạn có chắc muốn từ chối đơn này?',()=>{
+    LEAVES.splice(i,1);renderApproveTabs();toast('Đã từ chối đơn.','ok');
+  },true);
+}
+
+/* ═══════════════════════════════════════
+   STAFF: Học phí
+   ═══════════════════════════════════════ */
+function renderInvoices(){
+  $('invBody').innerHTML=INVOICES.map((inv,i)=>{
+    const remain=inv.must-inv.paid;
+    const stTag=inv.st==='da_tt'?'<span class="tag ok">Đã TT</span>':(inv.paid>0?'<span class="tag w">Một phần</span>':'<span class="tag r">Chưa TT</span>');
+    return `<tr style="${i===selInv?'background:var(--pri-ll)':''}">
+      <td class="mono"><b>${inv.code}</b></td><td><b>${inv.student}</b></td><td style="font-size:12px">${inv.mode}</td>
+      <td>${inv.must.toLocaleString('vi-VN')}đ</td><td><b>${inv.paid.toLocaleString('vi-VN')}đ</b></td>
+      <td>${remain>0?remain.toLocaleString('vi-VN')+'đ':'0đ'}</td>
+      <td>${stTag}</td><td><button class="btn sm" onclick="selInv=${i};renderInvoices()">Chọn</button></td></tr>`;
+  }).join('');
+  const c=INVOICES[selInv];const rem=c.must-c.paid;
+  $('invBanner').innerHTML=`<span>Đang chọn: <b>${c.code}</b> (${c.student}) · Còn: <b>${rem.toLocaleString('vi-VN')}đ</b></span>`;
+  $('payAmt').value=Math.max(0,rem);
+}
+
+function doPayment(){
+  const inv=INVOICES[selInv];const type=$('payTypeSel').value;const amt=+$('payAmt').value;
+  if(type==='thu'){
+    if(inv.paid+amt>inv.must){toast('Số tiền thu vượt quá số phải thu.','err');return}
+    inv.paid+=amt;
+  } else {
+    if(amt>inv.paid){toast('Số tiền hoàn không được vượt quá số đã thu.','err');return}
+    showConfirm('Xác nhận hoàn tiền','Hoàn '+amt.toLocaleString('vi-VN')+'đ cho '+inv.student+'?',()=>{
+      inv.paid-=amt;inv.st=inv.paid>=inv.must?'da_tt':'mot_phan';renderInvoices();
+      toast('Đã hoàn '+amt.toLocaleString('vi-VN')+'đ.','ok');
+    });return;
+  }
+  inv.st=inv.paid>=inv.must?'da_tt':'mot_phan';renderInvoices();
+  toast('Đã ghi nhận thu '+amt.toLocaleString('vi-VN')+'đ.','ok');
+}
+
+/* ═══════════════════════════════════════
+   ADMIN: Chấm công
+   ═══════════════════════════════════════ */
+function renderPayroll(){
+  const hasIssue=PAYROLLS.some(p=>p.st==='chua_co');
+  $('payrollCheckWarn').innerHTML=hasIssue?'<div class="warn-box">⚠ Có nhân sự còn ca dạy chưa check-out.</div>':'<div class="hint">✓ Tất cả nhân sự đã sẵn sàng.</div>';
+  $('payrollBody').innerHTML=PAYROLLS.map((p,i)=>{
+    let stTag='';
+    if(p.st==='san_sang')stTag='<span class="tag ok">Sẵn sàng</span>';
+    else if(p.st==='chua_co')stTag='<span class="tag r">Chưa check-out</span>';
+    else stTag='<span class="tag i">Đã chốt · Khóa</span>';
+    return `<tr><td><b>${p.name}</b></td><td><span class="tag">${p.role}</span></td><td>${p.buoi}</td><td style="font-size:12px">${p.extra}</td><td>${p.mins}</td><td><b>${p.total}</b></td><td>${stTag}</td>
+    <td>${p.locked?`<button class="btn sm danger" onclick="showConfirm('Mở khóa công','Mở khóa bảng công ${p.name}?',()=>{PAYROLLS[${i}].st='san_sang';PAYROLLS[${i}].locked=false;renderPayroll();toast('Đã mở khóa.','ok')})">Mở khóa</button>`
+    :`<button class="btn sm p" onclick="closePayroll(${i})">Chốt công</button>`}</td></tr>`;
+  }).join('');
+}
+
+function closePayroll(i){
+  if(PAYROLLS[i].st==='chua_co'){toast('Chưa thể chốt: còn ca chưa check-out.','err');return}
+  showConfirm('Chốt công tháng','Sau khi chốt, dữ liệu sẽ bị khóa. Tiếp tục?',()=>{
+    PAYROLLS[i].st='da_chot';PAYROLLS[i].locked=true;renderPayroll();
+    toast('Đã chốt công cho '+PAYROLLS[i].name+'.','ok');
+  });
+}
+
+/* ═══════════════════════════════════════
+   TEACH: Dashboard
+   ═══════════════════════════════════════ */
+function renderTeachDash(){
+  const p=curPortal;
+  let html='';
+  if(p==='teacher'){
+    html=`<div class="stats">
+      <div class="st"><div class="n">2</div><span>Ca dạy hôm nay</span></div>
+      <div class="st"><div class="n">14</div><span>Buổi hoàn thành T10</span></div>
+      <div class="st r"><div class="n">0</div><span>Lần check-in trễ</span></div>
+      <div class="st w"><div class="n">4.320.000đ</div><span>Thù lao tạm tính T10</span></div>
+    </div>
+    <div class="g2"><div class="card">
+      <h2>Lịch dạy tuần này</h2>
+      <div class="tw"><table><thead><tr><th>Ngày</th><th>Giờ</th><th>Lớp</th><th>Vai trò</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+        <tr><td><b>T4, 14/10</b></td><td>18:00–20:00</td><td>Toán 9 — Nguyễn Văn A</td><td><span class="tag ok">Dạy chính</span></td><td><span class="tag w">Hôm nay</span></td><td><button class="btn sm p" onclick="showS('teach-session')">Vào ca</button></td></tr>
+        <tr><td>T6, 16/10</td><td>18:00–20:00</td><td>Toán 9 — Nguyễn Văn A</td><td><span class="tag ok">Dạy chính</span></td><td><span class="tag">Sắp tới</span></td><td></td></tr>
+        <tr><td>T7, 17/10</td><td>09:00–11:00</td><td>Tiếng Anh 6 — Nhóm CS1</td><td><span class="tag i">Trợ giảng</span></td><td><span class="tag">Sắp tới</span></td><td></td></tr>
+      </tbody></table></div>
+    </div>
+    <div><div class="card"><h2>Đề xuất nhận lớp mới</h2>
+      <div class="item"><div><b>Vật Lý 11 (YC-002)</b><br><span style="font-size:12px;color:var(--g500)">T2, T6 (19:00–21:00) · 220.000đ/buổi</span></div>
+      <div class="row"><button class="btn sm p" onclick="confirmProp('teacher','dong_y')">Đồng ý</button><button class="btn sm" onclick="confirmProp('teacher','tu_choi')">Từ chối</button></div></div>
+    </div>
+    <div class="card"><h2>Bài tập cần chấm</h2>
+      <div class="item"><span>BT-102 · Hệ PT bậc nhất (2 học viên)</span><button class="btn sm p" onclick="showS('teach-log')">Chấm bài</button></div>
+    </div></div></div>`;
+  } else if(p==='tutor'){
+    html=`<div class="stats">
+      <div class="st"><div class="n">1</div><span>Ca kèm hôm nay</span></div>
+      <div class="st"><div class="n">18</div><span>Buổi hoàn thành T10</span></div>
+      <div class="st r"><div class="n">1</div><span>Lần check-in trễ</span></div>
+      <div class="st w"><div class="n">2.700.000đ</div><span>Thù lao tạm tính T10</span></div>
+    </div>
+    <div class="g2"><div class="card">
+      <h2>Lịch kèm tuần này</h2>
+      <div class="tw"><table><thead><tr><th>Ngày</th><th>Giờ</th><th>Lớp</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+        <tr><td><b>T4, 14/10</b></td><td>19:00–21:00</td><td>Vật Lý 11 — Lê Hoàng Nam</td><td><span class="tag w">Hôm nay</span></td><td><button class="btn sm p" onclick="showS('teach-session')">Vào ca</button></td></tr>
+        <tr><td>T6, 16/10</td><td>19:00–21:00</td><td>Vật Lý 11 — Lê Hoàng Nam</td><td><span class="tag">Sắp tới</span></td><td></td></tr>
+      </tbody></table></div>
+    </div>
+    <div><div class="card"><h2>Cơ hội nhận lớp mới</h2>
+      <div class="item"><div><b>Toán 10 (YC-004)</b><br><span style="font-size:12px;color:var(--g500)">T4, T7 (18:00–20:00) · 220.000đ/buổi · Thủ Đức</span></div>
+      <button class="btn sm p" onclick="showS('teach-recruit')">Xem chi tiết</button></div>
+    </div></div></div>`;
+  } else { // ta
+    html=`<div class="stats">
+      <div class="st"><div class="n">1</div><span>Ca hỗ trợ hôm nay</span></div>
+      <div class="st"><div class="n">12</div><span>Buổi hoàn thành T10</span></div>
+      <div class="st w"><div class="n">1.080.000đ</div><span>Thù lao tạm tính T10</span></div>
+    </div>
+    <div class="card">
+      <h2>Lịch hỗ trợ tuần này</h2>
+      <div class="tw"><table><thead><tr><th>Ngày</th><th>Giờ</th><th>Lớp</th><th>GV chính</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+        <tr><td><b>T7, 17/10</b></td><td>09:00–11:00</td><td>Tiếng Anh 6 — Nhóm CS1</td><td>Lê Văn Cường</td><td><span class="tag w">Sắp tới</span></td><td><button class="btn sm p" onclick="showS('teach-session')">Vào ca</button></td></tr>
+      </tbody></table></div>
+    </div>`;
+  }
+  $('teachDashContent').innerHTML=html;
+}
+
+/* ═══════════════════════════════════════
+   TEACH: Check-in / Check-out
+   ═══════════════════════════════════════ */
+function doCheckin(late){
+  if(late){
+    $('ciTag').textContent='Check-in 18:20 (Trễ)';$('ciTag').style.cssText='background:var(--err);color:#fff';
+    $('gpsTag').textContent='GPS: 10.8505°N, 106.7717°E';$('gpsTag').style.color='var(--g300)';
+    $('lateWarn').style.display='block';$('ciTimeDisp').textContent='18:20 (Trễ 20 phút)';
+    toast('Đã check-in trễ. Hệ thống ghi nhận cảnh báo.','ok');
+  } else {
+    $('ciTag').textContent='Check-in 17:50';$('ciTag').style.cssText='background:var(--ok);color:#fff';
+    $('gpsTag').textContent='GPS: 10.8505°N, 106.7717°E';$('gpsTag').style.color='var(--g300)';
+    $('ciTimeDisp').textContent='17:50';
+    toast('Check-in hợp lệ lúc 17:50 kèm GPS.','ok');
+  }
+  $('ciBtn').textContent='Đã Check-in';$('ciBtn').disabled=true;
+}
+
+function saveSessionLog(){
+  if(curPortal==='ta'){toast('Đã lưu điểm danh.','ok');return}
+  toast('Đã lưu toàn bộ học vụ: nội dung, điểm danh, điểm bài giấy, BTVN.','ok');
+}
+
+function doCheckout(){
+  $('coBtn').textContent='Đã Check-out (127 phút)';$('coBtn').disabled=true;
+  $('coTimeDisp').textContent='20:02';$('realMinsDisp').textContent='127 phút';
+  toast('Đã check-out lúc 20:02. Thực tế: 127 phút.','ok');
+}
+
+/* ═══════════════════════════════════════
+   TEACH: Lớp của tôi
+   ═══════════════════════════════════════ */
+function renderMyClasses(){
+  const p=curPortal;
+  let list=[];
+  if(p==='teacher') list=[
+    {code:'LOP-T9A',subject:'Toán 9',sched:'T3, T5 (18:00–20:00)',role:'Dạy chính',size:'1 HV',st:'Đang chạy'},
+    {code:'LOP-E6G',subject:'TA 6',sched:'T4, T7 (09:00–11:00)',role:'Trợ giảng',size:'11 HV',st:'Đang chạy'}
+  ]; else if(p==='tutor') list=[
+    {code:'LOP-L11B',subject:'Vật Lý 11',sched:'T2, T6 (19:00–21:00)',role:'Gia sư',size:'1 HV',st:'Đang chạy'}
+  ]; else list=[
+    {code:'LOP-E6G',subject:'TA 6',sched:'T4, T7 (09:00–11:00)',role:'Trợ giảng',size:'11 HV',st:'Đang chạy'}
+  ];
+  $('myClassBody').innerHTML=list.map(c=>`<tr>
+    <td class="mono"><b>${c.code}</b></td><td>${c.subject}</td><td>${c.sched}</td>
+    <td><span class="tag ${c.role==='Dạy chính'||c.role==='Gia sư'?'ok':'i'}">${c.role}</span></td>
+    <td>${c.size}</td><td><span class="tag ok">${c.st}</span></td>
+    <td><button class="btn sm" onclick="toast('Xem chi tiết lớp ${c.code}.','ok')">Chi tiết</button></td></tr>`).join('');
+}
+
+/* ═══════════════════════════════════════
+   TEACH: Tuyển / Cơ hội
+   ═══════════════════════════════════════ */
+function renderRecruit(){
+  const p=curPortal;
+  const list=p==='tutor'?RECRUIT_LIST.filter(r=>r.type==='Kèm 1-1'):RECRUIT_LIST;
+  $('recruitBody').innerHTML=list.map((r,i)=>`<tr>
+    <td class="mono"><b>${r.id}</b></td><td>${r.subject}</td><td>${r.type}</td><td>${r.sched}</td><td>${r.area}</td><td><b>${r.fee}</b></td>
+    <td><span class="tag ok">${r.st==='tuyen'?'Đang tuyển':'Đã nhận'}</span></td>
+    <td>${r.st==='tuyen'?`<button class="btn sm p" onclick="applyRecruit(${RECRUIT_LIST.indexOf(r)})">Ứng tuyển</button>`:''}</td></tr>`).join('');
+}
+
+function applyRecruit(i){
+  openModal('Ứng tuyển lớp',`
+    <p style="color:var(--g600);font-size:13px;margin-bottom:12px">Bạn muốn ứng tuyển dạy <b>${RECRUIT_LIST[i].subject}</b> (${RECRUIT_LIST[i].sched})?</p>
+    <label>Lời nhắn cho giáo vụ</label>
+    <textarea id="f_applyMsg" placeholder="Giới thiệu kinh nghiệm, lý do muốn nhận lớp...">Tôi có kinh nghiệm dạy môn này 3 năm.</textarea>
+  `,'Gửi ứng tuyển',()=>{
+    RECRUIT_LIST[i].st='da_nhan';renderRecruit();
+    LEAVES.push({who:PORTALS[curPortal].who,ses:RECRUIT_LIST[i].id+' ('+RECRUIT_LIST[i].subject+')',reason:$('f_applyMsg').value,st:'cho_duyet',type:'xin_lop'});
+    toast('Đã gửi đơn ứng tuyển. Giáo vụ sẽ xem xét.','ok');
+  });
+}
+
+/* ═══════════════════════════════════════
+   TEACH: Bảng công cá nhân
+   ═══════════════════════════════════════ */
+function renderPaysheet(){
+  const name=PORTALS[curPortal]?PORTALS[curPortal].who:'';
+  const pr=PAYROLLS.find(p=>p.name===name)||PAYROLLS[0];
+  $('paysheetStats').innerHTML=`
+    <div class="st"><div class="n">${pr.buoi}</div><span>Số buổi dạy</span></div>
+    <div class="st i"><div class="n">${pr.mins}</div><span>Tổng phút</span></div>
+    <div class="st w"><div class="n">${pr.total}</div><span>Thù lao tạm tính</span></div>
+    <div class="st ${pr.locked?'g':''}">${pr.locked?'<div class="n">Đã chốt</div><span>Trạng thái</span>':'<div class="n">Chờ chốt</div><span>Trạng thái</span>'}</div>`;
+  $('paysheetBody').innerHTML=`
+    <tr><td>29/09</td><td>${curPortal==='tutor'?'Vật Lý 11':'Toán 9'}</td><td class="mono">17:52→20:01</td><td>129</td><td>180.000đ</td><td><span class="tag ok">Đã chốt</span></td></tr>
+    <tr><td>06/10</td><td>${curPortal==='tutor'?'Vật Lý 11':'Toán 9'}</td><td class="mono">17:55→20:00</td><td>125</td><td>180.000đ</td><td><span class="tag ok">OK</span></td></tr>
+    <tr><td>09/10</td><td>${curPortal==='tutor'?'Vật Lý 11':'Toán 9'}</td><td class="mono">17:48→19:58</td><td>130</td><td>180.000đ</td><td><span class="tag ok">OK</span></td></tr>
+    <tr><td>14/10</td><td>${curPortal==='tutor'?'Vật Lý 11':'Toán 9'}</td><td class="mono">17:50→—</td><td>—</td><td>180.000đ</td><td><span class="tag w">Đang dạy</span></td></tr>`;
+}
+
+/* ═══════════════════════════════════════
+   TEACH: Đơn từ (Tabs — 3 or 2 for TA)
+   ═══════════════════════════════════════ */
+function renderReqTabs(){
+  const isTA=curPortal==='ta';
+  const tabs=isTA?['Đơn xin nghỉ','Đơn xin hủy lớp']:['Đơn xin nghỉ','Đơn xin hủy lớp','Đơn xin lớp'];
+  if(reqTab>=tabs.length)reqTab=0;
+  $('reqTabs').innerHTML=tabs.map((t,i)=>`<button class="${i===reqTab?'on':''}" onclick="reqTab=${i};renderReqTabs()">${t}</button>`).join('');
+
+  const types=['nghi','huy_lop','xin_lop'];
+  const myName=PORTALS[curPortal]?PORTALS[curPortal].who:'';
+  const filtered=MY_REQUESTS.filter(r=>r.type===types[reqTab]);
+
+  let formHtml='';
+  if(reqTab===0){
+    formHtml=`<div class="card"><h2>Tạo đơn xin nghỉ mới</h2>
+      <label>Buổi học xin nghỉ</label><select id="f_rqSes"><option>Toán 9 — T6 16/10 (18:00–20:00)</option><option>TA 6 Nhóm — T7 17/10 (09:00–11:00)</option></select>
+      <label>Lý do</label><textarea id="f_rqReason" placeholder="Nhập lý do..."></textarea>
+      <div style="margin-top:14px"><button class="btn p" onclick="submitTeachReq('nghi')">Gửi đơn</button></div></div>`;
+  } else if(reqTab===1){
+    formHtml=`<div class="card"><h2>Tạo đơn xin hủy lớp</h2>
+      <label>Lớp xin hủy</label><select id="f_rqSes"><option>LOP-T9A (Toán 9)</option><option>LOP-E6G (TA 6)</option></select>
+      <label>Lý do</label><textarea id="f_rqReason" placeholder="Nhập lý do..."></textarea>
+      <div style="margin-top:14px"><button class="btn p" onclick="submitTeachReq('huy_lop')">Gửi đơn</button></div></div>`;
+  } else {
+    formHtml=`<div class="card"><h2>Tạo đơn xin lớp</h2>
+      <label>Lớp / Yêu cầu muốn dạy</label><select id="f_rqSes">${RECRUIT_LIST.map(r=>`<option>${r.id} — ${r.subject} (${r.sched})</option>`).join('')}</select>
+      <label>Lý do / Giới thiệu</label><textarea id="f_rqReason" placeholder="Giới thiệu kinh nghiệm..."></textarea>
+      <div style="margin-top:14px"><button class="btn p" onclick="submitTeachReq('xin_lop')">Gửi đơn</button></div></div>`;
+  }
+
+  $('reqContent').innerHTML=`<div class="card"><h2>Đơn đã gửi</h2>
+    <div class="tw"><table><thead><tr><th>Mã đơn</th><th>Ngày gửi</th><th>${reqTab===0?'Buổi học':'Lớp'}</th><th>Lý do</th><th>Trạng thái</th></tr></thead>
+    <tbody>${filtered.length?filtered.map(r=>`<tr><td class="mono"><b>${r.id}</b></td><td>${r.date}</td><td style="font-size:12px">${r.ses}</td><td style="font-size:12px">${r.reason}</td>
+    <td><span class="tag ${r.st==='cho_duyet'?'w':'ok'}">${r.st==='cho_duyet'?'Chờ duyệt':'Đã duyệt'}</span></td></tr>`).join(''):'<tr><td colspan="5" class="empty-state"><p>Chưa có đơn nào.</p></td></tr>'}</tbody></table></div></div>${formHtml}`;
+}
+
+function submitTeachReq(type){
+  const ses=$('f_rqSes')?$('f_rqSes').value:'';
+  const reason=$('f_rqReason')?$('f_rqReason').value:'';
+  if(!reason){toast('Vui lòng nhập lý do.','err');return}
+  MY_REQUESTS.push({id:'DN-'+String(MY_REQUESTS.length+1).padStart(3,'0'),type:type,date:'14/10/2026',ses:ses,reason:reason,st:'cho_duyet'});
+  LEAVES.push({who:PORTALS[curPortal].who,ses:ses,reason:reason,st:'cho_duyet',type:type});
+  renderReqTabs();renderApproveTabs();
+  toast('Đã gửi đơn thành công.','ok');
+}
+
+/* ═══════════════════════════════════════
+   PARENT: Helpers
+   ═══════════════════════════════════════ */
+function drawKid(){
+  const chips=(cid)=>Object.entries(KIDS).map(([i,v])=>`<button class="chip ${+i===curKid?'on':''}" onclick="curKid=${i};drawKid()">${v.n}</button>`).join('');
+  if($('kidChips'))$('kidChips').innerHTML=chips('kidChips');
+  if($('kidChips2'))$('kidChips2').innerHTML=chips('kidChips2');
+  if($('kidChips3'))$('kidChips3').innerHTML=chips('kidChips3');
+
+  const k=KIDS[curKid];
+  if($('pTopic'))$('pTopic').textContent=k.t;
+  if($('pDesc'))$('pDesc').textContent=k.d;
+  if($('pArr'))$('pArr').textContent=k.a;
+  if($('pHw'))$('pHw').textContent=k.hw;
+  if($('pDue'))$('pDue').textContent=k.due;
+  if($('pL1'))$('pL1').textContent=k.l1;
+  if($('pL2'))$('pL2').textContent=k.l2;
+  if($('pFee'))$('pFee').textContent=k.f;
+  if($('pPaid'))$('pPaid').textContent=k.p;
+  if($('pLeft'))$('pLeft').textContent=k.lf;
+
+  // Results
+  if($('pResults'))$('pResults').innerHTML=k.r.map(x=>`<tr><td><b>${x[0]}</b></td><td><span class="tag ${x[2]}">${x[1]}</span></td><td><b>${x[3]}</b></td><td style="font-size:12px">${x[4]}</td></tr>`).join('');
+
+  // Homework list
+  if($('pHwList'))$('pHwList').innerHTML=`
+    <div class="item"><div><b>${k.hw}</b><br><span style="font-size:12px;color:var(--g500)">Hạn: ${k.due}</span></div><span class="tag w">Chưa nộp</span></div>`;
+
+  // Schedule
+  if($('pSchedule'))$('pSchedule').innerHTML=`
+    <div class="item"><div><b>${k.l1}</b><br><span style="font-size:12px;color:var(--g500)">Buổi kế tiếp</span></div><span class="tag w">Sắp tới</span></div>
+    <div class="item"><div><b>${k.l2}</b><br><span style="font-size:12px;color:var(--g500)">Buổi sau</span></div><span class="tag">Lên lịch</span></div>`;
+
+  // Parent billing
+  if($('pBillBody')){
+    const inv=curKid===1?INVOICES[0]:INVOICES[1];
+    if(inv){
+      const rem=inv.must-inv.paid;
+      $('pBillBody').innerHTML=`<tr><td class="mono"><b>${inv.code}</b></td><td>T10/2026</td><td>${inv.must.toLocaleString('vi-VN')}đ</td><td>${inv.paid.toLocaleString('vi-VN')}đ</td>
+      <td>${rem>0?rem.toLocaleString('vi-VN')+'đ':'0đ'}</td><td><span class="tag ${rem>0?'w':'ok'}">${rem>0?'Còn nợ':'Đã TT'}</span></td></tr>`;
+    }
+  }
+}
+
+function submitLeaveParent(){
+  const reason=$('pLeaveReason')?$('pLeaveReason').value:'';
+  if(!reason){toast('Vui lòng nhập lý do.','err');return}
+  LEAVES.unshift({who:'PH '+PORTALS.parent.who+' (cho '+KIDS[curKid].n+')',ses:$('pLeaveSes').value,reason:reason,st:'cho_duyet',type:'nghi'});
+  renderApproveTabs();toast('Đã gửi đơn xin nghỉ cho con.','ok');
+}
+
+/* ═══════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════ */
+renderStaff();renderCatalog();renderPerms();renderRequests();runMatch();renderProposals();renderCreateClass();
+renderStudents();renderClasses();renderApproveTabs();renderPayroll();renderInvoices();drawKid();
+setPortal('admin');
+</script>
+</body>
+</html>

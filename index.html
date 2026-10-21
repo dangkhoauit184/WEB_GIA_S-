@@ -1,0 +1,3512 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EduCenter ERP — Hệ thống Quản lý Đào tạo & Gia sư Chuẩn hóa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pri:#0d9488;--pri-d:#115e4e;--pri-dd:#0c4a3e;--pri-l:#ccfbf1;--pri-ll:#f0fdfa;
+  --g950:#0a0a0a;--g900:#171717;--g800:#262626;--g700:#404040;--g600:#525252;--g500:#737373;--g400:#a3a3a3;--g300:#d4d4d4;--g200:#e5e5e5;--g100:#f5f5f5;--g50:#fafafa;--w:#fff;
+  --ok:#059669;--ok-l:#d1fae5;--ok-ll:#ecfdf5;--warn:#d97706;--warn-l:#fef3c7;--warn-ll:#fffbeb;--err:#dc2626;--err-l:#fee2e2;--err-ll:#fef2f2;--info:#2563eb;--info-l:#dbeafe;--info-ll:#eff6ff;--purple:#7c3aed;--purple-l:#ede9fe;
+  --side-w:260px;--r:8px;--rs:6px;--rl:12px;
+  --sh:0 1px 3px rgba(0,0,0,.05);--sh-hover:0 10px 15px -3px rgba(13,148,136,.08);--sh-modal:0 20px 25px -5px rgba(0,0,0,.15);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--g900);background:var(--g100);line-height:1.5;-webkit-font-smoothing:antialiased}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.8rem}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+
+/* Layout */
+.app{display:grid;grid-template-columns:var(--side-w) 1fr;min-height:100vh}
+
+/* Sidebar */
+.side{background:var(--g900);color:var(--g400);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:30}
+.side::-webkit-scrollbar{width:3px}.side::-webkit-scrollbar-thumb{background:var(--g700);border-radius:3px}
+.brand{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--g800)}
+.brand-icon{width:32px;height:32px;border-radius:var(--rs);background:var(--pri);color:var(--w);display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0}
+.brand b{font-size:14px;color:var(--w)}.brand small{display:block;font-size:10px;color:var(--g500);margin-top:1px}
+.side-user{margin:10px 10px 6px;padding:10px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.05)}
+.side-user .su-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:3px;background:var(--pri-d);color:var(--pri-l);display:inline-block;margin-bottom:4px}
+.side-user .su-name{font-weight:600;color:var(--w);font-size:13px}
+.side-user .su-route{font-size:10px;color:var(--g500);margin-top:1px;font-family:'JetBrains Mono',monospace}
+.nav-group{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--g600);padding:14px 16px 4px;font-weight:600}
+.side nav{display:flex;flex-direction:column;gap:1px;padding:0 8px;flex:1;overflow-y:auto}
+.side nav button{background:0;border:0;color:var(--g400);text-align:left;padding:8px 12px;border-radius:var(--rs);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;transition:background .1s,color .1s;width:100%}
+.side nav button .nav-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+.side nav button:hover{background:rgba(255,255,255,.06);color:var(--g200)}
+.side nav button.on{background:var(--pri-d);color:var(--w);font-weight:600}
+.side-foot{margin-top:auto;padding:10px 14px;border-top:1px solid var(--g800);font-size:11px;color:var(--g600)}
+
+/* Topbar */
+.main-wrap{display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--w);border-bottom:1px solid var(--g200);padding:0 20px;height:52px;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+.seg{display:flex;background:var(--g100);border-radius:var(--rs);padding:2px;gap:1px;flex-wrap:wrap}
+.seg button{border:0;background:0;padding:5px 11px;border-radius:5px;color:var(--g600);font-weight:500;font-size:12px;white-space:nowrap;transition:all .1s}
+.seg button:hover{color:var(--g900)}.seg button.on{background:var(--w);color:var(--g900);font-weight:600;box-shadow:var(--sh)}
+.top-r{display:flex;align-items:center;gap:8px}
+.top-r .perm{font-size:11px;color:var(--pri-d);background:var(--pri-ll);border:1px solid var(--pri-l);padding:4px 10px;border-radius:99px;font-weight:500;white-space:nowrap}
+.bell-btn{position:relative;background:var(--w);border:1px solid var(--g200);border-radius:var(--rs);padding:6px 10px;font-size:13px;color:var(--g700);transition:border-color .1s}
+.bell-btn:hover{border-color:var(--g300)}.bell-btn b{position:absolute;top:-5px;right:-5px;background:var(--err);color:var(--w);border-radius:99px;font-size:9px;min-width:16px;height:16px;display:grid;place-items:center}
+.acct-btn{background:var(--pri-d);color:var(--w);border:0;border-radius:99px;width:30px;height:30px;font-weight:700;font-size:12px;display:grid;place-items:center}
+
+/* Main Content */
+.main{padding:20px 24px 56px;max-width:1420px;width:100%;margin:0 auto}
+.screen{display:none}.screen.active{display:block;animation:fin .15s ease-out}
+@keyframes fin{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Typography */
+.pg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+h1{font-size:1.25rem;font-weight:700;line-height:1.3;letter-spacing:-.01em}
+.sub{color:var(--g500);margin-top:2px;font-size:13px}
+h2{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* Cards */
+.card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rl);padding:18px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
+.st{background:var(--w);border:1px solid var(--g200);border-radius:var(--rl);padding:14px 16px;position:relative}
+.st::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--pri)}
+.st .n{font-size:1.4rem;font-weight:700;line-height:1.2;margin-bottom:1px}.st span{color:var(--g500);font-size:12px}
+.st.w::before{background:var(--warn)}.st.r::before{background:var(--err)}.st.i::before{background:var(--info)}.st.g::before{background:var(--ok)}.st.p::before{background:var(--purple)}
+
+.g2{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
+.g2eq{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.g3{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}
+
+/* Buttons */
+.btn{border:1px solid var(--g200);background:var(--w);color:var(--g700);padding:7px 14px;border-radius:var(--rs);font-weight:500;font-size:13px;display:inline-flex;align-items:center;gap:5px;transition:all .1s;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--g50);border-color:var(--g300)}
+.btn.p{background:var(--pri);border-color:var(--pri);color:var(--w)}.btn.p:hover:not(:disabled){background:var(--pri-d)}
+.btn.dark{background:var(--g900);border-color:var(--g900);color:var(--w)}.btn.dark:hover:not(:disabled){background:var(--g800)}
+.btn.danger{background:var(--err-ll);border-color:var(--err-l);color:var(--err)}.btn.danger:hover:not(:disabled){background:var(--err-l)}
+.btn.warn{background:var(--warn-ll);border-color:var(--warn-l);color:var(--warn)}
+.btn.purple{background:var(--purple-l);border-color:#ddd6fe;color:var(--purple)}
+.btn.sm{padding:4px 10px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-group{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Tables */
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--g100);vertical-align:middle;font-size:13px}
+th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--g500);background:var(--g50);border-bottom-color:var(--g200);white-space:nowrap}
+tr:last-child td{border-bottom:0}tbody tr{transition:background .08s}tbody tr:hover{background:var(--g50)}
+.tw{overflow-x:auto}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:600;background:var(--g100);color:var(--g600);white-space:nowrap}
+.tag.ok{background:var(--ok-l);color:var(--ok)}.tag.w{background:var(--warn-l);color:var(--warn)}.tag.r{background:var(--err-l);color:var(--err)}.tag.i{background:var(--info-l);color:var(--info)}.tag.purple{background:var(--purple-l);color:var(--purple)}
+
+/* Forms & UI elements */
+label{display:block;font-size:12px;font-weight:600;color:var(--g700);margin:8px 0 4px}
+input,select,textarea{width:100%;padding:7px 10px;border:1px solid var(--g200);border-radius:var(--rs);background:var(--w);color:var(--g900);font-size:13px}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--pri);box-shadow:0 0 0 2px var(--pri-l)}
+.row{display:flex;align-items:center;gap:8px}.row-b{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--g100);font-size:13px}
+.item:last-child{border-bottom:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:4px 10px;border-radius:99px;border:1px solid var(--g200);background:var(--w);font-size:12px;cursor:pointer;color:var(--g600)}
+.chip.on{background:var(--pri-d);border-color:var(--pri-d);color:var(--w);font-weight:600}
+.warn-box{background:var(--warn-ll);border:1px solid var(--warn-l);color:var(--warn);padding:10px 14px;border-radius:var(--rs);font-size:12.5px;margin-bottom:12px}
+.hint{background:var(--g50);border:1px solid var(--g200);border-radius:var(--rs);padding:8px 12px;font-size:12px;color:var(--g600);margin-bottom:10px}
+.banner{background:linear-gradient(135deg,var(--pri-dd),var(--pri-d));color:var(--w);padding:18px 20px;border-radius:var(--rl);display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}
+.banner .time{font-size:1.5rem;font-weight:700;color:var(--pri-l)}
+
+/* ══════════════════════════════════════════════════
+   CALENDAR COMPONENT STYLING
+   ══════════════════════════════════════════════════ */
+.cal-box{background:var(--w);border:1px solid var(--g200);border-radius:var(--rl);overflow:hidden;margin-bottom:14px}
+.cal-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--g200);background:var(--w);gap:10px;flex-wrap:wrap}
+.cal-filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:12.5px}
+.cal-filter-bar select{width:auto;min-width:130px;padding:5px 8px;font-size:12px}
+.cal-nav-btn{display:inline-flex;align-items:center;gap:4px;color:var(--pri-d);font-size:13px;font-weight:600;padding:5px 10px;border-radius:var(--rs);border:1px solid var(--g200);background:var(--w);transition:all .1s}
+.cal-nav-btn:hover{background:var(--pri-ll);border-color:var(--pri-l)}
+.cal-range-btn{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--g900);padding:5px 12px;border-radius:var(--rs);border:0;background:0;cursor:pointer}
+.cal-range-btn:hover{background:var(--g100)}
+
+.cal-week-grid{display:flex;width:100%;overflow-x:auto}
+.cal-day-col{display:flex;flex-direction:column;min-width:155px;flex:1;border-right:1px solid var(--g200);background:var(--w);transition:background .1s}
+.cal-day-col:last-child{border-right:none}
+.cal-day-col.is-today{background:var(--pri-ll)}
+
+.cal-col-head{padding:10px 8px;text-align:center;background:var(--g50);color:var(--g700);border-bottom:1px solid var(--g200)}
+.cal-col-head.is-today{background:var(--pri-d);color:var(--w);border-bottom:none}
+.cal-col-head .d-name{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:inherit;margin-bottom:2px}
+.cal-col-head.is-today .d-name{color:var(--pri-l)}
+.cal-col-head .d-num{font-size:13.5px;font-weight:700}
+.cal-col-head .d-today-badge{font-size:9.5px;font-weight:600;margin-top:1px;color:var(--pri-l)}
+
+.cal-col-body{flex:1;min-height:220px;padding:8px 6px;display:flex;flex-direction:column;gap:6px;position:relative}
+.cal-col-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--g300);font-size:16px}
+
+.ses-card{background:var(--info-ll);border:1px solid var(--info-l);border-radius:var(--rs);padding:8px 10px;text-align:left;cursor:pointer;transition:transform .1s,box-shadow .1s;position:relative;user-select:none}
+.ses-card:hover{transform:translateY(-2px);box-shadow:var(--sh-hover)}
+.ses-card.completed{background:var(--g100);border-color:var(--g200)}
+.ses-card.completed .sc-code{color:var(--g600)}
+.ses-card.cancelled{background:var(--err-ll);border-color:var(--err-l)}
+.ses-card.cancelled .sc-code{text-decoration:line-through;color:var(--err)}
+.ses-card.makeup{background:var(--purple-l);border-color:#ddd6fe}
+.ses-card.makeup .sc-code{color:var(--purple)}
+
+.sc-code{font-size:12.5px;font-weight:700;color:var(--info);line-height:1.2;margin-bottom:2px}
+.sc-subj{font-size:11.5px;font-weight:600;color:var(--g700);line-height:1.2;margin-bottom:3px}
+.sc-time{font-size:11px;font-weight:500;color:var(--g600);line-height:1.2;margin-bottom:3px}
+.sc-loc{display:flex;align-items:center;gap:3px;font-size:10.5px;font-weight:500;color:var(--g500)}
+
+.cal-month-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--g50);border-bottom:1px solid var(--g200)}
+.cal-month-head-cell{padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--g500);border-right:1px solid var(--g200)}
+.cal-month-head-cell:last-child{border-right:none}
+.cal-month-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-month-cell{min-height:100px;background:var(--w);border-right:1px solid var(--g200);border-bottom:1px solid var(--g200);padding:6px;display:flex;flex-direction:column;gap:3px;position:relative}
+.cal-month-cell.is-today{background:var(--pri-ll)}
+.cal-month-cell.other-month{background:var(--g50);opacity:.5}
+.cal-m-chip{display:flex;align-items:center;gap:3px;padding:2px 5px;border-radius:3px;background:var(--info-ll);color:var(--info);border:1px solid var(--info-l);font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.cal-m-chip.completed{background:var(--g100);color:var(--g600);border-color:var(--g200)}
+.cal-m-chip.cancelled{background:var(--err-ll);color:var(--err);border-color:var(--err-l);text-decoration:line-through}
+.cal-m-chip.makeup{background:var(--purple-l);color:var(--purple);border-color:#ddd6fe}
+
+/* Charts & Wizard */
+.bars{display:flex;align-items:flex-end;gap:14px;height:130px;padding:12px 6px 26px}
+.bars i{flex:1;background:var(--pri-d);border-radius:4px 4px 0 0;position:relative;min-width:28px;transition:opacity .1s}
+.bars i:hover{opacity:.85}.bars i:last-child{background:var(--pri)}
+.bars i::after{content:attr(data-m);position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:10px;font-weight:500;color:var(--g500)}
+.bars i::before{content:attr(data-v);position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:10px;font-weight:600;color:var(--g700)}
+
+.wf{display:flex;align-items:center;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.ws{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--rs);background:var(--w);border:1px solid var(--g200);font-size:12px;font-weight:500;color:var(--g500);cursor:pointer;white-space:nowrap}
+.ws.on{background:var(--pri-d);border-color:var(--pri-d);color:var(--w);font-weight:600}
+.wa{color:var(--g300);font-size:12px}
+
+/* Modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;z-index:100;place-items:center;padding:16px}
+.modal-ov.show{display:grid}
+.modal-box{background:var(--w);border-radius:var(--rl);padding:22px;max-width:640px;width:95%;box-shadow:var(--sh-modal);max-height:88vh;overflow-y:auto}
+.modal-box h3{font-size:16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.modal-act{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--g200);flex-wrap:wrap}
+
+/* Notif & Toast */
+.notif-panel{position:fixed;top:0;right:-380px;width:380px;height:100vh;background:var(--w);border-left:1px solid var(--g200);z-index:50;transition:right .2s ease;display:flex;flex-direction:column}
+.notif-panel.open{right:0}.np-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--g200)}
+.np-head h3{font-size:15px}.np-close{background:0;border:0;font-size:18px;color:var(--g500);padding:4px}
+.np-list{flex:1;overflow-y:auto}.np-item{padding:12px 16px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .08s}
+.np-item:hover{background:var(--g50)}.np-item.unread{background:var(--pri-ll);border-left:3px solid var(--pri)}
+.np-item b{font-size:13px;display:block;margin-bottom:2px}.np-item p{font-size:12px;color:var(--g500);margin:0}.np-item time{font-size:11px;color:var(--g400)}
+
+.toast{position:fixed;bottom:16px;right:20px;background:var(--g900);color:var(--w);padding:12px 18px;border-radius:var(--r);display:none;max-width:400px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.2);border-left:3px solid var(--pri)}
+.api-bar{position:fixed;bottom:0;left:var(--side-w);right:0;background:var(--g900);color:var(--g400);padding:5px 20px;font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:30;border-top:1px solid var(--g800)}
+.api-bar .m{background:var(--ok);color:var(--w);font-family:'JetBrains Mono',monospace;font-weight:600;padding:1px 6px;border-radius:3px;font-size:10px}
+
+@media(max-width:1024px){.g2,.g2eq,.g3{grid-template-columns:1fr}}
+@media(max-width:768px){
+  :root{--side-w:0px}.app{grid-template-columns:1fr}
+  .side{position:fixed;left:-280px;width:280px;transition:left .2s;z-index:40}.side.open{left:0}
+  .mob-toggle{display:block!important}.main{padding:16px 14px 52px}.api-bar{left:0}
+  .quick-grid{grid-template-columns:repeat(2,1fr)!important}
+}
+
+/* ═══════════════════════════════════════
+   LOGIN SCREEN & AUTH STYLES
+   ═══════════════════════════════════════ */
+.login-page{position:fixed;inset:0;background:radial-gradient(circle at 15% 20%, rgba(13,148,136,.22) 0%, transparent 45%), radial-gradient(circle at 85% 80%, rgba(59,130,246,.18) 0%, transparent 45%), #0f172a;display:none;place-items:center;padding:20px;z-index:999;overflow-y:auto}
+.login-page.show{display:grid}
+.login-card{background:var(--w);border-radius:18px;max-width:540px;width:100%;padding:32px 36px;box-shadow:0 25px 60px -15px rgba(0,0,0,.4);margin:auto;border:1px solid rgba(255,255,255,.2)}
+.login-head{text-align:center;margin-bottom:20px}
+.login-head h2{font-size:22px;color:var(--g900);margin:0 0 4px;font-weight:700}
+.login-head p{font-size:13px;color:var(--g500);margin:0}
+.login-tag{display:inline-block;background:var(--pri-ll);color:var(--pri-d);font-size:11px;font-weight:600;padding:3px 12px;border-radius:20px;margin-top:8px}
+
+.quick-login-box{background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:14px;margin-bottom:18px}
+.quick-title{font-size:12px;font-weight:700;color:var(--g700);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.quick-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:8px}
+.quick-btn{background:var(--w);border:1px solid var(--g200);border-radius:var(--rs);padding:8px 10px;text-align:left;cursor:pointer;transition:all .15s ease}
+.quick-btn:hover{border-color:var(--pri);background:var(--pri-ll);transform:translateY(-1px);box-shadow:0 3px 6px rgba(0,0,0,.06)}
+.quick-btn .q-role{font-size:11px;font-weight:700;color:var(--pri-d);display:block}
+.quick-btn .q-name{font-size:11px;color:var(--g600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+
+.login-divider{display:flex;align-items:center;text-align:center;margin:16px 0;color:var(--g400);font-size:12px}
+.login-divider::before, .login-divider::after{content:'';flex:1;border-bottom:1px solid var(--g200)}
+.login-divider span{padding:0 10px}
+
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--g700);margin-bottom:5px}
+.pwd-wrapper{position:relative}
+.pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:0;border:0;cursor:pointer;font-size:14px;padding:4px;color:var(--g500)}
+.login-rem{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--g600);margin-bottom:16px}
+.login-rem a{color:var(--pri);text-decoration:none;font-weight:500}
+.login-rem a:hover{text-decoration:underline}
+.login-hint{margin-top:16px;text-align:center;font-size:11.5px;color:var(--g600);background:var(--pri-ll);padding:8px 12px;border-radius:var(--rs)}
+
+/* Form Validation Styles */
+input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)!important;background-color:#fef2f2!important;box-shadow:0 0 0 2px rgba(239,68,68,.15)!important}
+.field-error{display:none;font-size:11px;color:var(--err);font-weight:600;margin-top:4px}
+.field-error.show{display:block}
+
+/* User Account Dropdown */
+.user-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:220px;background:var(--w);border:1px solid var(--g200);border-radius:var(--r);box-shadow:0 12px 28px rgba(0,0,0,.12);padding:8px;display:none;z-index:90}
+.user-dropdown.show{display:block}
+.ud-info{padding:8px 10px;background:var(--g50);border-radius:var(--rs);margin-bottom:6px}
+.ud-info b{font-size:13px;display:block;color:var(--g800)}
+.ud-item{width:100%;text-align:left;background:0;border:0;padding:8px 10px;font-size:12.5px;color:var(--g700);border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+.ud-item:hover{background:var(--g100)}
+.ud-item.danger{color:var(--err)}
+.ud-item.danger:hover{background:#fef2f2}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     LOGIN SCREEN (AUTH PORTAL)
+     ═══════════════════════════════════════ -->
+<div id="loginScreen" class="login-page">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="brand-icon" style="width:48px;height:48px;font-size:24px;margin:0 auto 10px">E</div>
+      <h2>EduCenter ERP</h2>
+      <p>Hệ thống Quản trị Trung tâm Gia sư &amp; Đào tạo</p>
+      <div class="login-tag">Đồ án Phát triển Ứng dụng Web</div>
+    </div>
+
+    <!-- Quick Login for Evaluator / Instructors -->
+    <div class="quick-login-box">
+      <div class="quick-title">⚡ Đăng nhập nhanh 1-chạm (Dành cho Giảng viên &amp; Hội đồng)</div>
+      <div class="quick-grid">
+        <button type="button" class="quick-btn" onclick="quickLogin('admin')" title="Đăng nhập vai trò Admin">
+          <span class="q-role">Admin</span>
+          <span class="q-name">Trần Quang Huy</span>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('staff')" title="Đăng nhập vai trò Giáo vụ">
+          <span class="q-role">Giáo vụ</span>
+          <span class="q-name">Lê Thị Mai</span>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('teacher')" title="Đăng nhập vai trò Giáo viên">
+          <span class="q-role">Giáo viên</span>
+          <span class="q-name">Nguyễn Minh Anh</span>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('tutor')" title="Đăng nhập vai trò Gia sư">
+          <span class="q-role">Gia sư 1:1</span>
+          <span class="q-name">Trần Quốc Bảo</span>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('ta')" title="Đăng nhập vai trò Trợ giảng">
+          <span class="q-role">Trợ giảng</span>
+          <span class="q-name">Phạm Gia Huy</span>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('parent')" title="Đăng nhập vai trò Phụ huynh">
+          <span class="q-role">Phụ huynh</span>
+          <span class="q-name">Nguyễn Thị Hoa</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="login-divider"><span>hoặc đăng nhập bằng tài khoản</span></div>
+
+    <!-- Standard Login Form -->
+    <form id="loginForm" onsubmit="handleFormLogin(event)">
+      <div class="form-group">
+        <label>Tên đăng nhập hoặc Email <span style="color:var(--err)">*</span></label>
+        <input type="text" id="loginUsername" placeholder="VD: admin hoặc mai.lt@edu.vn" value="admin" required>
+        <span class="field-error" id="err-loginUsername"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Mật khẩu <span style="color:var(--err)">*</span></label>
+        <div class="pwd-wrapper">
+          <input type="password" id="loginPassword" placeholder="Nhập mật khẩu (demo: 123456)" value="123456" required>
+          <button type="button" class="pwd-toggle" onclick="togglePwdVisibility('loginPassword')">👁️</button>
+        </div>
+        <span class="field-error" id="err-loginPassword"></span>
+      </div>
+
+      <div class="login-rem">
+        <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="rememberMe" checked> Ghi nhớ đăng nhập
+        </label>
+        <a href="javascript:void(0)" onclick="toast('Tài khoản demo có mật khẩu chung là: 123456','info')">Quên mật khẩu?</a>
+      </div>
+
+      <button type="submit" class="btn p full" style="padding:10px;font-size:14px;font-weight:600">Đăng nhập hệ thống</button>
+    </form>
+
+    <div class="login-hint">
+      💡 Gợi ý: Bấm các nút <b>⚡ Đăng nhập nhanh</b> ở trên để trải nghiệm ngay từng phân hệ nghiệp vụ.
+    </div>
+  </div>
+</div>
+
+<div class="app" id="appRoot">
+
+<!-- ═══════════════════════════════════════
+     SIDEBAR
+     ═══════════════════════════════════════ -->
+<aside class="side" id="sidebar">
+  <div class="brand"><div class="brand-icon">E</div><div><b>EduCenter ERP</b><small>Quản trị Trung tâm Gia sư</small></div></div>
+  <div class="side-user">
+    <span class="su-role" id="sRole">Quản trị viên</span>
+    <div class="su-name" id="sName">Trần Quang Huy</div>
+    <div class="su-route" id="sRoute">/admin</div>
+  </div>
+  <div class="nav-group">Chức năng phân hệ</div>
+  <nav id="nav"></nav>
+  <div class="side-foot">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span>© EduCenter 2026</span>
+      <button class="btn sm" style="background:rgba(255,255,255,.08);border-color:transparent;color:var(--g400)" onclick="handleLogout()">Đăng xuất</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════
+     MAIN WRAPPER & TOPBAR
+     ═══════════════════════════════════════ -->
+<div class="main-wrap">
+<header class="topbar">
+  <div class="row">
+    <button class="btn sm mob-toggle" style="display:none" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+    <span style="font-size:11px;font-weight:600;color:var(--g500);white-space:nowrap">Tác nhân:</span>
+    <div class="seg" id="seg"></div>
+  </div>
+  <div class="top-r">
+    <span class="perm" id="permLbl">Toàn quyền hệ thống</span>
+    <button class="bell-btn" onclick="toggleNotif()">🔔 <b id="nCount">3</b></button>
+    <div style="position:relative">
+      <button class="acct-btn" id="acctBtn" onclick="toggleUserDropdown()" title="Menu tài khoản">H</button>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="ud-info">
+          <b id="udName">Trần Quang Huy</b>
+          <span id="udRole" style="font-size:11px;color:var(--pri-d);font-weight:600;display:block;margin-top:2px">Quản trị viên</span>
+        </div>
+        <button class="ud-item" onclick="resetDemoData();toggleUserDropdown()">🔄 Đặt lại dữ liệu mẫu</button>
+        <div style="border-top:1px solid var(--g200);margin:4px 0"></div>
+        <button class="ud-item danger" onclick="handleLogout();toggleUserDropdown()">🚪 Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+<!-- ══════════════════════════════════════════════════════════════════
+     1. PHÂN HỆ QUẢN TRỊ VIÊN (ADMIN)
+     Phạm vi: Quản lý tài khoản, phân quyền, cấu hình, thống kê, phê duyệt ngoại lệ
+     ══════════════════════════════════════════════════════════════════ -->
+
+<!-- ADMIN: Dashboard & Thống kê toàn chuỗi -->
+<section class="screen" id="admin-dash">
+  <div class="pg-head">
+    <div>
+      <h1>Tổng quan quản trị cấp cao</h1>
+      <p class="sub">Tháng 10/2026 · Thống kê doanh thu, tiến độ và vận hành toàn hệ thống</p>
+    </div>
+    <button class="btn p sm" onclick="showS('admin-schedule')">📊 Xem Báo cáo Lịch toàn chuỗi</button>
+  </div>
+
+  <div class="stats">
+    <div class="st"><div class="n">128</div><span>Học viên đang học</span></div>
+    <div class="st"><div class="n">56</div><span>Người dạy hoạt động</span></div>
+    <div class="st i"><div class="n">94</div><span>Lớp đang vận hành</span></div>
+    <div class="st w"><div class="n">412.5 tr</div><span>Doanh thu thực thu T10</span></div>
+  </div>
+
+  <div class="g2">
+    <div>
+      <div class="card">
+        <h2>Doanh thu toàn chuỗi 4 tháng gần nhất</h2>
+        <div class="bars">
+          <i style="height:52%" data-m="T7" data-v="245tr"></i>
+          <i style="height:68%" data-m="T8" data-v="310tr"></i>
+          <i style="height:84%" data-m="T9" data-v="368tr"></i>
+          <i style="height:100%" data-m="T10" data-v="412tr"></i>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Cần phê duyệt ngoại lệ quan trọng</h2>
+        <div class="item"><span>Yêu cầu mở khóa bảng công tháng 9 (Phạm Gia Huy)</span><button class="btn sm purple" onclick="showS('admin-exceptions')">Xem xét</button></div>
+        <div class="item"><span>Đề xuất xóa lớp học LOP-OLD99</span><button class="btn sm danger" onclick="showS('admin-exceptions')">Xem xét</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Hoạt động gần đây</h2>
+      <div class="item"><div><b>Lê Thị Mai (Giáo vụ)</b><br><span style="font-size:12px;color:var(--g500)">Chốt công tháng T10 đợt 1</span></div><span class="tag ok">Chốt công</span></div>
+      <div class="item"><div><b>Trần Quang Huy (Admin)</b><br><span style="font-size:12px;color:var(--g500)">Cập nhật cấu hình giờ check-in</span></div><span class="tag i">Cấu hình</span></div>
+      <div class="item"><div><b>Nguyễn Minh Anh (GV)</b><br><span style="font-size:12px;color:var(--g500)">Gửi đơn xin đổi lịch dạy ca T5</span></div><span class="tag w">Đơn từ</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ADMIN: Tài khoản & Nhân sự -->
+<section class="screen" id="admin-staff">
+  <div class="pg-head">
+    <div><h1>Nhân sự &amp; Quản lý tài khoản</h1><p class="sub">Quản lý tài khoản Ban giám đốc, Giáo vụ, Kế toán, Giáo viên, Gia sư, Trợ giảng</p></div>
+    <button class="btn p" onclick="openStaffForm()">+ Thêm tài khoản mới</button>
+  </div>
+  <div class="card">
+    <div class="row-b" style="margin-bottom:12px">
+      <div class="row"><input placeholder="Tìm kiếm theo tên, email..." style="width:260px"><select style="width:150px"><option>Tất cả vai trò</option><option>Admin</option><option>Nhân viên</option><option>Giáo viên</option><option>Gia sư</option><option>Trợ giảng</option></select></div>
+      <span style="font-size:12px;color:var(--g500)" id="staffCount"></span>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Họ tên</th><th>Email</th><th>SĐT</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody id="staffRows"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ADMIN: Phân quyền 9 Phân hệ (RBAC) -->
+<section class="screen" id="admin-perms">
+  <div class="pg-head">
+    <div><h1>Phân quyền 9 Phân hệ (ROLE_GROUP_FUNCTION)</h1><p class="sub">Kiểm soát chi tiết 5 cờ quyền (Xem, Thêm, Sửa, Xóa, Tải xuống) cho từng nhóm tác nhân</p></div>
+    <button class="btn p" onclick="toast('Đã lưu cấu hình phân quyền RBAC thành công!','ok')">Lưu phân quyền</button>
+  </div>
+  <div class="card" style="padding:12px 16px;margin-bottom:14px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:600;color:var(--g600)">Chọn nhóm người dùng:</span>
+      <div class="chips" id="permRoleTabs"></div>
+    </div>
+  </div>
+  <div class="row-b" style="margin-bottom:10px">
+    <span style="font-size:12px;color:var(--g500)" id="permRoleLabel"></span>
+    <div class="row">
+      <button class="btn sm" onclick="permBatch(1)">Cấp tất cả</button>
+      <button class="btn sm" onclick="permBatch(0)">Bỏ tất cả</button>
+    </div>
+  </div>
+  <div id="permCards"></div>
+</section>
+
+<!-- ADMIN: Danh mục & Cấu hình hệ thống -->
+<section class="screen" id="admin-catalog">
+  <div class="pg-head">
+    <div><h1>Danh mục &amp; Cấu hình hệ thống</h1><p class="sub">Cấu hình môn học, phòng học, cơ sở, khối lớp và tham số vận hành</p></div>
+  </div>
+  <div class="tabs" id="catTabs"></div>
+  <div id="catContent"></div>
+</section>
+
+<!-- ADMIN: Phê duyệt Ngoại lệ quan trọng (Mở khóa công BR04/BR12) -->
+<section class="screen" id="admin-exceptions">
+  <div class="pg-head">
+    <div>
+      <h1>Phê duyệt Ngoại lệ quan trọng</h1>
+      <p class="sub">Đặc quyền Admin: Mở khóa bảng công tháng đã chốt (BR04/BR12), phê duyệt hủy lớp đặc biệt</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Danh sách yêu cầu mở khóa bảng công tháng (BR04, BR12)</h2>
+    <div class="hint"><span>Chỉ Quản trị viên tối cao mới có quyền mở khóa bảng công đã chốt để giáo vụ điều chỉnh số liệu.</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Mã yêu cầu</th><th>Nhân sự cần mở</th><th>Kỳ công</th><th>Lý do khiếu nại</th><th>Trạng thái</th><th>Thao tác Admin</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>EX-01</b></td>
+          <td><b>Phạm Gia Huy (Trợ giảng)</b></td>
+          <td>Tháng 09/2026</td>
+          <td>Quên ghi nhận 2 buổi trợ giảng lớp LOP-E6G (thiếu 240.000đ)</td>
+          <td><span class="tag w">Chờ Admin duyệt</span></td>
+          <td>
+            <button class="btn purple sm" onclick="adminUnlockPayroll('Phạm Gia Huy')">🔓 Mở khóa bảng công</button>
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ADMIN: Kiểm toán & Giám sát -->
+<section class="screen" id="admin-audit">
+  <div class="pg-head"><div><h1>Nhật ký kiểm toán &amp; Giám sát (AUDIT_LOG)</h1><p class="sub">Truy vết mọi thao tác thay đổi dữ liệu quan trọng trong hệ thống (BR18, BR20)</p></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Thời gian</th><th>Người thao tác</th><th>Phân hệ</th><th>Hành động</th><th>Chi tiết</th></tr></thead>
+      <tbody id="auditBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ADMIN: Thống kê Lịch toàn chuỗi -->
+<section class="screen" id="admin-schedule">
+  <div class="pg-head">
+    <div>
+      <h1>Thống kê &amp; Giám sát Lịch toàn chuỗi</h1>
+      <p class="sub">Bảng thời khóa biểu giám sát toàn bộ ca dạy trên tất cả các cơ sở</p>
+    </div>
+    <button class="btn sm" onclick="exportSchedulePdf()">📥 Xuất báo cáo PDF</button>
+  </div>
+  <div id="adminCalContainer"></div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     2. PHÂN HỆ NHÂN VIÊN / GIÁO VỤ (STAFF)
+     Phạm vi: Tuyển sinh, ghép người dạy, tạo lớp, xếp lịch, duyệt nghỉ, quản lý học phí, chấm công
+     ══════════════════════════════════════════════════════════════════ -->
+
+<!-- STAFF: Dashboard công việc giáo vụ -->
+<section class="screen" id="staff-dash">
+  <div class="pg-head"><div><h1>Tổng quan công việc Giáo vụ / Điều phối</h1><p class="sub">Nhiệm vụ vận hành, xếp lịch và điều phối học vụ hôm nay</p></div></div>
+  <div class="stats">
+    <div class="st w"><div class="n" id="stNewReqCount">2</div><span>Yêu cầu học cần ghép</span></div>
+    <div class="st i"><div class="n" id="stPendingLeaveCount">3</div><span>Đơn từ cần duyệt</span></div>
+    <div class="st g"><div class="n">3</div><span>Lớp đang hoạt động</span></div>
+    <div class="st r"><div class="n">1</div><span>Hóa đơn học phí chưa thu</span></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <h2>Việc cần xử lý ngay</h2>
+      <div class="item"><span>YC-002: Lê Hoàng Nam cần gia sư Vật Lý 11</span><button class="btn sm p" onclick="showS('staff-intake')">Ghép người dạy</button></div>
+      <div class="item"><span>Đơn xin nghỉ từ PH Nguyễn Thị B (Tiếng Anh 6)</span><button class="btn sm warn" onclick="showS('staff-approve')">Duyệt đơn nghỉ</button></div>
+      <div class="item"><span>Đơn xin đổi lịch từ GV Nguyễn Minh Anh</span><button class="btn sm warn" onclick="showS('staff-approve')">Duyệt đổi lịch</button></div>
+      <div class="item"><span>Đối soát và chốt bảng công tháng 10 cho giáo viên</span><button class="btn sm p" onclick="showS('staff-payroll')">Chấm công</button></div>
+    </div>
+    <div class="card">
+      <h2>Lối tắt nhanh</h2>
+      <div class="btn-group" style="flex-direction:column;gap:8px">
+        <button class="btn p" onclick="showS('staff-schedule')">📅 Mở Thời khóa biểu &amp; Xếp lịch</button>
+        <button class="btn" onclick="showS('staff-intake')">📋 Tiếp nhận &amp; Ghép lớp (4 bước)</button>
+        <button class="btn" onclick="showS('staff-billing')">🧾 Quản lý Học phí &amp; Hóa đơn</button>
+        <button class="btn" onclick="showS('staff-payroll')">💰 Chấm công &amp; Quyết toán lương</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STAFF: Thời khóa biểu & Xếp lịch (Component mau2 hợp nhất) -->
+<section class="screen" id="staff-schedule">
+  <div class="pg-head">
+    <div>
+      <h1>Thời khóa biểu &amp; Xếp lịch</h1>
+      <p class="sub">Tạo ca học, xếp phòng, đổi lịch, tạo ca bù (BR09) và kiểm tra xung đột trùng giờ (BR01)</p>
+    </div>
+    <div class="row">
+      <button class="btn sm" onclick="showS('staff-classes')">🏫 Quản lý Sĩ số Lớp</button>
+      <button class="btn p sm" onclick="openSessionForm()">+ Xếp ca học mới</button>
+    </div>
+  </div>
+  <div id="staffCalContainer"></div>
+</section>
+
+<!-- STAFF: Tiếp nhận & Ghép lớp (Wizard 4 bước) -->
+<section class="screen" id="staff-intake">
+  <div class="pg-head"><div><h1>Tuyển sinh &amp; Ghép người dạy</h1><p class="sub">Yêu cầu học → Tìm kiếm người dạy AJAX → Tạo đề xuất → Xác nhận &amp; Sinh lịch</p></div></div>
+  <div class="wf" id="intakeWF">
+    <div class="ws on" onclick="intakeStep(0)"><span>❶</span> Yêu cầu học</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(1)"><span>❷</span> Tìm người dạy</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(2)"><span>❸</span> Đề xuất nhân sự</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(3)"><span>❹</span> Kích hoạt &amp; Tạo lớp</div>
+  </div>
+  <div class="intake-step" id="istep0">
+    <div class="card">
+      <div class="row-b" style="margin-bottom:12px">
+        <h2 style="margin:0">Danh sách yêu cầu tuyển sinh (YEU_CAU_HOC)</h2>
+        <button class="btn p sm" onclick="openRequestForm()">+ Tiếp nhận yêu cầu mới</button>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Mã YC</th><th>Học viên</th><th>Phụ huynh · SĐT</th><th>Môn &amp; Cấp lớp</th><th>Khung giờ rảnh</th><th>Khu vực</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="reqRows"></tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep1" style="display:none">
+    <div class="g3">
+      <div class="card">
+        <h2 style="margin:0 0 10px">Tiêu chí lọc gia sư</h2>
+        <label>Yêu cầu học viên</label>
+        <select id="matchReqSel" onchange="runMatch()"><option value="YC-001">YC-001 · Nguyễn Văn A (Toán 9)</option><option value="YC-002">YC-002 · Lê Hoàng Nam (Vật Lý 11)</option></select>
+        <label>Khu vực</label><select><option>Thủ Đức</option><option>Quận 1</option><option>Quận 3</option></select>
+        <label>Thù lao tối đa / buổi</label>
+        <select id="budgetSel" onchange="runMatch()"><option value="160000">160.000đ</option><option value="200000" selected>200.000đ</option><option value="300000">300.000đ</option></select>
+        <button class="btn p" style="width:100%;justify-content:center;margin-top:14px" onclick="runMatch()">⚡ Lọc so khớp AJAX</button>
+      </div>
+      <div class="card">
+        <h2 id="matchTitle">Ứng viên phù hợp</h2>
+        <div class="hint"><span>Hệ thống tự động loại bỏ người dạy bị trùng lịch (BR01).</span></div>
+        <div class="tw"><table>
+          <thead><tr><th>Người dạy</th><th>Chuyên môn</th><th>Thù lao</th><th>Lịch rảnh</th><th>Thao tác</th></tr></thead>
+          <tbody id="matchBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep2" style="display:none">
+    <div class="card">
+      <h2>Danh sách đề xuất nhân sự (DE_XUAT_NHAN_SU)</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã đề xuất</th><th>Yêu cầu</th><th>Người dạy đề xuất</th><th>Người dạy xác nhận</th><th>Phụ huynh xác nhận</th><th>Thao tác</th></tr></thead>
+        <tbody id="proposalBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep3" style="display:none">
+    <div class="card">
+      <h2>Đề xuất đã đồng ý 2 bên — Sẵn sàng tạo lớp &amp; sinh lịch</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã đề xuất</th><th>Yêu cầu</th><th>Người dạy</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="createClassBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- STAFF: Lớp học & Sĩ số (BR02, BR03) -->
+<section class="screen" id="staff-classes">
+  <div class="pg-head">
+    <div><h1>Quản lý Lớp học &amp; Sĩ số</h1><p class="sub">Kiểm soát sĩ số tối đa (BR03) và nguyên tắc tối đa 1 người dạy chính (BR02)</p></div>
+    <button class="btn p" onclick="openClassForm()">+ Tạo lớp học mới</button>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mã lớp</th><th>Tên lớp · Phòng</th><th>Lịch học</th><th>Người dạy chính (BR02)</th><th>Trợ giảng</th><th>Sĩ số (BR03)</th><th>Thao tác</th></tr></thead>
+      <tbody id="classBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- STAFF: Học viên -->
+<section class="screen" id="staff-students">
+  <div class="pg-head"><div><h1>Quản lý Học viên</h1><p class="sub">Hồ sơ học viên, thông tin phụ huynh và trạng thái theo học</p></div>
+    <button class="btn p" onclick="openStudentForm()">+ Thêm học viên</button>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mã HV</th><th>Họ tên</th><th>Khối lớp</th><th>Trường</th><th>Phụ huynh</th><th>SĐT PH</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody id="stuBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- STAFF: Duyệt đơn & Dạy bù (Xử lý tất cả các loại đơn) -->
+<section class="screen" id="staff-approve">
+  <div class="pg-head">
+    <div>
+      <h1>Duyệt đơn &amp; Xử lý Dạy bù</h1>
+      <p class="sub">Tiếp nhận và xử lý đơn xin nghỉ (BR08), đơn đổi lịch, đơn điều chỉnh giờ công và đơn xin lớp</p>
+    </div>
+  </div>
+  <div class="card" style="padding:12px 16px;margin-bottom:12px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:600;color:var(--g600)">Lọc loại đơn:</span>
+      <div class="chips" id="staffApproveFilterChips">
+        <span class="chip on" onclick="filterStaffApprove('all')">Tất cả đơn</span>
+        <span class="chip" onclick="filterStaffApprove('nghi_hoc')">Nghỉ học (Học viên)</span>
+        <span class="chip" onclick="filterStaffApprove('nghi_day')">Nghỉ dạy (Giáo viên)</span>
+        <span class="chip" onclick="filterStaffApprove('doi_lich')">Đổi lịch</span>
+        <span class="chip" onclick="filterStaffApprove('dieu_chinh_cong')">Điều chỉnh giờ công</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mã đơn</th><th>Loại đơn</th><th>Người làm đơn</th><th>Lớp / Buổi liên quan</th><th>Lý do &amp; Đề xuất</th><th>Trạng thái</th><th>Thao tác Giáo vụ</th></tr></thead>
+      <tbody id="staffApproveBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- STAFF: Học phí & Hóa đơn (BR14, BR15) -->
+<section class="screen" id="staff-billing">
+  <div class="pg-head">
+    <div><h1>Quản lý Học phí &amp; Hóa đơn</h1><p class="sub">Phát hành hóa đơn theo buổi thực học, thu học phí nhiều đợt, chống thu vượt (BR14)</p></div>
+    <button class="btn p" onclick="toast('Đã kết xuất hóa đơn đối chiếu tự động theo buổi hoàn thành.','ok')">+ Kết xuất hóa đơn tháng</button>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <h2>Danh sách hóa đơn</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã HĐ</th><th>Học viên</th><th>Cách thu</th><th>Phải thu</th><th>Đã thu</th><th>Còn lại</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="invBody"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Lập phiếu thu / Hoàn tiền (BR14, BR15)</h2>
+      <div class="hint" id="invBanner"><span>Chọn hóa đơn bên trái để lập phiếu thu hoặc hoàn phí</span></div>
+      <label>Loại giao dịch</label>
+      <select id="payTypeSel"><option value="thu">Thu — Ghi nhận đóng học phí</option><option value="hoan">Hoàn — Hoàn tiền buổi hủy / thôi học</option></select>
+      <label>Số tiền (VNĐ)</label><input type="number" id="payAmt" value="800000" step="50000">
+      <label>Phương thức</label><select><option>Chuyển khoản (VietQR)</option><option>Tiền mặt</option></select>
+      <label>Ghi chú</label><input id="payNote" placeholder="Ghi chú giao dịch...">
+      <div class="btn-group" style="margin-top:14px">
+        <button class="btn p" onclick="doPayment()">Ghi nhận phiếu thu/hoàn</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STAFF: Chấm công & Thù lao (BR11, BR12) -->
+<section class="screen" id="staff-payroll">
+  <div class="pg-head">
+    <div>
+      <h1>Chấm công &amp; Quyết toán Thù lao</h1>
+      <p class="sub">Giáo vụ &amp; Kế toán tổng hợp giờ dạy thực tế, chốt công tháng (sp_chot_cong) và khóa sổ (BR11, BR12)</p>
+    </div>
+    <div class="row">
+      <select style="width:150px"><option>Tháng 10/2026</option><option>Tháng 9/2026</option></select>
+      <button class="btn p sm" onclick="staffClosePayrollMonth()">🔒 Chốt công tháng (sp_chot_cong)</button>
+    </div>
+  </div>
+  <div id="staffPayrollWarn"></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Nhân sự</th><th>Vai trò</th><th>Số buổi</th><th>Bù / Trễ</th><th>Tổng phút</th><th>Thù lao</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody id="staffPayrollBody"></tbody>
+  </table></div></div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     3. PHÂN HỆ GIẢNG VIÊN / GIA SƯ / TRỢ GIẢNG (TEACHING)
+     Phạm vi: Xem lịch, check-in/out, điểm danh, nội dung học, giao/chấm bài tập, đơn từ
+     ══════════════════════════════════════════════════════════════════ -->
+
+<!-- TEACH: Tổng quan -->
+<section class="screen" id="teach-dash">
+  <div class="pg-head">
+    <div><h1 id="tGreeting">Xin chào, Nguyễn Minh Anh</h1><p class="sub" id="tSubGreeting">Giáo viên · Thứ Ba, 20/10/2026</p></div>
+    <button class="btn p sm" onclick="showS('teach-schedule')">📅 Xem Lịch dạy cá nhân</button>
+  </div>
+  <div id="teachDashContent"></div>
+</section>
+
+<!-- TEACH: Thời khóa biểu cá nhân -->
+<section class="screen" id="teach-schedule">
+  <div class="pg-head">
+    <div>
+      <h1 id="teachCalTitle">Thời khóa biểu cá nhân</h1>
+      <p class="sub">Thời khóa biểu các ca dạy được phân công. Bấm vào ca để xem chi tiết, check-in hoặc vào sổ học vụ.</p>
+    </div>
+  </div>
+  <div id="teachCalContainer"></div>
+</section>
+
+<!-- TEACH: Ca học hôm nay & Check-in GPS -->
+<section class="screen" id="teach-session">
+  <div class="pg-head"><div><h1>Vận hành Ca dạy hôm nay</h1><p class="sub">Check-in / Check-out đầu và cuối buổi học qua GPS (BR04, BR05)</p></div></div>
+  <div class="banner" id="sesBanner">
+    <div>
+      <p style="font-size:10px;text-transform:uppercase;letter-spacing:.06em">Ca dạy tiếp theo</p>
+      <h2 id="sesTitle">Toán 9 (Kèm 1-1) — Nguyễn Văn A</h2>
+      <p id="sesAddr">12 Võ Văn Ngân, Thủ Đức</p>
+      <div class="row" style="margin-top:8px">
+        <span class="tag" id="ciTag" style="background:rgba(255,255,255,.12);color:var(--g300)">Chưa check-in</span>
+        <span class="tag" id="gpsTag" style="background:rgba(255,255,255,.08);color:var(--g400)">GPS: Chờ tọa độ</span>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="time">18:00–20:00</div>
+      <div class="row" style="margin-top:8px;justify-content:flex-end">
+        <button class="btn" id="ciBtn" style="background:var(--pri);border-color:var(--pri);color:#fff" onclick="doCheckin(false)">📍 Check-in ngay</button>
+        <button class="btn sm" style="background:rgba(255,255,255,.1);border-color:transparent;color:var(--g300)" onclick="doCheckin(true)">Giả lập trễ &gt;15p</button>
+      </div>
+    </div>
+  </div>
+  <div id="lateWarn" style="display:none" class="warn-box">⚠ Bạn đã check-in trễ hơn 15 phút. Hệ thống đã tự động ghi nhận cảnh báo.</div>
+  <div class="card">
+    <h2>Thông tin ca dạy &amp; Trạng thái chấm công</h2>
+    <div class="item"><span style="color:var(--g500)">Lớp học</span><b id="sesClass">Toán 9 — Nguyễn Văn A</b></div>
+    <div class="item"><span style="color:var(--g500)">Khung giờ</span><span>18:00 – 20:00 (120 phút)</span></div>
+    <div class="item"><span style="color:var(--g500)">Người dạy</span><span id="sesTeacher">Nguyễn Minh Anh</span></div>
+    <div class="item"><span style="color:var(--g500)">Giờ check-in</span><span id="ciTimeDisp">—</span></div>
+    <div class="item"><span style="color:var(--g500)">Giờ check-out</span><span id="coTimeDisp">—</span></div>
+    <div class="item"><span style="color:var(--g500)">Số phút dạy thực tế</span><span id="realMinsDisp">—</span></div>
+    <div style="margin-top:14px" class="row">
+      <button class="btn p" onclick="showS('teach-log')">📖 Mở Sổ buổi học (Học vụ)</button>
+      <button class="btn sm" onclick="openTeacherRequestModal('dieu_chinh_cong')">Gửi đơn điều chỉnh giờ công</button>
+    </div>
+  </div>
+</section>
+
+<!-- TEACH: Sổ buổi học một chạm (Điểm danh 4 trạng thái, chấm bài giấy BR10) -->
+<section class="screen" id="teach-log">
+  <div class="pg-head"><div><h1>Sổ buổi học một chạm</h1><p class="sub">Ghi nhận nội dung, điểm danh 4 trạng thái, chấm điểm bài tập giấy và giao BTVN (BR10)</p></div></div>
+  <div id="taRestrict" class="warn-box" style="display:none"><b>Chế độ Trợ giảng:</b> Bạn chỉ được phân quyền hỗ trợ điểm danh học viên trong phạm vi được giao.</div>
+
+  <div class="card" style="background:var(--g50)">
+    <div class="row-b"><div><b>Toán 9 — Nguyễn Văn A</b> · Thứ Ba, 20/10/2026 · 18:00–20:00</div><span class="tag w">Đang diễn ra</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Hôm nay học gì</h2>
+    <label>Chủ đề bài học</label>
+    <input type="text" class="t-only" id="fTopic" value="Giải bài toán bằng cách lập hệ phương trình (Dạng năng suất &amp; chuyển động)">
+    <label>Nội dung đã giảng dạy</label>
+    <textarea class="t-only" id="fContent" rows="3">1. Sửa chi tiết phiếu bài tập giấy BT-102 trực tiếp tại lớp.
+2. Phương pháp chọn ẩn, đặt điều kiện và lập bảng phân tích đại lượng.
+3. Luyện tập 4 bài toán thực tế tại lớp.</textarea>
+    <label>Link file bài giảng (Slide / PDF)</label>
+    <input type="text" class="t-only" value="/uploads/slides/Toan9_BaiToanLapHePT.pdf">
+  </div>
+
+  <div class="card">
+    <h2>Điểm danh học viên &amp; Chấm điểm bài tập giấy (BR10)</h2>
+    <div class="hint"><span>Điểm bài tập và điểm danh là hai nghiệp vụ độc lập. Một học viên có thể có nhiều cột điểm bài tập (BR10).</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Học viên</th><th>Trạng thái (4 mức)</th><th>Bài tập giấy</th><th>Điểm số</th><th>Nhận xét thái độ &amp; tiếp thu</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Nguyễn Văn A</b><br><span style="color:var(--g500);font-size:11px">HV-0019</span></td>
+          <td><select id="att1"><option value="co_mat" selected>Có mặt</option><option value="tre">Đi trễ</option><option value="vang_co_phep">Vắng có phép</option><option value="vang_khong_phep">Vắng không phép</option></select></td>
+          <td><span class="tag i">BT-102</span></td>
+          <td><input type="number" class="t-only" min="0" max="10" step="0.25" value="8.75" style="width:75px"></td>
+          <td><input type="text" class="t-only" value="Làm bài đầy đủ, phát biểu sôi nổi."></td>
+        </tr>
+        <tr>
+          <td><b>Trần Minh Khôi</b><br><span style="color:var(--g500);font-size:11px">HV-0024</span></td>
+          <td><select id="att2"><option value="co_mat" selected>Có mặt</option><option value="tre">Đi trễ</option><option value="vang_co_phep">Vắng có phép</option><option value="vang_khong_phep">Vắng không phép</option></select></td>
+          <td><span class="tag i">BT-102</span></td>
+          <td><input type="number" class="t-only" min="0" max="10" step="0.25" value="7.5" style="width:75px"></td>
+          <td><input type="text" class="t-only" value="Hiểu phương pháp nhưng còn nhầm dấu."></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card" id="hwSection">
+    <h2>Giao bài tập về nhà <span style="font-size:11px;font-weight:400;color:var(--g500)">(Học sinh làm trên giấy, Phụ huynh tải PDF về in)</span></h2>
+    <div class="row" style="gap:12px;margin-bottom:8px">
+      <div style="flex:1"><label>Tiêu đề bài tập</label><input type="text" class="t-only" id="fHwTitle" value="Phiếu BT-103: 10 Bài toán lập hệ PT nâng cao"></div>
+      <div style="width:200px"><label>Hạn nộp</label><input type="text" class="t-only" value="Đầu buổi T6, 23/10/2026"></div>
+    </div>
+    <label>Link file đề bài PDF tải về in ra giấy</label>
+    <input type="text" class="t-only" value="https://educenter.edu.vn/files/de-bai-so-103.pdf">
+  </div>
+
+  <div class="card" style="background:var(--g50)">
+    <div class="row-b">
+      <div><b>Hoàn tất ca dạy</b><p style="color:var(--g500);font-size:12px;margin-top:1px">Lưu học vụ trước khi bấm check-out kết thúc.</p></div>
+      <div class="row">
+        <button class="btn p" onclick="saveSessionLog()">Lưu học vụ</button>
+        <button class="btn dark" id="coBtn" onclick="doCheckout()">🏁 Check-out kết thúc ca</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEACH: Lớp phụ trách -->
+<section class="screen" id="teach-myclasses">
+  <div class="pg-head"><div><h1 id="myClassTitle">Lớp phụ trách</h1><p class="sub" id="myClassSub">Danh sách các lớp bạn đang đảm nhiệm</p></div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Mã lớp</th><th>Môn · Khối</th><th>Lịch học</th><th>Vai trò</th><th>Sĩ số</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody id="myClassBody"></tbody>
+  </table></div></div>
+</section>
+
+<!-- TEACH: Lớp đang tuyển -->
+<section class="screen" id="teach-recruit">
+  <div class="pg-head"><div><h1 id="recruitTitle">Lớp đang tuyển gia sư</h1><p class="sub" id="recruitSub">Danh sách yêu cầu tuyển sinh đang chờ người dạy phù hợp</p></div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Yêu cầu</th><th>Môn · Khối</th><th>Hình thức</th><th>Lịch học</th><th>Khu vực</th><th>Thù lao/buổi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody id="recruitBody"></tbody>
+  </table></div></div>
+</section>
+
+<!-- TEACH: Đơn từ & Yêu cầu (ĐẦY ĐỦ XEM & LÀM ĐƠN MỚI CHỌN LOẠI ĐƠN) -->
+<section class="screen" id="teach-requests">
+  <div class="pg-head">
+    <div>
+      <h1>Đơn từ &amp; Yêu cầu cá nhân</h1>
+      <p class="sub">Quản lý các đơn xin nghỉ dạy, đơn đổi lịch, đơn điều chỉnh giờ công và đơn xin nhận lớp</p>
+    </div>
+    <button class="btn p" onclick="openTeacherRequestModal()">+ Làm đơn mới</button>
+  </div>
+  <div class="card" style="padding:12px 16px;margin-bottom:12px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:600;color:var(--g600)">Lọc theo:</span>
+      <div class="chips" id="teachReqFilterChips">
+        <span class="chip on" onclick="filterTeachRequests('all')">Tất cả đơn</span>
+        <span class="chip" onclick="filterTeachRequests('nghi_day')">Nghỉ dạy</span>
+        <span class="chip" onclick="filterTeachRequests('doi_lich')">Đổi lịch</span>
+        <span class="chip" onclick="filterTeachRequests('dieu_chinh_cong')">Điều chỉnh giờ công</span>
+        <span class="chip" onclick="filterTeachRequests('xin_lop')">Xin nhận lớp</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mã đơn</th><th>Loại đơn</th><th>Lớp / Buổi liên quan</th><th>Lý do &amp; Nội dung</th><th>Ngày gửi</th><th>Trạng thái</th><th>Phản hồi Giáo vụ</th></tr></thead>
+      <tbody id="teachRequestsBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- TEACH: Bảng công cá nhân -->
+<section class="screen" id="teach-paysheet">
+  <div class="pg-head"><div><h1>Bảng công &amp; Quyết toán thù lao</h1><p class="sub">Chi tiết ca dạy và số phút thực tế tháng 10/2026</p></div></div>
+  <div class="stats" id="paysheetStats"></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Ngày</th><th>Lớp học</th><th>Check-in → Out</th><th>Số phút</th><th>Đơn giá</th><th>Trạng thái</th></tr></thead>
+    <tbody id="paysheetBody"></tbody>
+  </table></div></div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     4. PHÂN HỆ PHỤ HUYNH (PARENT PORTAL)
+     Phạm vi: Theo dõi con, xem lịch học, kết quả, bài tập, học phí và gửi đơn xin nghỉ
+     ══════════════════════════════════════════════════════════════════ -->
+
+<!-- PARENT: Dashboard tổng quan theo dõi con -->
+<section class="screen" id="parent-dash">
+  <div class="pg-head">
+    <div><h1>Tổng quan theo dõi tình hình học tập</h1><p class="sub">Theo dõi nội dung học tập, bài tập về nhà và học phí của con</p></div>
+    <button class="btn p sm" onclick="showS('parent-schedule')">📅 Xem Lịch học của con</button>
+  </div>
+  <div class="card" style="padding:12px 16px;margin-bottom:14px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:600;color:var(--g600)">Chọn con để xem:</span>
+      <div class="chips" id="kidChips"></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="card">
+        <h2>Hôm nay con học gì trên lớp</h2>
+        <div class="item"><span style="color:var(--g500)">Chủ đề</span><b id="pTopic"></b></div>
+        <div class="item"><span style="color:var(--g500)">Nội dung giảng dạy</span><span id="pDesc" style="white-space:pre-line;font-size:12px"></span></div>
+        <div class="item"><span style="color:var(--g500)">Tình trạng điểm danh</span><span id="pArr"></span></div>
+      </div>
+      <div class="card">
+        <h2>Bài tập về nhà làm trên giấy</h2>
+        <div class="item"><span style="color:var(--g500)">Bài tập</span><b id="pHw"></b></div>
+        <div class="item"><span style="color:var(--g500)">Hạn nộp</span><span id="pDue"></span></div>
+        <div style="margin-top:10px;text-align:right">
+          <a href="#" onclick="toast('Đang tải file đề bài tập PDF để in ra giấy cho con làm...','ok');return false;" class="btn p sm">📥 Tải đề bài (PDF)</a>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Lịch học sắp tới</h2>
+        <div class="item"><span style="color:var(--g500)">Buổi tới</span><b id="pL1"></b></div>
+        <div class="item"><span style="color:var(--g500)">Buổi sau</span><span id="pL2"></span></div>
+      </div>
+      <div class="card">
+        <h2>Tóm tắt học phí</h2>
+        <div class="item"><span style="color:var(--g500)">Phải thu</span><b id="pFee"></b></div>
+        <div class="item"><span style="color:var(--g500)">Đã đóng</span><span id="pPaid"></span></div>
+        <div class="item"><span style="color:var(--g500)">Còn nợ</span><span id="pLeft" style="font-weight:700;color:var(--err)"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PARENT: Lịch học của con -->
+<section class="screen" id="parent-schedule">
+  <div class="pg-head">
+    <div>
+      <h1>Thời khóa biểu của con</h1>
+      <p class="sub">Lịch học trực quan, môn học, giáo viên phụ trách và địa điểm/phòng học</p>
+    </div>
+    <button class="btn warn sm" onclick="openParentLeaveModal()">+ Gửi đơn xin nghỉ học</button>
+  </div>
+  <div class="card" style="padding:10px 14px;margin-bottom:12px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:600;color:var(--g600)">Xem lịch cho con:</span>
+      <div class="chips" id="parentCalKidChips"></div>
+    </div>
+  </div>
+  <div id="parentCalContainer"></div>
+</section>
+
+<!-- PARENT: Bài tập & Kết quả -->
+<section class="screen" id="parent-homework">
+  <div class="pg-head"><div><h1>Bài tập &amp; Kết quả học tập</h1><p class="sub">Điểm bài tập giấy trên lớp và lời phê của giáo viên (BR10)</p></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Ngày học</th><th>Lớp · Môn</th><th>Bài tập giấy</th><th>Điểm số</th><th>Nhận xét của Giáo viên</th><th>Đề bài</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>20/10/2026</td>
+          <td><b>Toán 9 (1-1)</b></td>
+          <td>Phiếu BT-102: Hệ phương trình</td>
+          <td><b style="color:var(--ok);font-size:14px">8.75 / 10</b></td>
+          <td>Làm bài đầy đủ, phát biểu sôi nổi.</td>
+          <td><button class="btn sm" onclick="toast('Đang tải file đề bài...','ok')">📥 Tải PDF</button></td>
+        </tr>
+        <tr>
+          <td>16/10/2026</td>
+          <td><b>Tiếng Anh 9</b></td>
+          <td>BTVN Unit 4: Life in the past</td>
+          <td><b style="color:var(--ok);font-size:14px">9.0 / 10</b></td>
+          <td>Thuộc từ vựng, ngữ pháp Used to rất tốt.</td>
+          <td><button class="btn sm" onclick="toast('Đang tải file đề bài...','ok')">📥 Tải PDF</button></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- PARENT: Học phí -->
+<section class="screen" id="parent-billing">
+  <div class="pg-head"><div><h1>Học phí &amp; Thanh toán</h1><p class="sub">Hóa đơn học phí các lớp con đang theo học</p></div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Mã HĐ</th><th>Học viên</th><th>Kỳ học</th><th>Cách tính phí</th><th>Phải thu</th><th>Đã đóng</th><th>Còn nợ</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>HD-101</b></td>
+        <td>Nguyễn Văn A</td>
+        <td>Tháng 10/2026</td>
+        <td>Theo buổi thực học (8 buổi)</td>
+        <td>1.800.000đ</td>
+        <td style="color:var(--ok);font-weight:700">1.000.000đ</td>
+        <td style="color:var(--err);font-weight:700">800.000đ</td>
+        <td><span class="tag w">Thanh toán 1 phần</span></td>
+      </tr>
+    </tbody>
+  </table></div></div>
+</section>
+
+<!-- PARENT: Đơn xin nghỉ học (PHÂN HỆ RIÊNG BIỆT CHO PHỤ HUYNH) -->
+<section class="screen" id="parent-leave">
+  <div class="pg-head">
+    <div>
+      <h1>Đơn xin nghỉ học</h1>
+      <p class="sub">Gửi đơn xin nghỉ phép cho con khi có việc bận hoặc ốm sốt và theo dõi phản hồi của trung tâm</p>
+    </div>
+    <button class="btn warn" onclick="openParentLeaveModal()">+ Làm đơn xin nghỉ mới</button>
+  </div>
+  <div class="card">
+    <h2>Lịch sử các đơn xin nghỉ đã gửi (DON_XIN_NGHI)</h2>
+    <div class="hint"><span>Quy tắc BR08: Đối với lớp nhóm, học viên xin nghỉ cá nhân không làm hủy lịch chung của cả lớp.</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Mã đơn</th><th>Học viên</th><th>Buổi học xin nghỉ</th><th>Lý do xin nghỉ</th><th>Ngày gửi</th><th>Trạng thái</th><th>Phản hồi Giáo vụ</th></tr></thead>
+      <tbody id="parentLeaveTableBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+</main>
+</div><!-- .main-wrap -->
+</div><!-- .app -->
+
+<!-- ═══════════════════════════════════════
+     HỆ THỐNG MODAL HỢP NHẤT
+     ═══════════════════════════════════════ -->
+
+<!-- 1. Modal Chi tiết Buổi học Dùng chung -->
+<div class="modal-ov" id="modalSessionDetail" onclick="if(event.target===this) closeModalSessionDetail()">
+  <div class="modal-box" style="max-width:640px">
+    <h3>
+      <span id="dtModalTitle">Chi tiết Buổi học</span>
+      <button style="border:0;background:0;font-size:16px;color:var(--g500)" onclick="closeModalSessionDetail()">✕</button>
+    </h3>
+    <div id="dtModalContent"></div>
+    <div class="modal-act" id="dtModalActions"></div>
+  </div>
+</div>
+
+<!-- 2. Modal Thêm / Sửa Buổi học (Có kiểm tra trùng lịch BR01 & Sinh lặp tuần) -->
+<div class="modal-ov" id="modalSessionForm" onclick="if(event.target===this) closeModalSessionForm()">
+  <div class="modal-box" style="max-width:580px">
+    <h3>
+      <span id="sfModalTitle">Thêm buổi học mới</span>
+      <button style="border:0;background:0;font-size:16px;color:var(--g500)" onclick="closeModalSessionForm()">✕</button>
+    </h3>
+    <form id="sessionFormElement" onsubmit="handleSessionFormSubmit(event)">
+      <div id="sfConflictBanner" style="display:none" class="warn-box">
+        <b style="display:block;margin-bottom:2px">⚠ Xung đột lịch giáo viên (BR01)!</b>
+        <span id="sfConflictText">Giáo viên đã có ca dạy khác vào khung giờ này.</span>
+      </div>
+
+      <label>Lớp học <span style="color:var(--err)">*</span></label>
+      <select id="sfClassSelect" onchange="onSfClassChanged()"></select>
+
+      <div class="row" style="gap:10px;margin-top:6px">
+        <div style="flex:1">
+          <label>Giáo viên chính (BR02) <span style="color:var(--err)">*</span></label>
+          <select id="sfTeacherSelect" onchange="checkSfConflicts()"></select>
+        </div>
+        <div style="flex:1">
+          <label>Trợ giảng</label>
+          <select id="sfTaSelect"></select>
+        </div>
+      </div>
+
+      <div class="row" style="gap:8px;margin-top:6px">
+        <div style="flex:1.2">
+          <label>Ngày học <span style="color:var(--err)">*</span></label>
+          <input type="date" id="sfDate" onchange="checkSfConflicts()" required>
+        </div>
+        <div style="flex:1">
+          <label>Bắt đầu <span style="color:var(--err)">*</span></label>
+          <input type="time" id="sfStartTime" onchange="checkSfConflicts()" value="18:00" required>
+        </div>
+        <div style="flex:1">
+          <label>Kết thúc <span style="color:var(--err)">*</span></label>
+          <input type="time" id="sfEndTime" onchange="checkSfConflicts()" value="20:00" required>
+        </div>
+      </div>
+
+      <div style="background:var(--g50);padding:10px;border-radius:var(--rs);border:1px solid var(--g200);margin-top:10px">
+        <div class="row-b" style="margin-bottom:6px">
+          <span style="font-size:12px;font-weight:600">Hình thức học:</span>
+          <div class="seg" style="font-size:11px">
+            <button type="button" id="sfBtnOffline" class="on" onclick="setSfOnlineMode(false)">Offline Cơ sở</button>
+            <button type="button" id="sfBtnOnline" onclick="setSfOnlineMode(true)">Online Trực tuyến</button>
+          </div>
+        </div>
+        <div id="sfOfflineFields" class="row" style="gap:8px">
+          <div style="flex:1">
+            <label style="margin-top:0">Cơ sở</label>
+            <select id="sfBranchSelect" onchange="onSfBranchChanged()"><option value="Thủ Đức">Thủ Đức</option><option value="Quận 1">Quận 1</option><option value="Quận 3">Quận 3</option></select>
+          </div>
+          <div style="flex:1">
+            <label style="margin-top:0">Phòng học</label>
+            <select id="sfRoomSelect" onchange="checkSfConflicts()"></select>
+          </div>
+        </div>
+        <div id="sfOnlineFields" style="display:none">
+          <label style="margin-top:0">Link Google Meet / Zoom</label>
+          <input type="text" id="sfOnlineLink" placeholder="https://meet.google.com/xyz-educenter">
+        </div>
+      </div>
+
+      <div id="sfRecurringWrap" style="margin-top:10px;padding:8px 10px;border:1px dashed var(--g300);border-radius:var(--rs)">
+        <div class="row-b">
+          <span style="font-size:12px;font-weight:600">🔁 Lặp lại hàng tuần (sp_sinh_buoi_hoc)</span>
+          <input type="checkbox" id="sfIsRecurring" onchange="document.getElementById('sfRecurOptions').style.display=this.checked?'block':'none'" style="width:16px;height:16px">
+        </div>
+        <div id="sfRecurOptions" style="display:none;margin-top:6px">
+          <div class="row" style="gap:8px">
+            <span style="font-size:12px;color:var(--g600)">Số buổi sinh tự động:</span>
+            <input type="number" id="sfRepeatCount" value="8" min="1" max="24" style="width:70px;padding:3px 6px">
+            <span style="font-size:12px;color:var(--g500)">buổi</span>
+          </div>
+        </div>
+      </div>
+
+      <label style="margin-top:10px">Chủ đề bài học (dự kiến)</label>
+      <input type="text" id="sfTopic" placeholder="VD: Luyện giải hệ phương trình nâng cao...">
+
+      <div class="modal-act">
+        <button type="button" class="btn sm" onclick="closeModalSessionForm()">Hủy bỏ</button>
+        <button type="submit" class="btn p sm">Lưu buổi học</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Modal Làm Đơn Mới Cho Giáo Viên / Gia Sư / Trợ Giảng (CHỌN LOẠI ĐƠN THEO Ý MUỐN) -->
+<div class="modal-ov" id="modalCreateTeacherReq" onclick="if(event.target===this) closeModalTeacherReq()">
+  <div class="modal-box" style="max-width:540px">
+    <h3>
+      <span>Làm đơn từ &amp; Yêu cầu mới</span>
+      <button style="border:0;background:0;font-size:16px;color:var(--g500)" onclick="closeModalTeacherReq()">✕</button>
+    </h3>
+    <form onsubmit="handleTeacherReqSubmit(event)">
+      <label>Loại đơn bạn muốn làm <span style="color:var(--err)">*</span></label>
+      <select id="trTypeSelect" onchange="onTrTypeChanged()" style="font-weight:600;color:var(--pri-d)">
+        <option value="nghi_day">1. Đơn xin nghỉ dạy (Báo bận / Coi thi / Việc riêng)</option>
+        <option value="doi_lich">2. Đơn xin đổi lịch dạy (Dời ca học sang giờ khác)</option>
+        <option value="dieu_chinh_cong">3. Đơn điều chỉnh giờ công (DIEU_CHINH_CONG - Quên check-in/out)</option>
+        <option value="xin_lop">4. Đơn xin nhận lớp mới (Ứng tuyển lớp đang tuyển)</option>
+        <option value="huy_lop">5. Đơn xin hủy lớp / Ngừng phụ trách lớp</option>
+      </select>
+
+      <div id="trSessionWrap">
+        <label>Ca dạy / Lớp học liên quan <span style="color:var(--err)">*</span></label>
+        <select id="trSessionSelect"></select>
+      </div>
+
+      <div id="trRescheduleWrap" style="display:none;background:var(--g50);padding:10px;border-radius:var(--rs);margin-top:8px">
+        <label style="margin-top:0">Ngày đề xuất chuyển sang:</label>
+        <input type="date" id="trNewDate">
+        <label>Khung giờ mới đề xuất:</label>
+        <input type="text" id="trNewTime" placeholder="VD: 18:00 - 20:00">
+      </div>
+
+      <div id="trAdjustHoursWrap" style="display:none;background:var(--warn-ll);border:1px solid var(--warn-l);padding:10px;border-radius:var(--rs);margin-top:8px">
+        <span style="font-size:12px;font-weight:700;color:var(--warn)">Thời gian thực tế bạn đã giảng dạy:</span>
+        <div class="row" style="gap:8px;margin-top:4px">
+          <div style="flex:1"><label style="margin-top:0">Giờ vào thực tế:</label><input type="time" id="trAdjCheckin" value="18:00"></div>
+          <div style="flex:1"><label style="margin-top:0">Giờ ra thực tế:</label><input type="time" id="trAdjCheckout" value="20:00"></div>
+        </div>
+      </div>
+
+      <label>Lý do &amp; Ghi chú chi tiết <span style="color:var(--err)">*</span></label>
+      <textarea id="trReasonText" rows="3" required placeholder="Trình bày rõ lý do để Giáo vụ xem xét..."></textarea>
+
+      <div class="modal-act">
+        <button type="button" class="btn sm" onclick="closeModalTeacherReq()">Hủy</button>
+        <button type="submit" class="btn p sm">Gửi đơn đến Giáo vụ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 4. Modal Làm Đơn Xin Nghỉ Cho Phụ Huynh -->
+<div class="modal-ov" id="modalParentLeave" onclick="if(event.target===this) closeModalParentLeave()">
+  <div class="modal-box" style="max-width:500px">
+    <h3>
+      <span>Gửi đơn xin nghỉ học cho con</span>
+      <button style="border:0;background:0;font-size:16px;color:var(--g500)" onclick="closeModalParentLeave()">✕</button>
+    </h3>
+    <form onsubmit="handleParentLeaveSubmit(event)">
+      <label>Học viên xin nghỉ <span style="color:var(--err)">*</span></label>
+      <select id="plKidSelect" onchange="onPlKidChanged()"></select>
+
+      <label>Buổi học cần xin nghỉ <span style="color:var(--err)">*</span></label>
+      <select id="plSessionSelect"></select>
+
+      <label>Lý do xin nghỉ <span style="color:var(--err)">*</span></label>
+      <textarea id="plReasonText" rows="3" required placeholder="Lý do: Con bị sốt, gia đình có việc bận..."></textarea>
+
+      <div class="hint" style="margin-top:10px">
+        <span>ℹ <b>Quy tắc BR08:</b> Đối với lớp nhóm, học viên xin nghỉ cá nhân không làm hủy buổi học chung của cả lớp. Giáo vụ sẽ ghi nhận nghỉ có phép.</span>
+      </div>
+
+      <div class="modal-act">
+        <button type="button" class="btn sm" onclick="closeModalParentLeave()">Hủy</button>
+        <button type="submit" class="btn warn sm">Gửi đơn xin nghỉ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 5. Modal Xác Nhận Thao Tác Nguy Hiểm (Confirm Modal) -->
+<div class="modal-ov" id="modalConfirm" onclick="if(event.target===this) closeConfirm(false)">
+  <div class="modal-box" style="max-width:440px;text-align:center">
+    <div id="confirmIcon" style="font-size:38px;margin-bottom:8px">⚠️</div>
+    <h3 id="confirmTitle" style="justify-content:center;font-size:17px;margin-bottom:8px">Xác nhận thao tác</h3>
+    <p id="confirmMsg" style="font-size:13px;color:var(--g600);line-height:1.5;margin-bottom:20px"></p>
+    <div class="modal-act" style="justify-content:center;border-top:0;padding-top:0">
+      <button type="button" class="btn sm" id="btnConfirmCancel" onclick="closeConfirm(false)">Hủy bỏ</button>
+      <button type="button" class="btn sm p" id="btnConfirmOk">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Modal Thêm Tài Khoản Nhân Sự (Admin Staff Form) -->
+<div class="modal-ov" id="modalStaffForm" onclick="if(event.target===this) closeModalStaffForm()">
+  <div class="modal-box" style="max-width:500px">
+    <h3>
+      <span>Thêm tài khoản nhân sự mới</span>
+      <button style="border:0;background:0;font-size:16px;color:var(--g500);cursor:pointer" onclick="closeModalStaffForm()">✕</button>
+    </h3>
+    <form id="staffAddForm" onsubmit="handleStaffAddSubmit(event)">
+      <div class="form-group">
+        <label>Họ và tên nhân sự <span style="color:var(--err)">*</span></label>
+        <input type="text" id="sfStaffName" placeholder="VD: Lê Thị Lan Hương" required>
+        <span class="field-error" id="err-sfStaffName"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Email liên hệ <span style="color:var(--err)">*</span></label>
+        <input type="email" id="sfStaffEmail" placeholder="VD: huong.ltl@edu.vn" required>
+        <span class="field-error" id="err-sfStaffEmail"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Số điện thoại (10 chữ số) <span style="color:var(--err)">*</span></label>
+        <input type="tel" id="sfStaffPhone" placeholder="VD: 0912345678" required>
+        <span class="field-error" id="err-sfStaffPhone"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Vai trò phân quyền <span style="color:var(--err)">*</span></label>
+        <select id="sfStaffRole" style="font-weight:600">
+          <option value="Giáo viên">Giáo viên cơ hữu / Thỉnh giảng</option>
+          <option value="Gia sư">Gia sư 1:1</option>
+          <option value="Trợ giảng">Trợ giảng (TA)</option>
+          <option value="Nhân viên">Nhân viên (Giáo vụ / Điều phối)</option>
+          <option value="Admin">Quản trị viên (Admin)</option>
+        </select>
+      </div>
+
+      <div class="modal-act">
+        <button type="button" class="btn sm" onclick="closeModalStaffForm()">Hủy</button>
+        <button type="submit" class="btn p sm">Lưu tài khoản</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast & Notif Panel -->
+<div class="notif-panel" id="notifPanel">
+  <div class="np-head">
+    <h3>Thông báo hệ thống (THONG_BAO)</h3>
+    <button class="np-close" onclick="toggleNotif()">✕</button>
+  </div>
+  <div class="np-list">
+    <div class="np-item unread">
+      <b>Đơn xin nghỉ học mới</b>
+      <p>PH Nguyễn Thị B gửi đơn xin nghỉ buổi Tiếng Anh 6 ngày 24/10.</p>
+      <time>10 phút trước</time>
+    </div>
+    <div class="np-item unread">
+      <b>Kết quả bài tập giấy đã chấm</b>
+      <p>Thầy Cường đã chấm xong phiếu BT-102 (Điểm: 8.75/10).</p>
+      <time>1 giờ trước</time>
+    </div>
+    <div class="np-item">
+      <b>Thông báo đối soát học phí</b>
+      <p>Đã hoàn tất kết xuất hóa đơn tháng 10 cho toàn bộ học viên.</p>
+      <time>Hôm qua</time>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- API BAR -->
+<div class="api-bar">
+  <div><span class="m" id="apiMethod">GET</span> <span id="apiUri" class="mono">/api/schedule/sessions</span></div>
+  <div id="apiInfo">200 OK · 14ms · EduCenter ERP Core</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT LOGIC
+     ═══════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════
+   1. MAPPING VAI TRÒ CHUẨN XÁC THEO ĐẶC TẢ
+   ═══════════════════════════════════════ */
+const PORTALS={
+  admin:{
+    who:'Trần Quang Huy',role:'Quản trị viên',route:'/admin',
+    perms:'Quản trị tài khoản · Phân quyền · Cấu hình · Thống kê · Phê duyệt ngoại lệ',
+    m:[
+      ['admin-dash','📊','Tổng quan & Thống kê'],
+      ['admin-staff','👥','Nhân sự & Tài khoản'],
+      ['admin-perms','🔐','Phân quyền 9 phân hệ'],
+      ['admin-catalog','⚙️','Danh mục & Cấu hình'],
+      ['admin-exceptions','🛡️','Phê duyệt ngoại lệ (Khóa công)'],
+      ['admin-audit','📜','Kiểm toán & Giám sát'],
+      ['admin-schedule','📅','Thống kê Lịch toàn chuỗi']
+    ]
+  },
+  staff:{
+    who:'Lê Thị Mai',role:'Nhân viên (Giáo vụ)',route:'/staff',
+    perms:'Tuyển sinh · Ghép lớp · Xếp lịch · Duyệt nghỉ · Học phí · Chấm công',
+    m:[
+      ['staff-dash','📊','Tổng quan công việc'],
+      ['staff-intake','📋','Tuyển sinh & Ghép lớp'],
+      ['staff-schedule','📅','Thời khóa biểu & Xếp lịch'],
+      ['staff-classes','🏫','Lớp học & Sĩ số'],
+      ['staff-students','🎓','Quản lý Học viên'],
+      ['staff-approve','📝','Duyệt đơn & Xếp bù'],
+      ['staff-billing','🧾','Học phí & Hóa đơn'],
+      ['staff-payroll','💰','Chấm công & Thù lao']
+    ]
+  },
+  teacher:{
+    who:'Nguyễn Minh Anh',role:'Giáo viên',route:'/teacher',
+    perms:'Xem lịch · Check-in/out · Điểm danh · Học vụ · BTVN · Đơn từ',
+    m:[
+      ['teach-dash','📊','Tổng quan ca dạy'],
+      ['teach-schedule','📅','Lịch dạy cá nhân'],
+      ['teach-session','⏰','Ca dạy & Check-in'],
+      ['teach-log','📖','Sổ buổi học & Chấm bài'],
+      ['teach-myclasses','🏫','Lớp phụ trách'],
+      ['teach-recruit','📢','Lớp đang tuyển'],
+      ['teach-requests','📝','Đơn từ & Yêu cầu'],
+      ['teach-paysheet','💰','Bảng công cá nhân']
+    ]
+  },
+  tutor:{
+    who:'Trần Quốc Bảo',role:'Gia sư 1:1',route:'/tutor',
+    perms:'Xem lịch kèm · Check-in/out · Điểm danh · Học vụ · BTVN · Đơn từ',
+    m:[
+      ['teach-dash','📊','Tổng quan ca dạy'],
+      ['teach-schedule','📅','Lịch kèm của tôi'],
+      ['teach-session','⏰','Ca học & Check-in'],
+      ['teach-log','📖','Sổ buổi học & Chấm bài'],
+      ['teach-myclasses','🏫','Lớp kèm 1:1'],
+      ['teach-recruit','📢','Cơ hội nhận lớp'],
+      ['teach-requests','📝','Đơn từ & Yêu cầu'],
+      ['teach-paysheet','💰','Bảng công cá nhân']
+    ]
+  },
+  ta:{
+    who:'Phạm Gia Huy',role:'Trợ giảng',route:'/ta',
+    perms:'Xem lịch hỗ trợ · Check-in/out · Hỗ trợ điểm danh · Báo bận',
+    m:[
+      ['teach-dash','📊','Tổng quan hỗ trợ'],
+      ['teach-schedule','📅','Lịch ca trợ giảng'],
+      ['teach-session','⏰','Ca học & Check-in'],
+      ['teach-log','📖','Hỗ trợ điểm danh'],
+      ['teach-myclasses','🏫','Lớp hỗ trợ'],
+      ['teach-requests','📝','Đơn từ & Báo bận'],
+      ['teach-paysheet','💰','Bảng công trợ giảng']
+    ]
+  },
+  parent:{
+    who:'Nguyễn Thị Hoa',role:'Phụ huynh',route:'/parent',
+    perms:'Theo dõi con · Xem lịch học · Kết quả · Học phí · Gửi đơn xin nghỉ',
+    m:[
+      ['parent-dash','📊','Tổng quan theo dõi con'],
+      ['parent-schedule','📅','Lịch học của con'],
+      ['parent-homework','📚','Bài tập & Kết quả'],
+      ['parent-billing','🧾','Học phí & Hóa đơn'],
+      ['parent-leave','📝','Đơn xin nghỉ học']
+    ]
+  }
+};
+
+let currentPortal = 'admin';
+let currentScreen = 'admin-dash';
+
+let EMPLOYEES=[
+  {id:1,name:'Trần Quang Huy',email:'huy.tq@edu.vn',phone:'0901234567',role:'Admin',active:true},
+  {id:2,name:'Lê Thị Mai',email:'mai.lt@edu.vn',phone:'0912345678',role:'Nhân viên',active:true},
+  {id:3,name:'Nguyễn Minh Anh',email:'anh.nm@edu.vn',phone:'0923456789',role:'Giáo viên',active:true},
+  {id:4,name:'Phạm Gia Huy',email:'huy.pg@edu.vn',phone:'0934567890',role:'Trợ giảng',active:true},
+  {id:5,name:'Trần Quốc Bảo',email:'bao.tq@edu.vn',phone:'0945678901',role:'Gia sư',active:true},
+  {id:6,name:'Lê Văn Cường',email:'cuong.lv@edu.vn',phone:'0956789012',role:'Giáo viên',active:true}
+];
+
+let STUDENTS=[
+  {id:'HV-0019',name:'Nguyễn Văn A',grade:'Lớp 9',school:'THCS Nguyễn Du',parent:'Nguyễn Thị Hoa',parentPhone:'0987654321',status:'dang_hoc'},
+  {id:'HV-0024',name:'Trần Minh Khôi',grade:'Lớp 9',school:'THCS Trần Phú',parent:'Trần Văn Bình',parentPhone:'0976543210',status:'dang_hoc'},
+  {id:'HV-0031',name:'Nguyễn Thị B',grade:'Lớp 6',school:'THCS Lê Lợi',parent:'Nguyễn Văn C',parentPhone:'0965432109',status:'dang_hoc'},
+  {id:'HV-0035',name:'Lê Hoàng Nam',grade:'Lớp 11',school:'THPT Gia Định',parent:'Lê Văn Thắng',parentPhone:'0954321098',status:'dang_hoc'},
+  {id:'HV-0040',name:'Phạm Thu Hà',grade:'Lớp 8',school:'THCS Bạch Đằng',parent:'Phạm Văn Đức',parentPhone:'0943210987',status:'tam_nghi'}
+];
+
+let CATALOG={
+  subjects:['Toán','Vật Lý','Hóa Học','Tiếng Anh','Ngữ Văn','Sinh Học'],
+  grades:['Lớp 6','Lớp 7','Lớp 8','Lớp 9','Lớp 10','Lớp 11','Lớp 12'],
+  rooms:['P.201 - Cơ sở 1 (Thủ Đức)','P.202 - Cơ sở 1 (Thủ Đức)','P.302 - Cơ sở 2 (Quận 1)','P.105 - Cơ sở 3 (Quận 3)','Tại nhà HV (Thủ Đức)','Online Zoom / Meet'],
+  branches:['Thủ Đức','Quận 1','Quận 3']
+};
+
+const PERM_MODS=['Xác thực & Tài khoản','Tiếp nhận & Ghép lớp','Lớp học & Lịch dạy','Ca học & Check-in','Học vụ & Điểm danh','Nghỉ phép & Dạy bù','Chấm công & Thù lao','Học phí & Thu tiền','Thông báo & Kiểm toán'];
+const PERM_FLAGS=['Xem','Thêm','Sửa','Xóa','Tải xuống'];
+const ROLE_PERMS={
+  Admin:[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]],
+  'Nhân viên':[[1,0,0,0,0],[1,1,1,0,1],[1,1,1,0,1],[1,1,1,0,1],[1,0,0,0,1],[1,1,1,0,1],[1,0,0,0,1],[1,1,1,0,1],[1,1,0,0,0]],
+  'Giáo viên':[[1,0,1,0,0],[1,0,1,0,0],[1,0,0,0,1],[1,1,1,0,0],[1,1,1,0,1],[1,1,0,0,0],[1,0,0,0,1],[0,0,0,0,0],[1,0,0,0,0]],
+  'Gia sư':[[1,0,1,0,0],[1,0,1,0,0],[1,0,0,0,1],[1,1,1,0,0],[1,1,1,0,1],[1,1,0,0,0],[1,0,0,0,1],[0,0,0,0,0],[1,0,0,0,0]],
+  'Trợ giảng':[[1,0,0,0,0],[0,0,0,0,0],[1,0,0,0,0],[1,1,1,0,0],[1,1,0,0,0],[1,1,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,0]],
+  'Phụ huynh':[[1,0,1,0,0],[1,1,1,0,0],[1,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,1,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,0,0,0,0]]
+};
+let permRole='Admin';
+
+let REQUESTS=[
+  {id:'YC-001',student:'Nguyễn Văn A',parent:'Nguyễn Thị Hoa',phone:'0987654321',subject:'Toán 9',schedule:'T3, T5 (18:00–20:00)',area:'Thủ Đức',budget:200000,status:'dang_xu_ly',date:'10/10/2026'},
+  {id:'YC-002',student:'Lê Hoàng Nam',parent:'Lê Văn Thắng',phone:'0976543210',subject:'Vật Lý 11',schedule:'T2, T6 (19:00–21:00)',area:'Quận 3',budget:250000,status:'moi',date:'13/10/2026'}
+];
+
+const TUTORS=[
+  {name:'Nguyễn Minh Anh',info:'ĐH Sư phạm · 3 năm KN',fee:180000,sched:'Khớp 2/2 (T3, T5)',ok:true},
+  {name:'Trần Quốc Bảo',info:'ĐH KHTN · 2 năm KN',fee:150000,sched:'Khớp 2/2 (T3, T5)',ok:true},
+  {name:'Lê Văn Cường',info:'GV cơ hữu · 5 năm KN',fee:200000,sched:'Trùng lịch T5 18:00 (BR01)',ok:false},
+  {name:'Võ Thanh Dũng',info:'GV Luyện thi · 7 năm KN',fee:260000,sched:'Khớp 2/2 (T3, T5)',ok:true}
+];
+
+let PROPOSALS=[
+  {id:'DX-101',req:'YC-001 · NV A (Toán 9)',tutor:'Nguyễn Minh Anh',ts:'dong_y',tp:'dong_y',done:true},
+  {id:'DX-102',req:'YC-002 · LH Nam (Lý 11)',tutor:'Trần Quốc Bảo',ts:'dong_y',tp:'cho',done:false}
+];
+
+let CLASSES=[
+  {code:'LOP-T9A',name:'Toán 9 (Kèm 1-1)',type:'Kèm 1-1',room:'Tại nhà HV (Thủ Đức)',sched:'T3, T5 (18:00–20:00)',subject:'Toán',main:'Nguyễn Minh Anh',ta:'—',cur:1,max:1,studentIds:['HV-0019']},
+  {code:'LOP-E6G',name:'Tiếng Anh 6 Cơ bản',type:'Lớp nhóm',room:'P.204 – Cơ sở 1',sched:'T4, T7 (09:00–11:00)',subject:'Tiếng Anh',main:'Lê Văn Cường',ta:'Phạm Gia Huy',cur:11,max:12,studentIds:['HV-0031']},
+  {code:'LOP-L11B',name:'Vật Lý 11 (Kèm 1-1)',type:'Kèm 1-1 Online',room:'Online Zoom / Meet',sched:'T2, T6 (19:00–21:00)',subject:'Vật Lý',main:'Trần Quốc Bảo',ta:'—',cur:1,max:1,studentIds:['HV-0035']}
+];
+
+/* ══════════════════════════════════════════════════
+   HỆ THỐNG ĐƠN TỪ TỔNG THỂ (LEAVES / REQUESTS)
+   DÙNG CHUNG CHO CẢ PHỤ HUYNH, GIÁO VIÊN VÀ GIÁO VỤ
+   ══════════════════════════════════════════════════ */
+let LEAVES=[
+  {
+    id:'DON-01', type:'nghi_hoc', typeLabel:'Nghỉ học',
+    requester:'Phụ huynh Nguyễn Thị Hoa', target:'Nguyễn Văn A (HV-0019)',
+    sessionDate:'24/10/2026', classCode:'LOP-T9A',
+    reason:'Cháu bị sốt cần nghỉ ngơi 1 buổi',
+    status:'cho_duyet', responseNote:'Đang chờ giáo vụ xếp lịch học bù',
+    date:'20/10/2026'
+  },
+  {
+    id:'DON-02', type:'nghi_hoc', typeLabel:'Nghỉ học',
+    requester:'Phụ huynh Nguyễn Văn C', target:'Nguyễn Thị B (HV-0031)',
+    sessionDate:'24/10/2026', classCode:'LOP-E6G',
+    reason:'Gia đình có việc về quê gấp',
+    status:'da_duyet', responseNote:'Đã duyệt nghỉ có phép (BR08)',
+    date:'18/10/2026'
+  },
+  {
+    id:'DON-03', type:'nghi_day', typeLabel:'Nghỉ dạy',
+    requester:'Nguyễn Minh Anh (Giáo viên)', target:'Nguyễn Minh Anh',
+    sessionDate:'22/10/2026', classCode:'LOP-T9A',
+    reason:'Trùng lịch hội thảo phương pháp giảng dạy tại Sở GD',
+    status:'cho_duyet', responseNote:'Đề xuất dời sang tối Thứ Sáu',
+    date:'19/10/2026'
+  },
+  {
+    id:'DON-04', type:'doi_lich', typeLabel:'Đổi lịch dạy',
+    requester:'Trần Quốc Bảo (Gia sư)', target:'Trần Quốc Bảo',
+    sessionDate:'23/10/2026', classCode:'LOP-L11B',
+    reason:'Đề xuất dời từ 19:00 sang 20:00 do kẹt xe',
+    status:'da_duyet', responseNote:'Đã cập nhật giờ mới trên TKB',
+    date:'18/10/2026'
+  },
+  {
+    id:'DON-05', type:'dieu_chinh_cong', typeLabel:'Điều chỉnh giờ công',
+    requester:'Lê Văn Cường (Giáo viên)', target:'Lê Văn Cường',
+    sessionDate:'17/10/2026', classCode:'LOP-E6G',
+    reason:'Quên bấm check-out lúc kết thúc ca, giờ thực tế: 11:05',
+    status:'cho_duyet', responseNote:'Chờ đối soát trước khi chốt công',
+    date:'17/10/2026'
+  }
+];
+
+let PAYROLLS=[
+  {id:'BC-01',name:'Nguyễn Minh Anh',role:'Giáo viên',buoi:24,extra:'1 bù / 0 trễ',mins:'2.880',total:'4.320.000đ',st:'san_sang',locked:false},
+  {id:'BC-02',name:'Trần Quốc Bảo',role:'Gia sư',buoi:18,extra:'0 bù / 1 trễ',mins:'2.150',total:'2.700.000đ',st:'san_sang',locked:false},
+  {id:'BC-03',name:'Phạm Gia Huy',role:'Trợ giảng',buoi:12,extra:'0 bù / 0 trễ',mins:'1.440',total:'1.080.000đ',st:'da_chot',locked:true},
+  {id:'BC-04',name:'Lê Văn Cường',role:'Giáo viên',buoi:20,extra:'0 bù / 0 trễ',mins:'2.400',total:'3.600.000đ',st:'san_sang',locked:false}
+];
+
+let INVOICES=[
+  {code:'HD-101',student:'Nguyễn Văn A',mode:'Theo buổi',must:1800000,paid:1000000,st:'mot_phan'},
+  {code:'HD-102',student:'Nguyễn Thị B',mode:'Trọn gói',must:2400000,paid:2400000,st:'da_tt'}
+];
+
+let AUDIT_LOGS=[
+  {timestamp:'20/10 18:02',user:'Nguyễn Minh Anh',module:'Học vụ',action:'Check-out ca dạy',detail:'Hoàn tất ca dạy Toán 9 (127 phút)'},
+  {timestamp:'20/10 17:55',user:'Nguyễn Minh Anh',module:'Ca học',action:'Check-in ca dạy',detail:'Check-in đúng giờ qua GPS'},
+  {timestamp:'19/10 14:20',user:'Lê Thị Mai',module:'Duyệt đơn',action:'Duyệt đơn nghỉ',detail:'Duyệt đơn DON-02 cho HV Nguyễn Thị B (BR08)'},
+  {timestamp:'18/10 10:15',user:'Lê Thị Mai',module:'Thời khóa biểu',action:'sp_sinh_buoi_hoc',detail:'Sinh tự động 8 buổi học lớp LOP-E6G'}
+];
+
+/* ══════════════════════════════════════════════════
+   2. SESSIONS (SINGLE SOURCE OF TRUTH)
+   ══════════════════════════════════════════════════ */
+let calCurrentDate = new Date();
+let calViewMode = 'week';
+let calFilters = { branch:'', teacher:'', classCode:'', subject:'', status:'' };
+
+function pad(n){return String(n).padStart(2,'0')}
+function formatYMD(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r}
+function getMonday(d){
+  const date=new Date(d);
+  const day=date.getDay();
+  const diff=date.getDate()-day+(day===0?-6:1);
+  const mon=new Date(date.setDate(diff));
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+
+let SESSIONS = [];
+function initSessionsData(){
+  const today = new Date();
+  const mon = getMonday(today);
+
+  SESSIONS = [
+    {
+      id:'SES-TUE', classCode:'LOP-T9A', className:'Toán 9 (Kèm 1-1)', subject:'Toán',
+      date: formatYMD(addDays(mon, 1)), startTime:'18:00', endTime:'20:00',
+      isOnline:false, branch:'Thủ Đức', room:'Tại nhà HV (Thủ Đức)',
+      mainTeacher:'Nguyễn Minh Anh', ta:'—', status:'completed',
+      checkinTime:'17:55', checkoutTime:'20:02', actualMinutes:127,
+      topic:'Giải bài toán bằng cách lập hệ phương trình',
+      lessonPlan:'1. Sửa bài tập giấy BT-102\n2. Lý thuyết chọn ẩn & đặt điều kiện\n3. Luyện đề thực tế',
+      homeworkPdf:'https://educenter.edu.vn/files/btvn-toan9-103.pdf',
+      attendances:[
+        { studentId:'HV-0019', studentName:'Nguyễn Văn A', status:'present', score:8.75, note:'Làm bài tốt, chăm chỉ phát biểu.' }
+      ]
+    },
+    {
+      id:'SES-THU', classCode:'LOP-T9A', className:'Toán 9 (Kèm 1-1)', subject:'Toán',
+      date: formatYMD(addDays(mon, 3)), startTime:'18:00', endTime:'20:00',
+      isOnline:false, branch:'Thủ Đức', room:'Tại nhà HV (Thủ Đức)',
+      mainTeacher:'Nguyễn Minh Anh', ta:'—', status:'upcoming',
+      checkinTime:null, checkoutTime:null, actualMinutes:0,
+      topic:'Hệ phương trình bậc nhất hai ẩn (Phần 2)',
+      lessonPlan:'Luyện tập nâng cao dạng toán năng suất và chuyển động.',
+      homeworkPdf:'https://educenter.edu.vn/files/btvn-toan9-104.pdf',
+      attendances:[
+        { studentId:'HV-0019', studentName:'Nguyễn Văn A', status:'present', score:null, note:'' }
+      ]
+    },
+    {
+      id:'SES-WED', classCode:'LOP-E6G', className:'Tiếng Anh 6 Cơ bản', subject:'Tiếng Anh',
+      date: formatYMD(addDays(mon, 2)), startTime:'09:00', endTime:'11:00',
+      isOnline:false, branch:'Thủ Đức', room:'P.204 – Cơ sở 1',
+      mainTeacher:'Lê Văn Cường', ta:'Phạm Gia Huy', status:'upcoming',
+      topic:'Unit 4: My Neighborhood - Vocabulary & Pronunciation',
+      attendances:[
+        { studentId:'HV-0031', studentName:'Nguyễn Thị B', status:'present' }
+      ]
+    },
+    {
+      id:'SES-FRI', classCode:'LOP-L11B', className:'Vật Lý 11 (Kèm 1-1)', subject:'Vật Lý',
+      date: formatYMD(addDays(mon, 4)), startTime:'19:00', endTime:'21:00',
+      isOnline:true, onlineLink:'https://meet.google.com/xyz-phys-live', branch:'Online', room:'Google Meet',
+      mainTeacher:'Trần Quốc Bảo', ta:'—', status:'makeup', originalSessionId:'SES-OLD-08',
+      topic:'[Dạy bù buổi 08/10] Định luật Ôm và mạch điện hỗn hợp',
+      attendances:[
+        { studentId:'HV-0035', studentName:'Lê Hoàng Nam', status:'present' }
+      ]
+    },
+    {
+      id:'SES-SAT', classCode:'LOP-E6G', className:'Tiếng Anh 6 Cơ bản', subject:'Tiếng Anh',
+      date: formatYMD(addDays(mon, 5)), startTime:'09:00', endTime:'11:00',
+      isOnline:false, branch:'Thủ Đức', room:'P.204 – Cơ sở 1',
+      mainTeacher:'Lê Văn Cường', ta:'Phạm Gia Huy', status:'cancelled',
+      topic:'Phụ đạo ngữ pháp (Tạm hủy theo đơn xin nghỉ của phụ huynh)',
+      attendances:[]
+    }
+  ];
+}
+
+/* ══════════════════════════════════════════════════
+   2.1 LOCAL STORAGE & DATA PERSISTENCE (F5 RETENTION)
+   ══════════════════════════════════════════════════ */
+const STORAGE_KEY = 'EDUCENTER_ERP_DATA_V1';
+const AUTH_KEY = 'EDUCENTER_AUTH_SESSION_V1';
+
+function saveStorage(){
+  try {
+    const data = {
+      EMPLOYEES,
+      STUDENTS,
+      REQUESTS,
+      PROPOSALS,
+      CLASSES,
+      LEAVES,
+      SESSIONS,
+      AUDIT_LOGS,
+      PAYROLLS
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    console.warn('Lỗi khi lưu dữ liệu LocalStorage:', e);
+  }
+}
+
+function loadStorage(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const data = JSON.parse(raw);
+      if(data.EMPLOYEES && data.EMPLOYEES.length) EMPLOYEES = data.EMPLOYEES;
+      if(data.STUDENTS && data.STUDENTS.length) STUDENTS = data.STUDENTS;
+      if(data.REQUESTS && data.REQUESTS.length) REQUESTS = data.REQUESTS;
+      if(data.PROPOSALS && data.PROPOSALS.length) PROPOSALS = data.PROPOSALS;
+      if(data.CLASSES && data.CLASSES.length) CLASSES = data.CLASSES;
+      if(data.LEAVES && data.LEAVES.length) LEAVES = data.LEAVES;
+      if(data.SESSIONS && data.SESSIONS.length) SESSIONS = data.SESSIONS;
+      if(data.AUDIT_LOGS && data.AUDIT_LOGS.length) AUDIT_LOGS = data.AUDIT_LOGS;
+      if(data.PAYROLLS && data.PAYROLLS.length) PAYROLLS = data.PAYROLLS;
+      return true;
+    }
+  } catch(e) {
+    console.warn('Lỗi khi tải dữ liệu LocalStorage:', e);
+  }
+  return false;
+}
+
+function resetDemoData(){
+  confirmAction({
+    title: 'Đặt lại toàn bộ dữ liệu mẫu',
+    message: 'Thao tác này sẽ xóa mọi thay đổi tạm thời trên máy bạn (lớp mới, đơn từ, bảng công) và đưa hệ thống về dữ liệu mẫu nguyên bản của đồ án.',
+    icon: '🔄',
+    confirmText: 'Đặt lại dữ liệu',
+    confirmClass: 'danger',
+    onConfirm: () => {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   2.2 AUTHENTICATION & LOGIN FLOW
+   ══════════════════════════════════════════════════ */
+const DEMO_ACCOUNTS = [
+  { username: 'admin', pass: '123456', role: 'Quản trị viên', portal: 'admin', name: 'Trần Quang Huy', email: 'huy.tq@edu.vn' },
+  { username: 'giaovu', pass: '123456', role: 'Nhân viên (Giáo vụ)', portal: 'staff', name: 'Lê Thị Mai', email: 'mai.lt@edu.vn' },
+  { username: 'giaovien', pass: '123456', role: 'Giáo viên', portal: 'teacher', name: 'Nguyễn Minh Anh', email: 'anh.nm@edu.vn' },
+  { username: 'giasu', pass: '123456', role: 'Gia sư 1:1', portal: 'tutor', name: 'Trần Quốc Bảo', email: 'bao.tq@edu.vn' },
+  { username: 'trogiang', pass: '123456', role: 'Trợ giảng', portal: 'ta', name: 'Phạm Gia Huy', email: 'huy.pg@edu.vn' },
+  { username: 'phuhuynh', pass: '123456', role: 'Phụ huynh', portal: 'parent', name: 'Nguyễn Thị Hoa', email: 'hoa.nt@gmail.com' }
+];
+
+function getAuthSession(){
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+function saveAuthSession(sess){
+  localStorage.setItem(AUTH_KEY, JSON.stringify(sess));
+}
+
+function clearAuthSession(){
+  localStorage.removeItem(AUTH_KEY);
+}
+
+function showLoginScreen(){
+  const ls = document.getElementById('loginScreen');
+  const ar = document.getElementById('appRoot');
+  if(ls) ls.classList.add('show');
+  if(ar) ar.style.display = 'none';
+  window.location.hash = '#/login';
+}
+
+function hideLoginScreen(){
+  const ls = document.getElementById('loginScreen');
+  const ar = document.getElementById('appRoot');
+  if(ls) ls.classList.remove('show');
+  if(ar) ar.style.display = 'grid';
+}
+
+function togglePwdVisibility(inputId){
+  const el = document.getElementById(inputId);
+  if(el) el.type = (el.type === 'password') ? 'text' : 'password';
+}
+
+function quickLogin(portalKey){
+  const acct = DEMO_ACCOUNTS.find(a => a.portal === portalKey) || DEMO_ACCOUNTS[0];
+  doLogin(acct);
+}
+
+function handleFormLogin(e){
+  e.preventDefault();
+  const form = e.target;
+  clearAllErrors(form);
+
+  const uInput = document.getElementById('loginUsername');
+  const pInput = document.getElementById('loginPassword');
+  const u = uInput.value.trim().toLowerCase();
+  const p = pInput.value;
+
+  const acct = DEMO_ACCOUNTS.find(a => a.username.toLowerCase() === u || a.email.toLowerCase() === u);
+  if(!acct){
+    setInputError(uInput, 'Tài khoản hoặc email không tồn tại trong hệ thống demo!');
+    return;
+  }
+  if(p !== acct.pass && p !== '123456'){
+    setInputError(pInput, 'Mật khẩu không đúng (mật khẩu demo là 123456)');
+    return;
+  }
+
+  doLogin(acct);
+}
+
+function doLogin(acct){
+  const sess = {
+    username: acct.username,
+    name: acct.name,
+    role: acct.role,
+    portal: acct.portal,
+    token: 'jwt_' + Math.random().toString(36).substring(2),
+    loginAt: new Date().toISOString()
+  };
+  saveAuthSession(sess);
+  hideLoginScreen();
+  toast(`Đăng nhập thành công! Chào mừng ${acct.name} (${acct.role}).`,'ok');
+  setPortal(acct.portal, true);
+}
+
+function handleLogout(){
+  confirmAction({
+    title: 'Xác nhận Đăng xuất',
+    message: 'Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc hiện tại của EduCenter ERP không?',
+    icon: '🚪',
+    confirmText: 'Đăng xuất',
+    confirmClass: 'danger',
+    onConfirm: () => {
+      clearAuthSession();
+      showLoginScreen();
+      toast('Đã đăng xuất khỏi hệ thống an toàn.','info');
+    }
+  });
+}
+
+function toggleUserDropdown(){
+  const ud = document.getElementById('userDropdown');
+  if(ud) ud.classList.toggle('show');
+}
+document.addEventListener('click', (e) => {
+  const ud = document.getElementById('userDropdown');
+  const btn = document.getElementById('acctBtn');
+  if(ud && btn && !ud.contains(e.target) && !btn.contains(e.target)){
+    ud.classList.remove('show');
+  }
+});
+
+/* ══════════════════════════════════════════════════
+   2.3 FORM VALIDATION & MODAL CONFIRM HELPERS
+   ══════════════════════════════════════════════════ */
+function isValidPhone(p){
+  if(!p) return false;
+  const clean = p.replace(/[\s.-]/g, '');
+  return /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/.test(clean);
+}
+
+function isValidEmail(e){
+  if(!e) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+}
+
+function isValidTimeRange(start, end){
+  if(!start || !end) return false;
+  return start < end;
+}
+
+function setInputError(el, msg){
+  if(!el) return;
+  el.classList.add('is-invalid');
+  let err = el.parentElement.querySelector('.field-error');
+  if(!err){
+    err = document.createElement('span');
+    err.className = 'field-error';
+    el.parentElement.appendChild(err);
+  }
+  err.textContent = msg;
+  err.classList.add('show');
+
+  const clearHandler = () => {
+    el.classList.remove('is-invalid');
+    err.classList.remove('show');
+    el.removeEventListener('input', clearHandler);
+    el.removeEventListener('change', clearHandler);
+  };
+  el.addEventListener('input', clearHandler);
+  el.addEventListener('change', clearHandler);
+}
+
+function clearAllErrors(form){
+  if(!form) return;
+  form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+  form.querySelectorAll('.field-error').forEach(el => el.classList.remove('show'));
+}
+
+let confirmCallback = null;
+function confirmAction({ title, message, icon = '⚠️', confirmText = 'Xác nhận', confirmClass = 'p', onConfirm }){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = message;
+  document.getElementById('confirmIcon').textContent = icon;
+  const btn = document.getElementById('btnConfirmOk');
+  btn.textContent = confirmText;
+  btn.className = `btn sm ${confirmClass}`;
+  confirmCallback = onConfirm;
+  document.getElementById('modalConfirm').classList.add('show');
+}
+
+function closeConfirm(proceed = false){
+  document.getElementById('modalConfirm').classList.remove('show');
+  if(proceed && typeof confirmCallback === 'function'){
+    confirmCallback();
+  }
+  confirmCallback = null;
+}
+document.getElementById('btnConfirmOk').addEventListener('click', () => closeConfirm(true));
+
+/* ══════════════════════════════════════════════════
+   3. CALENDAR COMPONENT
+   ══════════════════════════════════════════════════ */
+function renderSharedCalendar(targetContainerId, roleScope){
+  const container = document.getElementById(targetContainerId);
+  if(!container) return;
+
+  const mon = getMonday(calCurrentDate);
+  const sun = addDays(mon, 6);
+  const todayYMD = formatYMD(new Date());
+
+  let visibleSessions = SESSIONS.filter(s => {
+    if(roleScope === 'teacher'){
+      if(s.mainTeacher !== PORTALS.teacher.who && s.ta !== PORTALS.teacher.who) return false;
+    } else if(roleScope === 'tutor'){
+      if(s.mainTeacher !== PORTALS.tutor.who) return false;
+    } else if(roleScope === 'ta'){
+      if(s.ta !== PORTALS.ta.who) return false;
+    } else if(roleScope === 'parent'){
+      const targetChildId = selectedParentKidId || 'HV-0019';
+      const cObj = CLASSES.find(c => c.code === s.classCode);
+      if(!cObj || !cObj.studentIds.includes(targetChildId)) return false;
+    }
+    if(calFilters.branch && s.branch !== calFilters.branch) return false;
+    if(calFilters.teacher && s.mainTeacher !== calFilters.teacher) return false;
+    if(calFilters.classCode && s.classCode !== calFilters.classCode) return false;
+    if(calFilters.subject && s.subject !== calFilters.subject) return false;
+    if(calFilters.status && s.status !== calFilters.status) return false;
+    return true;
+  });
+
+  const rangeTitle = (calViewMode === 'week') ?
+    `${pad(mon.getDate())}/${pad(mon.getMonth()+1)} – ${pad(sun.getDate())}/${pad(sun.getMonth()+1)}/${sun.getFullYear()}` :
+    `Tháng ${calCurrentDate.getMonth()+1}/${calCurrentDate.getFullYear()}`;
+
+  const isStaffOrAdmin = (roleScope === 'admin' || roleScope === 'staff');
+
+  let filterBarHtml = '';
+  if(isStaffOrAdmin){
+    filterBarHtml = `
+      <div class="cal-filter-bar">
+        <span style="font-weight:600;color:var(--g700)">Bộ lọc:</span>
+        <select onchange="onCalFilterChange('branch', this.value)">
+          <option value="">Tất cả cơ sở</option>
+          <option value="Thủ Đức" ${calFilters.branch==='Thủ Đức'?'selected':''}>Thủ Đức</option>
+          <option value="Online" ${calFilters.branch==='Online'?'selected':''}>Học Online</option>
+        </select>
+        <select onchange="onCalFilterChange('teacher', this.value)">
+          <option value="">Tất cả giáo viên</option>
+          <option value="Nguyễn Minh Anh" ${calFilters.teacher==='Nguyễn Minh Anh'?'selected':''}>Nguyễn Minh Anh</option>
+          <option value="Trần Quốc Bảo" ${calFilters.teacher==='Trần Quốc Bảo'?'selected':''}>Trần Quốc Bảo</option>
+          <option value="Lê Văn Cường" ${calFilters.teacher==='Lê Văn Cường'?'selected':''}>Lê Văn Cường</option>
+        </select>
+        <select onchange="onCalFilterChange('classCode', this.value)">
+          <option value="">Tất cả lớp học</option>
+          <option value="LOP-T9A" ${calFilters.classCode==='LOP-T9A'?'selected':''}>LOP-T9A (Toán 9)</option>
+          <option value="LOP-E6G" ${calFilters.classCode==='LOP-E6G'?'selected':''}>LOP-E6G (Anh 6)</option>
+          <option value="LOP-L11B" ${calFilters.classCode==='LOP-L11B'?'selected':''}>LOP-L11B (Lý 11)</option>
+        </select>
+        <select onchange="onCalFilterChange('status', this.value)">
+          <option value="">Tất cả trạng thái</option>
+          <option value="upcoming" ${calFilters.status==='upcoming'?'selected':''}>Sắp diễn ra</option>
+          <option value="completed" ${calFilters.status==='completed'?'selected':''}>Đã hoàn thành</option>
+          <option value="makeup" ${calFilters.status==='makeup'?'selected':''}>Buổi dạy bù (BR09)</option>
+          <option value="cancelled" ${calFilters.status==='cancelled'?'selected':''}>Đã hủy</option>
+        </select>
+        <button class="btn sm" onclick="resetCalFilters()" style="margin-left:auto;color:var(--err)">Đặt lại lọc</button>
+      </div>
+    `;
+  }
+
+  let contentHtml = '';
+  if(calViewMode === 'week'){
+    const dayLabels = ['THỨ 2','THỨ 3','THỨ 4','THỨ 5','THỨ 6','THỨ 7','CN'];
+    let colsHtml = '';
+    for(let i=0; i<7; i++){
+      const d = addDays(mon, i);
+      const dYMD = formatYMD(d);
+      const isToday = (dYMD === todayYMD);
+      const daySessions = visibleSessions.filter(s => s.date === dYMD).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+
+      colsHtml += `
+        <div class="cal-day-col ${isToday?'is-today':''}">
+          <div class="cal-col-head ${isToday?'is-today':''}">
+            <div class="d-name">${dayLabels[i]}</div>
+            <div class="d-num">${pad(d.getDate())}/${pad(d.getMonth()+1)}</div>
+            ${isToday ? `<div class="d-today-badge">Hôm nay</div>` : ''}
+          </div>
+          <div class="cal-col-body">
+            ${daySessions.length > 0 ? daySessions.map(s => renderSessionCardHtml(s)).join('') : '<div class="cal-col-empty">—</div>'}
+            ${roleScope==='staff' ? `<button onclick="openSessionForm('${dYMD}')" class="btn sm" style="margin-top:auto;width:100%;font-size:10.5px;padding:3px;justify-content:center;border-style:dashed;color:var(--g500)">+ Thêm ca</button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    contentHtml = `<div class="cal-week-grid">${colsHtml}</div>`;
+  } else {
+    const year = calCurrentDate.getFullYear();
+    const month = calCurrentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDay = firstDay.getDay();
+    const lead = (startDay === 0) ? 6 : startDay - 1;
+
+    const days = [];
+    for(let i=lead; i>0; i--) days.push(new Date(year, month, 1 - i));
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    for(let i=1; i<=totalDays; i++) days.push(new Date(year, month, i));
+    const rem = 7 - (days.length % 7);
+    if(rem < 7){
+      for(let i=1; i<=rem; i++) days.push(new Date(year, month + 1, i));
+    }
+
+    let cellsHtml = '';
+    days.forEach(d => {
+      const dYMD = formatYMD(d);
+      const isToday = (dYMD === todayYMD);
+      const isOther = (d.getMonth() !== month);
+      const daySessions = visibleSessions.filter(s => s.date === dYMD);
+
+      cellsHtml += `
+        <div class="cal-month-cell ${isToday?'is-today':''} ${isOther?'other-month':''}">
+          <div class="row-b" style="margin-bottom:2px">
+            <span style="font-size:11px;font-weight:700;color:${isToday?'var(--pri-d)':'var(--g700)'}">${d.getDate()}</span>
+            ${roleScope==='staff' ? `<button onclick="openSessionForm('${dYMD}')" style="border:0;background:0;font-size:10px;color:var(--pri);font-weight:700">+</button>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            ${daySessions.slice(0,2).map(s => `
+              <div class="cal-m-chip ${s.status}" onclick="openSessionDetail('${s.id}')">
+                <span>${s.startTime}</span> <b>${s.classCode}</b>
+              </div>
+            `).join('')}
+            ${daySessions.length > 2 ? `<span style="font-size:9.5px;color:var(--pri-d);font-weight:600">+${daySessions.length-2} ca nữa</span>` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    contentHtml = `
+      <div class="cal-month-head">
+        <div class="cal-month-head-cell">THỨ 2</div>
+        <div class="cal-month-head-cell">THỨ 3</div>
+        <div class="cal-month-head-cell">THỨ 4</div>
+        <div class="cal-month-head-cell">THỨ 5</div>
+        <div class="cal-month-head-cell">THỨ 6</div>
+        <div class="cal-month-head-cell">THỨ 7</div>
+        <div class="cal-month-head-cell">CN</div>
+      </div>
+      <div class="cal-month-grid">${cellsHtml}</div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="cal-box">
+      <div class="cal-bar">
+        <div class="row">
+          <button class="cal-nav-btn" onclick="calPrevPeriod('${targetContainerId}','${roleScope}')">‹ Trước</button>
+          <button class="btn sm" onclick="calGoToday('${targetContainerId}','${roleScope}')">Hôm nay</button>
+          <button class="cal-nav-btn" onclick="calNextPeriod('${targetContainerId}','${roleScope}')">Sau ›</button>
+        </div>
+
+        <div>
+          <button class="cal-range-btn" onclick="toast('Đang xem khoảng ngày: ${rangeTitle}','info')">
+            <span>📅 ${rangeTitle}</span>
+          </button>
+        </div>
+
+        <div class="row">
+          <div class="seg">
+            <button class="${calViewMode==='week'?'on':''}" onclick="setCalViewMode('week','${targetContainerId}','${roleScope}')">Tuần</button>
+            <button class="${calViewMode==='month'?'on':''}" onclick="setCalViewMode('month','${targetContainerId}','${roleScope}')">Tháng</button>
+          </div>
+        </div>
+      </div>
+      ${filterBarHtml}
+      ${contentHtml}
+    </div>
+  `;
+}
+
+function renderSessionCardHtml(s){
+  let badgeHtml = '';
+  if(s.status === 'completed') badgeHtml = `<span class="tag ok" style="position:absolute;top:5px;right:6px;font-size:9px;padding:1px 4px">Đã xong</span>`;
+  else if(s.status === 'cancelled') badgeHtml = `<span class="tag r" style="position:absolute;top:5px;right:6px;font-size:9px;padding:1px 4px">Đã hủy</span>`;
+  else if(s.status === 'makeup') badgeHtml = `<span class="tag purple" style="position:absolute;top:5px;right:6px;font-size:9px;padding:1px 4px">Dạy bù</span>`;
+
+  return `
+    <div class="ses-card ${s.status}" onclick="openSessionDetail('${s.id}')">
+      ${badgeHtml}
+      <div class="sc-code">${s.classCode}</div>
+      <div class="sc-subj">${s.subject} · ${s.className}</div>
+      <div class="sc-time">${s.startTime} – ${s.endTime}</div>
+      <div class="sc-loc">
+        <span>${s.isOnline ? '🌐 Online' : '📍 ' + s.branch}</span>
+      </div>
+    </div>
+  `;
+}
+
+function calPrevPeriod(cid, role){
+  if(calViewMode==='week') calCurrentDate = addDays(calCurrentDate, -7);
+  else calCurrentDate = new Date(calCurrentDate.getFullYear(), calCurrentDate.getMonth()-1, 1);
+  renderSharedCalendar(cid, role);
+}
+function calNextPeriod(cid, role){
+  if(calViewMode==='week') calCurrentDate = addDays(calCurrentDate, 7);
+  else calCurrentDate = new Date(calCurrentDate.getFullYear(), calCurrentDate.getMonth()+1, 1);
+  renderSharedCalendar(cid, role);
+}
+function calGoToday(cid, role){
+  calCurrentDate = new Date();
+  renderSharedCalendar(cid, role);
+}
+function setCalViewMode(mode, cid, role){
+  calViewMode = mode;
+  renderSharedCalendar(cid, role);
+}
+function onCalFilterChange(key, val){
+  calFilters[key] = val;
+  refreshActiveCalendars();
+}
+function resetCalFilters(){
+  calFilters = { branch:'', teacher:'', classCode:'', subject:'', status:'' };
+  refreshActiveCalendars();
+}
+function refreshActiveCalendars(){
+  if(currentScreen === 'admin-schedule') renderSharedCalendar('adminCalContainer', 'admin');
+  else if(currentScreen === 'staff-schedule') renderSharedCalendar('staffCalContainer', 'staff');
+  else if(currentScreen === 'teach-schedule') renderSharedCalendar('teachCalContainer', currentPortal);
+  else if(currentScreen === 'parent-schedule') renderSharedCalendar('parentCalContainer', 'parent');
+}
+
+/* ══════════════════════════════════════════════════
+   4. MODAL CHI TIẾT BUỔI HỌC
+   ══════════════════════════════════════════════════ */
+let currentDetailSession = null;
+function openSessionDetail(sessionId){
+  const s = SESSIONS.find(x => x.id === sessionId);
+  if(!s) return;
+  currentDetailSession = s;
+
+  let stTag = '<span class="tag i">Sắp diễn ra</span>';
+  if(s.status === 'completed') stTag = '<span class="tag ok">Đã hoàn thành</span>';
+  else if(s.status === 'cancelled') stTag = '<span class="tag r">Đã hủy</span>';
+  else if(s.status === 'makeup') stTag = '<span class="tag purple">Buổi dạy bù (BR09)</span>';
+
+  document.getElementById('dtModalTitle').innerHTML = `
+    <div class="row">
+      <b style="color:var(--pri-d)">${s.classCode}</b>
+      ${stTag}
+    </div>
+  `;
+
+  const isStaff = (currentPortal === 'staff');
+  const isTeacher = (currentPortal === 'teacher' || currentPortal === 'tutor' || currentPortal === 'ta');
+  const isParent = (currentPortal === 'parent');
+
+  let bodyHtml = `
+    <div style="background:var(--g50);padding:12px;border-radius:var(--rs);border:1px solid var(--g200);margin-bottom:12px">
+      <div class="item"><span>Tên lớp</span><b>${s.className} (${s.subject})</b></div>
+      <div class="item"><span>Thời gian</span><b>${s.date} · ${s.startTime} – ${s.endTime}</b></div>
+      <div class="item"><span>Địa điểm</span><span>${s.isOnline ? `<a href="${s.onlineLink||'#'}" target="_blank" style="color:var(--info);font-weight:600">Vào phòng Zoom/Meet →</a>` : (s.room || s.branch)}</span></div>
+      <div class="item"><span>Giáo viên chính (BR02)</span><b>${s.mainTeacher}</b></div>
+      <div class="item"><span>Trợ giảng</span><span>${s.ta || '—'}</span></div>
+      ${s.originalSessionId ? `<div class="item"><span>Buổi gốc (BR09)</span><span class="tag purple">${s.originalSessionId}</span></div>` : ''}
+    </div>
+
+    <div class="card" style="padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:4px">Nội dung bài học:</div>
+      <div style="font-weight:600">${s.topic || 'Chưa cập nhật chủ đề'}</div>
+      ${s.lessonPlan ? `<div style="font-size:12px;color:var(--g600);margin-top:4px;white-space:pre-line">${s.lessonPlan}</div>` : ''}
+    </div>
+  `;
+
+  if(isTeacher || currentPortal === 'admin' || isStaff){
+    bodyHtml += `
+      <div class="card" style="padding:12px;margin-bottom:0">
+        <div class="row-b" style="margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--g700)">Check-in &amp; Check-out ca dạy:</span>
+          <span class="tag">${s.actualMinutes || 0} phút thực tế</span>
+        </div>
+        <div class="row" style="gap:10px;font-size:12px">
+          <div>Check-in: <b>${s.checkinTime || 'Chưa check-in'}</b></div>
+          <div>Check-out: <b>${s.checkoutTime || 'Chưa check-out'}</b></div>
+        </div>
+      </div>
+    `;
+  }
+
+  if(isParent){
+    const childAtt = s.attendances ? s.attendances.find(a => a.studentId === selectedParentKidId) : null;
+    bodyHtml += `
+      <div class="card" style="padding:12px;background:var(--warn-ll);border-color:var(--warn-l);margin-bottom:0">
+        <div class="row-b" style="margin-bottom:6px">
+          <span style="font-weight:700;color:var(--warn)">Kết quả học tập của con</span>
+          <span class="tag ok">${childAtt ? (childAtt.status==='present'?'Có mặt':'Vắng') : 'Đang cập nhật'}</span>
+        </div>
+        ${childAtt && childAtt.score !== undefined ? `<div style="font-size:13px;margin-bottom:4px">Điểm bài tập giấy: <b style="color:var(--ok)">${childAtt.score}/10</b></div>` : ''}
+        ${childAtt && childAtt.note ? `<div style="font-size:12px;color:var(--g700)">Lời phê: ${childAtt.note}</div>` : ''}
+      </div>
+    `;
+  }
+
+  document.getElementById('dtModalContent').innerHTML = bodyHtml;
+
+  let actsHtml = '';
+  if(isStaff){
+    actsHtml = `
+      <button class="btn sm" onclick="rescheduleSessionDetail()">⏰ Dời lịch</button>
+      <button class="btn purple sm" onclick="makeupSessionDetail()">+ Xếp bù cả lớp (BR09)</button>
+      <button class="btn danger sm" onclick="cancelSessionDetail()">🗑 Hủy ca</button>
+      <button class="btn sm" onclick="closeModalSessionDetail()" style="margin-left:auto">Đóng</button>
+    `;
+  } else if(isTeacher){
+    actsHtml = `
+      ${!s.checkinTime ? `<button class="btn p sm" onclick="doSessionCheckin('${s.id}')">📍 Check-in ca dạy</button>` : ''}
+      <button class="btn sm" onclick="goToSessionLog('${s.id}')">📖 Vào sổ học vụ</button>
+      <button class="btn warn sm" onclick="openTeacherRequestForSession('${s.id}')">Làm đơn báo bận</button>
+      <button class="btn sm" onclick="closeModalSessionDetail()" style="margin-left:auto">Đóng</button>
+    `;
+  } else if(isParent){
+    actsHtml = `
+      <button class="btn p sm" onclick="toast('Đang tải đề bài tập PDF...','ok')">📥 Tải đề bài tập (PDF)</button>
+      <button class="btn warn sm" onclick="openParentLeaveForSession('${s.id}')">Gửi đơn xin nghỉ buổi này</button>
+      <button class="btn sm" onclick="closeModalSessionDetail()" style="margin-left:auto">Đóng</button>
+    `;
+  } else {
+    actsHtml = `<button class="btn sm" onclick="closeModalSessionDetail()" style="margin-left:auto">Đóng</button>`;
+  }
+
+  document.getElementById('dtModalActions').innerHTML = actsHtml;
+  document.getElementById('modalSessionDetail').classList.add('show');
+}
+
+function closeModalSessionDetail(){
+  document.getElementById('modalSessionDetail').classList.remove('show');
+  currentDetailSession = null;
+}
+
+function cancelSessionDetail(){
+  if(!currentDetailSession) return;
+  const s = currentDetailSession;
+  confirmAction({
+    title: 'Xác nhận hủy buổi học',
+    message: `Bạn có chắc chắn muốn hủy ca dạy ${s.classCode} ngày ${s.date} không? Thao tác này sẽ cập nhật trạng thái buổi học thành Đã hủy.`,
+    icon: '❌',
+    confirmText: 'Đồng ý hủy ca',
+    confirmClass: 'danger',
+    onConfirm: () => {
+      s.status = 'cancelled';
+      AUDIT_LOGS.unshift({
+        timestamp: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),
+        user: PORTALS[currentPortal].who, module:'Lịch dạy', action:'Hủy buổi học', detail:`Hủy ca ${s.classCode} (${s.date})`
+      });
+      saveStorage();
+      closeModalSessionDetail();
+      refreshActiveCalendars();
+      toast('Đã hủy buổi học thành công.','ok');
+    }
+  });
+}
+
+function makeupSessionDetail(){
+  if(!currentDetailSession) return;
+  const s = currentDetailSession;
+  closeModalSessionDetail();
+  const makeupDate = formatYMD(addDays(new Date(s.date), 7));
+  const newSes = {
+    ...s,
+    id: 'SES-BU-' + Date.now(),
+    date: makeupDate,
+    status: 'makeup',
+    originalSessionId: s.id,
+    topic: `[Học bù] ${s.topic || ''}`,
+    checkinTime:null, checkoutTime:null, actualMinutes:0
+  };
+  SESSIONS.unshift(newSes);
+  AUDIT_LOGS.unshift({
+    timestamp: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),
+    user: PORTALS[currentPortal].who, module:'Lịch dạy', action:'Tạo ca dạy bù (BR09)', detail:`Xếp bù ca ${s.classCode} sang ngày ${makeupDate}`
+  });
+  saveStorage();
+  refreshActiveCalendars();
+  toast('Đã tạo buổi học bù cả lớp liên kết buổi gốc (BR09).','ok');
+}
+
+function rescheduleSessionDetail(){
+  if(!currentDetailSession) return;
+  const s = currentDetailSession;
+  closeModalSessionDetail();
+  openSessionForm(s.date, s);
+}
+
+function doSessionCheckin(sessionId){
+  const s = SESSIONS.find(x => x.id === sessionId);
+  if(s){
+    s.checkinTime = '17:58';
+    saveStorage();
+    toast('Check-in thành công qua GPS! Đã lưu lúc 17:58.','ok');
+    closeModalSessionDetail();
+    refreshActiveCalendars();
+  }
+}
+
+function goToSessionLog(sessionId){
+  closeModalSessionDetail();
+  showS('teach-log');
+}
+
+/* ══════════════════════════════════════════════════
+   5. MODAL FORM XẾP BUỔI HỌC (GIÁO VỤ)
+   ══════════════════════════════════════════════════ */
+let editingSessionId = null;
+function openSessionForm(defaultDate, editSession){
+  editingSessionId = editSession ? editSession.id : null;
+  document.getElementById('sfModalTitle').textContent = editSession ? `Sửa buổi học (${editSession.classCode})` : 'Xếp buổi học mới';
+
+  const clSel = document.getElementById('sfClassSelect');
+  clSel.innerHTML = CLASSES.map(c => `<option value="${c.code}" ${editSession&&editSession.classCode===c.code?'selected':''}>${c.code} — ${c.name}</option>`).join('');
+
+  const tSel = document.getElementById('sfTeacherSelect');
+  tSel.innerHTML = EMPLOYEES.filter(e => e.role==='Giáo viên'||e.role==='Gia sư').map(e => `<option value="${e.name}" ${editSession&&editSession.mainTeacher===e.name?'selected':''}>${e.name} (${e.role})</option>`).join('');
+
+  const taSel = document.getElementById('sfTaSelect');
+  taSel.innerHTML = `<option value="—">— Không có trợ giảng —</option>` + EMPLOYEES.filter(e => e.role==='Trợ giảng').map(e => `<option value="${e.name}" ${editSession&&editSession.ta===e.name?'selected':''}>${e.name}</option>`).join('');
+
+  document.getElementById('sfDate').value = editSession ? editSession.date : (defaultDate || formatYMD(new Date()));
+  document.getElementById('sfStartTime').value = editSession ? editSession.startTime : '18:00';
+  document.getElementById('sfEndTime').value = editSession ? editSession.endTime : '20:00';
+  document.getElementById('sfTopic').value = editSession ? (editSession.topic||'') : '';
+  document.getElementById('sfConflictBanner').style.display = 'none';
+
+  setSfOnlineMode(editSession ? editSession.isOnline : false);
+  if(editSession && editSession.onlineLink) document.getElementById('sfOnlineLink').value = editSession.onlineLink;
+
+  document.getElementById('sfRecurringWrap').style.display = editSession ? 'none' : 'block';
+  document.getElementById('sfIsRecurring').checked = false;
+  document.getElementById('sfRecurOptions').style.display = 'none';
+
+  onSfClassChanged();
+  document.getElementById('modalSessionForm').classList.add('show');
+}
+
+function closeModalSessionForm(){
+  document.getElementById('modalSessionForm').classList.remove('show');
+  editingSessionId = null;
+}
+
+function onSfClassChanged(){
+  const code = document.getElementById('sfClassSelect').value;
+  const c = CLASSES.find(x => x.code === code);
+  if(!c) return;
+  if(!editingSessionId){
+    document.getElementById('sfTeacherSelect').value = c.main;
+    onSfBranchChanged();
+  }
+}
+
+function onSfBranchChanged(){
+  const rSel = document.getElementById('sfRoomSelect');
+  rSel.innerHTML = CATALOG.rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+function setSfOnlineMode(isOnline){
+  document.getElementById('sfBtnOffline').classList.toggle('on', !isOnline);
+  document.getElementById('sfBtnOnline').classList.toggle('on', isOnline);
+  document.getElementById('sfOfflineFields').style.display = isOnline ? 'none' : 'flex';
+  document.getElementById('sfOnlineFields').style.display = isOnline ? 'block' : 'none';
+}
+
+function checkSfConflicts(){
+  const date = document.getElementById('sfDate').value;
+  const start = document.getElementById('sfStartTime').value;
+  const end = document.getElementById('sfEndTime').value;
+  const teacher = document.getElementById('sfTeacherSelect').value;
+
+  const overlap = SESSIONS.find(s => s.id !== editingSessionId && s.status !== 'cancelled' && s.date === date && s.mainTeacher === teacher && (
+    (start >= s.startTime && start < s.endTime) || (end > s.startTime && end <= s.endTime)
+  ));
+
+  const banner = document.getElementById('sfConflictBanner');
+  if(overlap){
+    document.getElementById('sfConflictText').textContent = `Giáo viên ${teacher} đã có ca dạy ${overlap.classCode} (${overlap.startTime}–${overlap.endTime}) trong cùng ngày (BR01)!`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function handleSessionFormSubmit(e){
+  e.preventDefault();
+  const form = e.target;
+  clearAllErrors(form);
+
+  const date = document.getElementById('sfDate').value;
+  const start = document.getElementById('sfStartTime').value;
+  const end = document.getElementById('sfEndTime').value;
+  if(start >= end){
+    setInputError(document.getElementById('sfEndTime'), 'Giờ kết thúc phải sau giờ bắt đầu!');
+    toast('Giờ kết thúc phải sau giờ bắt đầu!','err');
+    return;
+  }
+
+  const code = document.getElementById('sfClassSelect').value;
+  const c = CLASSES.find(x => x.code === code) || CLASSES[0];
+  const teacher = document.getElementById('sfTeacherSelect').value;
+  const ta = document.getElementById('sfTaSelect').value;
+  const isOnline = document.getElementById('sfBtnOnline').classList.contains('on');
+  const onlineLink = document.getElementById('sfOnlineLink').value;
+  const branch = isOnline ? 'Online' : document.getElementById('sfBranchSelect').value;
+  const room = isOnline ? 'Google Meet' : document.getElementById('sfRoomSelect').value;
+  const topic = document.getElementById('sfTopic').value;
+
+  const isRecurring = document.getElementById('sfIsRecurring').checked;
+  const repeatCount = parseInt(document.getElementById('sfRepeatCount').value) || 8;
+
+  if(editingSessionId){
+    const target = SESSIONS.find(s => s.id === editingSessionId);
+    if(target){
+      target.classCode = c.code; target.className = c.name; target.subject = c.subject;
+      target.date = date; target.startTime = start; target.endTime = end;
+      target.mainTeacher = teacher; target.ta = ta; target.isOnline = isOnline;
+      target.onlineLink = onlineLink; target.branch = branch; target.room = room; target.topic = topic;
+    }
+    toast('Đã cập nhật ca học thành công!','ok');
+  } else {
+    if(isRecurring){
+      let cur = new Date(date);
+      for(let i=0; i<repeatCount; i++){
+        SESSIONS.unshift({
+          id: 'SES-' + Date.now() + '-' + i,
+          classCode: c.code, className: c.name, subject: c.subject,
+          date: formatYMD(cur), startTime: start, endTime: end,
+          isOnline, onlineLink, branch, room, mainTeacher: teacher, ta,
+          status: 'upcoming', topic: topic || `Buổi học số ${i+1}`
+        });
+        cur = addDays(cur, 7);
+      }
+      toast(`Đã tự động sinh chuỗi ${repeatCount} buổi học định kỳ (sp_sinh_buoi_hoc)!`,'ok');
+    } else {
+      SESSIONS.unshift({
+        id: 'SES-' + Date.now(),
+        classCode: c.code, className: c.name, subject: c.subject,
+        date, startTime: start, endTime: end,
+        isOnline, onlineLink, branch, room, mainTeacher: teacher, ta,
+        status: 'upcoming', topic
+      });
+      toast('Đã thêm buổi học mới vào thời khóa biểu!','ok');
+    }
+  }
+
+  saveStorage();
+  closeModalSessionForm();
+  refreshActiveCalendars();
+}
+
+function exportSchedulePdf(){
+  toast('Đang xuất báo cáo thống kê lịch toàn chuỗi sang định dạng PDF...','ok');
+}
+
+/* ══════════════════════════════════════════════════
+   6. HỆ THỐNG ĐƠN TỪ & MODAL CHỌN LOẠI ĐƠN (GV & PH)
+   ══════════════════════════════════════════════════ */
+let currentTeachFilter = 'all';
+
+function renderTeachRequestsView(){
+  const tb = document.getElementById('teachRequestsBody');
+  if(!tb) return;
+
+  const currentWho = PORTALS[currentPortal].who;
+  let list = LEAVES.filter(l => l.requester.includes(currentWho) || l.target.includes(currentWho));
+
+  if(currentTeachFilter !== 'all'){
+    list = list.filter(l => l.type === currentTeachFilter);
+  }
+
+  if(list.length === 0){
+    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--g500)">Chưa có đơn từ nào được ghi nhận trong danh mục này.</td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = list.map(l => {
+    let typeTag = '<span class="tag i">Đơn từ</span>';
+    if(l.type === 'nghi_day') typeTag = '<span class="tag w">Nghỉ dạy</span>';
+    else if(l.type === 'doi_lich') typeTag = '<span class="tag purple">Đổi lịch</span>';
+    else if(l.type === 'dieu_chinh_cong') typeTag = '<span class="tag ok">Chỉnh giờ công</span>';
+    else if(l.type === 'xin_lop') typeTag = '<span class="tag i">Xin nhận lớp</span>';
+    else if(l.type === 'huy_lop') typeTag = '<span class="tag r">Hủy lớp</span>';
+
+    return `
+      <tr>
+        <td><b>${l.id}</b></td>
+        <td>${typeTag}</td>
+        <td><b>${l.classCode}</b><br><span style="font-size:11px;color:var(--g500)">${l.sessionDate}</span></td>
+        <td style="max-width:240px">
+          <div>${l.reason}</div>
+        </td>
+        <td style="font-size:11.5px;color:var(--g500)">${l.date}</td>
+        <td>
+          ${l.status === 'cho_duyet' ? '<span class="tag w">Chờ giáo vụ duyệt</span>' : l.status === 'da_duyet' ? '<span class="tag ok">Đã được duyệt</span>' : '<span class="tag r">Bị từ chối</span>'}
+        </td>
+        <td style="font-size:12px;color:var(--g600)">${l.responseNote || '—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterTeachRequests(type){
+  currentTeachFilter = type;
+  document.querySelectorAll('#teachReqFilterChips .chip').forEach(c => {
+    c.classList.remove('on');
+    if(c.getAttribute('onclick').includes(type)) c.classList.add('on');
+  });
+  renderTeachRequestsView();
+}
+
+function openTeacherRequestModal(preselectedType){
+  const sel = document.getElementById('trTypeSelect');
+  if(preselectedType) sel.value = preselectedType;
+  onTrTypeChanged();
+
+  // Populate sessions
+  const sSel = document.getElementById('trSessionSelect');
+  const who = PORTALS[currentPortal].who;
+  const mySessions = SESSIONS.filter(s => s.mainTeacher === who || s.ta === who);
+  sSel.innerHTML = mySessions.map(s => `
+    <option value="${s.id}">${s.classCode} (${s.date} · ${s.startTime}-${s.endTime})</option>
+  `).join('');
+
+  document.getElementById('modalCreateTeacherReq').classList.add('show');
+}
+
+function openTeacherRequestForSession(sessionId){
+  openTeacherRequestModal('nghi_day');
+  const sSel = document.getElementById('trSessionSelect');
+  if(sSel) sSel.value = sessionId;
+}
+
+function closeModalTeacherReq(){
+  document.getElementById('modalCreateTeacherReq').classList.remove('show');
+}
+
+function onTrTypeChanged(){
+  const t = document.getElementById('trTypeSelect').value;
+  document.getElementById('trRescheduleWrap').style.display = (t === 'doi_lich') ? 'block' : 'none';
+  document.getElementById('trAdjustHoursWrap').style.display = (t === 'dieu_chinh_cong') ? 'block' : 'none';
+  document.getElementById('trSessionWrap').style.display = (t === 'xin_lop') ? 'none' : 'block';
+}
+
+function handleTeacherReqSubmit(e){
+  e.preventDefault();
+  const form = e.target;
+  clearAllErrors(form);
+
+  const type = document.getElementById('trTypeSelect').value;
+  const typeLabels = {
+    nghi_day: 'Nghỉ dạy',
+    doi_lich: 'Đổi lịch dạy',
+    dieu_chinh_cong: 'Điều chỉnh giờ công',
+    xin_lop: 'Xin nhận lớp',
+    huy_lop: 'Hủy lớp'
+  };
+
+  const sId = document.getElementById('trSessionSelect').value;
+  const ses = SESSIONS.find(s => s.id === sId) || SESSIONS[0];
+  const reasonInput = document.getElementById('trReasonText');
+  let reason = reasonInput.value.trim();
+
+  let hasErr = false;
+  if(reason.length < 5){
+    setInputError(reasonInput, 'Vui lòng nhập lý do cụ thể (tối thiểu 5 ký tự)');
+    hasErr = true;
+  }
+
+  if(type === 'doi_lich'){
+    const dateInput = document.getElementById('trNewDate');
+    const timeInput = document.getElementById('trNewTime');
+    if(!dateInput.value){
+      setInputError(dateInput, 'Vui lòng chọn ngày đề xuất dời sang');
+      hasErr = true;
+    }
+    if(!timeInput.value.trim()){
+      setInputError(timeInput, 'Vui lòng nhập khung giờ mới (VD: 18:00 - 20:00)');
+      hasErr = true;
+    }
+    if(!hasErr){
+      reason += ` (Đề xuất dời sang: ${dateInput.value} ${timeInput.value.trim()})`;
+    }
+  } else if(type === 'dieu_chinh_cong'){
+    const inT = document.getElementById('trAdjCheckin').value;
+    const outT = document.getElementById('trAdjCheckout').value;
+    if(!isValidTimeRange(inT, outT)){
+      setInputError(document.getElementById('trAdjCheckout'), 'Giờ kết thúc thực tế phải sau giờ bắt đầu!');
+      hasErr = true;
+    }
+    if(!hasErr){
+      reason += ` (Giờ dạy thực tế: ${inT} - ${outT})`;
+    }
+  }
+
+  if(hasErr) return;
+
+  const newId = 'DON-GV-' + (LEAVES.length + 101);
+  const who = PORTALS[currentPortal].who;
+
+  LEAVES.unshift({
+    id: newId,
+    type,
+    typeLabel: typeLabels[type],
+    requester: `${who} (${PORTALS[currentPortal].role})`,
+    target: who,
+    sessionDate: ses ? ses.date : 'N/A',
+    classCode: ses ? ses.classCode : 'N/A',
+    reason,
+    status: 'cho_duyet',
+    responseNote: 'Đã gửi đến Giáo vụ để phê duyệt',
+    date: new Date().toLocaleDateString('vi-VN')
+  });
+
+  saveStorage();
+  closeModalTeacherReq();
+  renderTeachRequestsView();
+  renderStaffApproveView();
+  toast(`Đã gửi ${typeLabels[type]} thành công! Giáo vụ sẽ tiếp nhận xử lý.`,'ok');
+}
+
+// Parent Leave Application
+function renderParentLeaveView(){
+  const tb = document.getElementById('parentLeaveTableBody');
+  if(!tb) return;
+
+  const list = LEAVES.filter(l => l.type === 'nghi_hoc');
+  tb.innerHTML = list.map(l => `
+    <tr>
+      <td><b>${l.id}</b></td>
+      <td><b>${l.target}</b></td>
+      <td><b>${l.classCode}</b> (${l.sessionDate})</td>
+      <td style="color:var(--g700)">${l.reason}</td>
+      <td style="font-size:11.5px;color:var(--g500)">${l.date}</td>
+      <td>
+        ${l.status === 'cho_duyet' ? '<span class="tag w">Chờ duyệt</span>' : l.status === 'da_duyet' ? '<span class="tag ok">Đã chấp thuận</span>' : '<span class="tag r">Từ chối</span>'}
+      </td>
+      <td style="font-size:12px;color:var(--g600)">${l.responseNote || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function openParentLeaveModal(){
+  const kSel = document.getElementById('plKidSelect');
+  kSel.innerHTML = STUDENTS.slice(0,2).map(s => `<option value="${s.id}">${s.name} (${s.grade})</option>`).join('');
+  onPlKidChanged();
+  document.getElementById('modalParentLeave').classList.add('show');
+}
+
+function openParentLeaveForSession(sessionId){
+  openParentLeaveModal();
+  const sSel = document.getElementById('plSessionSelect');
+  if(sSel) sSel.value = sessionId;
+}
+
+function closeModalParentLeave(){
+  document.getElementById('modalParentLeave').classList.remove('show');
+}
+
+function onPlKidChanged(){
+  const sSel = document.getElementById('plSessionSelect');
+  sSel.innerHTML = SESSIONS.filter(s => s.status !== 'cancelled').map(s => `
+    <option value="${s.id}">${s.classCode} - Ngày ${s.date} (${s.startTime}-${s.endTime})</option>
+  `).join('');
+}
+
+function handleParentLeaveSubmit(e){
+  e.preventDefault();
+  const form = e.target;
+  clearAllErrors(form);
+
+  const kId = document.getElementById('plKidSelect').value;
+  const kid = STUDENTS.find(s => s.id === kId) || STUDENTS[0];
+  const sId = document.getElementById('plSessionSelect').value;
+  const ses = SESSIONS.find(s => s.id === sId) || SESSIONS[0];
+  const reasonInput = document.getElementById('plReasonText');
+  const reason = reasonInput.value.trim();
+
+  if(reason.length < 5){
+    setInputError(reasonInput, 'Vui lòng nêu rõ lý do xin nghỉ (tối thiểu 5 ký tự)');
+    return;
+  }
+
+  const newId = 'DON-PH-' + (LEAVES.length + 101);
+  LEAVES.unshift({
+    id: newId,
+    type: 'nghi_hoc',
+    typeLabel: 'Nghỉ học',
+    requester: `Phụ huynh ${PORTALS.parent.who}`,
+    target: `${kid.name} (${kid.id})`,
+    sessionDate: ses ? ses.date : 'N/A',
+    classCode: ses ? ses.classCode : 'N/A',
+    reason,
+    status: 'cho_duyet',
+    responseNote: 'Giáo vụ đang tiếp nhận & đối soát',
+    date: new Date().toLocaleDateString('vi-VN')
+  });
+
+  saveStorage();
+  closeModalParentLeave();
+  renderParentLeaveView();
+  renderStaffApproveView();
+  toast('Đã gửi đơn xin nghỉ học cho con! Giáo vụ sẽ tiếp nhận và thông báo kết quả.','ok');
+}
+
+// Staff Approval View
+let currentStaffApproveFilter = 'all';
+
+function renderStaffApproveView(){
+  const tb = document.getElementById('staffApproveBody');
+  if(!tb) return;
+
+  let list = LEAVES;
+  if(currentStaffApproveFilter !== 'all'){
+    list = list.filter(l => l.type === currentStaffApproveFilter);
+  }
+
+  tb.innerHTML = list.map(l => {
+    let typeTag = '<span class="tag i">Đơn từ</span>';
+    if(l.type === 'nghi_hoc') typeTag = '<span class="tag w">Nghỉ học (HV)</span>';
+    else if(l.type === 'nghi_day') typeTag = '<span class="tag w">Nghỉ dạy (GV)</span>';
+    else if(l.type === 'doi_lich') typeTag = '<span class="tag purple">Đổi lịch</span>';
+    else if(l.type === 'dieu_chinh_cong') typeTag = '<span class="tag ok">Chỉnh giờ công</span>';
+
+    return `
+      <tr>
+        <td><b>${l.id}</b></td>
+        <td>${typeTag}</td>
+        <td><b>${l.requester}</b><br><span style="font-size:11px;color:var(--g500)">Đối tượng: ${l.target}</span></td>
+        <td><b>${l.classCode}</b> (${l.sessionDate})</td>
+        <td style="max-width:240px">
+          <div>${l.reason}</div>
+          ${l.responseNote ? `<div style="font-size:11px;color:var(--pri-d);margin-top:2px">Phản hồi: ${l.responseNote}</div>` : ''}
+        </td>
+        <td>
+          ${l.status === 'cho_duyet' ? '<span class="tag w">Chờ duyệt</span>' : l.status === 'da_duyet' ? '<span class="tag ok">Đã duyệt</span>' : '<span class="tag r">Đã từ chối</span>'}
+        </td>
+        <td>
+          ${l.status === 'cho_duyet' ? `
+            <div class="row">
+              <button class="btn p sm" onclick="staffApproveLeave('${l.id}')">Duyệt</button>
+              <button class="btn danger sm" onclick="staffRejectLeave('${l.id}')">Từ chối</button>
+            </div>
+          ` : '<span style="font-size:11px;color:var(--g400)">Đã xử lý</span>'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const pendingCount = LEAVES.filter(l => l.status === 'cho_duyet').length;
+  const badge = document.getElementById('stPendingLeaveCount');
+  if(badge) badge.textContent = pendingCount;
+}
+
+function filterStaffApprove(type){
+  currentStaffApproveFilter = type;
+  document.querySelectorAll('#staffApproveFilterChips .chip').forEach(c => {
+    c.classList.remove('on');
+    if(c.getAttribute('onclick').includes(type)) c.classList.add('on');
+  });
+  renderStaffApproveView();
+}
+
+function staffApproveLeave(id){
+  const l = LEAVES.find(x => x.id === id);
+  if(!l) return;
+  l.status = 'da_duyet';
+
+  if(l.type === 'nghi_hoc'){
+    l.responseNote = 'Đã duyệt nghỉ có phép (BR08: Lớp nhóm vẫn học bình thường).';
+  } else if(l.type === 'doi_lich'){
+    l.responseNote = 'Đã duyệt và cập nhật lịch mới trên hệ thống.';
+  } else if(l.type === 'dieu_chinh_cong'){
+    l.responseNote = 'Đã duyệt cập nhật giờ công thực tế vào bảng lương.';
+  } else {
+    l.responseNote = 'Đã phê duyệt chấp thuận.';
+  }
+
+  saveStorage();
+  renderStaffApproveView();
+  renderTeachRequestsView();
+  renderParentLeaveView();
+  toast(`Đã phê duyệt đơn ${l.id} thành công!`,'ok');
+}
+
+function staffRejectLeave(id){
+  const l = LEAVES.find(x => x.id === id);
+  if(!l) return;
+  confirmAction({
+    title: 'Xác nhận từ chối đơn',
+    message: `Bạn có chắc chắn muốn từ chối đơn "${l.id}" (${l.typeLabel || l.type}) của ${l.requester}?`,
+    icon: '🚫',
+    confirmText: 'Từ chối đơn',
+    confirmClass: 'danger',
+    onConfirm: () => {
+      l.status = 'tu_choi';
+      l.responseNote = 'Giáo vụ không chấp thuận yêu cầu này.';
+      saveStorage();
+      renderStaffApproveView();
+      renderTeachRequestsView();
+      renderParentLeaveView();
+      toast(`Đã từ chối đơn ${l.id}.`,'info');
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   7. NAVIGATION & PORTAL SWITCHING LOGIC (SPA HASH ROUTER)
+   ══════════════════════════════════════════════════ */
+function setPortal(p, syncHash = true, targetScreen = null){
+  currentPortal = p;
+  const o = PORTALS[p];
+  if(!o) return;
+
+  const curSess = getAuthSession();
+  if(curSess){
+    curSess.portal = p;
+    curSess.role = o.role;
+    curSess.name = o.who;
+    saveAuthSession(curSess);
+  }
+
+  document.getElementById('sRole').textContent = o.role;
+  document.getElementById('sName').textContent = o.who;
+  document.getElementById('sRoute').textContent = o.route;
+  document.getElementById('permLbl').textContent = o.perms;
+  document.getElementById('acctBtn').textContent = o.who.split(' ').pop()[0] || 'U';
+  const udName = document.getElementById('udName');
+  const udRole = document.getElementById('udRole');
+  if(udName) udName.textContent = o.who;
+  if(udRole) udRole.textContent = o.role;
+
+  const nav = document.getElementById('nav');
+  nav.innerHTML = o.m.map(([id,ico,lbl]) => `
+    <button id="nav-${id}" onclick="showS('${id}')">
+      <span class="nav-icon">${ico}</span>${lbl}
+    </button>
+  `).join('');
+
+  document.querySelectorAll('#seg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.p === p);
+  });
+
+  const nextScreen = targetScreen || o.m[0][0];
+  showS(nextScreen, !syncHash);
+  if(syncHash && getAuthSession()){
+    history.replaceState(null, '', `#/${p}/${nextScreen}`);
+  }
+}
+
+function showS(id, skipHashUpdate = false){
+  currentScreen = id;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+
+  document.querySelectorAll('#nav button').forEach(b => b.classList.remove('on'));
+  const nb = document.getElementById('nav-' + id);
+  if(nb) nb.classList.add('on');
+
+  if(!skipHashUpdate && getAuthSession()){
+    history.replaceState(null, '', `#/${currentPortal}/${id}`);
+  }
+
+  // Trigger renders
+  if(id === 'admin-schedule') renderSharedCalendar('adminCalContainer', 'admin');
+  else if(id === 'staff-schedule') renderSharedCalendar('staffCalContainer', 'staff');
+  else if(id === 'teach-schedule') renderSharedCalendar('teachCalContainer', currentPortal);
+  else if(id === 'parent-schedule') { renderParentKidChips(); renderSharedCalendar('parentCalContainer', 'parent'); }
+  else if(id === 'admin-staff') renderStaff();
+  else if(id === 'admin-catalog') renderCatalog();
+  else if(id === 'admin-perms') renderPerms();
+  else if(id === 'admin-audit') renderAudit();
+  else if(id === 'staff-intake') renderRequests();
+  else if(id === 'staff-students') renderStudents();
+  else if(id === 'staff-classes') renderClasses();
+  else if(id === 'staff-approve') renderStaffApproveView();
+  else if(id === 'staff-billing') renderInvoices();
+  else if(id === 'staff-payroll') renderStaffPayroll();
+  else if(id === 'teach-dash') renderTeachDash();
+  else if(id === 'teach-myclasses') renderMyClasses();
+  else if(id === 'teach-recruit') renderRecruit();
+  else if(id === 'teach-requests') renderTeachRequestsView();
+  else if(id === 'teach-paysheet') renderPaysheet();
+  else if(id === 'parent-dash') renderParentDash();
+  else if(id === 'parent-leave') renderParentLeaveView();
+
+  document.getElementById('apiMethod').textContent = 'GET';
+  document.getElementById('apiUri').textContent = `/api/${id.replace('-','/')}`;
+}
+
+function handleHashRoute(){
+  const sess = getAuthSession();
+  const hash = window.location.hash.slice(2); // strip '#/'
+  if(!sess){
+    showLoginScreen();
+    return;
+  }
+  hideLoginScreen();
+  if(!hash || hash === 'login'){
+    setPortal(sess.portal || 'admin', true);
+    return;
+  }
+  const parts = hash.split('/');
+  const p = parts[0];
+  const s = parts[1];
+  if(PORTALS[p]){
+    if(p !== currentPortal){
+      setPortal(p, false, s);
+    } else if(s && s !== currentScreen){
+      showS(s, true);
+    }
+  } else {
+    setPortal(sess.portal || 'admin', true);
+  }
+}
+window.addEventListener('hashchange', handleHashRoute);
+
+/* ══════════════════════════════════════════════════
+   8. CÁC HÀM XỬ LÝ NGHIỆP VỤ KHÁC
+   ══════════════════════════════════════════════════ */
+function toast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = (type==='err') ? 'var(--err)' : (type==='warn') ? 'var(--warn)' : 'var(--pri)';
+  t.style.display = 'block';
+  setTimeout(()=>{ t.style.display = 'none'; }, 3500);
+}
+
+function toggleNotif(){
+  document.getElementById('notifPanel').classList.toggle('open');
+}
+
+// Staff Personnel
+function renderStaff(){
+  const tb = document.getElementById('staffRows');
+  tb.innerHTML = EMPLOYEES.map(e => `
+    <tr>
+      <td><b>${e.name}</b></td>
+      <td>${e.email}</td>
+      <td>${e.phone}</td>
+      <td><span class="tag i">${e.role}</span></td>
+      <td>${e.active ? '<span class="tag ok">Hoạt động</span>' : '<span class="tag r">Khóa</span>'}</td>
+      <td><button class="btn sm" onclick="toggleStaff(${e.id})">${e.active ? 'Khóa' : 'Kích hoạt'}</button></td>
+    </tr>
+  `).join('');
+  document.getElementById('staffCount').textContent = `Tổng: ${EMPLOYEES.length} tài khoản`;
+}
+function toggleStaff(id){
+  const e = EMPLOYEES.find(x => x.id === id);
+  if(!e) return;
+  const actionText = e.active ? 'Khóa' : 'Kích hoạt lại';
+  confirmAction({
+    title: `Xác nhận ${actionText} tài khoản`,
+    message: `Bạn có chắc chắn muốn ${actionText.toLowerCase()} tài khoản của "${e.name}" (${e.role}) không?`,
+    icon: e.active ? '🔒' : '🔓',
+    confirmText: `Đồng ý ${actionText}`,
+    confirmClass: e.active ? 'danger' : 'p',
+    onConfirm: () => {
+      e.active = !e.active;
+      saveStorage();
+      renderStaff();
+      toast(`Đã ${actionText.toLowerCase()} tài khoản ${e.name}.`,'ok');
+    }
+  });
+}
+
+function openStaffForm(){
+  const f = document.getElementById('staffAddForm');
+  if(f) f.reset();
+  clearAllErrors(f);
+  document.getElementById('modalStaffForm').classList.add('show');
+}
+
+function closeModalStaffForm(){
+  document.getElementById('modalStaffForm').classList.remove('show');
+}
+
+function handleStaffAddSubmit(e){
+  e.preventDefault();
+  const form = document.getElementById('staffAddForm');
+  clearAllErrors(form);
+
+  const nameInput = document.getElementById('sfStaffName');
+  const emailInput = document.getElementById('sfStaffEmail');
+  const phoneInput = document.getElementById('sfStaffPhone');
+  const role = document.getElementById('sfStaffRole').value;
+
+  let hasErr = false;
+  if(nameInput.value.trim().length < 2){
+    setInputError(nameInput, 'Vui lòng nhập họ tên đầy đủ (tối thiểu 2 ký tự)');
+    hasErr = true;
+  }
+  if(!isValidEmail(emailInput.value)){
+    setInputError(emailInput, 'Định dạng email không hợp lệ (VD: user@edu.vn)');
+    hasErr = true;
+  }
+  if(!isValidPhone(phoneInput.value)){
+    setInputError(phoneInput, 'Số điện thoại không hợp lệ (cần 10 chữ số bắt đầu bằng 03, 05, 07, 08, 09)');
+    hasErr = true;
+  }
+
+  if(hasErr) return;
+
+  const newStaff = {
+    id: EMPLOYEES.length + 1,
+    name: nameInput.value.trim(),
+    email: emailInput.value.trim().toLowerCase(),
+    phone: phoneInput.value.trim(),
+    role: role,
+    active: true
+  };
+  EMPLOYEES.push(newStaff);
+  saveStorage();
+  closeModalStaffForm();
+  renderStaff();
+  toast(`Đã tạo tài khoản cho ${newStaff.name} (${newStaff.role}) thành công!`,'ok');
+}
+
+// Catalog
+function renderCatalog(){
+  const tabs = document.getElementById('catTabs');
+  tabs.innerHTML = `
+    <div class="chips">
+      <span class="chip on" onclick="switchCat('rooms')">Phòng học</span>
+      <span class="chip" onclick="switchCat('subjects')">Môn học</span>
+      <span class="chip" onclick="switchCat('branches')">Cơ sở</span>
+    </div>
+  `;
+  switchCat('rooms');
+}
+function switchCat(k){
+  const c = document.getElementById('catContent');
+  c.innerHTML = `
+    <div class="card" style="margin-top:10px">
+      <div class="row-b" style="margin-bottom:10px">
+        <h2>Danh mục: ${k}</h2>
+        <button class="btn sm p" onclick="addCatItem('${k}')">+ Thêm mới</button>
+      </div>
+      <div class="chips">${CATALOG[k].map(item => `<span class="chip on">${item}</span>`).join('')}</div>
+    </div>
+  `;
+}
+function addCatItem(k){
+  const val = prompt(`Thêm mục mới vào ${k}:`);
+  if(val){ CATALOG[k].push(val); switchCat(k); toast('Đã thêm vào danh mục.','ok'); }
+}
+
+// Perms
+function renderPerms(){
+  const tabs = document.getElementById('permRoleTabs');
+  tabs.innerHTML = Object.keys(ROLE_PERMS).map(r => `
+    <span class="chip ${r===permRole?'on':''}" onclick="setPermRole('${r}')">${r}</span>
+  `).join('');
+  document.getElementById('permRoleLabel').textContent = `Cấu hình phân quyền cho nhóm: ${permRole}`;
+
+  const cards = document.getElementById('permCards');
+  cards.innerHTML = PERM_MODS.map((m, idx) => `
+    <div class="card" style="padding:10px 14px;margin-bottom:8px">
+      <div class="row-b">
+        <b>${m}</b>
+        <div class="row">
+          ${PERM_FLAGS.map((f, fIdx) => `
+            <label style="margin:0;font-size:12px;display:flex;align-items:center;gap:3px">
+              <input type="checkbox" style="width:14px;height:14px" ${ROLE_PERMS[permRole][idx][fIdx] ? 'checked' : ''} onchange="ROLE_PERMS['${permRole}'][${idx}][${fIdx}]=this.checked?1:0">
+              ${f}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function setPermRole(r){ permRole = r; renderPerms(); }
+function permBatch(v){
+  ROLE_PERMS[permRole] = ROLE_PERMS[permRole].map(row => row.map(()=>v));
+  renderPerms();
+}
+
+// Admin Unlock Payroll
+function adminUnlockPayroll(who){
+  confirmAction({
+    title: 'Xác nhận mở khóa bảng công',
+    message: `Đặc quyền Admin (BR04/BR12): Bạn có đồng ý mở khóa bảng công đã chốt của "${who}" để Giáo vụ điều chỉnh số liệu không?`,
+    icon: '🛡️',
+    confirmText: 'Mở khóa bảng công',
+    confirmClass: 'purple',
+    onConfirm: () => {
+      const p = PAYROLLS.find(x => x.name.includes(who));
+      if(p){
+        p.locked = false;
+        p.st = 'san_sang';
+        AUDIT_LOGS.unshift({
+          timestamp: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),
+          user: 'Trần Quang Huy (Admin)', module:'Chấm công', action:'Mở khóa bảng công (BR04)', detail:`Đặc quyền Admin: Mở khóa công ${who} để điều chỉnh`
+        });
+        saveStorage();
+        renderStaffPayroll();
+        toast(`Đặc quyền Admin: Đã mở khóa bảng công của ${who}! Giáo vụ có thể điều chỉnh lại.`,'ok');
+      }
+    }
+  });
+}
+
+// Audit
+function renderAudit(){
+  const tb = document.getElementById('auditBody');
+  tb.innerHTML = AUDIT_LOGS.map(a => `
+    <tr>
+      <td class="mono" style="font-size:11px">${a.timestamp}</td>
+      <td><b>${a.user}</b></td>
+      <td><span class="tag i">${a.module}</span></td>
+      <td>${a.action}</td>
+      <td style="font-size:12px;color:var(--g600)">${a.detail}</td>
+    </tr>
+  `).join('');
+}
+
+// Intake Wizard (Giáo vụ)
+function intakeStep(idx){
+  for(let i=0;i<4;i++){
+    const el = document.getElementById('istep' + i);
+    if(el) el.style.display = (i===idx) ? 'block' : 'none';
+  }
+  document.querySelectorAll('#intakeWF .ws').forEach((el, i)=>{
+    el.classList.toggle('on', i===idx);
+  });
+  if(idx===0) renderRequests();
+  else if(idx===1) runMatch();
+  else if(idx===2) renderProposals();
+  else if(idx===3) renderCreateClass();
+}
+function renderRequests(){
+  const tb = document.getElementById('reqRows');
+  tb.innerHTML = REQUESTS.map(r => `
+    <tr>
+      <td><b>${r.id}</b></td>
+      <td><b>${r.student}</b></td>
+      <td>${r.parent} · ${r.phone}</td>
+      <td>${r.subject}</td>
+      <td>${r.schedule}</td>
+      <td>${r.area}</td>
+      <td><span class="tag ${r.status==='moi'?'w':'ok'}">${r.status==='moi'?'Mới tiếp nhận':'Đang ghép lớp'}</span></td>
+      <td><button class="btn p sm" onclick="intakeStep(1)">Tìm gia sư</button></td>
+    </tr>
+  `).join('');
+}
+function openRequestForm(){
+  const name = prompt('Nhập tên học viên cần học:');
+  if(!name) return;
+  REQUESTS.unshift({ id:'YC-00'+(REQUESTS.length+1), student:name, parent:'PH '+name, phone:'0988777666', subject:'Tiếng Anh 9', schedule:'T3, T5 (18:00)', area:'Thủ Đức', budget:200000, status:'moi', date:'20/10/2026' });
+  renderRequests();
+  toast('Đã ghi nhận yêu cầu tuyển sinh mới!','ok');
+}
+function runMatch(){
+  const tb = document.getElementById('matchBody');
+  tb.innerHTML = TUTORS.map(t => `
+    <tr>
+      <td><b>${t.name}</b><br><span style="font-size:11px;color:var(--g500)">${t.info}</span></td>
+      <td>Toán / Tiếng Anh</td>
+      <td>${t.fee.toLocaleString()}đ</td>
+      <td>${t.ok ? `<span class="tag ok">${t.sched}</span>` : `<span class="tag r">${t.sched}</span>`}</td>
+      <td><button class="btn p sm" ${!t.ok?'disabled':''} onclick="makeProposal('${t.name}')">Đề xuất</button></td>
+    </tr>
+  `).join('');
+}
+function makeProposal(tutorName){
+  PROPOSALS.unshift({ id:'DX-10'+(PROPOSALS.length+1), req:'YC-001 · NV A', tutor:tutorName, ts:'dong_y', tp:'dong_y', done:true });
+  intakeStep(3);
+  toast(`Đã gửi đề xuất gia sư ${tutorName}. Cả hai bên đã đồng ý!`,'ok');
+}
+function renderProposals(){
+  const tb = document.getElementById('proposalBody');
+  tb.innerHTML = PROPOSALS.map(p => `
+    <tr>
+      <td><b>${p.id}</b></td><td>${p.req}</td><td><b>${p.tutor}</b></td>
+      <td><span class="tag ok">Đồng ý</span></td><td><span class="tag ok">Đồng ý</span></td>
+      <td><button class="btn p sm" onclick="intakeStep(3)">Tạo lớp</button></td>
+    </tr>
+  `).join('');
+}
+function renderCreateClass(){
+  const tb = document.getElementById('createClassBody');
+  tb.innerHTML = PROPOSALS.filter(p => p.done).map(p => `
+    <tr>
+      <td><b>${p.id}</b></td><td>${p.req}</td><td><b>${p.tutor}</b></td>
+      <td><span class="tag ok">Sẵn sàng</span></td>
+      <td><button class="btn p sm" onclick="createClassFromIntake('${p.tutor}')">+ Kích hoạt lớp &amp; Sinh lịch (sp_sinh_buoi_hoc)</button></td>
+    </tr>
+  `).join('');
+}
+function createClassFromIntake(tutor){
+  const code = 'LOP-NEW' + Math.floor(Math.random()*100);
+  CLASSES.push({ code, name:'Lớp kèm mới', type:'Kèm 1-1', room:'Tại nhà HV (Thủ Đức)', sched:'T3, T5 (18:00)', subject:'Toán 9', main:tutor, ta:'—', cur:1, max:1, studentIds:['HV-0019'] });
+  let cur = new Date();
+  for(let i=0; i<8; i++){
+    SESSIONS.push({
+      id: 'SES-NEW-' + Date.now() + '-' + i,
+      classCode: code, className: 'Lớp kèm mới', subject: 'Toán',
+      date: formatYMD(cur), startTime: '18:00', endTime: '20:00',
+      isOnline: false, branch: 'Thủ Đức', room: 'Tại nhà HV (Thủ Đức)',
+      mainTeacher: tutor, ta: '—', status: 'upcoming', topic: `Buổi học số ${i+1}`
+    });
+    cur = addDays(cur, 7);
+  }
+  toast(`Đã khởi tạo lớp ${code} và tự động sinh 8 buổi học vào Thời khóa biểu!`,'ok');
+  showS('staff-schedule');
+}
+
+// Students & Classes (Giáo vụ)
+function renderStudents(){
+  const tb = document.getElementById('stuBody');
+  tb.innerHTML = STUDENTS.map(s => `
+    <tr>
+      <td><b>${s.id}</b></td><td><b>${s.name}</b></td><td>${s.grade}</td><td>${s.school}</td>
+      <td>${s.parent}</td><td>${s.parentPhone}</td>
+      <td><span class="tag ${s.status==='dang_hoc'?'ok':'w'}">${s.status==='dang_hoc'?'Đang học':'Tạm nghỉ'}</span></td>
+      <td><button class="btn sm" onclick="toast('Xem hồ sơ chi tiết ${s.name}','info')">Hồ sơ</button></td>
+    </tr>
+  `).join('');
+}
+function openStudentForm(){
+  const name = prompt('Nhập tên học viên mới:');
+  if(!name) return;
+  STUDENTS.push({ id:'HV-00'+(STUDENTS.length+20), name, grade:'Lớp 9', school:'THCS Nguyễn Du', parent:'PH '+name, parentPhone:'0988777666', status:'dang_hoc' });
+  renderStudents();
+  toast('Đã thêm học viên mới!','ok');
+}
+
+function renderClasses(){
+  const tb = document.getElementById('classBody');
+  tb.innerHTML = CLASSES.map(c => `
+    <tr>
+      <td><b style="color:var(--pri-d)">${c.code}</b></td>
+      <td><b>${c.name}</b><br><span style="font-size:11px;color:var(--g500)">${c.room}</span></td>
+      <td>${c.sched}</td>
+      <td><b>${c.main}</b></td>
+      <td>${c.ta}</td>
+      <td>
+        <b>${c.cur}</b> / ${c.max} HV
+        ${c.cur >= c.max ? `<span class="tag r" style="font-size:9.5px">Đầy (BR03)</span>` : ''}
+      </td>
+      <td>
+        <button class="btn sm p" onclick="enrollStudentPrompt('${c.code}')">+ Ghi danh (BR03)</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function enrollStudentPrompt(code){
+  const c = CLASSES.find(x => x.code === code);
+  if(!c) return;
+  if(c.cur >= c.max){
+    toast(`Lớp ${code} đã đạt sĩ số tối đa (${c.max} HV)! Không thể ghi danh (BR03).`,'err');
+    return;
+  }
+  c.cur++;
+  renderClasses();
+  toast(`Đã ghi danh thêm 1 học viên vào lớp ${code}!`,'ok');
+}
+function openClassForm(){
+  openSessionForm();
+}
+
+// Invoices & Payment (Giáo vụ)
+function renderInvoices(){
+  const tb = document.getElementById('invBody');
+  tb.innerHTML = INVOICES.map(i => `
+    <tr onclick="selectInvoice('${i.code}')" style="cursor:pointer">
+      <td><b>${i.code}</b></td><td>${i.student}</td><td>${i.mode}</td>
+      <td>${i.must.toLocaleString()}đ</td>
+      <td style="color:var(--ok);font-weight:700">${i.paid.toLocaleString()}đ</td>
+      <td style="color:var(--err);font-weight:700">${(i.must - i.paid).toLocaleString()}đ</td>
+      <td>${i.st==='da_tt'?'<span class="tag ok">Đã thu đủ</span>':'<span class="tag w">Một phần</span>'}</td>
+      <td><button class="btn sm" onclick="selectInvoice('${i.code}')">Chọn</button></td>
+    </tr>
+  `).join('');
+}
+let currentSelectedInv = null;
+function selectInvoice(code){
+  const inv = INVOICES.find(x => x.code === code);
+  if(!inv) return;
+  currentSelectedInv = inv;
+  const rem = inv.must - inv.paid;
+  document.getElementById('invBanner').innerHTML = `<b>Đang chọn: ${inv.code} · ${inv.student}</b> — Còn nợ: <b style="color:var(--err)">${rem.toLocaleString()}đ</b>`;
+  document.getElementById('payAmt').value = rem > 0 ? rem : 0;
+}
+function doPayment(){
+  if(!currentSelectedInv){ toast('Vui lòng chọn một hóa đơn cần thu tiền!','warn'); return; }
+  const amt = parseInt(document.getElementById('payAmt').value) || 0;
+  const type = document.getElementById('payTypeSel').value;
+  const rem = currentSelectedInv.must - currentSelectedInv.paid;
+
+  if(type === 'thu'){
+    if(amt <= 0 || amt > rem){
+      toast('Số tiền thu không được âm và không được vượt quá số còn nợ (BR14)!','err');
+      return;
+    }
+    currentSelectedInv.paid += amt;
+    if(currentSelectedInv.paid >= currentSelectedInv.must) currentSelectedInv.st = 'da_tt';
+    toast(`Đã ghi nhận phiếu thu ${amt.toLocaleString()}đ cho hóa đơn ${currentSelectedInv.code}.`,'ok');
+  } else {
+    currentSelectedInv.paid -= amt;
+    currentSelectedInv.st = 'mot_phan';
+    toast(`Đã ghi nhận phiếu hoàn tiền ${amt.toLocaleString()}đ cho hóa đơn ${currentSelectedInv.code}.`,'info');
+  }
+  renderInvoices();
+  selectInvoice(currentSelectedInv.code);
+}
+
+// Staff Payroll (Giáo vụ / Kế toán chốt công)
+function staffClosePayrollMonth(){
+  const unclosed = SESSIONS.find(s => s.checkinTime && !s.checkoutTime);
+  const warn = document.getElementById('staffPayrollWarn');
+  if(unclosed){
+    warn.innerHTML = `<div class="warn-box">⚠ <b>Không thể chốt công (BR11, BR06):</b> Ca học ${unclosed.classCode} ngày ${unclosed.date} đã check-in nhưng chưa check-out!</div>`;
+    toast('Chặn chốt công: Còn ca dạy chưa check-out!','err');
+    return;
+  }
+  confirmAction({
+    title: 'Xác nhận Chốt công tháng (sp_chot_cong)',
+    message: 'Bạn có chắc chắn muốn khóa sổ thù lao tháng 10? Sau khi chốt, chỉ có Admin mới có quyền mở khóa để sửa đổi (BR12).',
+    icon: '💰',
+    confirmText: 'Chốt công & Khóa sổ',
+    confirmClass: 'p',
+    onConfirm: () => {
+      warn.innerHTML = '';
+      PAYROLLS.forEach(p => { p.st = 'da_chot'; p.locked = true; });
+      saveStorage();
+      renderStaffPayroll();
+      toast('Giáo vụ đã chốt công tháng (sp_chot_cong): Toàn bộ ca dạy đã được khóa sổ an toàn (BR12)!','ok');
+    }
+  });
+}
+function renderStaffPayroll(){
+  const tb = document.getElementById('staffPayrollBody');
+  tb.innerHTML = PAYROLLS.map(p => `
+    <tr>
+      <td><b>${p.name}</b></td>
+      <td><span class="tag i">${p.role}</span></td>
+      <td>${p.buoi} buổi</td>
+      <td>${p.extra}</td>
+      <td>${p.mins} phút</td>
+      <td><b style="color:var(--ok)">${p.total}</b></td>
+      <td>${p.locked ? '<span class="tag purple">🔒 Đã khóa sổ (BR12)</span>' : '<span class="tag w">Chờ chốt</span>'}</td>
+      <td>${p.locked ? '<button class="btn sm" onclick="toast(\'Bảng công đã khóa (BR12). Nếu muốn sửa cần Admin mở khóa.\',\'info\')">Chi tiết</button>' : `<button class="btn p sm" onclick="p.locked=true;p.st='da_chot';renderStaffPayroll();toast('Đã khóa công ${p.name}.','ok')">Chốt công</button>`}</td>
+    </tr>
+  `).join('');
+}
+
+// Teaching Portal In-class functions
+function renderTeachDash(){
+  const d = document.getElementById('teachDashContent');
+  d.innerHTML = `
+    <div class="card" style="padding:16px">
+      <div class="row-b" style="margin-bottom:10px">
+        <h2>Ca dạy tiếp theo hôm nay</h2>
+        <button class="btn p sm" onclick="showS('teach-session')">Mở màn hình Check-in →</button>
+      </div>
+      <div class="item"><span>Lớp</span><b>Toán 9 (Kèm 1-1) — Nguyễn Văn A</b></div>
+      <div class="item"><span>Khung giờ</span><span>18:00 – 20:00 (120 phút)</span></div>
+      <div class="item"><span>Địa chỉ</span><span>12 Võ Văn Ngân, Thủ Đức</span></div>
+    </div>
+  `;
+}
+function doCheckin(isLate){
+  document.getElementById('ciTag').textContent = isLate ? 'Check-in trễ (18p)' : 'Đã check-in (17:55)';
+  document.getElementById('ciTag').className = isLate ? 'tag r' : 'tag ok';
+  document.getElementById('gpsTag').textContent = 'GPS: 10.8499, 106.7716 (Khớp)';
+  document.getElementById('gpsTag').className = 'tag ok';
+  document.getElementById('lateWarn').style.display = isLate ? 'block' : 'none';
+  document.getElementById('ciTimeDisp').textContent = isLate ? '18:18 (Trễ 18 phút)' : '17:55';
+  toast(isLate ? 'Check-in trễ! Hệ thống đã ghi nhận cảnh báo.' : 'Check-in thành công qua GPS!','ok');
+}
+function saveSessionLog(){
+  toast('Đã lưu nội dung học vụ, điểm danh 4 trạng thái và điểm bài tập giấy (BR10)!','ok');
+}
+function doCheckout(){
+  document.getElementById('coTimeDisp').textContent = '20:02';
+  document.getElementById('realMinsDisp').textContent = '127 phút';
+  toast('Đã check-out hoàn thành ca dạy! Dữ liệu đã chuyển sang đối soát công.','ok');
+}
+function renderMyClasses(){
+  const tb = document.getElementById('myClassBody');
+  tb.innerHTML = CLASSES.map(c => `
+    <tr>
+      <td><b>${c.code}</b></td><td>${c.subject} · ${c.name}</td><td>${c.sched}</td>
+      <td><span class="tag ok">Dạy chính</span></td><td>${c.cur} HV</td><td><span class="tag ok">Đang học</span></td>
+      <td><button class="btn sm" onclick="showS('teach-schedule')">Xem lịch</button></td>
+    </tr>
+  `).join('');
+}
+function renderRecruit(){
+  const tb = document.getElementById('recruitBody');
+  tb.innerHTML = REQUESTS.map(r => `
+    <tr>
+      <td><b>${r.id}</b></td><td>${r.subject}</td><td>${r.area}</td><td>${r.schedule}</td>
+      <td>Thủ Đức</td><td><b>${r.budget.toLocaleString()}đ</b></td>
+      <td><span class="tag w">Cần gia sư</span></td>
+      <td><button class="btn p sm" onclick="openTeacherRequestModal('xin_lop')">Ứng tuyển</button></td>
+    </tr>
+  `).join('');
+}
+function renderPaysheet(){
+  document.getElementById('paysheetStats').innerHTML = `
+    <div class="st g"><div class="n">4.320.000đ</div><span>Thù lao thực nhận T10</span></div>
+    <div class="st i"><div class="n">24 ca</div><span>Số ca hoàn thành</span></div>
+    <div class="st"><div class="n">2.880</div><span>Tổng số phút dạy</span></div>
+  `;
+  document.getElementById('paysheetBody').innerHTML = `
+    <tr><td>20/10</td><td>LOP-T9A (Toán 9)</td><td>17:55 → 20:02</td><td>127p</td><td>180.000đ</td><td><span class="tag ok">Hợp lệ</span></td></tr>
+    <tr><td>15/10</td><td>LOP-T9A (Toán 9)</td><td>18:00 → 20:00</td><td>120p</td><td>180.000đ</td><td><span class="tag ok">Hợp lệ</span></td></tr>
+  `;
+}
+
+// Parent Portal
+let selectedParentKidId = 'HV-0019';
+function renderParentDash(){
+  renderParentKidChips();
+  const kid = STUDENTS.find(x => x.id === selectedParentKidId) || STUDENTS[0];
+  document.getElementById('pTopic').textContent = 'Giải bài toán bằng cách lập hệ phương trình';
+  document.getElementById('pDesc').textContent = '1. Sửa bài tập giấy BT-102\n2. Nắm chắc phương pháp đặt ẩn phụ\n3. Luyện đề thi vào 10';
+  document.getElementById('pArr').innerHTML = '<span class="tag ok">✓ Đã có mặt đúng giờ</span>';
+  document.getElementById('pHw').textContent = 'Phiếu BT-103: 10 bài toán lập hệ PT nâng cao';
+  document.getElementById('pDue').textContent = 'Đầu buổi Thứ Sáu, 23/10/2026';
+  document.getElementById('pL1').textContent = 'Thứ Năm, 22/10 (18:00–20:00) · Toán 9';
+  document.getElementById('pL2').textContent = 'Chủ Nhật, 25/10 (10:00–12:00) · Tiếng Anh 9';
+  document.getElementById('pFee').textContent = '1.800.000đ';
+  document.getElementById('pPaid').textContent = '1.000.000đ';
+  document.getElementById('pLeft').textContent = '800.000đ';
+}
+function renderParentKidChips(){
+  const chips1 = document.getElementById('kidChips');
+  const chips2 = document.getElementById('parentCalKidChips');
+  const html = `
+    <span class="chip ${selectedParentKidId==='HV-0019'?'on':''}" onclick="selectParentKid('HV-0019')">Nguyễn Văn A (Lớp 9)</span>
+    <span class="chip ${selectedParentKidId==='HV-0031'?'on':''}" onclick="selectParentKid('HV-0031')">Nguyễn Thị B (Lớp 6)</span>
+  `;
+  if(chips1) chips1.innerHTML = html;
+  if(chips2) chips2.innerHTML = html;
+}
+function selectParentKid(id){
+  selectedParentKidId = id;
+  renderParentKidChips();
+  renderParentDash();
+  renderSharedCalendar('parentCalContainer', 'parent');
+  toast(`Đã chọn con: ${id==='HV-0019'?'Nguyễn Văn A':'Nguyễn Thị B'}`,'info');
+}
+
+// Esc Key Handler
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModalSessionDetail();
+    closeModalSessionForm();
+    closeModalTeacherReq();
+    closeModalParentLeave();
+    closeModalStaffForm();
+    closeConfirm(false);
+    const ud = document.getElementById('userDropdown');
+    if(ud) ud.classList.remove('show');
+    const np = document.getElementById('notifPanel');
+    if(np) np.classList.remove('open');
+  }
+});
+
+/* ══════════════════════════════════════════════════
+   9. KHỞI TẠO ỨNG DỤNG (INITIALIZATION & ROUTE GUARD)
+   ══════════════════════════════════════════════════ */
+function initApp(){
+  // 1. Tải dữ liệu từ LocalStorage (F5 không mất dữ liệu)
+  const hasSavedData = loadStorage();
+  if(!hasSavedData){
+    initSessionsData();
+    saveStorage();
+  }
+
+  // 2. Dựng thanh chuyển tác nhân Topbar (dành cho demo và chấm thi)
+  const seg = document.getElementById('seg');
+  seg.innerHTML = Object.entries(PORTALS).map(([k,v]) => `
+    <button data-p="${k}" onclick="setPortal('${k}')">${v.role}</button>
+  `).join('');
+
+  // 3. Kiểm tra phiên đăng nhập & Điều hướng Hash Router
+  const sess = getAuthSession();
+  if(!sess){
+    showLoginScreen();
+  } else {
+    hideLoginScreen();
+    const hash = window.location.hash.slice(2);
+    if(hash && hash !== 'login'){
+      const parts = hash.split('/');
+      const p = parts[0];
+      const s = parts[1];
+      if(PORTALS[p]){
+        setPortal(p, false, s);
+      } else {
+        setPortal(sess.portal || 'admin', false);
+      }
+    } else {
+      setPortal(sess.portal || 'admin', true);
+    }
+  }
+}
+
+initApp();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+name: Pull Request Verification
+
+on:
+  pull_request:
+    branches: [ main, master, develop ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  code-integrity-check:
+    name: Verify Code Syntax & Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Verify HTML & JavaScript Syntax
+        run: |
+          echo "Bắt đầu kiểm tra tính toàn vẹn của mã nguồn dự án EduCenter ERP..."
+          node -e "
+            const fs = require('fs');
+            const targetFiles = ['index.html', 'frontend/index.html'];
+            let hasError = false;
+
+            targetFiles.forEach(f => {
+              if (fs.existsSync(f)) {
+                console.log('-> Đang kiểm tra file: ' + f);
+                const content = fs.readFileSync(f, 'utf8');
+                const scriptMatches = content.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/gi);
+                if (scriptMatches) {
+                  scriptMatches.forEach((s, idx) => {
+                    const code = s.replace(/<script[\s\S]*?>/i, '').replace(/<\/script>/i, '');
+                    try {
+                      new Function(code);
+                      console.log('   [OK] Khối script ' + idx + ' cú pháp hợp lệ.');
+                    } catch (e) {
+                      console.error('   [FAIL] Lỗi cú pháp tại khối script ' + idx + ': ' + e.message);
+                      hasError = true;
+                    }
+                  });
+                }
+              }
+            });
+
+            if (hasError) {
+              console.error('Kiểm tra thất bại! Vui lòng sửa lỗi cú pháp trước khi merge.');
+              process.exit(1);
+            } else {
+              console.log('Tất cả các file đều vượt qua kiểm tra cú pháp!');
+            }
+          "
