@@ -1,0 +1,6 @@
+# Preserve reference files byte-for-byte across Windows and Linux checkouts.
+/index.html -text
+/frontend/index.html -text
+/trung_tam_gia_su_35_tables.sql -text
+/database/trung_tam_gia_su_35_tables.sql -text
+/docs/reference/** -text
