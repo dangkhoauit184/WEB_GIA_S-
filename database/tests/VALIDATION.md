@@ -1,52 +1,44 @@
-# Kết quả kiểm tra Database
+# Kiểm thử bản clean Database 002
 
-Kiểm tra ngày 22/10/2026 bằng **MySQL Community Server 8.4.13**, Windows, InnoDB, utf8mb4, READ COMMITTED, giờ phiên +07:00. Server portable chạy tạm trên localhost với cổng riêng; không kết nối database đang sử dụng của người dùng, không cài dịch vụ Windows. Binary logging tắt riêng trên server thử nghiệm.
-
-## Kết quả đã chạy
+Đã chạy ngày **02/11/2026** trên MySQL Community Server **8.4.13**, Windows, InnoDB, utf8mb4, session +07:00 và READ COMMITTED. Server portable chỉ lắng nghe localhost trên cổng thử nghiệm riêng, không cài dịch vụ hoặc đụng database người dùng. Binary logging tắt riêng trên server thử nghiệm.
 
 | Kiểm tra | Kết quả |
 | --- | --- |
-| Khởi tạo bằng `scripts/run.ps1 -Action init` | Thành công; 36 bảng, 21 trigger, 11 routine |
-| Nạp danh mục gốc | Thành công; 5 nhóm quyền, 8 phân hệ, ma trận gốc |
-| Nạp demo bằng `-Action seed-demo` | Thành công, tài khoản demo bị khóa |
-| `tests/integrity.sql` | 11/11 ca đạt, transaction dữ liệu test được rollback |
-| `tests/workflows.sql` | 12/12 ca đạt trên database demo dùng một lần |
-| `migrations/preflight.sql` trên bản sao SQL gốc | Không phát hiện vi phạm, không sửa dữ liệu |
-| Migration và cài routine/trigger trên bản sao SQL gốc | Thành công; 36 bảng, 21 trigger, 11 routine, trạng thái applied |
-| Kiểm tra sau nâng cấp | Số dư hóa đơn khớp chứng từ; liên kết công đúng người/kỳ |
-| Dữ liệu mẫu sau nâng cấp | Giữ 8 người dùng, 14 buổi học, 15 phân công; hóa đơn số 1 vẫn đã thu 180.000đ |
-| Hash bảo toàn và bộ khung | `verify_structure.py` đạt: 12 hash, 18 feature, 198 file rỗng |
-| Chạy init/migrate lặp lại | Script từ chối đúng theo điều kiện an toàn |
-| So cột database mới và database nâng cấp | 0 khác biệt tên/kiểu/null/default/generated expression |
+| Init từ bộ module mới | Thành công: 36 bảng, 23 trigger, 2 function + 10 procedure |
+| Seed tham chiếu và demo | Thành công, tài khoản demo vẫn khóa |
+| integrity.sql | 11/11 đạt |
+| regressions.sql | 8/8 đạt |
+| workflows.sql | 12/12 đạt |
+| Tổng ca hành vi | **31/31 đạt** |
+| Gọi migrate khi đã ở 002 | Không chạy lại DDL hoặc sửa dữ liệu |
+| SQL gốc 35 bảng → 001 → 002 | Thành công, kiểm tra dữ liệu không có VI_PHAM |
+| Database đã có 001 → 002 | Thành công, không chạy lại ALTER của 001 |
+| Dữ liệu sau nâng cấp từ 001 | Giữ 8 người dùng, 14 buổi học, số đã thu hóa đơn 1 là 180.000đ |
+| So cột giữa database mới và database nâng từ gốc | 0 khác biệt tên/kiểu/null/default/generated expression |
+| verify_structure.py --scaffold-only | 15 hash bảo toàn, 18 feature, 198 file rỗng; không có mẫu trong frontend |
 
-11 ca toàn vẹn kiểm tra FK, giá âm, sĩ số khi INSERT/UPDATE, thu vượt nợ, hoàn vượt số dư, lũy kế sau hoàn, đổi danh tính phiếu, hủy phiếu gây âm dư, ca bù sai gốc và snapshot phân công mới.
+## Phạm vi các suite
 
-12 ca quy trình kiểm tra sinh lịch lặp lại không trùng, trùng phòng, trùng người dạy/trợ giảng, đổi giờ gây xung đột, phòng cùng tên ở hai cơ sở, giảm sĩ số lớp, chặn chốt khi có đơn chờ, tính lương theo snapshot, khóa ca đã chốt, Nhân viên không mở được khóa, Admin mở và chốt lại, nhật ký kiểm toán.
+| Suite | Các hành vi đã kiểm tra |
+| --- | --- |
+| Toàn vẹn | FK, giá âm, sĩ số INSERT/UPDATE, thu vượt nợ, hoàn vượt số dư, lũy kế, đổi danh tính/hủy phiếu, học bù sai gốc, snapshot phân công mới |
+| Hồi quy 002 | Công thức/round tiền công, snapshot NULL, chuyển nợ hóa đơn, đổi ID phiếu, dời ca sang kỳ khóa, xóa ca trong kỳ khóa, khôi phục buổi gốc có ca bù, chốt khi trạng thái công chưa khớp |
+| Quy trình | Sinh lại không trùng, xung đột phòng/người/trợ giảng khi đổi lịch, cùng tên phòng khác cơ sở, giảm sức chứa, đơn công chờ, lương theo snapshot, khóa công, quyền mở khóa, chốt lại và audit |
 
-## Những kết quả cần người triển khai xử lý
+## Những dữ liệu vẫn cần xác nhận
 
-- Demo mới có 1 lớp phí tháng chưa cấu hình giá: `hoc_phi_thang=NULL`.
-- Nâng cấp giữ 15 snapshot cách tính lương lịch sử ở NULL; không tự lấy cách tính hiện tại để áp cho quá khứ. Cần xác minh hợp đồng trước khi chốt lại các ca đó.
-- Không thử tải đồng thời, khôi phục backup, quyền tài khoản production, TLS, binary logging hoặc MySQL 8.0. Các việc này cần kiểm tra trên hạ tầng triển khai.
-- Báo cáo trên xác nhận đường khởi tạo và nâng cấp từ SQL mẫu trong repo; không chứng minh mọi database đã chỉnh riêng tương thích.
+Demo có 1 lớp phí tháng chưa có `hoc_phi_thang`; giữ NULL theo tài liệu chưa xác định giá. Nâng cấp từ SQL nguyên gốc giữ 15 snapshot cách tính lương quá khứ ở NULL; không tự đoán giá trị từ lớp hiện tại. Đây là CAN_XAC_NHAN, không phải dữ liệu bị xóa hoặc lỗi import.
 
-Sau kiểm tra đã dừng các tiến trình MySQL thử nghiệm và dọn runtime/database tạm. Không giữ server chạy nền.
+Chưa kiểm thử tải đồng thời, khôi phục backup, quyền/TLS/binary logging của hạ tầng production hoặc MySQL 8.0. CI mới được cấu hình để chạy test MySQL trên GitHub; kết quả local không thay cho trạng thái CI từ xa.
 
 ## Chạy lại
 
-Kiểm tra tĩnh không cần MySQL:
-
 ```powershell
 python database/tests/verify_structure.py
+python database/tests/verify_structure.py --scaffold-only
+# Sau init và seed demo trên database dùng một lần _test:
+pwsh -File database/scripts/run.ps1 -Action test
+pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-Để kiểm tra SQL, tạo database riêng có hậu tố `_test`, init và seed demo theo README. Trong mysql client đã chọn database thử nghiệm:
-
-```sql
-SOURCE D:/WEB/database/tests/integrity.sql;
-SOURCE D:/WEB/database/tests/workflows.sql;
-```
-
-`workflows.sql` thực sự chốt/mở công, sửa dữ liệu demo và gọi procedure có transaction riêng. Chỉ chạy trên database dùng một lần. Các suite chỉ bắt lỗi dự kiến bằng handler, lỗi bất ngờ sẽ làm kiểm thử thất bại; không dùng mysql `--force`.
-
-Để kiểm tra nâng cấp, khôi phục bản sao backup gốc vào database riêng, chạy preflight/migrate/check theo README, đối chiếu số lượng dòng và số liệu tài chính với backup. Không import SQL gốc chứa DROP DATABASE vào server có dữ liệu thật.
+`test` chạy ba suite theo thứ tự. Workflow gọi procedure có COMMIT riêng và thay đổi demo, chỉ chạy trên database thử nghiệm dùng một lần. Không dùng mysql --force. Lỗi không dự kiến sẽ làm suite thất bại.

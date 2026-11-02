@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, master, develop ]
   push:
-    branches: [ main, master ]
+    branches: [ main, master, 'codex/**' ]
 
 jobs:
   code-integrity-check:
@@ -18,17 +18,21 @@ jobs:
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Verify HTML & JavaScript Syntax
         run: |
           echo "Bắt đầu kiểm tra tính toàn vẹn của mã nguồn dự án EduCenter ERP..."
           node -e "
             const fs = require('fs');
-            const targetFiles = ['index.html', 'frontend/index.html'];
+            const targetFiles = ['preview/index.html'];
             let hasError = false;
 
             targetFiles.forEach(f => {
+              if (!fs.existsSync(f)) {
+                console.error('Thiếu giao diện mẫu: ' + f);
+                hasError = true;
+              }
               if (fs.existsSync(f)) {
                 console.log('-> Đang kiểm tra file: ' + f);
                 const content = fs.readFileSync(f, 'utf8');
@@ -55,3 +59,39 @@ jobs:
               console.log('Tất cả các file đều vượt qua kiểm tra cú pháp!');
             }
           "
+
+      - name: Verify feature scaffold and preserved references
+        run: python3 database/tests/verify_structure.py
+
+  database-check:
+    name: MySQL schema and business constraints
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: educenter_ci_only
+        ports:
+          - 33306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -peducenter_ci_only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MySQL client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+      - name: Initialize and test isolated demo database
+        shell: pwsh
+        run: |
+          $config = Join-Path $env:RUNNER_TEMP 'educenter-ci.env'
+          @(
+            'DB_HOST=127.0.0.1', 'DB_PORT=33306', 'DB_NAME=educenter_ci_test',
+            'DB_USER=root', 'DB_PASSWORD=educenter_ci_only', 'DB_CHARSET=utf8mb4',
+            'DB_TIMEZONE=+07:00', 'MYSQL_BIN=mysql'
+          ) | Set-Content -LiteralPath $config -Encoding utf8
+          ./database/scripts/run.ps1 -Action init -EnvFile $config
+          ./database/scripts/run.ps1 -Action seed-demo -EnvFile $config
+          ./database/scripts/run.ps1 -Action test -EnvFile $config
+          ./database/scripts/run.ps1 -Action check -EnvFile $config
