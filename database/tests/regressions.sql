@@ -59,7 +59,7 @@ BEGIN
   SET v_num=v_num+1;
   ROLLBACK;
   START TRANSACTION;
-  UPDATE buoi_hoc SET trang_thai='huy' WHERE id=v_id;
+  UPDATE buoi_hoc SET trang_thai='huy',nguoi_huy_id=2,huy_luc=NOW(),ly_do_huy_doi='Kiểm thử học bù' WHERE id=v_id;
   INSERT INTO buoi_hoc(lop_id,loai,buoi_goc_id,ngay,gio_bat_dau,gio_ket_thuc)
     VALUES(1,'bu',v_id,'2026-11-03','18:00','20:00');
   SET v_failed=FALSE;

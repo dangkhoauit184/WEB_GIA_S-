@@ -6,5 +6,6 @@
   "triggers/classes.sql",
   "triggers/scheduling.sql",
   "triggers/academic.sql",
-  "triggers/tuition.sql"
+  "triggers/tuition.sql",
+  "triggers/payroll.sql"
 ]

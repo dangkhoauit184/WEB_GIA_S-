@@ -54,14 +54,17 @@ function Invoke-Sql([string]$Sql, [switch]$NoDatabase) {
     [void]$process.Start()
     $outTask = $process.StandardOutput.ReadToEndAsync()
     $errTask = $process.StandardError.ReadToEndAsync()
-    $process.StandardInput.Write($Sql)
-    $process.StandardInput.Close()
+    # [SỬA] Client có thể thoát ngay ở DDL đầu tiên; vẫn thu stderr thay vì che lỗi SQL bằng broken pipe.
+    $inputError = $null
+    try { $process.StandardInput.Write($Sql) } catch { $inputError = $_ }
+    try { $process.StandardInput.Close() } catch { if (!$inputError) { $inputError = $_ } }
     $process.WaitForExit()
     $output = $outTask.GetAwaiter().GetResult()
     $errOutput = $errTask.GetAwaiter().GetResult()
     $exitCode = $process.ExitCode
     $process.Dispose()
     if ($exitCode -ne 0) { throw "MySQL thất bại ($exitCode): $errOutput" }
+    if ($inputError) { throw "Không gửi đủ SQL đến MySQL: $inputError" }
     if ($errOutput.Trim()) { Write-Warning $errOutput.Trim() }
     return $output.Trim()
 }
@@ -96,9 +99,10 @@ try {
             [void](Invoke-Sql "CREATE DATABASE IF NOT EXISTS ``$db`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" -NoDatabase)
             $tables = Invoke-Sql 'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE();'
             if ($tables -ne '0') { throw 'Init chỉ dành cho database rỗng. Database cũ dùng preflight/migrate.' }
-            $sql = (Read-Sql 'schema.sql') + "`nINSERT INTO schema_migrations(version,status) VALUES('001_feature_based','applying');`n" +
-                (Read-Sql 'migrations/002_routine_review.sql') + "`n" + (Read-Modules) + "`n" + (Read-Sql 'seeders/001_reference.sql') +
-                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE version IN ('001_feature_based','002_routine_review');"
+            # [SỬA] Schema mới đã có cấu trúc 003; chỉ ghi lịch sử, không ALTER lại.
+            $sql = (Read-Sql 'schema.sql') + "`nINSERT INTO schema_migrations(version,status) VALUES('001_feature_based','applying'),('002_routine_review','applying'),('003_attribute_review','applying');`n" +
+                (Read-Modules) + "`n" + (Read-Sql 'seeders/001_reference.sql') +
+                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE version IN ('001_feature_based','002_routine_review','003_attribute_review');"
             [void](Invoke-Sql $sql)
         }
         'preflight' {
@@ -106,8 +110,13 @@ try {
             if ($hasHistory -eq '0') {
                 $issues = Invoke-Sql (Read-Sql 'migrations/preflight.sql')
                 if ($issues) { throw "Dừng nâng cấp. Các vấn đề dữ liệu:`n$issues" }
+                $report = Invoke-Sql (Read-Sql 'migrations/003_preflight.sql')
+                Write-Output $report
+                Assert-Report $report
             } else {
-                $report = Invoke-Sql (Read-Sql 'checks.sql')
+                $latest = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='003_attribute_review' AND status='applied';"
+                $reportFile = if ($latest -eq '1') { 'checks.sql' } else { 'migrations/003_preflight.sql' }
+                $report = Invoke-Sql (Read-Sql $reportFile)
                 Write-Output $report
                 Assert-Report $report
             }
@@ -119,21 +128,34 @@ try {
             if ($hasHistory -eq '0') {
                 $issues = Invoke-Sql (Read-Sql 'migrations/preflight.sql')
                 if ($issues) { throw "Dừng nâng cấp. Các vấn đề dữ liệu:`n$issues" }
+                $report = Invoke-Sql (Read-Sql 'migrations/003_preflight.sql')
+                Write-Output $report
+                Assert-Report $report
                 $sql = (Read-Sql 'migrations/001_feature_based.sql') + "`n"
+                $sql += (Read-Sql 'migrations/002_routine_review.sql') + "`n"
             } else {
                 $dirty = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE status<>'applied';"
                 if ($dirty -ne '0') { throw 'Migration còn applying; dừng để kiểm tra DDL đã chạy, không tự tiếp tục.' }
                 $baseline = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='001_feature_based' AND status='applied';"
                 if ($baseline -ne '1') { throw 'Không nhận diện baseline 001; cần đối chiếu cấu trúc trước khi nâng cấp.' }
-                $unknown = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN ('001_feature_based','002_routine_review');"
+                $unknown = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN ('001_feature_based','002_routine_review','003_attribute_review');"
                 if ($unknown -ne '0') { throw 'Database có phiên bản mới hơn hoặc tùy chỉnh; không tự hạ phiên bản.' }
-                $done = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='002_routine_review' AND status='applied';"
-                if ($done -eq '1') { Write-Output 'Database đã ở phiên bản 002; không có migration chờ chạy.'; break }
-                $report = Invoke-Sql (Read-Sql 'checks.sql')
+                $done = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='003_attribute_review' AND status='applied';"
+                if ($done -eq '1') {
+                    $report = Invoke-Sql (Read-Sql 'checks.sql')
+                    Assert-Report $report
+                    Write-Output 'Database đã ở phiên bản 003; không có migration chờ chạy.'
+                    break
+                }
+                # [THÊM] Kiểm tra bằng tên cột cũ trước khi ghi applying hoặc chạy DDL.
+                $report = Invoke-Sql (Read-Sql 'migrations/003_preflight.sql')
+                Write-Output $report
                 Assert-Report $report
+                $has002 = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='002_routine_review' AND status='applied';"
+                if ($has002 -eq '0') { $sql += (Read-Sql 'migrations/002_routine_review.sql') + "`n" }
             }
-            $sql += (Read-Sql 'migrations/002_routine_review.sql') + "`n" + (Read-Modules) +
-                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE version IN ('001_feature_based','002_routine_review');"
+            $sql += (Read-Sql 'migrations/003_attribute_review.sql') + "`n" + (Read-Modules) +
+                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE version IN ('001_feature_based','002_routine_review','003_attribute_review');"
             [void](Invoke-Sql $sql)
         }
         'seed-demo' {
@@ -153,7 +175,7 @@ try {
             if ($settings.DB_NAME -notmatch '_test$') { throw 'Test chỉ chạy trên database có hậu tố _test.' }
             $users = Invoke-Sql 'SELECT COUNT(*) FROM users;'
             if ($users -ne '8') { throw 'Suite yêu cầu đúng demo đã seed, không dùng với dữ liệu thật.' }
-            foreach ($file in @('tests/integrity.sql','tests/regressions.sql','tests/workflows.sql')) {
+            foreach ($file in @('tests/integrity.sql','tests/regressions.sql','tests/attributes.sql','tests/workflows.sql')) {
                 Write-Output (Invoke-Sql (Read-Sql $file))
             }
         }

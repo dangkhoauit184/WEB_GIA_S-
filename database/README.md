@@ -1,99 +1,83 @@
-# Thiết lập và phát triển Database
+# Cơ sở dữ liệu EduCenter ERP
 
-## Các file cần dùng
+Database phục vụ đồ án quản lý trung tâm gia sư và đào tạo. Phiên bản hiện tại: **003_attribute_review**, gồm 36 bảng, 2 function, 10 procedure và 25 trigger.
 
-| Vị trí | Vai trò | Khi nào chạy |
-| --- | --- | --- |
-| `schema.sql` | Toàn bộ bảng, PK/FK/index/CHECK | Chỉ database mới rỗng |
-| `install-order.json` | Danh sách module theo thứ tự phụ thuộc | Script tự đọc |
-| `routines/functions.sql` | 2 function | Trước helper/procedure/trigger |
-| `routines/helpers.sql` | 7 procedure kiểm tra dùng chung | Trước procedure nghiệp vụ/trigger |
-| `routines/procedures.sql` | 3 procedure nghiệp vụ có transaction | Sau functions/helpers |
-| `triggers/` | 23 trigger theo 5 nhóm nghiệp vụ | Sau routines |
-| `seeders/001_reference.sql` | Danh mục, 5 nhóm và ma trận quyền gốc | Init; không ghi đè quyền database cũ |
-| `seeders/002_demo.sql` | Demo khóa tài khoản | Tùy chọn trên DB thử nghiệm |
-| `migrations/001_feature_based.sql` | Thay đổi cấu trúc so với 35 bảng gốc | Chỉ một lần khi nâng cấp SQL gốc |
-| `migrations/002_routine_review.sql` | Ghi tiến trình cập nhật stored objects | Script điều phối, không chạy riêng |
-| `checks.sql` | Báo cáo VI_PHAM/CAN_XAC_NHAN | Sau triển khai hoặc khi rà dữ liệu |
-| `reference/schema-original.sql` | SQL gốc nguyên byte, có DROP DATABASE | Chỉ đối chiếu, không import lên dữ liệu thật |
+## Yêu cầu và cấu hình
 
-## Kết nối
-
-Cần MySQL 8.0.16+ hoặc 8.4 LTS, MySQL CLI, PowerShell 7+. Tài khoản triển khai phải có quyền DDL/routine/trigger và DML trên database được chọn. DBA có thể tạo trước database rỗng nếu không cấp CREATE DATABASE cho tài khoản này. Khi bật binary logging, quyền tạo function tùy cấu hình DBA; không tự thay cấu hình toàn server. Tài khoản triển khai không dùng làm tài khoản API.
-
-Từ thư mục repo:
+- MySQL 8.0.16+ hoặc 8.4 LTS, MySQL CLI, PowerShell 7+.
+- InnoDB, utf8mb4, session `+07:00`, giao dịch ghi `READ COMMITTED`.
+- Tài khoản triển khai có quyền DDL, routine, trigger và DML trên database được chọn. Tài khoản API dùng quyền tối thiểu riêng.
 
 ```powershell
 Copy-Item database/.env.example database/.env
 ```
 
-Điền thông tin kết nối, `MYSQL_BIN=mysql` nếu có PATH, hoặc đường dẫn tuyệt đối đến mysql.exe. Dùng `KEY=value` nguyên văn, không dấu nháy, không nội suy hay comment cuối dòng. Có thể dùng `-EnvFile <đường-dẫn>` để đặt config ngoài repo. Script dùng option file tạm, không đặt password lên command line và xóa file trong finally.
+Điền cấu hình `KEY=value` nguyên văn, không đặt dấu nháy hoặc comment cuối dòng. `MYSQL_BIN` nhận `mysql` trong PATH hoặc đường dẫn tuyệt đối đến `mysql.exe`. Dùng `-EnvFile <đường-dẫn>` nếu đặt cấu hình ngoài repository. Mật khẩu được chuyển qua option file tạm, không đặt lên command line; file tạm được xóa khi kết thúc.
 
-`database.config` là mẫu option file cho mysql client, không phải code kết nối backend; CLI không tự đọc `.env`. Dùng `mysql --defaults-extra-file=<config-riêng> -p` nếu chạy thủ công. Không commit password thật.
-
-## Database mới
+## Cài mới
 
 ```powershell
 pwsh -File database/scripts/run.ps1 -Action init
 pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-Init kiểm tra rỗng, nạp schema, ghi hai migration applying, nạp modules theo manifest, seed danh mục rồi đánh dấu applied. Chưa tạo người dùng hay Admin thật, chưa seed demo. Thông báo CAN_XAC_NHAN không tự biến thành giá trị mặc định.
+`init` từ chối database không rỗng. Script nạp `schema.sql`, các module trong `install-order.json`, seed danh mục rồi đánh dấu 001/002/003 đã áp dụng. Chưa tạo tài khoản Admin hay dữ liệu người dùng.
 
-Chạy trực tiếp trong mysql client từ thư mục gốc repo, sau khi đã chọn database rỗng:
+## Nâng cấp từ SQL gốc, 001 hoặc 002
 
-```sql
-SET NAMES utf8mb4;
-SET SESSION time_zone='+07:00';
-SET SESSION transaction_isolation='READ-COMMITTED';
-SOURCE database/schema.sql;
-INSERT INTO schema_migrations(version,status) VALUES('001_feature_based','applying');
-SOURCE database/migrations/002_routine_review.sql;
-SOURCE database/routines/functions.sql;
-SOURCE database/routines/helpers.sql;
-SOURCE database/routines/procedures.sql;
-SOURCE database/triggers/timekeeping.sql;
-SOURCE database/triggers/classes.sql;
-SOURCE database/triggers/scheduling.sql;
-SOURCE database/triggers/academic.sql;
-SOURCE database/triggers/tuition.sql;
-SOURCE database/seeders/001_reference.sql;
-UPDATE schema_migrations SET status='applied',applied_at=NOW()
-WHERE version IN ('001_feature_based','002_routine_review');
-SOURCE database/checks.sql;
+1. Sao lưu và thử khôi phục; dừng ghi ứng dụng. Kiểm tra trước trên bản sao.
+2. Chạy `-Action preflight`, xử lý các dòng `VI_PHAM` bằng cách đối chiếu nguồn dữ liệu.
+3. Chạy `-Action migrate`, sau đó `-Action check`.
+4. Database gốc chạy thay đổi cấu trúc 001, ghi nhận 002, áp dụng 003 và nạp toàn bộ routine/trigger mới. Database 001/002 chỉ chạy phần còn thiếu. Database đã ở 003 được kiểm tra, không chạy lại DDL.
+5. Gặp phiên bản lạ hoặc migration `applying`, script dừng. DDL MySQL tự COMMIT: cần đối chiếu tiến độ và khôi phục backup hoặc lập kế hoạch sửa tiếp, không xóa cờ để chạy lại mù quáng.
+
+```powershell
+pwsh -File database/scripts/run.ps1 -Action preflight
+pwsh -File database/scripts/run.ps1 -Action migrate
+pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-SOURCE là lệnh mysql CLI. GUI cần chạy từng file cùng thứ tự. Dừng ngay khi một file lỗi; không đánh dấu applied và không dùng `--force`.
+`migrations/003_preflight.sql` dùng tên cột cũ và chạy trước DDL của 003. Các trường hợp cần đối chiếu gồm chi tiết hóa đơn sai học viên/lớp, trạng thái đọc mâu thuẫn với `doc_luc`, lý do từ chối không xác định được đúng một bên và số dư hóa đơn lệch phiếu thu/hoàn. Script dừng trước khi ghi `003 applying` khi gặp các vấn đề này.
 
-## Nâng cấp dữ liệu đang có
+Không import `schema.sql` lên database cũ. `reference/schema-original.sql` có `DROP DATABASE`, chỉ dùng tham khảo. Không chạy riêng file migration hoặc dùng mysql `--force` để bỏ qua lỗi.
 
-1. Backup và thử khả năng khôi phục, dừng ghi ứng dụng. Thử trên bản sao trước. Không import lại schema/seed.
-2. Chạy `-Action preflight` rồi `-Action migrate`, cuối cùng `-Action check`.
-3. Nếu database đúng 35 bảng gốc, script chạy 001 rồi 002. Nếu đã có 001 applied, chỉ chạy 002. Nếu đã 002, migrate không làm gì. Gặp applying, phiên bản lạ hoặc lỗi dữ liệu thì dừng.
-4. DDL MySQL tự COMMIT, không rollback toàn bộ migration. Lỗi giữa chừng phải đối chiếu các lệnh đã chạy và phục hồi backup hoặc lập migration tiếp theo; không xóa cờ applying để chạy tiếp mù quáng.
-5. 001 thêm cột nullable, CHECK/FK/index, sao cơ sở hiện tại cho buổi chưa khóa. Cần xác minh cơ sở lịch sử trước. Snapshot cách tính lương cũ giữ NULL đến khi đối chiếu hợp đồng. 002 không thêm/xóa bảng/cột hoặc đổi dữ liệu nghiệp vụ.
+## Thay đổi thuộc tính ở 003
+
+| Thay đổi | Quy tắc chuyển đổi |
+| --- | --- |
+| Bỏ `hoa_don_chi_tiet.hoc_vien_id` | Học viên được xác định qua hóa đơn và ghi danh. Vẫn kiểm tra buổi học phải cùng lớp với hóa đơn. |
+| `thong_bao.da_doc` tự tính từ `doc_luc` | Giữ tên cột và index để truy vấn, chỉ cập nhật `doc_luc`. Phải xử lý mâu thuẫn trước migration, không tự tạo thời điểm đọc. |
+| Tách lý do từ chối đề xuất | Chuyển lý do cũ sang đúng bên đang từ chối. Nếu cả hai hoặc không bên nào từ chối mà có lý do, preflight yêu cầu đối chiếu. |
+| Yêu cầu từ website | Thêm `nguoi_gui_id`, cho phép `nhan_vien_id` NULL trước khi phân công; khách chưa đăng nhập vẫn dùng thông tin liên hệ. |
+| Đơn vị giá và phản hồi | Thêm `don_vi_ngan_sach`, `cach_thu_phi_de_xuat`, thời điểm phản hồi hai bên và tài khoản phụ huynh phản hồi. |
+| Phát hành/hủy/chi trả | Thêm người, thời điểm, lý do hủy và mã giao dịch chi. Thao tác phát hành/hủy mới phải cung cấp dấu vết; chuyển trả lương phải từ kỳ đã chốt và có ngày trả khớp thời điểm trả. |
+| Timestamps và email | Bổ sung thời điểm chỉnh sửa, tạo kết quả/ghi danh và các mốc gửi/thử lại email. |
+
+Đơn vị giá và dấu vết lịch sử chưa biết giữ NULL. Thời điểm tạo mới bổ sung cho ghi danh/kết quả cũ cũng giữ NULL; default thời điểm hiện tại chỉ áp dụng cho bản ghi mới. `check` báo `CAN_XAC_NHAN` để rà soát; không điền người thao tác bằng người lập hay suy giá từ lớp hiện tại.
+
+Giữ `account.account_id` và `role_group_function.id` vì khóa đơn vẫn hợp lệ và chưa có lợi ích đủ lớn để đổi. Giữ snapshot đơn giá/cách tính lương trên phân công, các tổng quyết toán và địa điểm buổi học. Các cột tự tính `so_phut_thuc_te`, `thuc_nhan`, `phai_thu`, `day_chinh_key` tiếp tục phục vụ nghiệp vụ và ràng buộc.
+
+## Trách nhiệm của API
+
+- Xác thực người dùng, kiểm tra quyền chức năng và phạm vi cơ sở/con/phân công. Truyền một `user_id` hợp lệ chưa chứng minh người gọi có quyền.
+- Gửi đơn vị ngân sách/giá, phản hồi hai bên và thông tin người/thời điểm thực hiện khi phát sinh thao tác.
+- Chuyển hóa đơn nháp sang phát hành cùng `phat_hanh_boi`, `phat_hanh_luc`; khi hủy gửi `huy_boi`, `huy_luc`, `ly_do_huy`. Hủy buổi dùng `nguoi_huy_id`, `huy_luc`, `ly_do_huy_doi`.
+- Trả lương một lần cho kỳ đã chốt bằng `tra_boi`, `tra_luc`, `ngay_tra` và mã giao dịch nếu có. Kỳ đã trả được bảo vệ; chi trả nhiều đợt cần thiết kế bảng chứng từ riêng.
+- Đối chiếu tổng hóa đơn với chi tiết trước phát hành; retry toàn giao dịch khi deadlock.
+- Các procedure `sp_sinh_buoi_hoc`, `sp_chot_cong`, `sp_mo_khoa_cong` quản lý transaction riêng, phải CALL độc lập ngoài transaction của caller.
+
+Chính sách phí vắng, giá riêng theo ghi danh, GPS/bán kính, học bù riêng học viên lớp nhóm, nhiều phụ huynh hoặc nhiều bài chấm trong một buổi còn cần chốt thiết kế. Chưa tự thêm cột hay quy tắc cho các phương án này.
 
 ## Kiểm thử
 
 ```powershell
-# DB_NAME là database dùng một lần có hậu tố _test, đã init:
+python database/tests/verify_structure.py --scaffold-only
+# DB_NAME phải kết thúc bằng _test, đã init và chưa có người dùng:
 pwsh -File database/scripts/run.ps1 -Action seed-demo
 pwsh -File database/scripts/run.ps1 -Action test
 pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-31 case gồm 11 toàn vẹn, 8 regression, 12 workflow. Workflow có COMMIT riêng và thay đổi demo, không chạy trên dữ liệu thật. `test` yêu cầu database _test có đúng 8 người dùng demo; chưa coi đây là xác thực dữ liệu production.
+51 ca: 11 toàn vẹn, 8 hồi quy 002, 20 thuộc tính 003, 12 quy trình. Demo có 8 người dùng; tài khoản demo bị khóa. Suite quy trình có COMMIT và thay đổi demo, chỉ chạy trên database dùng một lần. Mức phí tháng chưa xác định vẫn giữ NULL.
 
-## Gọi procedure từ backend sau này
-
-```sql
-CALL sp_sinh_buoi_hoc(1,'2026-11-01','2026-11-30');
-CALL sp_chot_cong(3,11,2026,1);
-CALL sp_mo_khoa_cong(1,1,'Đối chiếu lại giờ công theo khiếu nại');
-```
-
-Các ID chỉ là ví dụ, không gọi lên production mà chưa kiểm tra. Ba procedure nghiệp vụ có transaction riêng, phải CALL độc lập, không đặt trong transaction đang mở của caller. Các helper/function là nội bộ, không tự cấp quyền EXECUTE cho client ngoài.
-
-Kết nối ghi dùng READ COMMITTED và transaction; retry toàn giao dịch khi deadlock. Backend phải xác thực người dùng, kiểm tra quyền chức năng, phạm vi cơ sở/con của phụ huynh. Tham số user_id không thay thế xác thực. Không cấp UPDATE trực tiếp bảng công hoặc EXECUTE mở khóa cho kết nối người dùng thường. Chưa tự triển khai GPS/bán kính, phí nghỉ, tạo hóa đơn, thưởng/phạt khi tài liệu chưa rõ.
-
-Nguồn kỹ thuật: [MySQL stored programs](https://dev.mysql.com/doc/refman/8.4/en/stored-program-restrictions.html), [MySQL triggers](https://dev.mysql.com/doc/refman/8.4/en/create-trigger.html).
+Kết quả thực tế và phạm vi xác minh tại [tests/VALIDATION.md](tests/VALIDATION.md). Các module nạp theo `install-order.json`; seed danh mục không được nạp lại để ghi đè quyền của database đang dùng.

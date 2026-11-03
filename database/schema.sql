@@ -18,6 +18,8 @@ CREATE TABLE users (
   khu_vuc_id  INT UNSIGNED NULL,           -- Dành cho Phụ huynh
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_deleted  TINYINT(1) NOT NULL DEFAULT 0,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id),
   UNIQUE KEY uq_users_email (email),
   UNIQUE KEY uq_users_sdt (sdt)
@@ -44,6 +46,8 @@ CREATE TABLE account (
   status        ENUM('active','locked','pending') NOT NULL DEFAULT 'active',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_deleted    TINYINT(1) NOT NULL DEFAULT 0,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (account_id),
   UNIQUE KEY uq_account_user (user_id),
   UNIQUE KEY uq_account_username (username),
@@ -286,9 +290,13 @@ CREATE TABLE yeu_cau_hoc (
   ghi_chu             TEXT NULL,
   nguon               ENUM('website','dien_thoai','truc_tiep','gioi_thieu') NOT NULL DEFAULT 'truc_tiep',
   trang_thai          ENUM('moi','dang_tim','da_de_xuat','da_chot','huy') NOT NULL DEFAULT 'moi',
-  nhan_vien_id        BIGINT UNSIGNED NOT NULL,
+  nhan_vien_id        BIGINT UNSIGNED NULL, -- Chưa phân công khi khách gửi từ website
   created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  nguoi_gui_id BIGINT UNSIGNED NULL,
+  don_vi_ngan_sach ENUM('theo_buoi','theo_gio','theo_thang','theo_khoa') NULL,
+  CONSTRAINT fk_yc_gui FOREIGN KEY (nguoi_gui_id) REFERENCES users(user_id),
   PRIMARY KEY (id),
   UNIQUE KEY uq_yc_ma (ma_yc),
   KEY idx_yc_tt (trang_thai, created_at),
@@ -328,10 +336,18 @@ CREATE TABLE de_xuat_nhan_su (
   hoc_phi_de_xuat   DECIMAL(12,0) NULL,
   tt_nhan_su        ENUM('cho','dong_y','tu_choi') NOT NULL DEFAULT 'cho',
   tt_phu_huynh      ENUM('cho','dong_y','tu_choi') NOT NULL DEFAULT 'cho',
-  ly_do_tu_choi     VARCHAR(255) NULL,
   ghi_chu           VARCHAR(255) NULL,
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  cach_thu_phi_de_xuat ENUM('theo_buoi','theo_thang','theo_khoa') NULL,
+  nhan_su_phan_hoi_luc DATETIME NULL,
+  phu_huynh_phan_hoi_luc DATETIME NULL,
+  phu_huynh_phan_hoi_boi BIGINT UNSIGNED NULL,
+  ly_do_tu_choi_nhan_su VARCHAR(255) NULL,
+  ly_do_tu_choi_phu_huynh VARCHAR(255) NULL,
+  CONSTRAINT fk_dx_ph_phan_hoi FOREIGN KEY (phu_huynh_phan_hoi_boi) REFERENCES users(user_id),
+  CONSTRAINT ck_dx_ly_do CHECK ((ly_do_tu_choi_nhan_su IS NULL OR tt_nhan_su='tu_choi') AND (ly_do_tu_choi_phu_huynh IS NULL OR tt_phu_huynh='tu_choi')),
   PRIMARY KEY (id),
   UNIQUE KEY uq_dx (yeu_cau_id, nhan_su_id),
   KEY idx_dx_ns (nhan_su_id, tt_nhan_su),
@@ -409,6 +425,9 @@ CREATE TABLE lop_hoc_vien (
   ngay_vao     DATE NOT NULL,
   ngay_roi     DATE NULL,
   trang_thai   ENUM('dang_hoc','tam_nghi','da_roi','cho_xep_lop','hoc_thu') NOT NULL DEFAULT 'dang_hoc',
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  created_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_lhv (lop_id, hoc_vien_id),
   KEY idx_lhv_hv (hoc_vien_id),
@@ -460,6 +479,11 @@ CREATE TABLE buoi_hoc (
   ly_do_huy_doi      VARCHAR(255) NULL,
   created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  nguoi_huy_id BIGINT UNSIGNED NULL,
+  huy_luc DATETIME NULL,
+  CONSTRAINT fk_buoi_nguoi_huy FOREIGN KEY (nguoi_huy_id) REFERENCES users(user_id),
+  CONSTRAINT ck_buoi_huy_meta CHECK ((nguoi_huy_id IS NULL) = (huy_luc IS NULL)),
   PRIMARY KEY (id),
   UNIQUE KEY uq_buoi (lop_id, ngay, gio_bat_dau),
   KEY idx_buoi_ngay (ngay, trang_thai),
@@ -591,6 +615,8 @@ CREATE TABLE bai_tap (
   han_nop         DATETIME NULL,
   nguoi_tao_id    BIGINT UNSIGNED NOT NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_bt_buoi (buoi_hoc_id),
   CONSTRAINT fk_bt_buoi FOREIGN KEY (buoi_hoc_id) REFERENCES buoi_hoc(id),
@@ -635,6 +661,9 @@ CREATE TABLE ket_qua_hoc_tap (
   ngay          DATE NOT NULL,
   nhan_xet      VARCHAR(500) NULL,
   nguoi_nhap_id BIGINT UNSIGNED NOT NULL,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  created_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_kq (hoc_vien_id, ngay),
   KEY idx_kq_lop (lop_id),
@@ -672,6 +701,12 @@ CREATE TABLE bang_cong_thang (
   ghi_chu        VARCHAR(255) NULL,
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  tra_boi BIGINT UNSIGNED NULL,
+  tra_luc DATETIME NULL,
+  ma_giao_dich_chi VARCHAR(60) NULL,
+  CONSTRAINT fk_bc_tra FOREIGN KEY (tra_boi) REFERENCES users(user_id),
+  CONSTRAINT ck_bc_tra_meta CHECK ((tra_boi IS NULL) = (tra_luc IS NULL)),
   PRIMARY KEY (id),
   UNIQUE KEY uq_bc_thang (user_id, nam, thang),
   KEY idx_bc_tt (nam, thang, trang_thai),
@@ -702,6 +737,16 @@ CREATE TABLE hoa_don (
   nguoi_lap_id    BIGINT UNSIGNED NOT NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  phat_hanh_luc DATETIME NULL,
+  phat_hanh_boi BIGINT UNSIGNED NULL,
+  huy_luc DATETIME NULL,
+  huy_boi BIGINT UNSIGNED NULL,
+  ly_do_huy VARCHAR(255) NULL,
+  CONSTRAINT fk_hd_phat_hanh FOREIGN KEY (phat_hanh_boi) REFERENCES users(user_id),
+  CONSTRAINT fk_hd_huy FOREIGN KEY (huy_boi) REFERENCES users(user_id),
+  CONSTRAINT ck_hd_phat_hanh_meta CHECK ((phat_hanh_luc IS NULL) = (phat_hanh_boi IS NULL)),
+  CONSTRAINT ck_hd_huy_meta CHECK ((huy_luc IS NULL AND huy_boi IS NULL AND ly_do_huy IS NULL) OR (huy_luc IS NOT NULL AND huy_boi IS NOT NULL AND ly_do_huy IS NOT NULL AND CHAR_LENGTH(TRIM(ly_do_huy))>0)),
   PRIMARY KEY (id),
   UNIQUE KEY uq_hd_ma (ma_hd),
   UNIQUE KEY uq_hd_ky (lop_hoc_vien_id, nam, thang),
@@ -719,7 +764,6 @@ CREATE TABLE hoa_don_chi_tiet (
   id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   hoa_don_id  BIGINT UNSIGNED NOT NULL,
   buoi_hoc_id BIGINT UNSIGNED NULL,        -- Cho phép NULL đối với học phí trọn gói/khóa/tháng cố định
-  hoc_vien_id BIGINT UNSIGNED NOT NULL,
   loai_khoan  ENUM('buoi_hoc','khoa_hoc','thang_co_dinh','phu_phi') NOT NULL DEFAULT 'buoi_hoc',
   mo_ta       VARCHAR(255) NULL,
   don_gia     DECIMAL(12,0) NOT NULL,
@@ -728,7 +772,6 @@ CREATE TABLE hoa_don_chi_tiet (
   CONSTRAINT fk_hdct_hd   FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id) ON DELETE CASCADE,
   -- [SỬA] Không SET NULL khi xóa buổi đã lập học phí; bảo toàn chứng từ và tương thích CHECK khoản theo buổi.
   CONSTRAINT fk_hdct_buoi FOREIGN KEY (buoi_hoc_id) REFERENCES buoi_hoc(id),
-  CONSTRAINT fk_hdct_hv   FOREIGN KEY (hoc_vien_id) REFERENCES hoc_vien(id),
   -- [THÊM] Đơn giá từng khoản học phí không âm.
   CONSTRAINT ck_hdct_gia CHECK (don_gia >= 0),
   -- [THÊM] Khoản theo buổi phải có buổi học; khoản tháng/khóa vẫn được NULL.
@@ -747,6 +790,12 @@ CREATE TABLE thanh_toan (
   nguoi_thu_id    BIGINT UNSIGNED NOT NULL,
   trang_thai      ENUM('hop_le','da_huy') NOT NULL DEFAULT 'hop_le',
   ghi_chu         VARCHAR(255) NULL,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  huy_luc DATETIME NULL,
+  huy_boi BIGINT UNSIGNED NULL,
+  ly_do_huy VARCHAR(255) NULL,
+  CONSTRAINT fk_tt_huy FOREIGN KEY (huy_boi) REFERENCES users(user_id),
+  CONSTRAINT ck_tt_huy_meta CHECK ((huy_luc IS NULL AND huy_boi IS NULL AND ly_do_huy IS NULL) OR (huy_luc IS NOT NULL AND huy_boi IS NOT NULL AND ly_do_huy IS NOT NULL AND CHAR_LENGTH(TRIM(ly_do_huy))>0)),
   PRIMARY KEY (id),
   KEY idx_tt_hd (hoa_don_id),
   KEY idx_tt_ngay (ngay_thanh_toan),
@@ -770,13 +819,18 @@ CREATE TABLE thong_bao (
   doi_tuong_loai    VARCHAR(30) NULL,
   doi_tuong_id      BIGINT UNSIGNED NULL,
   khoa_chong_trung  VARCHAR(100) NULL,
-  da_doc            TINYINT(1) NOT NULL DEFAULT 0,
+  -- [SỬA] Trạng thái đọc chỉ có một nguồn dữ liệu là doc_luc.
+  da_doc TINYINT(1) GENERATED ALWAYS AS (doc_luc IS NOT NULL) VIRTUAL,
   doc_luc           DATETIME NULL,
   co_gui_email      TINYINT(1) NOT NULL DEFAULT 0,
   so_lan_thu_email  TINYINT UNSIGNED NOT NULL DEFAULT 0,
   trang_thai_email  ENUM('chua_gui','da_gui','loi') NOT NULL DEFAULT 'chua_gui',
   loi_email         VARCHAR(255) NULL,
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
+  email_gui_luc DATETIME NULL,
+  email_thu_gan_nhat_luc DATETIME NULL,
+  email_thu_tiep_luc DATETIME NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_tb_chong_trung (user_id, khoa_chong_trung),
   KEY idx_tb_user (user_id, da_doc, created_at),

@@ -8,6 +8,10 @@ DROP TRIGGER IF EXISTS trg_buoi_bi$$
 CREATE TRIGGER trg_buoi_bi BEFORE INSERT ON buoi_hoc FOR EACH ROW
 BEGIN
   DECLARE v_coso INT UNSIGNED;
+  -- [THÊM] huy_boi là nhóm nguyên nhân, nguoi_huy_id mới là tài khoản thao tác.
+  IF NEW.trang_thai='huy' AND (NEW.nguoi_huy_id IS NULL OR NEW.huy_luc IS NULL OR NEW.ly_do_huy_doi IS NULL OR TRIM(NEW.ly_do_huy_doi)='') THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Hủy buổi học cần người thực hiện, thời điểm và lý do.';
+  END IF;
   SELECT co_so_id INTO v_coso FROM lop_hoc WHERE id=NEW.lop_id;
   IF NEW.co_so_id IS NULL THEN SET NEW.co_so_id=v_coso; END IF;
   CALL sp_kiem_tra_buoi(0,NEW.lop_id,NEW.lich_hoc_id,NEW.loai,NEW.buoi_goc_id,
@@ -18,6 +22,10 @@ END$$
 DROP TRIGGER IF EXISTS trg_buoi_bu$$
 CREATE TRIGGER trg_buoi_bu BEFORE UPDATE ON buoi_hoc FOR EACH ROW
 BEGIN
+  IF NEW.trang_thai='huy' AND OLD.trang_thai<>'huy'
+    AND (NEW.nguoi_huy_id IS NULL OR NEW.huy_luc IS NULL OR NEW.ly_do_huy_doi IS NULL OR TRIM(NEW.ly_do_huy_doi)='') THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Hủy buổi học cần người thực hiện, thời điểm và lý do.';
+  END IF;
   -- [SỬA] Giữ ID buổi ổn định và không làm vô hiệu liên kết học bù đã có.
   IF NEW.id<>OLD.id THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Không đổi ID buổi học.'; END IF;
   IF EXISTS (SELECT 1 FROM buoi_hoc WHERE buoi_goc_id=OLD.id) AND

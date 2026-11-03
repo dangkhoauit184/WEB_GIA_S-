@@ -95,10 +95,10 @@ END$$
 -- [SỬA] Tách sp_kiem_tra_khoan_thu từ file gộp để bảo trì độc lập; giữ chú thích nghiệp vụ trong thân hàm/thủ tục.
 DROP PROCEDURE IF EXISTS sp_kiem_tra_khoan_thu$$
 -- [THÊM] Chi tiết hóa đơn theo buổi/tháng/khóa cùng học viên và lớp, không tự sinh phí thiếu chính sách.
-CREATE PROCEDURE sp_kiem_tra_khoan_thu(IN p_hd BIGINT UNSIGNED,IN p_hv BIGINT UNSIGNED,IN p_buoi BIGINT UNSIGNED)
+CREATE PROCEDURE sp_kiem_tra_khoan_thu(IN p_hd BIGINT UNSIGNED,IN p_buoi BIGINT UNSIGNED)
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM hoa_don hd JOIN lop_hoc_vien lhv ON lhv.id=hd.lop_hoc_vien_id
-    WHERE hd.id=p_hd AND lhv.hoc_vien_id=p_hv AND (p_buoi IS NULL OR EXISTS
+    WHERE hd.id=p_hd AND (p_buoi IS NULL OR EXISTS
       (SELECT 1 FROM buoi_hoc WHERE id=p_buoi AND lop_id=lhv.lop_id))) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Khoản thu không đúng học viên hoặc lớp của hóa đơn.';
   END IF;

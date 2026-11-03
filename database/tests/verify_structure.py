@@ -58,8 +58,13 @@ original = (ROOT / 'database/reference/schema-original.sql').read_text('utf-8')
 old, new = tables(original), tables(schema)
 require(len(old) == 35, 'Expected original 35 tables')
 require(set(new) == set(old) | {'schema_migrations'}, 'Unexpected tables')
+removed = {'hoa_don_chi_tiet': {'hoc_vien_id'}, 'de_xuat_nhan_su': {'ly_do_tu_choi'}}
 for name in old:
-    require(columns(old[name]).items() <= columns(new[name]).items(), f'Original columns changed: {name}')
+    before = {k: v for k, v in columns(old[name]).items() if k not in removed.get(name, set())}
+    require(before.items() <= columns(new[name]).items(), f'Original columns changed: {name}')
+    for col in removed.get(name, set()):
+        require(col not in columns(new[name]), f'Redundant column retained: {name}.{col}')
+require('GENERATED ALWAYS AS (doc_luc IS NOT NULL)' in new['thong_bao'], 'Read state is not derived')
 sql_code = re.sub(r'--[^\n]*', '', schema)
 require(not re.search(r'^\s*(?:DROP|TRUNCATE|DELETE\s+FROM|INSERT\s+INTO)\b', sql_code, re.I | re.M), 'Schema contains destructive commands or seed')
 all_columns = {name: columns(body) for name, body in new.items()}
@@ -79,7 +84,7 @@ triggers = '\n'.join((ROOT / 'database' / f).read_text('utf-8') for f in order i
 routines = set(re.findall(r'CREATE (?:PROCEDURE|FUNCTION) (\w+)', procedures, re.I))
 for call in re.findall(r'\bCALL\s+(\w+)\s*\(', procedures + triggers, re.I):
     require(call in routines, f'Missing called procedure: {call}')
-for sql_name in ['schema.sql', 'migrations/001_feature_based.sql', 'migrations/002_routine_review.sql'] + order:
+for sql_name in ['schema.sql', 'migrations/001_feature_based.sql', 'migrations/002_routine_review.sql', 'migrations/003_attribute_review.sql'] + order:
     content = (ROOT / 'database' / sql_name).read_text('utf-8')
     require('[SỬA]' in content or '[THÊM]' in content, f'Missing Vietnamese change comments: {sql_name}')
 migration = re.sub(r'--[^\n]*', '', (ROOT / 'database/migrations/001_feature_based.sql').read_text('utf-8'))

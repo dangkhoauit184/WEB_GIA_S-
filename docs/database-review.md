@@ -1,5 +1,22 @@
 # Rà soát Database EduCenter ERP
 
+## Cập nhật thuộc tính phiên bản 003 ngày 03/11/2026
+
+Đã áp dụng rà soát thuộc tính vào schema, helper, trigger, seed và migration `003_attribute_review`:
+
+- Bỏ `hoa_don_chi_tiet.hoc_vien_id`; truy ra học viên qua hóa đơn và ghi danh. Helper vẫn kiểm tra buổi thu phí thuộc cùng lớp.
+- `thong_bao.da_doc` là cột tự tính từ `doc_luc`, giữ index phục vụ truy vấn.
+- Tách lý do từ chối của nhân sự/phụ huynh; bổ sung thời điểm và người phản hồi phụ huynh.
+- Thêm người gửi yêu cầu, đơn vị ngân sách và đơn vị phí đề xuất; nhân viên phụ trách có thể NULL trước khi phân công.
+- Thêm dấu vết phát hành/hủy hóa đơn, hủy phiếu, hủy buổi và trả lương; bảo vệ kỳ đã trả.
+- Bổ sung các timestamp chỉnh sửa/tạo còn thiếu và thời điểm gửi/thử lại email.
+
+Migration kiểm tra cột cũ trước DDL, chặn dữ liệu đọc mâu thuẫn, chi tiết sai học viên/lớp, số dư lệch chứng từ và lý do từ chối không xác định được đúng một bên. Không đoán người/thời điểm lịch sử hoặc đơn vị giá; các thông tin chưa biết giữ NULL và được báo `CAN_XAC_NHAN`.
+
+Giữ khóa đơn của account và ma trận quyền, snapshot lương, tổng quyết toán và địa điểm buổi học. Các phương án phụ thuộc chính sách như phí khi vắng, giá riêng từng học viên, nhiều phụ huynh hoặc nhiều bài chấm trong một buổi vẫn cần chốt trước khi đổi cấu trúc.
+
+Kết quả kiểm chứng 003: 51/51 ca trên cài mới; nâng cấp từ gốc, 001 và 002 thành công, đối chiếu cấu trúc cột tương đương. Chi tiết tại [VALIDATION.md](../database/tests/VALIDATION.md). Phần dưới ghi lại bối cảnh rà soát 001/002.
+
 Ngày rà soát: 02/11/2026. Đã đối chiếu SQL nguồn, tài liệu Word tại `docs/quy_trinh_nghiep_vu_v2.docx`, bản gốc tại `docs/reference/business-process-original.docx` và tài liệu `docs/architecture.md`. Không sửa nội dung nghiệp vụ nguồn.
 
 ## Mô hình hiện tại
