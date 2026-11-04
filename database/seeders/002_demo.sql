@@ -58,14 +58,14 @@ INSERT INTO nhan_su_lich_ranh (nhan_su_id, thu, gio_bat_dau, gio_ket_thuc) VALUE
  (4, 7, '08:00', '12:00');
 
 -- Tuyển sinh: Yêu cầu học & Yêu cầu lịch
-INSERT INTO yeu_cau_hoc (id, ma_yc, hoc_vien_id, mon_hoc_id, cap_lop_id, loai_lop_mong_muon, hinh_thuc, khu_vuc_id, ngan_sach_min, ngan_sach_max, muc_tieu, nhan_vien_id) VALUES
- (1, 'YC-2026-0001', 1, 1, 9, 'kem_1_1', 'offline', 1, 150000, 200000, 'Ôn thi vào lớp 10', 1);
+INSERT INTO yeu_cau_hoc (id, ma_yc, hoc_vien_id, mon_hoc_id, cap_lop_id, loai_lop_mong_muon, hinh_thuc, khu_vuc_id, ngan_sach_min, ngan_sach_max, muc_tieu, nhan_vien_id, nguoi_gui_id, don_vi_ngan_sach) VALUES
+ (1, 'YC-2026-0001', 1, 1, 9, 'kem_1_1', 'offline', 1, 150000, 200000, 'Ôn thi vào lớp 10', 1, 7, 'theo_buoi');
 
 INSERT INTO yeu_cau_lich (yeu_cau_id, thu, gio_bat_dau, gio_ket_thuc) VALUES
  (1, 3, '18:00', '20:00'), (1, 5, '18:00', '20:00');
 
-INSERT INTO de_xuat_nhan_su (id, yeu_cau_id, nhan_su_id, nhan_vien_id, hoc_phi_de_xuat, tt_nhan_su, tt_phu_huynh) VALUES
- (1, 1, 1, 1, 180000, 'dong_y', 'dong_y');
+INSERT INTO de_xuat_nhan_su (id, yeu_cau_id, nhan_su_id, nhan_vien_id, hoc_phi_de_xuat, tt_nhan_su, tt_phu_huynh, cach_thu_phi_de_xuat, nhan_su_phan_hoi_luc, phu_huynh_phan_hoi_luc, phu_huynh_phan_hoi_boi) VALUES
+ (1, 1, 1, 1, 180000, 'dong_y', 'dong_y', 'theo_buoi', '2026-09-30 09:00:00', '2026-09-30 10:00:00', 7);
 
 -- Khởi tạo Lớp học
 INSERT INTO lop_hoc (id, ma_lop, ten_lop, loai_lop, de_xuat_id, mon_hoc_id, cap_lop_id, nguoi_day_chinh_id, co_so_id, phong_hoc, hinh_thuc, dia_diem, si_so_toi_thieu, si_so_toi_da, cach_thu_phi, hoc_phi_buoi, hoc_phi_khoa, muc_tra_chinh, muc_tra_tro_giang, cach_tinh_luong, so_buoi_du_kien, ngay_bat_dau, trang_thai, nhan_vien_id) VALUES
@@ -116,11 +116,11 @@ SELECT b.id, 3, 'vang_co_phep', 'Gia đình có việc bận xin phép nghỉ.',
   FROM buoi_hoc b WHERE b.lop_id=2 AND b.ngay='2026-10-03';
 
 -- Hóa đơn & chi tiết
-INSERT INTO hoa_don (id, ma_hd, lop_hoc_vien_id, thang, nam, tong_tien, giam_gia, trang_thai, han_thanh_toan, nguoi_lap_id)
-VALUES (1, 'HD-202610-0001', 1, 10, 2026, 180000, 0, 'chua_thanh_toan', '2026-10-15', 2);
+INSERT INTO hoa_don (id, ma_hd, lop_hoc_vien_id, thang, nam, tong_tien, giam_gia, trang_thai, han_thanh_toan, nguoi_lap_id, phat_hanh_luc, phat_hanh_boi)
+VALUES (1, 'HD-202610-0001', 1, 10, 2026, 180000, 0, 'chua_thanh_toan', '2026-10-15', 2, '2026-10-02 09:00:00', 2);
 
-INSERT INTO hoa_don_chi_tiet (hoa_don_id, buoi_hoc_id, hoc_vien_id, loai_khoan, mo_ta, don_gia)
-SELECT 1, id, 1, 'buoi_hoc', 'Học phí buổi 01/10/2026', 180000 FROM buoi_hoc WHERE lop_id=1 AND ngay='2026-10-01';
+INSERT INTO hoa_don_chi_tiet (hoa_don_id, buoi_hoc_id, loai_khoan, mo_ta, don_gia)
+SELECT 1, id, 'buoi_hoc', 'Học phí buổi 01/10/2026', 180000 FROM buoi_hoc WHERE lop_id=1 AND ngay='2026-10-01';
 
 INSERT INTO thanh_toan (hoa_don_id, loai, so_tien, phuong_thuc, nguoi_thu_id)
 VALUES (1, 'thu', 180000, 'chuyen_khoan', 2);

@@ -1,6 +1,4 @@
-# Preserve reference files byte-for-byte across Windows and Linux checkouts.
-/index.html -text
-/frontend/index.html -text
-/trung_tam_gia_su_35_tables.sql -text
-/database/trung_tam_gia_su_35_tables.sql -text
-/docs/reference/** -text
+# Giữ nguyên byte của demo, SQL và tài liệu gốc.
+/docs/demo/index.html -text
+/docs/reference/database/schema-original.sql -text
+/docs/quy_trinh_nghiep_vu_v2.docx -text

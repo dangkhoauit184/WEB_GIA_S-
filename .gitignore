@@ -32,3 +32,7 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+
+# Cấu hình server cá nhân
+config/server.env

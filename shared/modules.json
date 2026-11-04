@@ -1,0 +1,35 @@
+{
+  "administration": [
+    "auth",
+    "permissions",
+    "staff",
+    "catalog",
+    "audit"
+  ],
+  "people": [
+    "students",
+    "teachers",
+    "tutors",
+    "parents"
+  ],
+  "academic": [
+    "admissions",
+    "academic-affairs",
+    "classes",
+    "scheduling",
+    "attendance",
+    "leave-requests",
+    "makeup-classes"
+  ],
+  "finance": [
+    "tuition",
+    "timekeeping",
+    "payroll"
+  ],
+  "communication": [
+    "notifications"
+  ],
+  "reporting": [
+    "dashboard"
+  ]
+}

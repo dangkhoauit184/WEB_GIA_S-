@@ -1,0 +1,11 @@
+[
+  "routines/functions.sql",
+  "routines/helpers.sql",
+  "routines/procedures.sql",
+  "triggers/timekeeping.sql",
+  "triggers/classes.sql",
+  "triggers/scheduling.sql",
+  "triggers/academic.sql",
+  "triggers/tuition.sql",
+  "triggers/payroll.sql"
+]

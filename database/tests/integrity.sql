@@ -83,7 +83,7 @@ BEGIN
   SET v_failed=FALSE;
   BEGIN
     DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET v_failed=TRUE;
-    UPDATE thanh_toan SET trang_thai='da_huy' WHERE id=1;
+    UPDATE thanh_toan SET trang_thai='da_huy',huy_boi=2,huy_luc=NOW(),ly_do_huy='Kiểm thử số dư' WHERE id=1;
   END;
   IF NOT v_failed THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Hủy phiếu làm âm số dư'; END IF;
   SET v_num=v_num+1;
