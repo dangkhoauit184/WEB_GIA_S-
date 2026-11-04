@@ -15,9 +15,9 @@ Migration kiểm tra cột cũ trước DDL, chặn dữ liệu đọc mâu thu�
 
 Giữ khóa đơn của account và ma trận quyền, snapshot lương, tổng quyết toán và địa điểm buổi học. Các phương án phụ thuộc chính sách như phí khi vắng, giá riêng từng học viên, nhiều phụ huynh hoặc nhiều bài chấm trong một buổi vẫn cần chốt trước khi đổi cấu trúc.
 
-Kết quả kiểm chứng 003: 51/51 ca trên cài mới; nâng cấp từ gốc, 001 và 002 thành công, đối chiếu cấu trúc cột tương đương. Chi tiết tại [VALIDATION.md](../database/tests/VALIDATION.md). Phần dưới ghi lại bối cảnh rà soát 001/002.
+Kết quả kiểm chứng 003: 51/51 ca trên cài mới; nâng cấp từ gốc, 001 và 002 thành công, đối chiếu cấu trúc cột tương đương. Chi tiết tại [kết quả kiểm chứng](database-validation.md). Phần dưới ghi lại bối cảnh rà soát 001/002.
 
-Ngày rà soát: 02/11/2026. Đã đối chiếu SQL nguồn, tài liệu Word tại `docs/quy_trinh_nghiep_vu_v2.docx`, bản gốc tại `docs/reference/business-process-original.docx` và tài liệu `docs/architecture.md`. Không sửa nội dung nghiệp vụ nguồn.
+Ngày rà soát: 02/11/2026. Đã đối chiếu SQL nguồn, tài liệu Word và bản lưu gốc có cùng nội dung, cùng tài liệu `docs/architecture.md`. Khi dọn repository, hai bản Word trùng nhau được gộp lại tại `docs/quy_trinh_nghiep_vu_v2.docx`. Không sửa nội dung nghiệp vụ nguồn.
 
 ## Mô hình hiện tại
 
@@ -71,4 +71,4 @@ Giữ 35 bảng nghiệp vụ MySQL và một bảng kỹ thuật schema_migrati
 
 Database không xác thực được danh tính người dùng web chỉ bằng tham số user_id. API phải kiểm tra quyền trợ giảng không chấm điểm/đổi giáo án, phụ huynh chỉ xem con mình, giới hạn chi nhánh, thời điểm check-in/cờ trễ theo cấu hình, và đối chiếu tổng hóa đơn với chi tiết khi phát hành. Khóa DB/trigger không thay cho phân quyền ứng dụng; DBA có DDL luôn có thể vượt ràng buộc.
 
-Các kiểm tra khóa đã chạy trên một kết nối cho từng ca; chưa coi đó là kiểm chứng tải đồng thời. Backend cần READ COMMITTED, transaction và retry deadlock. Kết quả chạy thực tế tại database/tests/VALIDATION.md.
+Các kiểm tra khóa đã chạy trên một kết nối cho từng ca; chưa coi đó là kiểm chứng tải đồng thời. Backend cần READ COMMITTED, transaction và retry deadlock. Kết quả chạy thực tế tại [báo cáo kiểm chứng](database-validation.md).

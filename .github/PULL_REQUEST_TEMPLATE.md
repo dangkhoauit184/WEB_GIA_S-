@@ -33,10 +33,10 @@
 - [ ] `BR14/BR15`: Quản lý học phí và hóa đơn
 
 ### ✅ 5. Danh sách kiểm tra trước khi Merge (Pre-Merge Checklist)
-- [ ] [x] Mã nguồn đã được kiểm tra chạy thử và không có lỗi cú pháp JavaScript.
-- [ ] [x] Giao diện hiển thị tốt trên cả Desktop và thiết bị di động.
-- [ ] [x] Không commit file nhạy cảm (`.env`, mật khẩu thật, file tạm).
-- [ ] [x] Đã đồng bộ dữ liệu vào `localStorage` nếu có thay đổi state.
+- [ ] Đã chạy các kiểm tra phù hợp với thay đổi và ghi kết quả trong PR.
+- [ ] Nếu thay đổi giao diện demo, đã kiểm tra trên Desktop và thiết bị di động.
+- [ ] Không commit file nhạy cảm (`.env`, mật khẩu thật, file tạm).
+- [ ] Đã chạy `python database/tests/verify_structure.py --scaffold-only`; file khung frontend/backend vẫn rỗng.
 
 ### 👥 6. Người đánh giá (Reviewer)
 <!-- Tag @username người phụ trách review code trước khi gộp vào nhánh chính -->

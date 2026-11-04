@@ -6,7 +6,7 @@ import re
 import argparse
 
 parser = argparse.ArgumentParser(description='Verify layout, references, and SQL modules.')
-parser.add_argument('--scaffold-only', action='store_true', help='Also require new frontend/backend files to remain empty.')
+parser.add_argument('--scaffold-only', action='store_true', help='Compatibility option; application source files must always remain empty.')
 args = parser.parse_args()
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,26 +21,38 @@ manifest = json.loads((ROOT / 'docs/reference/preserved-files.json').read_text('
 for name, expected in manifest.items():
     require(hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == expected, f'File changed: {name}')
 
-features = ['auth', 'dashboard', 'staff', 'permissions', 'academic-affairs', 'scheduling',
-            'classes', 'students', 'teachers', 'tutors', 'parents', 'attendance',
-            'leave-requests', 'makeup-classes', 'tuition', 'timekeeping', 'payroll', 'notifications']
+modules = json.loads((ROOT / 'shared/modules.json').read_text('utf-8'))
+features = [feature for group in modules.values() for feature in group]
+require(len(features) == len(set(features)), 'Feature belongs to multiple modules')
 layers = ['routes', 'controller', 'service', 'repository', 'model', 'validator', 'middleware']
-for feature in features:
-    for suffix in ['html', 'css', 'js']:
-        p = ROOT / f'frontend/src/features/{feature}/{feature}.{suffix}'
-        require(p.is_file(), f'Missing frontend file: {p}')
-        require(not args.scaffold_only or p.stat().st_size == 0, f'Nonempty frontend scaffold: {p}')
-    for layer in layers:
-        p = ROOT / f'backend/src/features/{feature}/{feature}.{layer}.js'
-        require(p.is_file(), f'Missing backend file: {p}')
-        require(not args.scaffold_only or p.stat().st_size == 0, f'Nonempty backend scaffold: {p}')
+for module, group in modules.items():
+    for side in ['frontend', 'backend']:
+        actual = {p.name for p in (ROOT / f'{side}/src/modules/{module}/features').iterdir() if p.is_dir()}
+        require(actual == set(group), f'Unexpected features in {side}/{module}')
+    for feature in group:
+        for suffix in ['html', 'css', 'js']:
+            p = ROOT / f'frontend/src/modules/{module}/features/{feature}/{feature}.{suffix}'
+            require(p.is_file(), f'Missing frontend file: {p}')
+        for layer in layers:
+            p = ROOT / f'backend/src/modules/{module}/features/{feature}/{feature}.{layer}.js'
+            require(p.is_file(), f'Missing backend file: {p}')
 placeholders = []
-for folder in ['frontend/src', 'backend', 'shared']:
+for folder in ['frontend', 'backend']:
+    actual_modules = {p.name for p in (ROOT / folder / 'src/modules').iterdir() if p.is_dir()}
+    require(actual_modules == set(modules), f'Unexpected modules in {folder}')
+    require((ROOT / folder / 'src/modules/index.js').is_file(), f'Missing module entry: {folder}')
+    require(not (ROOT / folder / 'src/features').exists(), f'Old flat feature directory: {folder}')
     for p in (ROOT / folder).rglob('*'):
-        if p.is_file():
-            require(not args.scaffold_only or p.stat().st_size == 0, f'Nonempty scaffold: {p}')
-            if p.stat().st_size == 0:
-                placeholders.append(p)
+        if p.is_file() and p.suffix in {'.js', '.html', '.css'}:
+            require(p.stat().st_size == 0, f'Application scaffold must remain empty: {p}')
+            placeholders.append(p)
+readmes = {p.relative_to(ROOT).as_posix() for folder in ['frontend', 'backend', 'database', 'docs', '.github']
+           for p in (ROOT / folder).rglob('*') if p.is_file() and p.name.lower().startswith('readme')}
+readmes.add('README.md')
+require(readmes == {'README.md', 'frontend/README.md', 'backend/README.md', 'database/README.md'}, 'Keep exactly four project READMEs')
+require([p.relative_to(ROOT).as_posix() for p in (ROOT / '.github').rglob('*')
+         if p.is_file() and 'PULL_REQUEST' in p.name.upper()] == ['.github/PULL_REQUEST_TEMPLATE.md'], 'Keep one PR template')
+require(not any((ROOT / 'docs').rglob('mau[12].html')), 'Obsolete UI samples still present')
 
 
 def tables(sql):
@@ -54,7 +66,7 @@ def columns(body):
 
 
 schema = (ROOT / 'database/schema.sql').read_text('utf-8')
-original = (ROOT / 'database/reference/schema-original.sql').read_text('utf-8')
+original = (ROOT / 'docs/reference/database/schema-original.sql').read_text('utf-8')
 old, new = tables(original), tables(schema)
 require(len(old) == 35, 'Expected original 35 tables')
 require(set(new) == set(old) | {'schema_migrations'}, 'Unexpected tables')
@@ -90,8 +102,8 @@ for sql_name in ['schema.sql', 'migrations/001_feature_based.sql', 'migrations/0
 migration = re.sub(r'--[^\n]*', '', (ROOT / 'database/migrations/001_feature_based.sql').read_text('utf-8'))
 require(not re.search(r'\b(?:DROP\s+(?:DATABASE|TABLE|COLUMN)|TRUNCATE|DELETE\s+FROM)\b', migration, re.I), 'Destructive migration')
 require(len(set(re.findall(r'CREATE TRIGGER (\w+)', triggers))) == len(re.findall(r'CREATE TRIGGER (\w+)', triggers)), 'Duplicate triggers')
-require(not (ROOT / 'index.html').exists() and not (ROOT / 'frontend/index.html').exists(), 'Preview still mixed with source')
-require((ROOT / 'preview/index.html').is_file(), 'Missing isolated preview')
+require(not (ROOT / 'index.html').exists() and not (ROOT / 'preview').exists(), 'Preview still mixed with source')
+require((ROOT / 'docs/demo/index.html').is_file(), 'Missing archived demo')
 require(not (ROOT / 'database/procedures.sql').exists() and not (ROOT / 'database/triggers.sql').exists(), 'Duplicate executable SQL sources')
-print(f'PASS: {len(manifest)} preserved hashes; {len(features)} features; {len(placeholders)} empty files; '
+print(f'PASS: {len(manifest)} preserved hashes; {len(modules)} modules; {len(features)} features; {len(placeholders)} empty source files; '
       f'{len(new)} tables; {fk_count} inline FKs; {len(routines)} routines.')

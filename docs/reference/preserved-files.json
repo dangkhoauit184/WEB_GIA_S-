@@ -1,17 +1,5 @@
 {
-  "docs/reference/backend/package.json": "109faf1f42bf890e9f23c7a9bf9330170f6581f814cfa913d52c40c5c9e5a78e",
-  "docs/reference/backend/server.js": "3f6bfca6b617baf524b07791fec3bc3130dee18773d3323afe633b09c0ab43fb",
-  "docs/reference/backend/src/config/.gitkeep": "a7139d4b2c49d2ddce5ceeb394509043bc7268d29a252f0e3e13468d552a567d",
-  "docs/reference/backend/src/controllers/scheduleController.js": "f9d3c96e745e348029cec52d0ed3adaf6b23b23efce7a21dea5034766476e9e3",
-  "docs/reference/backend/src/middleware/authMiddleware.js": "b352692265099c15c51ac995b17c994826382d190144df39215f723acf899331",
-  "docs/reference/backend/src/models/.gitkeep": "3e9a11aa3c826efa4da1d7a0fc199fb99f3d844b070c9d20e4c98d41e6d4206d",
-  "docs/reference/backend/src/routes/api.js": "821509c87fc9fb760cfe73f06de711b080a175c2cb8ba8a237d4bb2bd9f44946",
-  "docs/reference/database/procedures.sql": "8955ba7ac20b0645cda8f025697438402d890e202badcfad1130ca69664645f5",
-  "preview/index.html": "e361e62d1d26b87b8f84f576b2da9aa22a005a9bc794efffb4f3ddaf583ab0f2",
-  "docs/reference/frontend/index.html": "e361e62d1d26b87b8f84f576b2da9aa22a005a9bc794efffb4f3ddaf583ab0f2",
-  "database/reference/schema-original.sql": "36086dd0cd33bb07b4d52b7cfe8c71312b6656c5dc14ba8f04a63a8c3be0786b",
-  "docs/reference/database/schema-original-root.sql": "36086dd0cd33bb07b4d52b7cfe8c71312b6656c5dc14ba8f04a63a8c3be0786b",
-  "docs/reference/business-process-original.docx": "9a59b43393a48bef8a4343e7fc0d10a3402ecefb102362477f026d9bc3643cd8",
-  "docs/reference/legacy-ui/mau1.html": "c03f145c6cc17601efbd8ee82d9070b8003c802ca2bd06f114936e5a88ecbd6c",
-  "docs/reference/legacy-ui/mau2.html": "720ecbc1e4a121105109b7cbb1fe6a5f0369175088e582abfe0fa3ac4da70678"
+  "docs/demo/index.html": "e361e62d1d26b87b8f84f576b2da9aa22a005a9bc794efffb4f3ddaf583ab0f2",
+  "docs/reference/database/schema-original.sql": "36086dd0cd33bb07b4d52b7cfe8c71312b6656c5dc14ba8f04a63a8c3be0786b",
+  "docs/quy_trinh_nghiep_vu_v2.docx": "9a59b43393a48bef8a4343e7fc0d10a3402ecefb102362477f026d9bc3643cd8"
 }

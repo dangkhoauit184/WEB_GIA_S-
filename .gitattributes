@@ -1,4 +1,4 @@
-# Giữ nguyên byte của giao diện mẫu, SQL gốc và các bản lưu đối chiếu.
-/preview/index.html -text
-/database/reference/** -text
-/docs/reference/** -text
+# Giữ nguyên byte của demo, SQL và tài liệu gốc.
+/docs/demo/index.html -text
+/docs/reference/database/schema-original.sql -text
+/docs/quy_trinh_nghiep_vu_v2.docx -text

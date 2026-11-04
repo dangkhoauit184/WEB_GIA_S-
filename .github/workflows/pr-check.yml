@@ -25,7 +25,7 @@ jobs:
           echo "Bắt đầu kiểm tra tính toàn vẹn của mã nguồn dự án EduCenter ERP..."
           node -e "
             const fs = require('fs');
-            const targetFiles = ['preview/index.html'];
+            const targetFiles = ['docs/demo/index.html'];
             let hasError = false;
 
             targetFiles.forEach(f => {
@@ -60,7 +60,7 @@ jobs:
             }
           "
 
-      - name: Verify feature scaffold and preserved references
+      - name: Verify empty module-feature scaffolds and references
         run: python3 database/tests/verify_structure.py
 
   database-check:

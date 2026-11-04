@@ -1,35 +1,87 @@
-# Cơ sở dữ liệu EduCenter ERP
+# Hướng dẫn chạy database EduCenter ERP
 
-Database phục vụ đồ án quản lý trung tâm gia sư và đào tạo. Phiên bản hiện tại: **003_attribute_review**, gồm 36 bảng, 2 function, 10 procedure và 25 trigger.
+**Chạy các lệnh từ thư mục gốc repository**, không phải từ bên trong `database/`. Phiên bản schema hiện tại là `003_attribute_review`.
 
-## Yêu cầu và cấu hình
+## 1. Chuẩn bị trước khi chạy
 
-- MySQL 8.0.16+ hoặc 8.4 LTS, MySQL CLI, PowerShell 7+.
-- InnoDB, utf8mb4, session `+07:00`, giao dịch ghi `READ COMMITTED`.
-- Tài khoản triển khai có quyền DDL, routine, trigger và DML trên database được chọn. Tài khoản API dùng quyền tối thiểu riêng.
+1. Cài **MySQL Server 8.0.16+ hoặc 8.4 LTS** và **MySQL CLI**. Không dùng MariaDB thay thế. Khởi động dịch vụ MySQL trên máy hoặc server của bạn.
+2. Cài **PowerShell 7+**; lệnh chạy là `pwsh`, không phải Windows PowerShell 5.1. Python 3 chỉ cần cho bước kiểm tra cấu trúc.
+3. Kiểm tra công cụ:
+
+```powershell
+pwsh --version
+mysql --version
+mysql -h 127.0.0.1 -P 3306 -u root -p
+```
+
+Lệnh cuối mở MySQL CLI và hỏi mật khẩu quản trị. Nếu chưa có tài khoản triển khai, tạo tài khoản và cấp quyền cho đúng database trong cửa sổ MySQL này. Thay mật khẩu minh họa trước khi chạy:
+
+```sql
+CREATE USER 'educenter_migrator'@'127.0.0.1' IDENTIFIED BY 'THAY_BANG_MAT_KHAU_RIENG';
+GRANT ALL PRIVILEGES ON trung_tam_gia_su.* TO 'educenter_migrator'@'127.0.0.1';
+EXIT;
+```
+
+Tài khoản này dùng triển khai schema/routine/trigger, tách biệt với tài khoản API. Nếu dùng server từ xa, DBA cần cấp tài khoản cho đúng địa chỉ máy kết nối. Khi đổi tên database, sửa cả câu `GRANT` lẫn `DB_NAME` bên dưới.
+
+## 2. Tạo file cấu hình
+
+Chỉ sao chép ở lần đầu; nếu đã có `.env`, sửa file hiện có:
 
 ```powershell
 Copy-Item database/.env.example database/.env
 ```
 
-Điền cấu hình `KEY=value` nguyên văn, không đặt dấu nháy hoặc comment cuối dòng. `MYSQL_BIN` nhận `mysql` trong PATH hoặc đường dẫn tuyệt đối đến `mysql.exe`. Dùng `-EnvFile <đường-dẫn>` nếu đặt cấu hình ngoài repository. Mật khẩu được chuyển qua option file tạm, không đặt lên command line; file tạm được xóa khi kết thúc.
+Mở `database/.env`, điền:
 
-## Cài mới
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=trung_tam_gia_su
+DB_USER=educenter_migrator
+DB_PASSWORD=MAT_KHAU_BAN_DA_DAT
+DB_CHARSET=utf8mb4
+DB_TIMEZONE=+07:00
+MYSQL_BIN=mysql
+```
+
+Dùng `KEY=value` nguyên văn; không thêm dấu nháy, `export` hoặc comment cuối dòng. `MYSQL_BIN` có thể là đường dẫn đầy đủ, ví dụ `C:/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe`, nếu CLI chưa có trong PATH. File `.env` đã được Git bỏ qua.
+
+## 3. Database mới: chạy file nào trước?
+
+Chạy **script `database/scripts/run.ps1`**, không cần mở và import lần lượt từng file SQL:
 
 ```powershell
 pwsh -File database/scripts/run.ps1 -Action init
 pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-`init` từ chối database không rỗng. Script nạp `schema.sql`, các module trong `install-order.json`, seed danh mục rồi đánh dấu 001/002/003 đã áp dụng. Chưa tạo tài khoản Admin hay dữ liệu người dùng.
+`init` tự tạo database nếu chưa có, nhưng chỉ cài vào database rỗng. Thứ tự thực tế:
 
-## Nâng cấp từ SQL gốc, 001 hoặc 002
+| Bước | File / thao tác |
+| --- | --- |
+| 1 | `schema.sql`: tạo cấu trúc bảng mới nhất |
+| 2 | Ghi lịch sử 001/002/003 ở trạng thái `applying` |
+| 3 | `routines/functions.sql` |
+| 4 | `routines/helpers.sql` |
+| 5 | `routines/procedures.sql` |
+| 6 | `triggers/timekeeping.sql` |
+| 7 | `triggers/classes.sql` |
+| 8 | `triggers/scheduling.sql` |
+| 9 | `triggers/academic.sql` |
+| 10 | `triggers/tuition.sql` |
+| 11 | `triggers/payroll.sql` |
+| 12 | `seeders/001_reference.sql`: nạp danh mục chuẩn |
+| 13 | Đánh dấu các phiên bản đã `applied` |
+| 14 | Lệnh `check` chạy `checks.sql` để kiểm tra |
 
-1. Sao lưu và thử khôi phục; dừng ghi ứng dụng. Kiểm tra trước trên bản sao.
-2. Chạy `-Action preflight`, xử lý các dòng `VI_PHAM` bằng cách đối chiếu nguồn dữ liệu.
-3. Chạy `-Action migrate`, sau đó `-Action check`.
-4. Database gốc chạy thay đổi cấu trúc 001, ghi nhận 002, áp dụng 003 và nạp toàn bộ routine/trigger mới. Database 001/002 chỉ chạy phần còn thiếu. Database đã ở 003 được kiểm tra, không chạy lại DDL.
-5. Gặp phiên bản lạ hoặc migration `applying`, script dừng. DDL MySQL tự COMMIT: cần đối chiếu tiến độ và khôi phục backup hoặc lập kế hoạch sửa tiếp, không xóa cờ để chạy lại mù quáng.
+Thứ tự routine/trigger được quản lý tại [install-order.json](install-order.json). Cài mới **không chạy lại các file migration**, vì `schema.sql` đã là cấu trúc 003. `init` chưa tạo tài khoản Admin ứng dụng hay dữ liệu người dùng.
+
+Kết quả mong đợi là `Hoàn tất thao tác Database: init.`, sau đó `check` không có dòng `VI_PHAM` khác 0. Dòng `CAN_XAC_NHAN` cần được đối chiếu theo [thiết kế database](../docs/database-design.md).
+
+## 4. Database cũ: không dùng init
+
+Sao lưu và thử khôi phục trước, dừng ứng dụng ghi dữ liệu, chạy thử trên bản sao. Sau đó chạy đúng thứ tự:
 
 ```powershell
 pwsh -File database/scripts/run.ps1 -Action preflight
@@ -37,47 +89,49 @@ pwsh -File database/scripts/run.ps1 -Action migrate
 pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-`migrations/003_preflight.sql` dùng tên cột cũ và chạy trước DDL của 003. Các trường hợp cần đối chiếu gồm chi tiết hóa đơn sai học viên/lớp, trạng thái đọc mâu thuẫn với `doc_luc`, lý do từ chối không xác định được đúng một bên và số dư hóa đơn lệch phiếu thu/hoàn. Script dừng trước khi ghi `003 applying` khi gặp các vấn đề này.
+- `preflight`: kiểm tra dữ liệu trước khi thay đổi.
+- `migrate`: nhận diện SQL gốc/001/002, chạy phần còn thiếu theo thứ tự 001 → 002 → 003, nạp routine và trigger. Database đã ở 003 được kiểm tra, không ALTER lại.
+- `check`: kiểm tra toàn vẹn sau nâng cấp.
 
-Không import `schema.sql` lên database cũ. `reference/schema-original.sql` có `DROP DATABASE`, chỉ dùng tham khảo. Không chạy riêng file migration hoặc dùng mysql `--force` để bỏ qua lỗi.
+Nếu có `VI_PHAM` hoặc migration còn `applying`, dừng và đối chiếu dữ liệu/tiến độ. MySQL DDL tự COMMIT; không xóa trạng thái để chạy lại tùy ý. Không import `schema.sql` lên database đang có dữ liệu. Chi tiết thay đổi tại [docs/database-design.md](../docs/database-design.md).
 
-## Thay đổi thuộc tính ở 003
+## 5. Nạp demo và chạy bộ kiểm thử
 
-| Thay đổi | Quy tắc chuyển đổi |
-| --- | --- |
-| Bỏ `hoa_don_chi_tiet.hoc_vien_id` | Học viên được xác định qua hóa đơn và ghi danh. Vẫn kiểm tra buổi học phải cùng lớp với hóa đơn. |
-| `thong_bao.da_doc` tự tính từ `doc_luc` | Giữ tên cột và index để truy vấn, chỉ cập nhật `doc_luc`. Phải xử lý mâu thuẫn trước migration, không tự tạo thời điểm đọc. |
-| Tách lý do từ chối đề xuất | Chuyển lý do cũ sang đúng bên đang từ chối. Nếu cả hai hoặc không bên nào từ chối mà có lý do, preflight yêu cầu đối chiếu. |
-| Yêu cầu từ website | Thêm `nguoi_gui_id`, cho phép `nhan_vien_id` NULL trước khi phân công; khách chưa đăng nhập vẫn dùng thông tin liên hệ. |
-| Đơn vị giá và phản hồi | Thêm `don_vi_ngan_sach`, `cach_thu_phi_de_xuat`, thời điểm phản hồi hai bên và tài khoản phụ huynh phản hồi. |
-| Phát hành/hủy/chi trả | Thêm người, thời điểm, lý do hủy và mã giao dịch chi. Thao tác phát hành/hủy mới phải cung cấp dấu vết; chuyển trả lương phải từ kỳ đã chốt và có ngày trả khớp thời điểm trả. |
-| Timestamps và email | Bổ sung thời điểm chỉnh sửa, tạo kết quả/ghi danh và các mốc gửi/thử lại email. |
+Dùng **database mới riêng**, tên kết thúc bằng `_test`. Tài khoản triển khai cần được cấp quyền trên database thử nghiệm tương ứng. Đổi `DB_NAME` trong một bản cấu hình riêng, ví dụ `database/.env.test.local`:
 
-Đơn vị giá và dấu vết lịch sử chưa biết giữ NULL. Thời điểm tạo mới bổ sung cho ghi danh/kết quả cũ cũng giữ NULL; default thời điểm hiện tại chỉ áp dụng cho bản ghi mới. `check` báo `CAN_XAC_NHAN` để rà soát; không điền người thao tác bằng người lập hay suy giá từ lớp hiện tại.
+```powershell
+Copy-Item database/.env.example database/.env.test.local
+# Sửa kết nối, mật khẩu và DB_NAME=educenter_local_test trong file vừa tạo.
+# Cấp quyền trên educenter_local_test.* cho tài khoản triển khai trước khi init.
+pwsh -File database/scripts/run.ps1 -Action init -EnvFile database/.env.test.local
+pwsh -File database/scripts/run.ps1 -Action seed-demo -EnvFile database/.env.test.local
+pwsh -File database/scripts/run.ps1 -Action test -EnvFile database/.env.test.local
+pwsh -File database/scripts/run.ps1 -Action check -EnvFile database/.env.test.local
+```
 
-Giữ `account.account_id` và `role_group_function.id` vì khóa đơn vẫn hợp lệ và chưa có lợi ích đủ lớn để đổi. Giữ snapshot đơn giá/cách tính lương trên phân công, các tổng quyết toán và địa điểm buổi học. Các cột tự tính `so_phut_thuc_te`, `thuc_nhan`, `phai_thu`, `day_chinh_key` tiếp tục phục vụ nghiệp vụ và ràng buộc.
+`seed-demo` chạy `seeders/002_demo.sql`, yêu cầu chưa có người dùng; không nạp demo hai lần. `test` lần lượt chạy `integrity.sql` → `regressions.sql` → `attributes.sql` → `workflows.sql` trong `database/tests/`. Có 51 ca hành vi; suite workflow có COMMIT và làm thay đổi demo. Tài khoản demo trong MySQL bị khóa, không phải tài khoản đăng nhập của demo HTML.
 
-## Trách nhiệm của API
-
-- Xác thực người dùng, kiểm tra quyền chức năng và phạm vi cơ sở/con/phân công. Truyền một `user_id` hợp lệ chưa chứng minh người gọi có quyền.
-- Gửi đơn vị ngân sách/giá, phản hồi hai bên và thông tin người/thời điểm thực hiện khi phát sinh thao tác.
-- Chuyển hóa đơn nháp sang phát hành cùng `phat_hanh_boi`, `phat_hanh_luc`; khi hủy gửi `huy_boi`, `huy_luc`, `ly_do_huy`. Hủy buổi dùng `nguoi_huy_id`, `huy_luc`, `ly_do_huy_doi`.
-- Trả lương một lần cho kỳ đã chốt bằng `tra_boi`, `tra_luc`, `ngay_tra` và mã giao dịch nếu có. Kỳ đã trả được bảo vệ; chi trả nhiều đợt cần thiết kế bảng chứng từ riêng.
-- Đối chiếu tổng hóa đơn với chi tiết trước phát hành; retry toàn giao dịch khi deadlock.
-- Các procedure `sp_sinh_buoi_hoc`, `sp_chot_cong`, `sp_mo_khoa_cong` quản lý transaction riêng, phải CALL độc lập ngoài transaction của caller.
-
-Chính sách phí vắng, giá riêng theo ghi danh, GPS/bán kính, học bù riêng học viên lớp nhóm, nhiều phụ huynh hoặc nhiều bài chấm trong một buổi còn cần chốt thiết kế. Chưa tự thêm cột hay quy tắc cho các phương án này.
-
-## Kiểm thử
+Kiểm tra cấu trúc repository, không cần MySQL:
 
 ```powershell
 python database/tests/verify_structure.py --scaffold-only
-# DB_NAME phải kết thúc bằng _test, đã init và chưa có người dùng:
-pwsh -File database/scripts/run.ps1 -Action seed-demo
-pwsh -File database/scripts/run.ps1 -Action test
-pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-51 ca: 11 toàn vẹn, 8 hồi quy 002, 20 thuộc tính 003, 12 quy trình. Demo có 8 người dùng; tài khoản demo bị khóa. Suite quy trình có COMMIT và thay đổi demo, chỉ chạy trên database dùng một lần. Mức phí tháng chưa xác định vẫn giữ NULL.
+Kết quả SQL đã ghi nhận trước đây tại [docs/database-validation.md](../docs/database-validation.md); báo cáo đó không có nghĩa database trên máy mới đã được khởi tạo.
 
-Kết quả thực tế và phạm vi xác minh tại [tests/VALIDATION.md](tests/VALIDATION.md). Các module nạp theo `install-order.json`; seed danh mục không được nạp lại để ghi đè quyền của database đang dùng.
+## 6. Lỗi thường gặp
+
+| Lỗi | Cách xử lý |
+| --- | --- |
+| Không nhận `pwsh` | Cài PowerShell 7 và mở terminal mới |
+| Không nhận `mysql` | Điền đường dẫn `mysql.exe` vào `MYSQL_BIN` |
+| Không kết nối được | Kiểm tra dịch vụ MySQL, `DB_HOST`, `DB_PORT` và firewall |
+| `Access denied` | Kiểm tra user/mật khẩu và host được cấp quyền; không dùng tài khoản API để migration |
+| Thiếu quyền tạo function/trigger, lỗi 1418/1419 | Nhờ DBA kiểm tra quyền và binary logging; với máy phát triển riêng, quản trị viên có thể bật `SET GLOBAL log_bin_trust_function_creators = 1;` trước khi cài |
+| `Init chỉ dành cho database rỗng` | Database cũ dùng `preflight` → `migrate`; cài thử thì dùng database rỗng khác |
+| Lần init trước bị lỗi giữa chừng | Đối chiếu lỗi/DDL đã chạy; không chạy lại init trên database đã có bảng |
+| Demo/test bị từ chối | Dùng database `_test` mới, đã init, chưa có người dùng trước khi seed |
+
+SQL gốc ở `docs/reference/database/schema-original.sql` chứa lệnh xóa database và chỉ phục vụ tham khảo. File đó không nằm trong thứ tự cài đặt.
+
+Sau khi database sẵn sàng, xem [hướng dẫn cấu hình server](../docs/server-setup.md). Frontend/backend hiện chỉ là file khung rỗng, chưa có chương trình kết nối database.
