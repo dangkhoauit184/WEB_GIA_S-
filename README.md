@@ -1,82 +1,70 @@
-# EduCenter ERP — Quản lý trung tâm gia sư và đào tạo
+# EduCenter ERP — Quản lý trung tâm gia sư
 
-Repository gồm thiết kế MySQL (`003_attribute_review`), tài liệu nghiệp vụ, Backend RESTful API (Node.js/Express + MySQL2 + JWT + RBAC 6 vai trò) và khung Frontend theo kiến trúc **module → feature**.
+Đồ án dùng **PHP 8.4 + CodeIgniter 4 (MVC, Ajax) + MySQL 8.4**. Backend đã chuyển từ Node.js/Express sang PHP để phù hợp đề cương IS207. Composer lock cố định phiên bản thư viện; chạy bằng Docker, không cần cài PHP trực tiếp trên Windows.
 
-**Trạng thái hiện tại:**
-- **Database (`database/`)**: Đã hoàn thiện schema 36 bảng, 25 triggers, 12 stored procedures/functions, seeders và bộ kiểm thử tự động.
-- **Backend (`backend/`)**: Đã triển khai khung lõi Server + kết nối MySQL Pool (`+07:00`, `READ-COMMITTED`), JWT Auth, phân quyền RBAC 6 vai trò, xử lý lỗi MySQL `SIGNAL SQLSTATE '45000'`, cùng các nhóm API nghiệp vụ: Đăng nhập (`auth`), Phụ huynh (`parents`), Học viên (`students`), Người dạy & Gợi ý ghép BR02 (`teachers`, `tutors`), Lớp học & Ghi danh (`classes`), Xếp lịch & Sinh buổi học tự động BR03 (`scheduling`).
-- **Frontend (`frontend/`)**: Đang ở dạng khung module/feature để phát triển giao diện từ Figma. Giao diện minh họa cũ được lưu tại [docs/demo/index.html](docs/demo/index.html).
+## Trạng thái
 
-## Cấu trúc chính
+- Database: giữ schema 36 bảng, 25 trigger, 12 procedure/function, dữ liệu và quy trình cài đặt hiện có.
+- Backend: đăng nhập/JWT, phân quyền, phụ huynh/học viên, giáo viên/gia sư, gợi ý ghép BR02, lớp/ghi danh, lịch tuần/sinh buổi học BR03 đã có API PHP.
+- Có trang MVC đăng nhập, xem/tìm dữ liệu và đổi mật khẩu qua Ajax tại `http://localhost:5000/`. Đây là giao diện khởi đầu; chưa triển khai toàn bộ màn hình Figma.
+- `frontend/` tiếp tục giữ khung HTML/CSS/JS. Các feature backend khác cũng giữ khung PHP; `/status` trả `planned` khi chưa có nghiệp vụ.
+- Danh sách phần đã chuyển và phần còn thiếu của đồ án: [docs/is207-migration.md](docs/is207-migration.md).
 
-```text
-.
-├── README.md
-├── backend/
-│   ├── README.md
-│   ├── package.json
-│   ├── server.js                      # Entry point khởi động HTTP server (cổng 5000)
-│   ├── scripts/bootstrap-admin.js     # Khởi tạo/mở khóa tài khoản Admin đầu tiên
-│   ├── tests/                         # Bộ kiểm thử Core & Tích hợp MySQL
-│   └── src/{modules,shared,config}/
-├── frontend/
-│   ├── README.md
-│   ├── index.html
-│   ├── assets/
-│   └── src/{modules,shared,config}/
-├── config/server.env.example          # Cấu hình mẫu cho Backend Server
-├── shared/                            # Danh sách module, hằng số Role & Business Rules
-├── database/                          # SQL và công cụ vận hành database
-├── docs/                              # Kiến trúc, nghiệp vụ, báo cáo, demo tham khảo
-└── .github/
-    ├── PULL_REQUEST_TEMPLATE.md
-    └── workflows/pr-check.yml
+## Chạy trên máy đã có database
+
+Mở Docker Desktop, giữ file riêng `config/server.env` đã điền mật khẩu, rồi chạy từ thư mục gốc repo:
+
+```powershell
+cd D:\WEB
+powershell -ExecutionPolicy Bypass -File backend/scripts/start.ps1
 ```
 
-Cả frontend và backend cùng dùng cấu trúc `src/modules/<module>/features/<feature>/`.
+Script bật lại container MySQL `educenter-mysql`, nối mạng nội bộ, cài Composer và chạy Apache/PHP. Nó dùng lại volume MySQL hiện có. Mở [ứng dụng](http://localhost:5000/) hoặc [health check](http://localhost:5000/api/health).
 
-| Module chính                        | Chức năng                                                                                                   |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `administration` — Quản trị         | `auth`, `permissions`, `staff`, `catalog`, `audit`                                                          |
-| `people` — Hồ sơ                    | `students`, `teachers`, `tutors`, `parents`                                                                 |
-| `academic` — Đào tạo                | `admissions`, `academic-affairs`, `classes`, `scheduling`, `attendance`, `leave-requests`, `makeup-classes` |
-| `finance` — Tài chính và công lương | `tuition`, `timekeeping`, `payroll`                                                                         |
-| `communication` — Thông báo         | `notifications`                                                                                             |
-| `reporting` — Báo cáo               | `dashboard`                                                                                                 |
+Nếu chưa có tài khoản ứng dụng:
 
-## Bắt đầu nhanh
+```powershell
+powershell -ExecutionPolicy Bypass -File backend/scripts/bootstrap-admin.ps1
+```
 
-1. **Khởi tạo Database**: Đọc [database/README.md](database/README.md), điền `database/.env`, chạy `init` và `check`:
-   ```powershell
-   pwsh -File database/scripts/run.ps1 -Action init
-   pwsh -File database/scripts/run.ps1 -Action check
-   ```
-2. **Cấu hình và chạy Backend Server**: Đọc [backend/README.md](backend/README.md) và [docs/server-setup.md](docs/server-setup.md):
-   ```powershell
-   Copy-Item config/server.env.example config/server.env
-   # Điền DB_HOST=127.0.0.1, DB_PORT=3307, DB_NAME=trung_tam_gia_su, DB_USER=educenter_api, DB_PASSWORD và JWT_SECRET
-   cd backend
-   npm.cmd install
-   npm.cmd run bootstrap-admin
-   npm.cmd run dev
-   ```
-3. **Kiểm tra sức khỏe hệ thống & chạy bộ test**:
-   ```powershell
-   irm http://127.0.0.1:5000/api/health
-   npm.cmd --prefix backend test
-   npm.cmd --prefix backend run test:db
-   python database/tests/verify_structure.py
-   ```
+Nếu `admin` đã tồn tại nhưng đang bị khóa bởi seed demo, thêm `-Reset` để chủ động đặt mật khẩu mới. Mật khẩu ứng dụng độc lập với mật khẩu MySQL. Token cũ của Node.js cần đăng nhập lại sau khi chuyển PHP.
 
-## Tài liệu
+Máy mới: làm [database/README.md](database/README.md) trước, rồi [docs/server-setup.md](docs/server-setup.md). Không chạy lại schema lên database đang có dữ liệu.
 
-Chỉ giữ **4 README**: file này, backend, frontend và database; giữ **1 mẫu pull request** trong `.github`.
+## Cấu trúc
 
-- [Hướng dẫn cấu trúc module/feature](docs/project-structure.md).
-- [Hướng dẫn cấu hình và chạy server](docs/server-setup.md).
-- [Kiến trúc và quy tắc nghiệp vụ](docs/architecture.md).
-- [Tài liệu nghiệp vụ](docs/quy_trinh_nghiep_vu_v2.docx).
-- [Thiết kế và nâng cấp database](docs/database-design.md).
-- [Báo cáo rà soát database](docs/database-review.md).
-- [Kết quả kiểm chứng database](docs/database-validation.md).
-- [Cách xem và giới hạn của demo](docs/frontend-demo.md).
+```text
+backend/
+  app/Config/                         cấu hình và ghép routes
+  app/Modules/<Module>/Features/<Feature>/
+    <Feature>Controller.php           HTTP / MVC controller
+    <Feature>Service.php              nghiệp vụ
+    <Feature>Repository.php           truy vấn MySQL
+    <Feature>Model.php                model / ánh xạ dữ liệu
+    <Feature>Validator.php            kiểm tra đầu vào
+    <Feature>Filter.php               quyền truy cập
+    Routes.php                        routes tường minh
+    Views/                            PHP view nếu feature có màn hình
+  app/Shared/                         xác thực, scope, DB, xử lý lỗi
+  public/                             document root Apache
+  scripts/                            start, bootstrap và kiểm thử Docker
+  tests/                              core và HTTP/MySQL
+  composer.json, composer.lock, spark
+frontend/src/modules/<module>/features/<feature>/
+database/                             SQL, seed, migration, tests
+shared/modules.json                   6 module / 21 feature dùng chung
+config/server.env.example             mẫu cấu hình, không chứa mật khẩu
+compose.yaml                          PHP kết nối container DB hiện có
+docs/                                 tài liệu chi tiết và tham khảo
+```
+
+## Kiểm tra
+
+```powershell
+python database/tests/verify_structure.py
+docker compose run --rm --no-deps backend composer test
+# PowerShell 7: tạo MySQL kiểm thử riêng, chạy PHP + SQL rồi dọn container tạm
+pwsh -File backend/scripts/test.ps1
+```
+
+Giữ **4 README** (gốc, backend, frontend, database) và **1 mẫu pull request**. Xem [backend/README.md](backend/README.md), [cấu trúc module](docs/project-structure.md), [nghiệp vụ](docs/architecture.md), [tài liệu nghiệp vụ gốc](docs/quy_trinh_nghiep_vu_v2.docx), [kiểm chứng database](docs/database-validation.md), [demo tham khảo](docs/frontend-demo.md).

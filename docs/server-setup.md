@@ -1,142 +1,130 @@
-# Hướng dẫn cấu hình và chạy Backend Server
+# Chạy server PHP / CodeIgniter 4
 
-Tài liệu này hướng dẫn thiết lập tài khoản MySQL cho Backend API (`educenter_api`), cấu hình `config/server.env`, khởi chạy server và xử lý các lỗi thường gặp.
+Thực hiện từ thư mục gốc repo, ví dụ D:\WEB. Nếu đã chạy database trước đây, giữ nguyên container `educenter-mysql`, volume `educenter_mysql_data` và file riêng `config/server.env`.
 
-Thực hiện các lệnh PowerShell từ thư mục gốc repository (`D:\WEB` trong ví dụ). Với cách chạy trên Windows bên dưới, backend kết nối tới MySQL Docker qua `127.0.0.1:3307`.
+## 1. Chuẩn bị database trước
 
-## Chuẩn bị MySQL Docker
-
-Mở Docker Desktop và đợi trạng thái **Engine running**. Nếu đã tạo container theo hướng dẫn database, bật lại bằng lệnh:
+Mở Docker Desktop, đợi Engine running, chạy:
 
 ```powershell
 docker start educenter-mysql
 docker ps --filter name=educenter-mysql
 ```
 
-Container đang hoạt động sẽ có trạng thái `Up` và ánh xạ `127.0.0.1:3307->3306/tcp`.
+Máy mới chưa có container: làm [database/README.md](../database/README.md). Cài schema, routines/triggers theo install-order.json, seed-reference rồi check. Chỉ chạy init trên database rỗng. Migration PHP này không yêu cầu chạy lại schema hay import demo vào dữ liệu hiện có.
 
-Trên máy mới, tạo container lần đầu bằng khối lệnh sau. Thay `MAT_KHAU_ROOT_BAN_TU_DAT` bằng mật khẩu quản trị MySQL riêng trước khi chạy:
-
-```powershell
-docker run -d `
-  --name educenter-mysql `
-  --restart unless-stopped `
-  -p 127.0.0.1:3307:3306 `
-  -e MYSQL_ROOT_PASSWORD=MAT_KHAU_ROOT_BAN_TU_DAT `
-  --mount "type=volume,source=educenter_mysql_data,target=/var/lib/mysql" `
-  --mount "type=bind,source=D:\WEB\database,target=/sql,readonly" `
-  mysql:8.4 `
-  --character-set-server=utf8mb4 `
-  --collation-server=utf8mb4_unicode_ci `
-  --default-time-zone=+07:00
-```
-
-Nếu clone repository vào thư mục khác, thay đường dẫn `D:\WEB\database` trong bind mount. Volume `educenter_mysql_data` lưu dữ liệu MySQL. Thư mục `/sql` trong container chứa các file SQL của repository.
-
-Xem tiến trình khởi động bằng `docker logs -f educenter-mysql`. Khi thấy `ready for connections` ở cổng `3306`, nhấn `Ctrl+C` để thoát phần xem log. Chuẩn bị schema và danh mục theo [database/README.md](../database/README.md) trước khi tạo tài khoản API.
-
-## 1. Tạo tài khoản MySQL cho Backend (`educenter_api`)
-
-Sau khi đã khởi tạo database `trung_tam_gia_su`, đăng nhập MySQL trong container bằng tài khoản quản trị `root`:
+Nếu chưa có tài khoản MySQL cho ứng dụng, vào container:
 
 ```powershell
-docker exec -it educenter-mysql mysql --default-character-set=utf8mb4 -u root -p
+docker exec -it educenter-mysql mysql -u root -p
 ```
 
-Nhập mật khẩu root đã đặt khi tạo container. Tại dấu nhắc `mysql>`, thay mật khẩu mẫu trong SQL dưới đây bằng mật khẩu riêng cho tài khoản API rồi chạy:
+Nhập mật khẩu root đã đặt lúc tạo MySQL. Trong dấu nhắc mysql>, chạy SQL sau, thay mật khẩu mẫu bằng mật khẩu riêng:
 
 ```sql
-CREATE USER 'educenter_api'@'%'
-IDENTIFIED BY 'THAY_BANG_MAT_KHAU_API_RIENG';
-
-GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE
-ON trung_tam_gia_su.*
-TO 'educenter_api'@'%';
-
+CREATE USER 'educenter_api'@'%' IDENTIFIED BY 'MAT_KHAU_API_BAN_TU_DAT';
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON trung_tam_gia_su.* TO 'educenter_api'@'%';
 EXIT;
 ```
 
-Docker chuyển tiếp kết nối từ Windows qua mạng container. Host `%` cho tài khoản API nhận kết nối này, còn cổng publish được giới hạn ở `127.0.0.1` trên Windows. Các quyền được cấp bao gồm thao tác dữ liệu và thực thi procedure/function trên `trung_tam_gia_su`.
+Nếu tài khoản đã có thì dùng lại; không tạo lại/đặt lại mật khẩu tùy tiện. Host `%` cho phép kết nối từ container PHP trong mạng Docker; MySQL trên Windows vẫn chỉ public `127.0.0.1:3307`.
 
-Nếu tài khoản đã tồn tại, kiểm tra các host được khai báo bằng `SELECT User, Host FROM mysql.user WHERE User = 'educenter_api';`. Đặt lại mật khẩu hoặc cấp quyền cho đúng tài khoản sau khi xác định host cần dùng.
+## 2. Cấu hình riêng
 
-## 2. Điền cấu hình `config/server.env`
-
-Sao chép từ file mẫu nếu chưa có:
+Chỉ sao chép nếu chưa có file:
 
 ```powershell
-if (!(Test-Path config/server.env)) {
-  Copy-Item config/server.env.example config/server.env
-}
+if (!(Test-Path config/server.env)) { Copy-Item config/server.env.example config/server.env }
+notepad config/server.env
 ```
 
-Mở `config/server.env` và điền thông số kết nối thực tế (ví dụ MySQL chạy trên cổng `3307`):
-
-```dotenv
-NODE_ENV=development
-HOST=127.0.0.1
-PORT=5000
-DB_HOST=127.0.0.1
-DB_PORT=3307
-DB_NAME=trung_tam_gia_su
-DB_USER=educenter_api
-DB_PASSWORD=MAT_KHAU_API_VUA_DAT
-DB_CHARSET=utf8mb4
-DB_TIMEZONE=+07:00
-JWT_SECRET=CHUOI_BI_MAT_JWT_RIENG_CUA_BAN
-JWT_EXPIRES_IN=8h
-```
-
-Điền `DB_PASSWORD` khớp với mật khẩu đã đặt cho `educenter_api` và tự đặt `JWT_SECRET` riêng. File `config/server.env` được lưu cục bộ qua quy tắc `.gitignore`.
-
-## 3. Khởi tạo Admin đầu tiên và chạy Server
+Điền DB_NAME=trung_tam_gia_su, DB_USER=educenter_api, DB_PASSWORD đúng ở bước 1. Đặt JWT_SECRET ngẫu nhiên riêng (ít nhất 32 ký tự). Có thể tạo khóa bằng PowerShell, rồi dán kết quả vào file riêng:
 
 ```powershell
-npm.cmd --prefix backend install
+[Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
 ```
 
-Đặt mật khẩu cho Admin trong PowerShell bằng lệnh sau. Nhập mật khẩu khi được hỏi rồi nhấn Enter:
+`CI_ENVIRONMENT=production` giúp không lộ lỗi nội bộ. `JWT_EXPIRES_IN=8h`; CORS_ORIGINS liệt kê các origin frontend được phép, cách nhau bằng dấu phẩy. File mẫu không có secret mặc định. File riêng bị gitignore; không commit hoặc gửi mật khẩu lên GitHub.
+
+DB_HOST=127.0.0.1 và DB_PORT=3307 dành cho PHP chạy trực tiếp trên Windows. Compose tự ghi đè thành `educenter-mysql:3306` trong mạng Docker. Không dùng địa chỉ 127.0.0.1:3307 để PHP container gọi MySQL container.
+
+## 3. Chạy PHP qua Docker
 
 ```powershell
-$adminSecret = Read-Host "Dat mat khau Admin" -AsSecureString
+powershell -ExecutionPolicy Bypass -File backend/scripts/start.ps1
 ```
 
-Sau khi nhập xong, chạy tiếp:
+Lần đầu cần Internet để tải PHP/Apache, Composer và các thư viện; có thể mất vài phút. Script nối DB hiện có vào mạng educenter-erp, build runtime, composer install rồi bật backend. Không tạo lại DB/volume và không chạy seed demo.
+
+Mở http://localhost:5000/ để đăng nhập, hoặc kiểm tra:
 
 ```powershell
-$env:ADMIN_PASSWORD = [System.Net.NetworkCredential]::new('', $adminSecret).Password
-npm.cmd --prefix backend run bootstrap-admin
-Remove-Item Env:ADMIN_PASSWORD
+Invoke-RestMethod http://localhost:5000/api/health
+docker compose ps
 ```
 
-Lệnh bootstrap tạo hoặc cập nhật tài khoản `admin` và băm mật khẩu bằng `bcryptjs`. Khi cập nhật tài khoản có sẵn, mật khẩu và nhóm quyền của tài khoản đó sẽ được đặt lại theo cấu hình bootstrap.
+Kết quả health phải có success=true, timeZone=+07:00, isolationLevel=READ-COMMITTED. Đây là kết nối PHP/MySQL, chưa chứng minh tất cả feature ERP đã hoàn thiện.
 
-Khởi chạy backend và giữ cửa sổ này mở trong lúc sử dụng:
+## 4. Tài khoản ứng dụng
+
+Mật khẩu đăng nhập web khác mật khẩu root và mật khẩu educenter_api của MySQL. Nếu đã có tài khoản active, dùng username/mật khẩu cũ; bcrypt cũ tương thích PHP. Phiên JWT Node cần đăng nhập lại.
+
+Chưa có tài khoản admin:
 
 ```powershell
-npm.cmd --prefix backend run dev
+powershell -ExecutionPolicy Bypass -File backend/scripts/bootstrap-admin.ps1
 ```
 
-- Mở `http://127.0.0.1:5000/api/health` để xác nhận. Kết quả chuẩn:
-  ```json
-  {
-    "success": true,
-    "message": "EduCenter ERP API & MySQL đang hoạt động bình thường.",
-    "db": {
-      "timeZone": "+07:00",
-      "isolationLevel": "READ-COMMITTED"
-    }
-  }
-  ```
+Script hỏi mật khẩu bằng SecureString và không ghi mật khẩu vào Git. Nếu admin đã tồn tại, mặc định từ chối ghi đè. Muốn chủ động đặt lại/kích hoạt tài khoản demo bị khóa:
 
-## 4. Xử lý lỗi thường gặp
+```powershell
+powershell -ExecutionPolicy Bypass -File backend/scripts/bootstrap-admin.ps1 -Username admin -Reset
+```
 
-| Triệu chứng / Mã lỗi | Nguyên nhân | Cách khắc phục |
-| --- | --- | --- |
-| Docker báo `ports are not available` hoặc `Only one usage of each socket address` ở cổng `3307` | Một tiến trình khác đang dùng cổng publish | Dùng `Get-NetTCPConnection -LocalPort 3307 -State Listen` để lấy `OwningProcess`, rồi `Get-Process -Id <PID>` để xác định chương trình. Dừng đúng dịch vụ MySQL kiểm thử bằng lệnh shutdown trước khi bật container, hoặc chọn cổng publish khác và cập nhật `DB_PORT` tương ứng |
-| `ECONNREFUSED 127.0.0.1:3307` | Dịch vụ MySQL hoặc container Docker chưa chạy, hoặc sai cổng `DB_PORT` | Kiểm tra dịch vụ MySQL / Docker container và đối chiếu `DB_PORT` trong `config/server.env` |
-| `ER_ACCESS_DENIED_ERROR` | Sai `DB_USER` / `DB_PASSWORD` hoặc host của tài khoản chưa khớp kết nối qua Docker | Kiểm tra tài khoản `'educenter_api'@'%'`, mật khẩu và quyền được cấp trong MySQL Docker, sau đó đối chiếu `config/server.env` |
-| `ER_DBACCESS_DENIED_ERROR` | Tài khoản `educenter_api` chưa được cấp quyền trên `trung_tam_gia_su.*` | Chạy `GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON trung_tam_gia_su.*` |
-| `PROCEDURE ... does not exist` khi gọi API xếp lịch | Chưa chạy `init` / `migrate` hoặc thiếu quyền `EXECUTE` | Chạy `pwsh -File database/scripts/run.ps1 -Action check` và cấp quyền `EXECUTE` cho `educenter_api` |
-| HTTP `400 BUSINESS_RULE_VIOLATION` | Dữ liệu vi phạm quy tắc nghiệp vụ trong Trigger/Procedure (`SIGNAL SQLSTATE '45000'`) | Đọc trường `message` tiếng Việt trả về trong JSON để biết quy tắc cụ thể bị vi phạm (VD: vượt sĩ số, trùng lịch dạy) |
-| HTTP `403 ACCOUNT_LOCKED` khi đăng nhập tài khoản demo | Tài khoản trong `002_demo.sql` mặc định ở trạng thái `locked` | Chạy `npm.cmd run bootstrap-admin` để mở khóa `admin` với mật khẩu băm mới |
+CLI tương đương là `php spark educenter:bootstrap-admin`; có thể cấp INITIAL_ADMIN_PASSWORD, ADMIN_USERNAME, ADMIN_NAME, ADMIN_EMAIL, ADMIN_PHONE qua biến môi trường riêng. Nếu gọi CLI trực tiếp không cấp password thì prompt hiển thị ký tự; ưu tiên script PowerShell ở trên.
+
+## 5. Những lần chạy sau
+
+Mở Docker Desktop rồi chạy lại start.ps1. Nếu không thay code/dependency và container backend đã được tạo:
+
+```powershell
+docker start educenter-mysql
+docker compose up -d backend
+```
+
+Dừng backend: `docker compose stop backend`. Xem log: `docker compose logs --tail 50 backend`. Đổi cổng local: `start.ps1 -Port 5001`, đồng thời sửa APP_BASE_URL/CORS_ORIGINS nếu sử dụng địa chỉ mới.
+
+Nếu cổng 5000 bận, dừng terminal Node cũ bằng Ctrl+C trước. Với cổng MySQL 3307 bận, dùng `Get-NetTCPConnection -LocalPort 3307 -State Listen` xác định tiến trình; không tạo container DB mới hoặc xóa volume để chữa lỗi cổng.
+
+## 6. Kiểm thử
+
+```powershell
+python database/tests/verify_structure.py
+docker compose run --rm --no-deps backend composer test
+pwsh -File backend/scripts/test.ps1
+```
+
+Script test.ps1 cần PowerShell 7 và Docker, tạo container MySQL/mạng/volume dùng một lần. API PHP và SQL regression chạy trên hai database riêng trong container tạm, sau đó dọn chúng. Không dùng database thật cho integration test.
+
+Đã có PHP >=8.2 (khuyên 8.4), Composer, intl/mbstring/mysqli, có thể chạy trực tiếp:
+
+```powershell
+cd backend
+composer install
+php spark serve --host 127.0.0.1 --port 5000
+composer test
+```
+
+Integration trực tiếp cần database đã init riêng có tên kết thúc `_test`, DB_HOST/PORT/NAME/USER/PASSWORD riêng và TEST_WITH_DB=1 trong môi trường; sau đó `composer test:db`. Test tự mở HTTP server tạm và dừng khi kết thúc.
+
+## 7. Triển khai server nộp đồ án
+
+Dockerfile có target application chứa mã nguồn và vendor đã cài từ composer.lock:
+
+```powershell
+docker build --target application -t educenter-php:release -f backend/Dockerfile .
+```
+
+Triển khai image này trên máy chủ có MySQL 8.4, truyền file env riêng với DB_HOST/PORT theo mạng server, CI_ENVIRONMENT=production, APP_BASE_URL là URL thật, JWT_SECRET riêng và CORS_ORIGINS đúng domain. Chỉ public Apache port80 qua reverse proxy HTTPS; document root đã cố định backend/public. Mount volume riêng cho backend/writable và cấp quyền www-data, sao lưu database/volume theo lịch. File config, .git, .cache và dữ liệu thử bị loại khỏi image. Không dùng spark serve cho server public.
+
+Đây là cấu hình triển khai có thể dùng; repo chưa tự tạo VPS, domain, HTTPS hay gửi mail thật. Các công việc đó cùng các feature còn thiếu được theo dõi trong [is207-migration.md](is207-migration.md).
