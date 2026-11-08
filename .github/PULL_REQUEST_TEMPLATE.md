@@ -24,13 +24,13 @@
 - [ ] 🗄️ Database / Backend API
 
 ### 📜 4. Quy tắc nghiệp vụ liên quan (Business Rules)
-<!-- Đánh dấu quy tắc nghiệp vụ trong Đặc tả v2.0 được áp dụng -->
-- [ ] `BR01`: Chống trùng lịch giáo viên / phòng học
-- [ ] `BR04/BR05`: Check-in / Check-out GPS
-- [ ] `BR08`: Đơn xin nghỉ phép học viên
-- [ ] `BR09`: Xếp lịch dạy bù
-- [ ] `BR11/BR12`: Khóa sổ bảng công và thù lao tháng
-- [ ] `BR14/BR15`: Quản lý học phí và hóa đơn
+<!-- Đối chiếu docs/thong-tin-do-an.md; quyết định hiện hành ưu tiên Word/Figma cũ. -->
+- [ ] Chống trùng lịch nhân sự/phòng và giới hạn sĩ số.
+- [ ] Check-in/out chỉ bấm nút, không GPS/ảnh; phút công trong lịch, đến sau giờ lịch là trễ.
+- [ ] Nghỉ cả lớp Admin duyệt, nghỉ cá nhân Giáo vụ; lịch bù không hạn mức/phí/đơn bắt buộc.
+- [ ] Chỉ Admin xếp lớp, độc lập tình trạng học phí.
+- [ ] Chỉ Admin xem/sửa đơn giá, duyệt/chốt/trả/mở công.
+- [ ] Thu trọn khóa, không hoàn khi tự thôi học; thanh toán có đối soát và chống trùng.
 
 ### ✅ 5. Danh sách kiểm tra trước khi Merge (Pre-Merge Checklist)
 - [ ] Đã chạy các kiểm tra phù hợp với thay đổi và ghi kết quả trong PR.

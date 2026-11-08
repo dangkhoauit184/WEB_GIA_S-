@@ -1,75 +1,21 @@
-# EduCenter ERP — Quản lý trung tâm gia sư
+# EduCenter ERP
 
-Nghiệp vụ hiện hành ở [business-rules-baseline](docs/business-rules-baseline.md); DB/server hiện hành ở [bàn giao 005](docs/db-server-readiness.md).
+Đồ án quản lý trung tâm gia sư bằng **PHP 8.4 / CodeIgniter 4 / MySQL 8.4**, giao diện HTML/CSS/JavaScript và Ajax.
 
-Đồ án dùng **PHP 8.4 + CodeIgniter 4 (MVC, Ajax) + MySQL 8.4**. Backend đã chuyển từ Node.js/Express sang PHP để phù hợp đề cương IS207. Composer lock cố định phiên bản thư viện; chạy bằng Docker, không cần cài PHP trực tiếp trên Windows.
+Tài liệu chính thức chỉ gồm hai file:
 
-## Trạng thái
+1. [Hướng dẫn cài đặt và sử dụng cho đồng đội](docs/huong-dan-cai-dat-va-su-dung.md): tải công cụ, clone repo, cấu hình, DB/server, tài khoản web, chạy hằng ngày, chia sẻ/backup/restore, kiểm thử và deploy.
+2. [Toàn bộ thông tin và đặc tả đồ án](docs/thong-tin-do-an.md): phạm vi, vai trò, nghiệp vụ đã chốt, quy trình, kiến trúc, DB43 bảng/20 routine/57 trigger, API, Figma, tiến độ và việc còn lại.
 
-- Database: schema 005 gồm 43 bảng, 57 trigger, 20 procedure/function, dữ liệu và quy trình cài đặt hiện có.
-- Backend: đăng nhập/JWT, phân quyền, phụ huynh/học viên, giáo viên/gia sư, gợi ý ghép BR02, lớp/ghi danh, lịch tuần/sinh buổi học BR03 đã có API PHP.
-- Quản trị: đã có API danh mục (môn, cấp lớp, khu vực, cơ sở, cấu hình), nhóm quyền/ma trận quyền và gán nhóm cho tài khoản. Xem [hợp đồng API quản trị](docs/administration-api.md).
-- Có trang MVC đăng nhập, xem/tìm dữ liệu và đổi mật khẩu qua Ajax tại `http://localhost:5000/`. Đây là giao diện khởi đầu; chưa triển khai toàn bộ màn hình Figma.
-- `frontend/` tiếp tục giữ khung HTML/CSS/JS. Các feature backend khác cũng giữ khung PHP; `/status` trả `planned` khi chưa có nghiệp vụ.
-- Danh sách phần đã chuyển và phần còn thiếu của đồ án: [docs/is207-migration.md](docs/is207-migration.md).
+Schema hiện hành **005_operations_ready**. Nền DB/server và một số API đã có; website chưa hoàn thiện tất cả luồng. Máy mới bắt đầu ở tài liệu1, không import schema lên DB đã có dữ liệu.
 
-## Chạy trên máy đã có database
+| Thư mục | Nội dung |
+| --- | --- |
+| [backend](backend/README.md) | PHP MVC theo module→feature |
+| [frontend](frontend/README.md) | Khung HTML/CSS/JS theo module→feature |
+| [database](database/README.md) | Schema, migrations, routines, triggers, seed, kiểm tra và công cụ DB |
+| docs | Đúng2 tài liệu chính thức ở trên |
+| reference | Word, SQL và demo gốc, giữ hash để tham khảo lịch sử |
+| config / shared | Mẫu cấu hình / manifest6 module21 feature |
 
-Mở Docker Desktop, giữ file riêng `config/server.env` đã điền mật khẩu, rồi chạy từ thư mục gốc repo:
-
-```powershell
-cd D:\WEB
-powershell -ExecutionPolicy Bypass -File backend/scripts/start.ps1
-```
-
-Script bật SMTP local Mailpit (xem thư tại http://localhost:8025/), bật lại container MySQL `educenter-mysql`, nối mạng nội bộ, cài Composer và chạy Apache/PHP. Nó dùng lại volume MySQL hiện có. Mở [ứng dụng](http://localhost:5000/) hoặc [health check](http://localhost:5000/api/health).
-
-Nếu chưa có tài khoản ứng dụng:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File backend/scripts/bootstrap-admin.ps1
-```
-
-Nếu `admin` đã tồn tại nhưng đang bị khóa bởi seed demo, thêm `-Reset` để chủ động đặt mật khẩu mới. Mật khẩu ứng dụng độc lập với mật khẩu MySQL. Token cũ của Node.js cần đăng nhập lại sau khi chuyển PHP.
-
-Máy mới: làm [database/README.md](database/README.md) trước, rồi [docs/server-setup.md](docs/server-setup.md). Không chạy lại schema lên database đang có dữ liệu.
-
-Kiểm tra môi trường bằng `pwsh -File backend/scripts/doctor.ps1`. Sao lưu/khôi phục thử, migration và cấu hình HTTPS release: [bàn giao DB/server](docs/db-server-readiness.md). Luồng web thanh toán/check-in/thông báo sẽ triển khai ở bước BE/FE; DB sẵn sàng không đồng nghĩa các màn hình này đã có.
-
-## Cấu trúc
-
-```text
-backend/
-  app/Config/                         cấu hình và ghép routes
-  app/Modules/<Module>/Features/<Feature>/
-    <Feature>Controller.php           HTTP / MVC controller
-    <Feature>Service.php              nghiệp vụ
-    <Feature>Repository.php           truy vấn MySQL
-    <Feature>Model.php                model / ánh xạ dữ liệu
-    <Feature>Validator.php            kiểm tra đầu vào
-    <Feature>Filter.php               quyền truy cập
-    Routes.php                        routes tường minh
-    Views/                            PHP view nếu feature có màn hình
-  app/Shared/                         xác thực, scope, DB, xử lý lỗi
-  public/                             document root Apache
-  scripts/                            start, bootstrap và kiểm thử Docker
-  tests/                              core và HTTP/MySQL
-  composer.json, composer.lock, spark
-frontend/src/modules/<module>/features/<feature>/
-database/                             SQL, seed, migration, tests
-shared/modules.json                   6 module / 21 feature dùng chung
-config/server.env.example             mẫu cấu hình, không chứa mật khẩu
-compose.yaml                          PHP kết nối container DB hiện có
-docs/                                 tài liệu chi tiết và tham khảo
-```
-
-## Kiểm tra
-
-```powershell
-python database/tests/verify_structure.py
-docker compose run --rm --no-deps backend composer test
-# PowerShell 7: tạo MySQL kiểm thử riêng, chạy PHP + SQL rồi dọn container tạm
-pwsh -File backend/scripts/test.ps1
-```
-
-Giữ **4 README** (gốc, backend, frontend, database) và **1 mẫu pull request**. Xem [backend/README.md](backend/README.md), [cấu trúc module](docs/project-structure.md), [nghiệp vụ](docs/architecture.md), [tài liệu nghiệp vụ gốc](docs/quy_trinh_nghiep_vu_v2.docx), [kiểm chứng database](docs/database-validation.md), [demo tham khảo](docs/frontend-demo.md).
+Giữ4 README làm chỉ dẫn ngắn và 1 mẫu PR. Không commit secret, env riêng, vendor, writable hoặc backup. Không viết Node backend song song.

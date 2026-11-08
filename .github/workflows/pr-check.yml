@@ -17,7 +17,7 @@ jobs:
       - name: Verify browser JavaScript syntax
         run: |
           node --check backend/public/assets/portal.js
-          node -e "const fs=require('fs'); for (const match of fs.readFileSync('docs/demo/index.html','utf8').matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) new Function(match[1]);"
+          node -e "const fs=require('fs'); for (const match of fs.readFileSync('reference/demo/index.html','utf8').matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) new Function(match[1]);"
 
   php-mysql:
     name: PHP 8.4, CodeIgniter MVC and MySQL 8.4
