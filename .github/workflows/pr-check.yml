@@ -104,7 +104,7 @@ jobs:
           ./database/scripts/run.ps1 -Action seed-demo -EnvFile $config
           ./database/scripts/run.ps1 -Action test -EnvFile $config
           ./database/scripts/run.ps1 -Action check -EnvFile $config
-      - name: Verify Backend Core with Live MySQL 8.4 Service
+      - name: Verify Backend Core & Business APIs with Live MySQL 8.4 Service
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: 33306
@@ -115,3 +115,4 @@ jobs:
         run: |
           npm --prefix backend install
           npm --prefix backend test
+          npm --prefix backend run test:db
