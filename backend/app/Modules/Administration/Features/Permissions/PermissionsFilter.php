@@ -1,4 +1,14 @@
 <?php
 namespace App\Modules\Administration\Features\Permissions;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+use App\Shared\Access;
+
+final class PermissionsFilter
+{
+    public static function administer(): array
+    {
+        $user=Access::user();
+        if($user['role']!=='ADMIN') Access::forbidden();
+        return $user;
+    }
+}

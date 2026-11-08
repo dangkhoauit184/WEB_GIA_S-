@@ -92,9 +92,15 @@ final class Store
 
     public static function audit(int $userId, string $action, int $record, array $data): void
     {
+        self::recordAudit($userId, $action, 'account', $record, null, $data);
+    }
+
+    public static function recordAudit(int $userId, string $action, string $table, ?int $record, ?array $before, ?array $after): void
+    {
         self::insert('audit_log', [
-            'user_id' => $userId, 'hanh_dong' => $action, 'bang' => 'account', 'ban_ghi_id' => $record,
-            'du_lieu_moi' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'user_id' => $userId, 'hanh_dong' => $action, 'bang' => $table, 'ban_ghi_id' => $record,
+            'du_lieu_cu' => $before === null ? null : json_encode($before, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'du_lieu_moi' => $after === null ? null : json_encode($after, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
             'ip' => service('request')->getIPAddress(),
         ]);
     }

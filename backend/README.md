@@ -43,6 +43,8 @@ Mọi API nghiệp vụ cần `Authorization: Bearer <token>`, ngoại trừ log
 | Người dạy | `/api/people/teachers`, `/api/people/tutors`: GET/POST, GET/PUT `/:id`, GET `/match` |
 | Lớp học | `/api/academic/classes`: GET/POST, GET/PUT `/:id`, GET/POST `/:id/enrollments`, PUT `/:id/enrollments/:enrollmentId` |
 | Xếp lịch | `/api/academic/scheduling`: GET/POST weekly, GET sessions, POST generate-sessions, POST sessions/:id/assign, PUT sessions/:id |
+| Danh mục | `/api/administration/catalog`: dữ liệu chọn dùng chung, quản lý môn/khu vực/cơ sở, cập nhật tên cấp lớp và cấu hình |
+| Phân quyền | `/api/administration/permissions`: nhóm chuẩn, chức năng, ma trận có kiểm tra phiên bản, tài khoản và gán nhóm |
 
 Response thành công giữ `{success:true,data:...}` và tên trường camelCase của API trước. Lỗi có `success:false`, `code`, `message`. SIGNAL 45000 trả 400 `BUSINESS_RULE_VIOLATION`, trùng dữ liệu trả 409. Lỗi máy chủ không trả chi tiết truy vấn/mật khẩu cho client.
 
@@ -50,7 +52,8 @@ Response thành công giữ `{success:true,data:...}` và tên trường camelCa
 
 - 6 vai trò ứng dụng: ADMIN, GIAO_VU, GIAO_VIEN, GIA_SU, TRO_GIANG, PHU_HUYNH; suy ra từ 5 nhóm DB và phân loại chuyên môn.
 - Admin toàn quyền; giáo vụ theo `role_group_function`. Quyền quản lý phụ huynh dùng `TiepNhanYeuCau`, học viên/lớp dùng `QuanLyLopHoc`, người dạy dùng `QuanLyNhanSu`, lịch dùng `VanHanhBuoiHoc`.
-- Seed hiện tại chưa cấp `QuanLyNhanSu` cho giáo vụ, nên thao tác quản lý người dạy mặc định dành cho admin. Không tự đổi ma trận thật trong migration này.
+- Seed hiện tại chưa cấp `QuanLyNhanSu` cho giáo vụ, nên thao tác quản lý người dạy mặc định dành cho admin. Admin có thể cấp/thu hồi quyền qua API ma trận; code không tự sửa ma trận đang dùng.
+- Chỉ admin được sửa danh mục, cấu hình và phân quyền. Người dùng có quyền tra cứu lớp/vận hành được đọc danh mục để điền form. Không xóa cứng môn/khu vực/cơ sở: DELETE chuyển isActive=false; cấp lớp 1–12 chỉ sửa tên để giữ thứ tự so khớp chuyên môn.
 - Phụ huynh chỉ xem con và lớp/lịch liên quan; người dạy xem hồ sơ mình, lớp được giao và buổi có phân công. Kiểm tra ở cả list và detail.
 - Mỗi request kiểm tra lại tài khoản/nhóm/quyền trong DB. Logout lưu hash token bị thu hồi trong `audit_log`; đổi mật khẩu vô hiệu hóa các token cũ. Không xóa bản audit đăng xuất trước khi token hết hạn.
 - Chuyển PHP không đổi schema, không hash lại tài khoản sẵn có. `password_verify` hỗ trợ bcrypt đã lưu từ Node/PHP.
@@ -63,3 +66,5 @@ pwsh -File backend/scripts/test.ps1
 ```
 
 Core test không ghi database. Script thứ hai tạo container MySQL dùng một lần, chạy API tích hợp và 4 bộ SQL test rồi xóa container/volume tạm. Integration từ chối chạy nếu thiếu `TEST_WITH_DB=1` hoặc tên DB không kết thúc `_test`. Chi tiết chạy trực tiếp và triển khai: [server-setup](../docs/server-setup.md). Phạm vi đồ án còn lại: [IS207](../docs/is207-migration.md).
+
+Suite quản trị chạy bằng `composer test:admin` trên môi trường DB kiểm thử tương tự `test:db`; đã được gọi trong script test.ps1 và CI. Hợp đồng request/response, quyền và giới hạn: [administration-api.md](../docs/administration-api.md).
