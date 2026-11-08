@@ -17,7 +17,7 @@ def require(condition, message):
         raise AssertionError(message)
 
 
-manifest = json.loads((ROOT / 'docs/reference/preserved-files.json').read_text('utf-8'))
+manifest = json.loads((ROOT / 'reference/preserved-files.json').read_text('utf-8'))
 for name, expected in manifest.items():
     require(hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == expected, f'File changed: {name}')
 
@@ -57,6 +57,7 @@ readmes = {p.relative_to(ROOT).as_posix() for folder in ['frontend', 'backend', 
            if not {'node_modules', 'vendor', 'writable'}.intersection(p.parts) and p.is_file() and p.name.lower().startswith('readme')}
 readmes.add('README.md')
 require(readmes == {'README.md', 'frontend/README.md', 'backend/README.md', 'database/README.md'}, 'Keep exactly four project READMEs')
+require({p.relative_to(ROOT / 'docs').as_posix() for p in (ROOT / 'docs').rglob('*') if p.is_file()} == {'huong-dan-cai-dat-va-su-dung.md','thong-tin-do-an.md'}, 'Keep exactly two authoritative files in docs')
 require([p.relative_to(ROOT).as_posix() for p in (ROOT / '.github').rglob('*')
          if p.is_file() and 'PULL_REQUEST' in p.name.upper()] == ['.github/PULL_REQUEST_TEMPLATE.md'], 'Keep one PR template')
 require(not any((ROOT / 'docs').rglob('mau[12].html')), 'Obsolete UI samples still present')
@@ -77,7 +78,7 @@ def columns(body):
 
 
 schema = (ROOT / 'database/schema.sql').read_text('utf-8')
-original = (ROOT / 'docs/reference/database/schema-original.sql').read_text('utf-8')
+original = (ROOT / 'reference/database/schema-original.sql').read_text('utf-8')
 old, new = tables(original), tables(schema)
 require(len(old) == 35, 'Expected original 35 tables')
 require(set(new) == set(old) | {'schema_migrations','khoa_hoc','dang_ky_khoa_hoc','lich_su_don_gia_gio','yeu_cau_nghi_lop','hoc_bu_hoc_vien','giao_dich_truc_tuyen','su_kien_thanh_toan'}, 'Unexpected tables')
@@ -114,7 +115,7 @@ migration = re.sub(r'--[^\n]*', '', (ROOT / 'database/migrations/001_feature_bas
 require(not re.search(r'\b(?:DROP\s+(?:DATABASE|TABLE|COLUMN)|TRUNCATE|DELETE\s+FROM)\b', migration, re.I), 'Destructive migration')
 require(len(set(re.findall(r'CREATE TRIGGER (\w+)', triggers))) == len(re.findall(r'CREATE TRIGGER (\w+)', triggers)), 'Duplicate triggers')
 require(not (ROOT / 'index.html').exists() and not (ROOT / 'preview').exists(), 'Preview still mixed with source')
-require((ROOT / 'docs/demo/index.html').is_file(), 'Missing archived demo')
+require((ROOT / 'reference/demo/index.html').is_file(), 'Missing archived demo')
 require(not (ROOT / 'database/procedures.sql').exists() and not (ROOT / 'database/triggers.sql').exists(), 'Duplicate executable SQL sources')
 print(f'PASS: {len(manifest)} preserved hashes; {len(modules)} modules; {len(features)} features; {len(placeholders)} source files; '
       f'{len(new)} tables; {fk_count} inline FKs; {len(routines)} routines.')

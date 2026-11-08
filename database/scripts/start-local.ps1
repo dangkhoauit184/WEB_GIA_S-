@@ -20,7 +20,7 @@ try {
         if ($state -ne 'running') { Invoke-Docker start $Container }
     } else {
         & docker volume inspect $Volume 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) { throw 'Volume đã tồn tại nhưng container không còn. Giữ nguyên volume, khôi phục kết nối theo server-setup; không tự khởi tạo hoặc đổi mật khẩu.' }
+        if ($LASTEXITCODE -eq 0) { throw 'Volume đã tồn tại nhưng container không còn. Giữ nguyên volume, khôi phục kết nối theo docs/huong-dan-cai-dat-va-su-dung.md; không tự khởi tạo hoặc đổi mật khẩu.' }
         $secretFile=if ($RootEnvFile) { [IO.Path]::GetFullPath($RootEnvFile) } else { Join-Path $root 'config/mysql.env' }
         if (!(Test-Path -LiteralPath $secretFile)) {
             $bytes=New-Object byte[] 32
