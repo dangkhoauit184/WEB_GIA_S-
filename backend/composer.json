@@ -24,6 +24,7 @@
   "scripts": {
     "test": "php tests/core.php",
     "test:db": "php tests/integration.php",
+    "test:admin": "php tests/administration.php",
     "bootstrap-admin": "php spark educenter:bootstrap-admin"
   }
 }

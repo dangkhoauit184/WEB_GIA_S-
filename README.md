@@ -6,6 +6,7 @@
 
 - Database: giữ schema 36 bảng, 25 trigger, 12 procedure/function, dữ liệu và quy trình cài đặt hiện có.
 - Backend: đăng nhập/JWT, phân quyền, phụ huynh/học viên, giáo viên/gia sư, gợi ý ghép BR02, lớp/ghi danh, lịch tuần/sinh buổi học BR03 đã có API PHP.
+- Quản trị: đã có API danh mục (môn, cấp lớp, khu vực, cơ sở, cấu hình), nhóm quyền/ma trận quyền và gán nhóm cho tài khoản. Xem [hợp đồng API quản trị](docs/administration-api.md).
 - Có trang MVC đăng nhập, xem/tìm dữ liệu và đổi mật khẩu qua Ajax tại `http://localhost:5000/`. Đây là giao diện khởi đầu; chưa triển khai toàn bộ màn hình Figma.
 - `frontend/` tiếp tục giữ khung HTML/CSS/JS. Các feature backend khác cũng giữ khung PHP; `/status` trả `planned` khi chưa có nghiệp vụ.
 - Danh sách phần đã chuyển và phần còn thiếu của đồ án: [docs/is207-migration.md](docs/is207-migration.md).

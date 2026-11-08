@@ -26,7 +26,7 @@ Giao diện PHP hiện có: đăng nhập, đổi mật khẩu, xem/tìm học v
 | --- | --- |
 | PHP framework, MVC, MySQL, Ajax | Đã có nền tảng chạy được và các luồng API nêu trên |
 | Khảo sát và phân tích | Có Word nghiệp vụ; cần hoàn thiện báo cáo, use case và mô tả theo mẫu giảng viên |
-| Tài khoản/nhóm quyền/danh mục/audit | Đã có auth và kiểm tra quyền; màn hình/API quản trị đầy đủ của Permissions/Staff/Catalog/Audit còn khung |
+| Tài khoản/nhóm quyền/danh mục/audit | Có auth, API Catalog và Permissions (ma trận, gán nhóm tài khoản), ghi audit khi sửa; Staff và API tra cứu Audit còn khung. Màn hình quản trị chưa làm |
 | Tuyển sinh, học vụ, điểm danh, xin nghỉ, học bù | Admissions/AcademicAffairs/Attendance/LeaveRequests/MakeupClasses chưa có API PHP nghiệp vụ |
 | Học phí, công, lương | Tuition/Timekeeping/Payroll còn khung; routines DB đã có nhưng cần service/API, quyền, giao diện và test |
 | Thêm/sửa/xóa/tìm kiếm | Có cho một số hồ sơ/lớp; cần hoàn thiện đúng nghiệp vụ từng feature, không xóa cứng dữ liệu tài chính |
@@ -37,6 +37,6 @@ Giao diện PHP hiện có: đăng nhập, đổi mật khẩu, xem/tìm học v
 | Deploy và nghiệm thu | Có image Apache/PHP và hướng dẫn; cần server/domain/HTTPS thực tế, dữ liệu demo chuẩn và kiểm thử đầu-cuối |
 | Báo cáo/nộp bài | Cần ảnh minh chứng, hướng dẫn tài khoản demo, phân công nhóm, kịch bản trình diễn và tài liệu theo mẫu môn học |
 
-Thứ tự phát triển đề xuất: Catalog/Permissions và màn hình auth → hồ sơ/lớp/lịch đang có → điểm danh/học vụ → xin nghỉ/học bù → công/lương/học phí → báo cáo/in/mail → deploy và hoàn thiện báo cáo.
+Thứ tự phát triển đề xuất: Staff và màn hình quản trị cho Catalog/Permissions đã có API → hồ sơ/lớp/lịch đang có → điểm danh/học vụ → xin nghỉ/học bù → công/lương/học phí → báo cáo/in/mail → deploy và hoàn thiện báo cáo. Hợp đồng API quản trị ở [administration-api.md](administration-api.md).
 
 Các route `/status` chỉ xác nhận feature được đăng ký. Giá trị `planned` không đồng nghĩa đã hoàn thành feature. Health 200 chỉ xác nhận PHP và MySQL đang kết nối.

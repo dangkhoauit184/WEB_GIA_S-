@@ -71,6 +71,7 @@ try {
     [void](Invoke-TestSql $sql)
     Invoke-PhpTest 'test'
     Invoke-PhpTest 'test:db'
+    Invoke-PhpTest 'test:admin'
     # The existing SQL regression suite expects demo records. Run it on a second clean database.
     $testDatabase='educenter_sql_test'
     & docker exec -e "MYSQL_PWD=$testPassword" $testContainer mysql --user=root --execute "CREATE DATABASE $testDatabase CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
