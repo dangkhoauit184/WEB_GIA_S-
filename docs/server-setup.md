@@ -1,34 +1,77 @@
-# Chuẩn bị cấu hình server
+# Hướng dẫn cấu hình và chạy Backend Server
 
-Theo yêu cầu hiện tại, frontend/backend chỉ có file khung rỗng. `backend/server.js` chưa mở cổng HTTP, `database.config.js` chưa kết nối MySQL và chưa có `package.json`. Chưa có lệnh chạy API; không chạy `npm install` hoặc `npm start` ở giai đoạn này.
+Tài liệu này hướng dẫn thiết lập tài khoản MySQL cho Backend API (`educenter_api`), cấu hình `config/server.env`, khởi chạy server và xử lý các lỗi thường gặp.
 
-## Cấu hình mẫu
+## 1. Tạo tài khoản MySQL cho Backend (`educenter_api`)
 
-Thông số dự kiến được chuẩn bị ở [config/server.env.example](../config/server.env.example): HTTP `127.0.0.1:5000`, MySQL `127.0.0.1:3306`, database `trung_tam_gia_su`, charset `utf8mb4`, session `+07:00`.
+Sau khi đã khởi tạo database `trung_tam_gia_su` bằng tài khoản triển khai (`educenter_migrator`) theo [database/README.md](../database/README.md), đăng nhập MySQL bằng tài khoản quản trị (`root`) và tạo tài khoản riêng cho ứng dụng API:
 
-Khi bắt đầu triển khai server, sao chép mẫu và điền mật khẩu riêng:
+```sql
+CREATE USER IF NOT EXISTS 'educenter_api'@'127.0.0.1' IDENTIFIED BY 'THAY_BANG_MAT_KHAU_API_RIENG';
+CREATE USER IF NOT EXISTS 'educenter_api'@'localhost' IDENTIFIED BY 'THAY_BANG_MAT_KHAU_API_RIENG';
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON trung_tam_gia_su.* TO 'educenter_api'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON trung_tam_gia_su.* TO 'educenter_api'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+- Tài khoản `educenter_api` chỉ có quyền thao tác dữ liệu (`SELECT, INSERT, UPDATE, DELETE`) và gọi Stored Procedure/Function (`EXECUTE`), không có quyền `DROP` hay `ALTER` cấu trúc bảng.
+
+## 2. Điền cấu hình `config/server.env`
+
+Sao chép từ file mẫu nếu chưa có:
 
 ```powershell
 Copy-Item config/server.env.example config/server.env
 ```
 
-`config/server.env` đã được Git bỏ qua. File này là quy ước cấu hình chuẩn bị sẵn; chưa được ứng dụng tự động đọc. Người triển khai cần nạp cấu hình vào `backend/src/config/`, thêm thư viện và lệnh chạy khi được yêu cầu viết code.
+Mở `config/server.env` và điền thông số kết nối thực tế (ví dụ MySQL chạy trên cổng `3307`):
 
-## Thứ tự chuẩn bị
-
-1. Cài và khởi động MySQL Server.
-2. Làm theo [database/README.md](../database/README.md): cấp tài khoản triển khai, điền `database/.env`, chạy `init` → `check`, hoặc nâng cấp database cũ.
-3. Tạo tài khoản API riêng, không dùng tài khoản migration cho ứng dụng.
-4. Điền `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` trong cấu hình server cho khớp database đã chuẩn bị.
-5. Sau khi có yêu cầu triển khai code, viết `database.config.js` → `app.js` → `server.js`, thêm lệnh chạy và kiểm tra kết nối.
-
-Ví dụ cấp quyền ban đầu cho tài khoản API trên máy phát triển, thực hiện trong MySQL CLI bằng tài khoản quản trị; thay mật khẩu minh họa trước khi chạy:
-
-```sql
-CREATE USER 'educenter_api'@'127.0.0.1' IDENTIFIED BY 'THAY_BANG_MAT_KHAU_API_RIENG';
-GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON trung_tam_gia_su.* TO 'educenter_api'@'127.0.0.1';
+```dotenv
+NODE_ENV=development
+HOST=127.0.0.1
+PORT=5000
+DB_HOST=127.0.0.1
+DB_PORT=3307
+DB_NAME=trung_tam_gia_su
+DB_USER=educenter_api
+DB_PASSWORD=MAT_KHAU_API_VUA_DAT
+DB_CHARSET=utf8mb4
+DB_TIMEZONE=+07:00
+JWT_SECRET=CHUOI_BI_MAT_JWT_RIENG_CUA_BAN
+JWT_EXPIRES_IN=8h
 ```
 
-Đây là quyền cơ sở cho luồng nghiệp vụ dự kiến; thu hẹp theo endpoint thực tế khi triển khai. Thay tên database/host tương ứng nếu cấu hình khác. Ứng dụng sau này cần đặt session `time_zone='+07:00'`, dùng `READ COMMITTED`, kiểm tra quyền người gọi và sử dụng truy vấn có tham số theo [thiết kế database](database-design.md).
+*(File `config/server.env` đã được `.gitignore` bảo vệ, không bị đẩy lên Git).*
 
-Để xem giao diện minh họa ngay lúc này, mở [demo HTML](demo/index.html). Demo không cần server và chưa ghi dữ liệu vào MySQL.
+## 3. Khởi tạo Admin đầu tiên và chạy Server
+
+```powershell
+cd backend
+npm.cmd install
+npm.cmd run bootstrap-admin
+npm.cmd run dev
+```
+
+- `npm.cmd run bootstrap-admin`: Tạo (hoặc kích hoạt lại) tài khoản Quản trị viên đầu tiên (`username: admin`, mật khẩu mặc định `Admin@123456` hoặc đặt qua biến môi trường `ADMIN_PASSWORD`) với mật khẩu được băm bằng `bcryptjs`.
+- Mở `http://127.0.0.1:5000/api/health` để xác nhận. Kết quả chuẩn:
+  ```json
+  {
+    "success": true,
+    "message": "EduCenter ERP API & MySQL đang hoạt động bình thường.",
+    "db": {
+      "timeZone": "+07:00",
+      "isolationLevel": "READ-COMMITTED"
+    }
+  }
+  ```
+
+## 4. Xử lý lỗi thường gặp
+
+| Triệu chứng / Mã lỗi | Nguyên nhân | Cách khắc phục |
+| --- | --- | --- |
+| `ECONNREFUSED 127.0.0.1:3307` | Dịch vụ MySQL hoặc container Docker chưa chạy, hoặc sai cổng `DB_PORT` | Kiểm tra dịch vụ MySQL / Docker container và đối chiếu `DB_PORT` trong `config/server.env` |
+| `ER_ACCESS_DENIED_ERROR` | Sai `DB_USER` / `DB_PASSWORD` hoặc chưa `GRANT` cho host `127.0.0.1` | Chạy lại lệnh `CREATE USER` và `GRANT` cho cả `'educenter_api'@'127.0.0.1'` và `'educenter_api'@'localhost'` |
+| `ER_DBACCESS_DENIED_ERROR` | Tài khoản `educenter_api` chưa được cấp quyền trên `trung_tam_gia_su.*` | Chạy `GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON trung_tam_gia_su.*` |
+| `PROCEDURE ... does not exist` khi gọi API xếp lịch | Chưa chạy `init` / `migrate` hoặc thiếu quyền `EXECUTE` | Chạy `pwsh -File database/scripts/run.ps1 -Action check` và cấp quyền `EXECUTE` cho `educenter_api` |
+| HTTP `400 BUSINESS_RULE_VIOLATION` | Dữ liệu vi phạm quy tắc nghiệp vụ trong Trigger/Procedure (`SIGNAL SQLSTATE '45000'`) | Đọc trường `message` tiếng Việt trả về trong JSON để biết quy tắc cụ thể bị vi phạm (VD: vượt sĩ số, trùng lịch dạy) |
+| HTTP `403 ACCOUNT_LOCKED` khi đăng nhập tài khoản demo | Tài khoản trong `002_demo.sql` mặc định ở trạng thái `locked` | Chạy `npm.cmd run bootstrap-admin` để mở khóa `admin` với mật khẩu băm mới |

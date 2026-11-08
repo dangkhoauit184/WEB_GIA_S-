@@ -13,20 +13,17 @@ Cả frontend và backend dùng `src/modules/<module>/features/<feature>/`. Modu
 
 21 feature gồm 18 feature có sẵn và 3 khung bổ sung `admissions`, `catalog`, `audit`, để tuyển sinh, danh mục và kiểm toán có vị trí riêng. Giữ cùng tên và cùng module ở cả hai phía.
 
-## File khung
+## Cấu trúc mỗi Feature
 
-Frontend: mỗi feature có `<feature>.html`, `<feature>.css`, `<feature>.js`. Mỗi module có `<module>.module.js`; `modules/index.js` dành cho việc ghép các module sau này.
-
-Backend: mỗi feature có 7 file `routes`, `controller`, `service`, `repository`, `model`, `validator`, `middleware`. Mỗi module có `<module>.routes.js`; `modules/index.js` dành cho việc đăng ký module sau này.
-
-Toàn bộ file mã nguồn trên đều rỗng. README mô tả trách nhiệm dự kiến, không có chức năng ứng dụng đã triển khai. `config/server.env.example` là cấu hình mẫu, chưa được code nào nạp.
+- **Frontend**: mỗi feature có `<feature>.html`, `<feature>.css`, `<feature>.js`. Mỗi module có `<module>.module.js`; `modules/index.js` dành cho việc ghép các module.
+- **Backend**: mỗi feature có 7 file `routes`, `controller`, `service`, `repository`, `model`, `validator`, `middleware`. Mỗi module có `<module>.routes.js`; `modules/index.js` đăng ký toàn bộ 6 module dưới `/api`.
 
 ## Phần dùng chung
 
 - `frontend/src/shared/`: component, style, dịch vụ, phân quyền và tiện ích phía trình duyệt.
-- `backend/src/shared/`: middleware, lỗi, phân quyền và tiện ích phía server.
-- `shared/`: hằng số, hợp đồng dữ liệu và danh sách module dùng cho cả hai phía.
-- `src/config/` của mỗi phía: nơi đặt cấu hình ứng dụng sau này.
+- `backend/src/shared/`: middleware xác thực JWT, xử lý lỗi HTTP/MySQL (`SIGNAL SQLSTATE '45000'`), phân quyền RBAC 6 vai trò và tiện ích phía server.
+- `shared/`: hằng số vai trò (`roles.js`), quy tắc nghiệp vụ (`business-rules.js`), hợp đồng dữ liệu và danh sách module (`modules.json`) dùng cho cả hai phía.
+- `src/config/` của mỗi phía: cấu hình ứng dụng và kết nối MySQL Pool.
 
 ## Tài liệu và tham chiếu
 
@@ -34,12 +31,10 @@ Giữ 4 README tại thư mục gốc, frontend, backend, database. Tài liệu 
 
 Demo HTML gốc chuyển tới `docs/demo/index.html`, không sửa nội dung. Chỉ giữ một bản SQL gốc tại `docs/reference/database/schema-original.sql` vì bộ kiểm tra còn dùng đối chiếu. File Word nghiệp vụ chỉ giữ một bản tại `docs/quy_trinh_nghiep_vu_v2.docx`. Hash các tham chiếu này nằm trong `docs/reference/preserved-files.json`.
 
-Các bản sao frontend/backend cũ, `mau1`, `mau2`, README gốc lỗi thời, SQL procedures cũ và mẫu `database.config` không còn được công cụ triển khai sử dụng đã được bỏ. Khi cần lịch sử, xem Git.
-
-Kiểm tra sau khi thay đổi cấu trúc:
+Kiểm tra cấu trúc và bộ test:
 
 ```powershell
-python database/tests/verify_structure.py --scaffold-only
+python database/tests/verify_structure.py
+npm --prefix backend test
+npm --prefix backend run test:db
 ```
-
-Bộ kiểm tra xác nhận cấu trúc hai phía khớp danh sách chung, file mã nguồn rỗng, số README/mẫu PR và tham chiếu SQL còn hợp lệ. CI dùng cùng lệnh kiểm tra, đồng thời chạy bộ kiểm thử MySQL.

@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node tests/core.test.js"
+    "bootstrap-admin": "node scripts/bootstrap-admin.js",
+    "test": "node tests/core.test.js",
+    "test:db": "node tests/integration.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
