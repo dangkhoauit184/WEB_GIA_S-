@@ -26,31 +26,31 @@ button{cursor:pointer}
 .app{display:grid;grid-template-columns:var(--side-w) 1fr;min-height:100vh}
 
 /* Sidebar */
-.side{background:var(--g900);color:var(--g400);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:30}
-.side::-webkit-scrollbar{width:3px}.side::-webkit-scrollbar-thumb{background:var(--g700);border-radius:3px}
-.brand{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--g800)}
+.side{background:var(--g900);color:var(--g400);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden;z-index:30}
+.side nav::-webkit-scrollbar{width:4px}.side nav::-webkit-scrollbar-thumb{background:var(--g700);border-radius:4px}
+.brand{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--g800);flex-shrink:0}
 .brand-icon{width:32px;height:32px;border-radius:var(--rs);background:var(--pri);color:var(--w);display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0}
 .brand b{font-size:14px;color:var(--w)}.brand small{display:block;font-size:10px;color:var(--g500);margin-top:1px}
-.side-user{margin:10px 10px 6px;padding:10px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.05)}
-.side-user .su-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:3px;background:var(--pri-d);color:var(--pri-l);display:inline-block;margin-bottom:4px}
+.side-user{margin:8px 10px 4px;padding:9px 10px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.05);flex-shrink:0}
+.side-user .su-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:3px;background:var(--pri-d);color:var(--pri-l);display:inline-block;margin-bottom:2px}
 .side-user .su-name{font-weight:600;color:var(--w);font-size:13px}
 .side-user .su-route{font-size:10px;color:var(--g500);margin-top:1px;font-family:'JetBrains Mono',monospace}
-.nav-group{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--g600);padding:14px 16px 4px;font-weight:600}
-.side nav{display:flex;flex-direction:column;gap:1px;padding:0 8px;flex:1;overflow-y:auto}
-.side nav button{background:0;border:0;color:var(--g400);text-align:left;padding:8px 12px;border-radius:var(--rs);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;transition:background .1s,color .1s;width:100%}
-.side nav button .nav-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-group{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);padding:14px 16px 4px;font-weight:700;white-space:nowrap}
+.side nav{display:flex;flex-direction:column;gap:4px;padding:0 8px 10px;flex:1;min-height:0;overflow-y:auto}
+.side nav button{background:0;border:0;color:var(--g400);text-align:left;padding:7px 10px;border-radius:var(--rs);display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;transition:background .1s,color .1s;width:100%;flex-shrink:0}
+.side nav button .nav-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0}
 .side nav button:hover{background:rgba(255,255,255,.06);color:var(--g200)}
 .side nav button.on{background:var(--pri-d);color:var(--w);font-weight:600}
-.side-foot{margin-top:auto;padding:10px 14px;border-top:1px solid var(--g800);font-size:11px;color:var(--g600)}
+.side-foot{margin-top:auto;padding:9px 12px;border-top:1px solid var(--g800);font-size:11px;color:var(--g500);flex-shrink:0}
 
 /* Topbar */
 .main-wrap{display:flex;flex-direction:column;min-width:0}
-.topbar{background:var(--w);border-bottom:1px solid var(--g200);padding:0 20px;height:52px;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
-.seg{display:flex;background:var(--g100);border-radius:var(--rs);padding:2px;gap:1px;flex-wrap:wrap}
-.seg button{border:0;background:0;padding:5px 11px;border-radius:5px;color:var(--g600);font-weight:500;font-size:12px;white-space:nowrap;transition:all .1s}
+.topbar{background:var(--w);border-bottom:1px solid var(--g200);padding:6px 18px;min-height:52px;height:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.seg{display:flex;background:var(--g100);border-radius:var(--rs);padding:2px;gap:2px;flex-wrap:nowrap;overflow-x:auto}
+.seg button{border:0;background:0;padding:5px 10px;border-radius:5px;color:var(--g600);font-weight:500;font-size:12px;white-space:nowrap;transition:all .1s}
 .seg button:hover{color:var(--g900)}.seg button.on{background:var(--w);color:var(--g900);font-weight:600;box-shadow:var(--sh)}
-.top-r{display:flex;align-items:center;gap:8px}
-.top-r .perm{font-size:11px;color:var(--pri-d);background:var(--pri-ll);border:1px solid var(--pri-l);padding:4px 10px;border-radius:99px;font-weight:500;white-space:nowrap}
+.top-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.top-r .perm{font-size:11px;color:var(--pri-d);background:var(--pri-ll);border:1px solid var(--pri-l);padding:4px 10px;border-radius:99px;font-weight:500;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
 .bell-btn{position:relative;background:var(--w);border:1px solid var(--g200);border-radius:var(--rs);padding:6px 10px;font-size:13px;color:var(--g700);transition:border-color .1s}
 .bell-btn:hover{border-color:var(--g300)}.bell-btn b{position:absolute;top:-5px;right:-5px;background:var(--err);color:var(--w);border-radius:99px;font-size:9px;min-width:16px;height:16px;display:grid;place-items:center}
 .acct-btn{background:var(--pri-d);color:var(--w);border:0;border-radius:99px;width:30px;height:30px;font-weight:700;font-size:12px;display:grid;place-items:center}
@@ -256,32 +256,34 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
 /* ═══════════════════════════════════════
    COLLAPSIBLE ROLE & GROUP ACCORDION SIDEBAR
    ═══════════════════════════════════════ */
-.side{ --side-w:282px }
-.app{ grid-template-columns:282px 1fr }
-.api-bar{ left:282px }
-.nav-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:6px 10px 4px;padding:3px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.06)}
-.nav-mode-switch button{border:0;background:0;color:var(--g400);font-size:11px;font-weight:600;padding:5px 6px;border-radius:4px;text-align:center;transition:all .12s}
+.side{ --side-w:284px }
+.app{ grid-template-columns:284px 1fr }
+.api-bar{ left:284px }
+.nav-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:4px 10px 4px;padding:3px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.nav-mode-switch button{border:0;background:0;color:var(--g400);font-size:11px;font-weight:600;padding:5px 6px;border-radius:4px;text-align:center;transition:all .12s;white-space:nowrap}
 .nav-mode-switch button.on{background:var(--pri);color:var(--w);box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.side-search{margin:4px 10px 8px;position:relative}
+.side-search{margin:2px 10px 6px;position:relative;flex-shrink:0}
 .side-search input{background:var(--g800);border:1px solid rgba(255,255,255,.08);color:var(--w);font-size:12px;padding:6px 10px 6px 28px;border-radius:var(--rs)}
 .side-search input::placeholder{color:var(--g500)}
 .side-search span{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--g500);pointer-events:none}
 
-.nav-acc{margin-bottom:5px;border-radius:var(--rs);overflow:hidden;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.015)}
-.nav-acc-head{width:100%;background:rgba(255,255,255,.03);border:0;color:var(--g200);padding:8px 10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;transition:background .12s}
-.nav-acc-head:hover{background:rgba(255,255,255,.07);color:var(--w)}
-.nav-acc.active-role{border-color:rgba(13,148,136,.45);background:rgba(13,148,136,.06)}
-.nav-acc.active-role .nav-acc-head{color:var(--pri-l);background:rgba(13,148,136,.15)}
+.nav-acc{flex-shrink:0;margin-bottom:2px;border-radius:var(--rs);border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+.nav-acc-head{width:100%;background:rgba(255,255,255,.03);border:0;border-radius:var(--rs);color:var(--g200);padding:8px 10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;transition:background .12s;user-select:none}
+.nav-acc-head:hover{background:rgba(255,255,255,.08);color:var(--w)}
+.nav-acc.active-role{border-color:rgba(13,148,136,.5);background:rgba(13,148,136,.06)}
+.nav-acc.active-role .nav-acc-head{color:var(--pri-l);background:rgba(13,148,136,.16)}
 .nav-acc-left{display:flex;align-items:center;gap:7px;min-width:0;text-align:left}
 .nav-acc-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-acc-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.nav-acc-cnt{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.08);color:var(--g300)}
-.nav-acc.active-role .nav-acc-cnt{background:var(--pri);color:var(--w)}
-.nav-chev{font-size:10px;color:var(--g400);transition:transform .18s ease}
+.nav-acc-cnt,.nav-acc-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.1);color:var(--g300)}
+.nav-acc.active-role .nav-acc-cnt,.nav-acc.active-role .nav-acc-badge{background:var(--pri);color:var(--w)}
+.nav-chev{font-size:9px;color:var(--g400);transition:transform .18s ease;display:inline-block}
 .nav-acc.open .nav-chev{transform:rotate(90deg);color:var(--pri-l)}
-.nav-acc-body{display:none;padding:4px 5px 6px;flex-direction:column;gap:2px;border-top:1px solid rgba(255,255,255,.04)}
+.nav-acc-body{display:none;padding:4px 6px 7px;flex-direction:column;gap:2px;border-top:1px solid rgba(255,255,255,.05)}
 .nav-acc.open .nav-acc-body{display:flex}
-.side nav .nav-acc-body button{padding:6px 10px;font-size:12.2px;border-radius:5px}
+.nav-subgrp{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--g500);padding:7px 8px 2px;margin-top:2px;border-top:1px dashed rgba(255,255,255,.05)}
+.nav-subgrp:first-child{margin-top:0;padding-top:3px;border-top:0}
+.side nav .nav-acc-body button{padding:6px 9px;font-size:12px;border-radius:5px;flex-shrink:0}
 .side nav .nav-acc-body button .nav-sub-tag{margin-left:auto;font-size:9.5px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.07);color:var(--g400);font-weight:600}
 .side nav .nav-acc-body button.on .nav-sub-tag{background:rgba(255,255,255,.2);color:var(--w)}
 
@@ -401,12 +403,12 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
     <span>🔍</span>
     <input type="text" id="sideSearchInput" placeholder="Tìm nhanh màn hình..." oninput="renderSidebarNav()">
   </div>
-  <div class="row-b" style="padding:2px 12px 6px">
-    <span class="nav-group" style="padding:0" id="navGroupHeader">Sơ đồ màn hình theo Role</span>
-    <div style="display:flex;gap:6px">
-      <button type="button" style="background:0;border:0;color:var(--pri-l);font-size:10.5px;font-weight:600" onclick="toggleAllAccordions(true)">Mở hết</button>
+  <div class="row-b" style="padding:2px 10px 5px;flex-shrink:0;white-space:nowrap">
+    <span class="nav-group" style="padding:0;font-size:10px" id="navGroupHeader">Sơ đồ theo 6 Role</span>
+    <div style="display:flex;align-items:center;gap:5px;white-space:nowrap">
+      <button type="button" style="background:0;border:0;color:var(--pri-l);font-size:10.5px;font-weight:600;padding:0;white-space:nowrap" onclick="toggleAllAccordions(true)">Mở hết</button>
       <span style="color:var(--g600);font-size:10px">·</span>
-      <button type="button" style="background:0;border:0;color:var(--g400);font-size:10.5px;font-weight:600" onclick="toggleAllAccordions(false)">Thu gọn</button>
+      <button type="button" style="background:0;border:0;color:var(--g400);font-size:10.5px;font-weight:600;padding:0;white-space:nowrap" onclick="toggleAllAccordions(false)">Thu gọn</button>
     </div>
   </div>
   <nav id="nav"></nav>
@@ -3447,15 +3449,18 @@ let openGroupsState = {};
 
 function setSidebarMode(mode){
   sidebarMode = (mode === 'current' || mode === 'single') ? 'single' : 'all';
-  const bAll = document.getElementById('navModeAll');
-  const bSingle = document.getElementById('navModeSingle') || document.getElementById('navModeCurrent');
+  const bAll = document.getElementById('btnNavModeAll') || document.getElementById('navModeAll');
+  const bSingle = document.getElementById('btnNavModeRole') || document.getElementById('navModeSingle') || document.getElementById('navModeCurrent');
   if(bAll) bAll.classList.toggle('on', sidebarMode === 'all');
   if(bSingle) bSingle.classList.toggle('on', sidebarMode === 'single');
+  const hdr = document.getElementById('navGroupHeader');
+  if(hdr) hdr.textContent = sidebarMode === 'all' ? 'Sơ đồ theo 6 Role' : 'Nhóm chức năng Role';
   renderSidebarNav();
 }
 
 function toggleRoleAcc(roleKey){
-  openRolesState[roleKey] = !openRolesState[roleKey];
+  const willOpen = !openRolesState[roleKey];
+  openRolesState[roleKey] = willOpen;
   renderSidebarNav();
 }
 
@@ -3471,10 +3476,10 @@ function toggleAllAccordions(expand){
 }
 
 function selectRoleAndScreen(portalKey, screenId){
-  openRolesState[portalKey] = true;
   if(currentPortal !== portalKey){
     setPortal(portalKey, true, screenId);
   } else {
+    openRolesState[portalKey] = true;
     showS(screenId, false);
   }
 }
@@ -3573,8 +3578,8 @@ function setPortal(p, syncHash = true, targetScreen = null){
   const o = PORTALS[p];
   if(!o) return;
 
-  // Tự động mở accordion của Role đang chọn để dễ nhìn
-  openRolesState[p] = true;
+  // Tự động đóng các Role khác và mở đúng accordion của Role đang chọn để sidebar gọn gàng, không bị tràn
+  Object.keys(openRolesState).forEach(k => { openRolesState[k] = (k === p); });
 
   const curSess = getAuthSession();
   if(curSess){
@@ -3588,11 +3593,17 @@ function setPortal(p, syncHash = true, targetScreen = null){
   document.getElementById('sName').textContent = o.who;
   document.getElementById('sRoute').textContent = o.route;
   document.getElementById('permLbl').textContent = o.perms;
+  document.getElementById('permLbl').title = o.perms;
   document.getElementById('acctBtn').textContent = o.who.split(' ').pop()[0] || 'U';
   const udName = document.getElementById('udName');
   const udRole = document.getElementById('udRole');
   if(udName) udName.textContent = o.who;
   if(udRole) udRole.textContent = o.role;
+
+  const tG = document.getElementById('tGreeting');
+  const tSub = document.getElementById('tSubGreeting');
+  if(tG) tG.textContent = `Xin chào, ${o.who}`;
+  if(tSub) tSub.textContent = `${o.role} · Thứ Ba, 20/10/2026 · Chuẩn nghiệp vụ DB 005`;
 
   document.querySelectorAll('#seg button').forEach(b => {
     b.classList.toggle('on', b.dataset.p === p);
@@ -4742,15 +4753,99 @@ function doPayment(){
 function renderTeachDash(){
   const d = document.getElementById('teachDashContent');
   if(!d) return;
+  const pObj = PORTALS[currentPortal] || PORTALS.teacher;
+  const isTA = (currentPortal === 'ta');
+  const isTutor = (currentPortal === 'tutor');
+  const rateStr = isTA ? '80.000đ/giờ' : (isTutor ? '200.000đ/giờ' : '180.000đ/giờ');
+  const estPay = isTA ? '1.920.000đ' : (isTutor ? '4.800.000đ' : '4.320.000đ');
+
   d.innerHTML = `
-    <div class="card" style="padding:16px">
-      <div class="row-b" style="margin-bottom:10px">
-        <h2>Ca dạy tiếp theo hôm nay</h2>
-        <button class="btn p sm" onclick="showS('teach-session')">Mở màn hình Check-in 1 chạm →</button>
+    <div class="stats">
+      <div class="st g"><div class="n">2 ca</div><span>Ca phân công hôm nay (20/10)</span></div>
+      <div class="st i"><div class="n">${CLASSES.length} lớp</div><span>Lớp đang phụ trách</span></div>
+      <div class="st"><div class="n">1.440 phút</div><span>Phút tính công T10 (Giao khung lịch)</span></div>
+      <div class="st p"><div class="n">${estPay}</div><span>Thù lao tạm tính (${rateStr})</span></div>
+    </div>
+
+    <div class="g2">
+      <div>
+        <div class="banner" style="margin-bottom:14px">
+          <div>
+            <span class="tag" style="background:rgba(255,255,255,.18);color:#fff;margin-bottom:6px">⏰ CA DẠY SẮP DIỄN RA HÔM NAY</span>
+            <h2 style="color:#fff;font-size:16px;margin-bottom:4px">LOP-T9A — Toán 9 Nhóm A (P.201 — Cơ sở 1)</h2>
+            <div style="font-size:12.5px;color:var(--pri-l)">Khung giờ lịch: <b>18:00 – 20:00 (120 phút)</b> · Sĩ số: 8 HV (+1 HV học bù)</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <button class="btn" style="background:#fff;color:var(--pri-dd);border:0;font-weight:700" onclick="showS('teach-session')">⚡ Check-in 1 chạm →</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>
+            <span>Danh sách các ca phân công trong tuần (PHAN_CONG_BUOI_HOC)</span>
+            <button class="btn sm" onclick="showS('teach-schedule')">Xem Thời khóa biểu tuần</button>
+          </h2>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr><th>Ngày &amp; Giờ lịch</th><th>Mã lớp / Môn học</th><th>Phòng / Cơ sở</th><th>Vai trò</th><th>Trạng thái công</th><th>Thao tác</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Hôm nay, 20/10</b><br><span style="font-size:11px;color:var(--g500)">18:00 – 20:00</span></td>
+                  <td><b style="color:var(--pri-d)">LOP-T9A</b><br><span style="font-size:11px;color:var(--g500)">Toán 9 Nhóm A</span></td>
+                  <td>P.201 — CS1</td>
+                  <td><span class="tag i">${pObj.role}</span></td>
+                  <td><span class="tag w">Sắp diễn ra</span></td>
+                  <td><button class="btn p sm" onclick="showS('teach-session')">Vào ca</button></td>
+                </tr>
+                <tr>
+                  <td><b>Thứ Năm, 22/10</b><br><span style="font-size:11px;color:var(--g500)">18:00 – 20:00</span></td>
+                  <td><b style="color:var(--pri-d)">LOP-T9A</b><br><span style="font-size:11px;color:var(--g500)">Toán 9 Nhóm A</span></td>
+                  <td>P.201 — CS1</td>
+                  <td><span class="tag i">${pObj.role}</span></td>
+                  <td><span class="tag">Lịch thường</span></td>
+                  <td><button class="btn sm" onclick="showS('teach-log')">Sổ học vụ</button></td>
+                </tr>
+                <tr>
+                  <td><b>Thứ Bảy, 24/10</b><br><span style="font-size:11px;color:var(--g500)">15:00 – 17:00</span></td>
+                  <td><b style="color:var(--purple)">BU-T9A-02</b><br><span style="font-size:11px;color:var(--g500)">Ca dạy bù thỏa thuận</span></td>
+                  <td>P.102 — CS1</td>
+                  <td><span class="tag purple">Ca dạy bù</span></td>
+                  <td><span class="tag purple">Đã xếp lịch bù</span></td>
+                  <td><button class="btn sm" onclick="showS('teach-schedule')">Chi tiết</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      <div class="item"><span>Lớp</span><b>LOP-T9A — Toán 9 Nhóm A</b></div>
-      <div class="item"><span>Khung giờ lịch</span><b>18:00 – 20:00 (120 phút)</b></div>
-      <div class="item"><span>Quy tắc chấm công (DB 004/005)</span><span class="tag i">Chỉ bấm nút · Không GPS/Ảnh · Tính theo phần giao khung lịch</span></div>
+
+      <div>
+        <div class="card">
+          <h2>Thao tác nhanh (${pObj.role})</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <button class="btn p" style="justify-content:center;padding:10px" onclick="showS('teach-session')">📍 Check-in / Out 1 chạm</button>
+            <button class="btn" style="justify-content:center;padding:10px" onclick="showS('teach-log')">📖 Sổ buổi học &amp; Điểm</button>
+            <button class="btn" style="justify-content:center;padding:10px" onclick="openTeacherRequestModal('xin_nghi')">📝 Gửi đơn xin nghỉ / Đổi giờ</button>
+            <button class="btn" style="justify-content:center;padding:10px" onclick="showS('teach-paysheet')">💵 Bảng công &amp; Thù lao</button>
+          </div>
+          <div class="hint" style="margin-bottom:0">
+            <b>Chính sách Chấm công DB 004/005:</b> Chỉ bấm nút Check-in/Check-out trực tiếp (không GPS, không ảnh, không khóa 30p). Số phút tính công = phần giao giữa <code>[Check-in, Check-out]</code> và khung lịch.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>
+            <span>Hồ sơ Chuyên môn &amp; Lịch rảnh</span>
+            <button class="btn sm" onclick="openTeacherProfileModal('${pObj.who}')">Cập nhật</button>
+          </h2>
+          <div class="item"><span>Người dạy</span><b>${pObj.who} (${pObj.role})</b></div>
+          <div class="item"><span>Đơn giá áp dụng (Admin đặt)</span><b style="color:var(--pri-d)">${rateStr}</b></div>
+          <div class="item"><span>Môn đăng ký (NHAN_SU_MON)</span><span>Toán 9, Toán Luyện thi 10</span></div>
+          <div class="item"><span>Khung rảnh (NHAN_SU_LICH_RANH)</span><span class="tag ok">T3, T5, T7 (18:00–21:00)</span></div>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -5178,9 +5273,10 @@ function initApp(){
   }
 
   // 2. Dựng thanh chuyển tác nhân Topbar (dành cho demo và chấm thi)
+  const segLabels = { admin:'Admin', staff:'Giáo vụ', teacher:'Giáo viên', tutor:'Gia sư 1:1', ta:'Trợ giảng', parent:'Phụ huynh' };
   const seg = document.getElementById('seg');
   seg.innerHTML = Object.entries(PORTALS).map(([k,v]) => `
-    <button data-p="${k}" onclick="setPortal('${k}')">${v.role}</button>
+    <button data-p="${k}" onclick="setPortal('${k}')">${segLabels[k] || v.role}</button>
   `).join('');
 
   // 3. Kiểm tra phiên đăng nhập & Điều hướng Hash Router
