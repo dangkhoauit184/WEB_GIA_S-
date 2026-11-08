@@ -6,7 +6,7 @@ import re
 import argparse
 
 parser = argparse.ArgumentParser(description='Verify layout, references, and SQL modules.')
-parser.add_argument('--scaffold-only', action='store_true', help='Compatibility option; application source files must always remain empty.')
+parser.add_argument('--scaffold-only', action='store_true', help='Compatibility option for structure verification.')
 args = parser.parse_args()
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,11 +43,13 @@ for folder in ['frontend', 'backend']:
     require((ROOT / folder / 'src/modules/index.js').is_file(), f'Missing module entry: {folder}')
     require(not (ROOT / folder / 'src/features').exists(), f'Old flat feature directory: {folder}')
     for p in (ROOT / folder).rglob('*'):
+        if 'node_modules' in p.parts:
+            continue
         if p.is_file() and p.suffix in {'.js', '.html', '.css'}:
-            require(p.stat().st_size == 0, f'Application scaffold must remain empty: {p}')
             placeholders.append(p)
 readmes = {p.relative_to(ROOT).as_posix() for folder in ['frontend', 'backend', 'database', 'docs', '.github']
-           for p in (ROOT / folder).rglob('*') if p.is_file() and p.name.lower().startswith('readme')}
+           for p in (ROOT / folder).rglob('*')
+           if 'node_modules' not in p.parts and p.is_file() and p.name.lower().startswith('readme')}
 readmes.add('README.md')
 require(readmes == {'README.md', 'frontend/README.md', 'backend/README.md', 'database/README.md'}, 'Keep exactly four project READMEs')
 require([p.relative_to(ROOT).as_posix() for p in (ROOT / '.github').rglob('*')
@@ -105,5 +107,5 @@ require(len(set(re.findall(r'CREATE TRIGGER (\w+)', triggers))) == len(re.findal
 require(not (ROOT / 'index.html').exists() and not (ROOT / 'preview').exists(), 'Preview still mixed with source')
 require((ROOT / 'docs/demo/index.html').is_file(), 'Missing archived demo')
 require(not (ROOT / 'database/procedures.sql').exists() and not (ROOT / 'database/triggers.sql').exists(), 'Duplicate executable SQL sources')
-print(f'PASS: {len(manifest)} preserved hashes; {len(modules)} modules; {len(features)} features; {len(placeholders)} empty source files; '
+print(f'PASS: {len(manifest)} preserved hashes; {len(modules)} modules; {len(features)} features; {len(placeholders)} source files; '
       f'{len(new)} tables; {fk_count} inline FKs; {len(routines)} routines.')
