@@ -24,37 +24,46 @@ for name, expected in manifest.items():
 modules = json.loads((ROOT / 'shared/modules.json').read_text('utf-8'))
 features = [feature for group in modules.values() for feature in group]
 require(len(features) == len(set(features)), 'Feature belongs to multiple modules')
-layers = ['routes', 'controller', 'service', 'repository', 'model', 'validator', 'middleware']
+layers = ['Controller', 'Service', 'Repository', 'Model', 'Validator', 'Filter']
+def pascal(name):
+    return ''.join(piece.capitalize() for piece in name.split('-'))
+
 for module, group in modules.items():
-    for side in ['frontend', 'backend']:
-        actual = {p.name for p in (ROOT / f'{side}/src/modules/{module}/features').iterdir() if p.is_dir()}
-        require(actual == set(group), f'Unexpected features in {side}/{module}')
+    actual = {p.name for p in (ROOT / f'frontend/src/modules/{module}/features').iterdir() if p.is_dir()}
+    require(actual == set(group), f'Unexpected features in frontend/{module}')
+    php_features = ROOT / 'backend/app/Modules' / pascal(module) / 'Features'
+    require({p.name for p in php_features.iterdir() if p.is_dir()} == {pascal(f) for f in group}, f'Unexpected PHP features: {module}')
     for feature in group:
         for suffix in ['html', 'css', 'js']:
             p = ROOT / f'frontend/src/modules/{module}/features/{feature}/{feature}.{suffix}'
             require(p.is_file(), f'Missing frontend file: {p}')
         for layer in layers:
-            p = ROOT / f'backend/src/modules/{module}/features/{feature}/{feature}.{layer}.js'
+            p = php_features / pascal(feature) / f'{pascal(feature)}{layer}.php'
             require(p.is_file(), f'Missing backend file: {p}')
+        require((php_features / pascal(feature) / 'Routes.php').is_file(), f'Missing PHP routes: {feature}')
 placeholders = []
-for folder in ['frontend', 'backend']:
+for folder in ['frontend']:
     actual_modules = {p.name for p in (ROOT / folder / 'src/modules').iterdir() if p.is_dir()}
     require(actual_modules == set(modules), f'Unexpected modules in {folder}')
     require((ROOT / folder / 'src/modules/index.js').is_file(), f'Missing module entry: {folder}')
     require(not (ROOT / folder / 'src/features').exists(), f'Old flat feature directory: {folder}')
     for p in (ROOT / folder).rglob('*'):
-        if 'node_modules' in p.parts:
+        if 'node_modules' in p.parts or 'vendor' in p.parts:
             continue
         if p.is_file() and p.suffix in {'.js', '.html', '.css'}:
             placeholders.append(p)
 readmes = {p.relative_to(ROOT).as_posix() for folder in ['frontend', 'backend', 'database', 'docs', '.github']
            for p in (ROOT / folder).rglob('*')
-           if 'node_modules' not in p.parts and p.is_file() and p.name.lower().startswith('readme')}
+           if not {'node_modules', 'vendor', 'writable'}.intersection(p.parts) and p.is_file() and p.name.lower().startswith('readme')}
 readmes.add('README.md')
 require(readmes == {'README.md', 'frontend/README.md', 'backend/README.md', 'database/README.md'}, 'Keep exactly four project READMEs')
 require([p.relative_to(ROOT).as_posix() for p in (ROOT / '.github').rglob('*')
          if p.is_file() and 'PULL_REQUEST' in p.name.upper()] == ['.github/PULL_REQUEST_TEMPLATE.md'], 'Keep one PR template')
 require(not any((ROOT / 'docs').rglob('mau[12].html')), 'Obsolete UI samples still present')
+require({p.name for p in (ROOT / 'backend/app/Modules').iterdir() if p.is_dir()} == {pascal(m) for m in modules}, 'Unexpected PHP modules')
+require(not (ROOT / 'backend/src').exists() and not (ROOT / 'backend/server.js').exists(), 'Legacy Node backend still present')
+composer = json.loads((ROOT / 'backend/composer.json').read_text('utf-8'))
+require('codeigniter4/framework' in composer['require'] and (ROOT / 'backend/composer.lock').is_file(), 'Missing locked PHP MVC dependencies')
 
 
 def tables(sql):

@@ -1,0 +1,13 @@
+.git
+.cache
+**/node_modules
+**/vendor
+**/.env
+**/.env.*
+config/server.env
+**/*.log
+backend/writable/*
+docs
+frontend
+database
+.github

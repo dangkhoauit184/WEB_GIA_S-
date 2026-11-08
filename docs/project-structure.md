@@ -1,40 +1,28 @@
-# Quy ước tổ chức module và feature
+# Quy ước module và feature
 
-Cả frontend và backend dùng `src/modules/<module>/features/<feature>/`. Module gom một nhóm nghiệp vụ lớn; feature là một chức năng cụ thể. Danh sách chuẩn nằm tại [shared/modules.json](../shared/modules.json).
+Danh sách chuẩn dùng chung ở `shared/modules.json`. Backend PHP dùng PascalCase theo PSR-4: `backend/app/Modules/<Module>/Features/<Feature>/`. Frontend HTML/CSS/JS giữ `frontend/src/modules/<module>/features/<feature>/`.
 
-| Module | Phạm vi | Feature |
-| --- | --- | --- |
-| `administration` | Tài khoản, quyền, nhân sự vận hành, cấu hình, kiểm toán | auth, permissions, staff, catalog, audit |
-| `people` | Hồ sơ các bên tham gia | students, teachers, tutors, parents |
-| `academic` | Tuyển sinh, lớp và vận hành đào tạo | admissions, academic-affairs, classes, scheduling, attendance, leave-requests, makeup-classes |
-| `finance` | Thu học phí, công và chi trả | tuition, timekeeping, payroll |
-| `communication` | Gửi và theo dõi thông báo | notifications |
-| `reporting` | Tổng quan và báo cáo | dashboard |
+| Module | Feature |
+| --- | --- |
+| Administration | Auth, Permissions, Staff, Catalog, Audit |
+| People | Students, Teachers, Tutors, Parents |
+| Academic | Admissions, AcademicAffairs, Classes, Scheduling, Attendance, LeaveRequests, MakeupClasses |
+| Finance | Tuition, Timekeeping, Payroll |
+| Communication | Notifications |
+| Reporting | Dashboard |
 
-21 feature gồm 18 feature có sẵn và 3 khung bổ sung `admissions`, `catalog`, `audit`, để tuyển sinh, danh mục và kiểm toán có vị trí riêng. Giữ cùng tên và cùng module ở cả hai phía.
+Trong mỗi feature PHP có Controller, Service, Repository, Model, Validator, Filter và Routes.php. Thêm Views/ khi có màn hình MVC. Controller nhận HTTP; service xử lý nghiệp vụ; repository chứa truy vấn; model định dạng dữ liệu; validator kiểm tra đầu vào; filter xác thực/quyền. Không đưa SQL trực tiếp vào view.
 
-## Cấu trúc mỗi Feature
+Route HTTP giữ tên lowercase/kebab-case, ví dụ `/api/academic/leave-requests`; không thay URL theo PascalCase của PHP. `app/Config/Routes.php` nạp Routes.php của từng feature từ manifest và tắt auto-routing. Feature chưa làm chỉ có status `planned`, các file khung có TODO. Tutors dùng chung triển khai hồ sơ với Teachers.
 
-- **Frontend**: mỗi feature có `<feature>.html`, `<feature>.css`, `<feature>.js`. Mỗi module có `<module>.module.js`; `modules/index.js` dành cho việc ghép các module.
-- **Backend**: mỗi feature có 7 file `routes`, `controller`, `service`, `repository`, `model`, `validator`, `middleware`. Mỗi module có `<module>.routes.js`; `modules/index.js` đăng ký toàn bộ 6 module dưới `/api`.
+`backend/app/Shared/` chứa Access (JWT/RBAC/scope), Store (MySQL session/transaction) và lớp JSON/error. `backend/app/Config/` giữ cấu hình CodeIgniter. `backend/public/` là document root; Composer và config riêng nằm ngoài public.
 
-## Phần dùng chung
+`frontend/src/shared/` giữ chỗ cho component/style/dịch vụ; `shared/` ở gốc giữ manifest và hằng số JS cho phía trình duyệt. Không cần cài Node để chạy backend PHP.
 
-- `frontend/src/shared/`: component, style, dịch vụ, phân quyền và tiện ích phía trình duyệt.
-- `backend/src/shared/`: middleware xác thực JWT, xử lý lỗi HTTP/MySQL (`SIGNAL SQLSTATE '45000'`), phân quyền RBAC 6 vai trò và tiện ích phía server.
-- `shared/`: hằng số vai trò (`roles.js`), quy tắc nghiệp vụ (`business-rules.js`), hợp đồng dữ liệu và danh sách module (`modules.json`) dùng cho cả hai phía.
-- `src/config/` của mỗi phía: cấu hình ứng dụng và kết nối MySQL Pool.
-
-## Tài liệu và tham chiếu
-
-Giữ 4 README tại thư mục gốc, frontend, backend, database. Tài liệu chi tiết đặt trong `docs/`; `.github/PULL_REQUEST_TEMPLATE.md` là mẫu pull request duy nhất.
-
-Demo HTML gốc chuyển tới `docs/demo/index.html`, không sửa nội dung. Chỉ giữ một bản SQL gốc tại `docs/reference/database/schema-original.sql` vì bộ kiểm tra còn dùng đối chiếu. File Word nghiệp vụ chỉ giữ một bản tại `docs/quy_trinh_nghiep_vu_v2.docx`. Hash các tham chiếu này nằm trong `docs/reference/preserved-files.json`.
-
-Kiểm tra cấu trúc và bộ test:
+Giữ 4 README và 1 PR template. Tài liệu khác đặt trong docs. Bản demo, SQL gốc và Word gốc có hash trong docs/reference/preserved-files.json; không sửa các bản tham khảo đó.
 
 ```powershell
 python database/tests/verify_structure.py
-npm --prefix backend test
-npm --prefix backend run test:db
+docker compose run --rm --no-deps backend composer test
+pwsh -File backend/scripts/test.ps1
 ```

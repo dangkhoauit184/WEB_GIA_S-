@@ -36,3 +36,12 @@ coverage/
 
 # Cấu hình server cá nhân
 config/server.env
+
+# PHP / CodeIgniter dependencies and runtime data
+vendor/
+backend/writable/**
+!backend/writable/*/
+!backend/writable/.gitkeep
+!backend/writable/*/.gitkeep
+.phpunit.cache/
+.phpunit.result.cache

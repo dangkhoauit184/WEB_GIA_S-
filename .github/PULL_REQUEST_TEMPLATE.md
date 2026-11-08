@@ -36,7 +36,8 @@
 - [ ] Đã chạy các kiểm tra phù hợp với thay đổi và ghi kết quả trong PR.
 - [ ] Nếu thay đổi giao diện demo, đã kiểm tra trên Desktop và thiết bị di động.
 - [ ] Không commit file nhạy cảm (`.env`, mật khẩu thật, file tạm).
-- [ ] Đã chạy `python database/tests/verify_structure.py --scaffold-only`; file khung frontend/backend vẫn rỗng.
+- [ ] Đã chạy `python database/tests/verify_structure.py`; backend theo PHP/CodeIgniter MVC và module → feature.
+- [ ] Nếu thay đổi PHP, đã chạy core test và HTTP/MySQL test trên database riêng có hậu tố `_test`.
 
 ### 👥 6. Người đánh giá (Reviewer)
 <!-- Tag @username người phụ trách review code trước khi gộp vào nhánh chính -->

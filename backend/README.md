@@ -1,92 +1,65 @@
-# Backend — EduCenter ERP RESTful API
+# Backend PHP — EduCenter ERP
 
-Backend sử dụng **Node.js, Express, MySQL2 (Promise Pool), JSON Web Token (JWT) và BcryptJS**, được tổ chức theo cấu trúc **Module → Feature** đồng bộ với Frontend.
+Backend dùng **PHP 8.4, CodeIgniter 4.7, MySQLi, JWT và bcrypt**. Điểm vào HTTP: `public/index.php`; CLI: `spark`. Chỉ public thư mục `public/` trên web server.
 
-## 1. Cấu trúc thư mục
+## Khởi động
 
-```text
-backend/
-├── package.json
-├── server.js                          # Khởi động HTTP Server & đóng MySQL Pool an toàn
-├── scripts/
-│   └── bootstrap-admin.js             # Tạo hoặc mở khóa tài khoản Admin đầu tiên (băm mật khẩu)
-├── tests/
-│   ├── core.test.js                   # Kiểm thử khung lõi (Router, JWT, RBAC 6 vai trò, SQLSTATE 45000)
-│   └── integration.test.js            # Kiểm thử tích hợp trực tiếp với MySQL
-└── src/
-    ├── app.js                         # Ghép middleware, /api/health, /api/* và xử lý lỗi tập trung
-    ├── config/
-    │   ├── app.config.js              # Nạp biến môi trường từ config/server.env
-    │   └── database.config.js         # MySQL Connection Pool (+07:00, READ COMMITTED, Transaction helper)
-    ├── modules/
-    │   ├── index.js                   # Đăng ký 6 module chính dưới /api
-    │   └── <module>/
-    │       ├── <module>.routes.js
-    │       └── features/<feature>/
-    │           ├── <feature>.routes.js
-    │           ├── <feature>.controller.js
-    │           ├── <feature>.service.js
-    │           ├── <feature>.repository.js
-    │           ├── <feature>.model.js
-    │           ├── <feature>.validator.js
-    │           └── <feature>.middleware.js
-    └── shared/
-        ├── errors/http-error.js       # Lớp HttpError chuẩn hóa mã lỗi
-        ├── middleware/
-        │   ├── auth.middleware.js     # Xác thực JWT (signToken, verifyToken, authenticate)
-        │   └── error.middleware.js    # Bắt lỗi Trigger/Procedure MySQL (SQLSTATE '45000'), 409, 404
-        ├── permissions/rbac.js        # Phân quyền 6 vai trò & ma trận bảng role_group_function
-        └── utils/helpers.js           # asyncHandler & sendSuccess
-```
-
-## 2. Cấu hình và chạy Server
-
-1. Sao chép file cấu hình mẫu từ thư mục gốc repository:
-   ```powershell
-   Copy-Item config/server.env.example config/server.env
-   ```
-2. Cập nhật `config/server.env` khớp với MySQL của bạn (`DB_HOST=127.0.0.1`, `DB_PORT=3307`, `DB_NAME=trung_tam_gia_su`, `DB_USER=educenter_api`, `DB_PASSWORD`, `JWT_SECRET`).
-3. Cài đặt thư viện, khởi tạo Admin đầu tiên và chạy server:
-   ```powershell
-   cd backend
-   npm.cmd install
-   npm.cmd run bootstrap-admin
-   npm.cmd run dev
-   ```
-4. Kiểm tra kết nối tại `http://127.0.0.1:5000/api/health`. Khi thành công, API trả về HTTP `200` kèm `db: { timeZone: "+07:00", isolationLevel: "READ-COMMITTED" }`.
-
-## 3. Các nhóm API đã triển khai
-
-### Xác thực & Tài khoản (`/api/administration/auth` hoặc `/api/auth`)
-- `POST /login`: Đăng nhập, trả về JWT token, hồ sơ người dùng, vai trò (`ADMIN`, `GIAO_VU`, `GIAO_VIEN`, `GIA_SU`, `TRO_GIANG`, `PHU_HUYNH`) và ma trận quyền `permissions`.
-- `GET /me`: Lấy thông tin tài khoản hiện tại kèm ma trận quyền.
-- `PUT /change-password` (hoặc `POST /change-password`): Đổi mật khẩu (kiểm tra mật khẩu cũ, băm mật khẩu mới bằng `bcryptjs`).
-- `POST /logout`: Ghi nhận nhật ký đăng xuất.
-
-### Quản lý Hồ sơ (`/api/people`)
-- **Phụ huynh (`/api/people/parents`)**: `GET /`, `GET /:id` (kèm danh sách con), `POST /` (tạo hồ sơ + tài khoản tùy chọn), `PUT /:id`.
-- **Học viên (`/api/people/students`)**: `GET /` (tự động lọc theo con nếu người gọi là `PHU_HUYNH`), `GET /:id` (kèm lịch sử lớp học), `POST /`, `PUT /:id`, `DELETE /:id`.
-- **Giáo viên & Gia sư (`/api/people/teachers`, `/api/people/tutors`)**:
-  - `GET /`: Danh sách và lọc theo phân loại, môn học, cấp lớp, khu vực.
-  - `GET /match`: Gợi ý ghép người dạy phù hợp theo **BR02** (`monHocId`, `capLopId`, `khuVucId`, `nganSachMax`, `thu`, `gioBatDau`, `gioKetThuc`).
-  - `GET /:id`, `POST /`, `PUT /:id`: Quản lý trọn vẹn hồ sơ, chuyên môn (`nhan_su_mon`), khu vực (`nhan_su_khu_vuc`) và lịch rảnh (`nhan_su_lich_ranh`) trong giao dịch nguyên tử.
-
-### Quản lý Đào tạo (`/api/academic`)
-- **Lớp học & Ghi danh (`/api/academic/classes`)**:
-  - `GET /`, `GET /:id`, `POST /`, `PUT /:id`: Quản lý lớp học (`kem_1_1`, `kem_1_2`, `nhom`).
-  - `GET /:id/enrollments`, `POST /:id/enrollments`, `PUT /:id/enrollments/:enrollmentId`: Ghi danh học viên vào lớp (tự động kiểm tra sĩ số tối đa qua Trigger/Procedure `sp_kiem_tra_si_so`).
-- **Xếp lịch & Sinh buổi học (`/api/academic/scheduling`)**:
-  - `GET /weekly`, `POST /weekly`: Quản lý lịch tuần cố định (`lich_hoc`).
-  - `GET /sessions`: Tra cứu buổi học theo lớp, khoảng ngày, người dạy, trạng thái.
-  - `POST /generate-sessions`: Gọi `CALL sp_sinh_buoi_hoc(lopId, tuNgay, denNgay)` (**BR03**) để sinh chuỗi buổi học và tự động phân công người dạy chính, đồng thời kiểm tra chống trùng lịch (**BR01**).
-  - `POST /sessions/:id/assign`, `PUT /sessions/:id`: Phân công trợ giảng/người dạy và cập nhật/dời/hủy buổi học.
-
-## 4. Kiểm thử
+Từ thư mục gốc repo, với Docker Desktop và database đã chuẩn bị:
 
 ```powershell
-# Chạy kiểm thử Core (không cần MySQL đang mở)
-npm.cmd --prefix backend test
-
-# Chạy kiểm thử tích hợp đầu-cuối trên MySQL
-npm.cmd --prefix backend run test:db
+powershell -ExecutionPolicy Bypass -File backend/scripts/start.ps1
+# Chỉ khi cần tạo tài khoản mới
+powershell -ExecutionPolicy Bypass -File backend/scripts/bootstrap-admin.ps1
 ```
+
+Ứng dụng: `http://localhost:5000/`. API: `http://localhost:5000/api/health`.
+File `config/server.env` cũ vẫn dùng được, giữ nguyên `DB_PASSWORD`, đặt `JWT_SECRET` riêng tối thiểu 32 ký tự. Trong Docker, Compose tự đổi DB host/port sang `educenter-mysql:3306`; khi chạy PHP trên Windows thì dùng `127.0.0.1:3307`.
+
+Đã có admin: dùng thông tin đăng nhập cũ. Bootstrap mặc định từ chối ghi đè tài khoản; thêm `-Reset` chỉ khi muốn đổi mật khẩu/kích hoạt lại. Token Node cũ không dùng trên PHP.
+
+## Module → feature và MVC
+
+Ví dụ `app/Modules/People/Features/Students/`:
+
+- `StudentsController.php`: nhận request, trả JSON.
+- `StudentsService.php`: điều phối nghiệp vụ.
+- `StudentsRepository.php`: truy vấn có bind tham số, transaction.
+- `StudentsModel.php`: model/ánh xạ trường camelCase.
+- `StudentsValidator.php`: kiểm tra dữ liệu.
+- `StudentsFilter.php`: quyền theo nhóm và hành động.
+- `Routes.php`: routes tường minh, tắt auto-routing.
+
+View đăng nhập tại `app/Modules/Administration/Features/Auth/Views/login.php`, được controller `Portal` render. Ajax đặt trong `public/assets/`. Gia sư dùng chung logic hồ sơ với giáo viên; không nhân đôi truy vấn. Feature chưa làm có chú thích TODO và chỉ có route `/status` với `planned`.
+
+## API đang có
+
+Mọi API nghiệp vụ cần `Authorization: Bearer <token>`, ngoại trừ login, health, manifest và status.
+
+| Nhóm | Đường dẫn và thao tác |
+| --- | --- |
+| Auth | `/api/auth` hoặc `/api/administration/auth`: POST login/logout, GET me, PUT/POST change-password |
+| Phụ huynh | `/api/people/parents`: GET/POST, GET/PUT `/:id` |
+| Học viên | `/api/people/students`: GET/POST, GET/PUT/DELETE `/:id`; DELETE là soft delete |
+| Người dạy | `/api/people/teachers`, `/api/people/tutors`: GET/POST, GET/PUT `/:id`, GET `/match` |
+| Lớp học | `/api/academic/classes`: GET/POST, GET/PUT `/:id`, GET/POST `/:id/enrollments`, PUT `/:id/enrollments/:enrollmentId` |
+| Xếp lịch | `/api/academic/scheduling`: GET/POST weekly, GET sessions, POST generate-sessions, POST sessions/:id/assign, PUT sessions/:id |
+
+Response thành công giữ `{success:true,data:...}` và tên trường camelCase của API trước. Lỗi có `success:false`, `code`, `message`. SIGNAL 45000 trả 400 `BUSINESS_RULE_VIOLATION`, trùng dữ liệu trả 409. Lỗi máy chủ không trả chi tiết truy vấn/mật khẩu cho client.
+
+## Quyền và phiên đăng nhập
+
+- 6 vai trò ứng dụng: ADMIN, GIAO_VU, GIAO_VIEN, GIA_SU, TRO_GIANG, PHU_HUYNH; suy ra từ 5 nhóm DB và phân loại chuyên môn.
+- Admin toàn quyền; giáo vụ theo `role_group_function`. Quyền quản lý phụ huynh dùng `TiepNhanYeuCau`, học viên/lớp dùng `QuanLyLopHoc`, người dạy dùng `QuanLyNhanSu`, lịch dùng `VanHanhBuoiHoc`.
+- Seed hiện tại chưa cấp `QuanLyNhanSu` cho giáo vụ, nên thao tác quản lý người dạy mặc định dành cho admin. Không tự đổi ma trận thật trong migration này.
+- Phụ huynh chỉ xem con và lớp/lịch liên quan; người dạy xem hồ sơ mình, lớp được giao và buổi có phân công. Kiểm tra ở cả list và detail.
+- Mỗi request kiểm tra lại tài khoản/nhóm/quyền trong DB. Logout lưu hash token bị thu hồi trong `audit_log`; đổi mật khẩu vô hiệu hóa các token cũ. Không xóa bản audit đăng xuất trước khi token hết hạn.
+- Chuyển PHP không đổi schema, không hash lại tài khoản sẵn có. `password_verify` hỗ trợ bcrypt đã lưu từ Node/PHP.
+
+## Kiểm thử
+
+```powershell
+docker compose run --rm --no-deps backend composer test
+pwsh -File backend/scripts/test.ps1
+```
+
+Core test không ghi database. Script thứ hai tạo container MySQL dùng một lần, chạy API tích hợp và 4 bộ SQL test rồi xóa container/volume tạm. Integration từ chối chạy nếu thiếu `TEST_WITH_DB=1` hoặc tên DB không kết thúc `_test`. Chi tiết chạy trực tiếp và triển khai: [server-setup](../docs/server-setup.md). Phạm vi đồ án còn lại: [IS207](../docs/is207-migration.md).
