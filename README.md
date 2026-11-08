@@ -35,14 +35,14 @@ Repository gồm thiết kế MySQL (`003_attribute_review`), tài liệu nghi�
 
 Cả frontend và backend cùng dùng cấu trúc `src/modules/<module>/features/<feature>/`.
 
-| Module chính | Chức năng |
-| --- | --- |
-| `administration` — Quản trị | `auth`, `permissions`, `staff`, `catalog`, `audit` |
-| `people` — Hồ sơ | `students`, `teachers`, `tutors`, `parents` |
-| `academic` — Đào tạo | `admissions`, `academic-affairs`, `classes`, `scheduling`, `attendance`, `leave-requests`, `makeup-classes` |
-| `finance` — Tài chính và công lương | `tuition`, `timekeeping`, `payroll` |
-| `communication` — Thông báo | `notifications` |
-| `reporting` — Báo cáo | `dashboard` |
+| Module chính                        | Chức năng                                                                                                   |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `administration` — Quản trị         | `auth`, `permissions`, `staff`, `catalog`, `audit`                                                          |
+| `people` — Hồ sơ                    | `students`, `teachers`, `tutors`, `parents`                                                                 |
+| `academic` — Đào tạo                | `admissions`, `academic-affairs`, `classes`, `scheduling`, `attendance`, `leave-requests`, `makeup-classes` |
+| `finance` — Tài chính và công lương | `tuition`, `timekeeping`, `payroll`                                                                         |
+| `communication` — Thông báo         | `notifications`                                                                                             |
+| `reporting` — Báo cáo               | `dashboard`                                                                                                 |
 
 ## Bắt đầu nhanh
 
