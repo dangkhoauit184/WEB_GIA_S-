@@ -26,22 +26,22 @@ button{cursor:pointer}
 .app{display:grid;grid-template-columns:var(--side-w) 1fr;min-height:100vh}
 
 /* Sidebar */
-.side{background:var(--g900);color:var(--g400);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden;z-index:30}
-.side nav::-webkit-scrollbar{width:4px}.side nav::-webkit-scrollbar-thumb{background:var(--g700);border-radius:4px}
-.brand{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--g800);flex-shrink:0}
+.side{background:var(--g900);color:var(--g400);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:30}
+.side::-webkit-scrollbar{width:3px}.side::-webkit-scrollbar-thumb{background:var(--g700);border-radius:3px}
+.brand{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--g800)}
 .brand-icon{width:32px;height:32px;border-radius:var(--rs);background:var(--pri);color:var(--w);display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0}
 .brand b{font-size:14px;color:var(--w)}.brand small{display:block;font-size:10px;color:var(--g500);margin-top:1px}
-.side-user{margin:8px 10px 4px;padding:9px 10px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.05);flex-shrink:0}
-.side-user .su-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:3px;background:var(--pri-d);color:var(--pri-l);display:inline-block;margin-bottom:2px}
+.side-user{margin:10px 10px 6px;padding:10px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.05)}
+.side-user .su-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:3px;background:var(--pri-d);color:var(--pri-l);display:inline-block;margin-bottom:4px}
 .side-user .su-name{font-weight:600;color:var(--w);font-size:13px}
 .side-user .su-route{font-size:10px;color:var(--g500);margin-top:1px;font-family:'JetBrains Mono',monospace}
-.nav-group{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);padding:14px 16px 4px;font-weight:700;white-space:nowrap}
-.side nav{display:flex;flex-direction:column;gap:4px;padding:0 8px 10px;flex:1;min-height:0;overflow-y:auto}
-.side nav button{background:0;border:0;color:var(--g400);text-align:left;padding:7px 10px;border-radius:var(--rs);display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;transition:background .1s,color .1s;width:100%;flex-shrink:0}
-.side nav button .nav-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0}
+.nav-group{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--g600);padding:12px 16px 4px;font-weight:600}
+.side nav{display:flex;flex-direction:column;gap:1px;padding:0 8px;flex:1}
+.side nav button{background:0;border:0;color:var(--g400);text-align:left;padding:8px 12px;border-radius:var(--rs);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;transition:background .1s,color .1s;width:100%}
+.side nav button .nav-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0}
 .side nav button:hover{background:rgba(255,255,255,.06);color:var(--g200)}
 .side nav button.on{background:var(--pri-d);color:var(--w);font-weight:600}
-.side-foot{margin-top:auto;padding:9px 12px;border-top:1px solid var(--g800);font-size:11px;color:var(--g500);flex-shrink:0}
+.side-foot{margin-top:auto;padding:10px 14px;border-top:1px solid var(--g800);font-size:11px;color:var(--g600)}
 
 /* Topbar */
 .main-wrap{display:flex;flex-direction:column;min-width:0}
@@ -253,40 +253,6 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
 .ud-item.danger{color:var(--err)}
 .ud-item.danger:hover{background:#fef2f2}
 
-/* ═══════════════════════════════════════
-   COLLAPSIBLE ROLE & GROUP ACCORDION SIDEBAR
-   ═══════════════════════════════════════ */
-.side{ --side-w:284px }
-.app{ grid-template-columns:284px 1fr }
-.api-bar{ left:284px }
-.nav-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:4px 10px 4px;padding:3px;background:var(--g800);border-radius:var(--rs);border:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.nav-mode-switch button{border:0;background:0;color:var(--g400);font-size:11px;font-weight:600;padding:5px 6px;border-radius:4px;text-align:center;transition:all .12s;white-space:nowrap}
-.nav-mode-switch button.on{background:var(--pri);color:var(--w);box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.side-search{margin:2px 10px 6px;position:relative;flex-shrink:0}
-.side-search input{background:var(--g800);border:1px solid rgba(255,255,255,.08);color:var(--w);font-size:12px;padding:6px 10px 6px 28px;border-radius:var(--rs)}
-.side-search input::placeholder{color:var(--g500)}
-.side-search span{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--g500);pointer-events:none}
-
-.nav-acc{flex-shrink:0;margin-bottom:2px;border-radius:var(--rs);border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
-.nav-acc-head{width:100%;background:rgba(255,255,255,.03);border:0;border-radius:var(--rs);color:var(--g200);padding:8px 10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;transition:background .12s;user-select:none}
-.nav-acc-head:hover{background:rgba(255,255,255,.08);color:var(--w)}
-.nav-acc.active-role{border-color:rgba(13,148,136,.5);background:rgba(13,148,136,.06)}
-.nav-acc.active-role .nav-acc-head{color:var(--pri-l);background:rgba(13,148,136,.16)}
-.nav-acc-left{display:flex;align-items:center;gap:7px;min-width:0;text-align:left}
-.nav-acc-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nav-acc-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.nav-acc-cnt,.nav-acc-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.1);color:var(--g300)}
-.nav-acc.active-role .nav-acc-cnt,.nav-acc.active-role .nav-acc-badge{background:var(--pri);color:var(--w)}
-.nav-chev{font-size:9px;color:var(--g400);transition:transform .18s ease;display:inline-block}
-.nav-acc.open .nav-chev{transform:rotate(90deg);color:var(--pri-l)}
-.nav-acc-body{display:none;padding:4px 6px 7px;flex-direction:column;gap:2px;border-top:1px solid rgba(255,255,255,.05)}
-.nav-acc.open .nav-acc-body{display:flex}
-.nav-subgrp{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--g500);padding:7px 8px 2px;margin-top:2px;border-top:1px dashed rgba(255,255,255,.05)}
-.nav-subgrp:first-child{margin-top:0;padding-top:3px;border-top:0}
-.side nav .nav-acc-body button{padding:6px 9px;font-size:12px;border-radius:5px;flex-shrink:0}
-.side nav .nav-acc-body button .nav-sub-tag{margin-left:auto;font-size:9.5px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.07);color:var(--g400);font-weight:600}
-.side nav .nav-acc-body button.on .nav-sub-tag{background:rgba(255,255,255,.2);color:var(--w)}
-
 /* Print Sheet Styling */
 .print-sheet{border:1px solid var(--g300);border-radius:var(--r);padding:20px;background:var(--w);color:var(--g900)}
 .print-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--g900);padding-bottom:12px;margin-bottom:14px}
@@ -383,34 +349,16 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
 <div class="app" id="appRoot">
 
 <!-- ═══════════════════════════════════════
-     SIDEBAR (THEO ROLE SỔ XUỐNG & GOM NHÓM CHUYÊN NGHIỆP)
+     SIDEBAR
      ═══════════════════════════════════════ -->
 <aside class="side" id="sidebar">
-  <div class="brand"><div class="brand-icon">E</div><div><b>EduCenter ERP</b><small>Chuẩn nghiệp vụ DB 005 · IS207</small></div></div>
+  <div class="brand"><div class="brand-icon">E</div><div><b>EduCenter ERP</b><small>Quản trị Trung tâm Gia sư</small></div></div>
   <div class="side-user">
-    <div class="row-b" style="margin-bottom:2px">
-      <span class="su-role" id="sRole">Quản trị viên</span>
-      <span style="font-size:10px;color:var(--pri-l);font-weight:600">DB 005</span>
-    </div>
+    <span class="su-role" id="sRole">Quản trị viên</span>
     <div class="su-name" id="sName">Trần Quang Huy</div>
     <div class="su-route" id="sRoute">/admin</div>
   </div>
-  <div class="nav-mode-switch" title="Chuyển chế độ hiển thị danh mục màn hình">
-    <button type="button" id="btnNavModeAll" class="on" onclick="setSidebarMode('all')">📂 Sổ theo 6 Role</button>
-    <button type="button" id="btnNavModeRole" onclick="setSidebarMode('current')">🎯 Role đang chọn</button>
-  </div>
-  <div class="side-search">
-    <span>🔍</span>
-    <input type="text" id="sideSearchInput" placeholder="Tìm nhanh màn hình..." oninput="renderSidebarNav()">
-  </div>
-  <div class="row-b" style="padding:2px 10px 5px;flex-shrink:0;white-space:nowrap">
-    <span class="nav-group" style="padding:0;font-size:10px" id="navGroupHeader">Sơ đồ theo 6 Role</span>
-    <div style="display:flex;align-items:center;gap:5px;white-space:nowrap">
-      <button type="button" style="background:0;border:0;color:var(--pri-l);font-size:10.5px;font-weight:600;padding:0;white-space:nowrap" onclick="toggleAllAccordions(true)">Mở hết</button>
-      <span style="color:var(--g600);font-size:10px">·</span>
-      <button type="button" style="background:0;border:0;color:var(--g400);font-size:10.5px;font-weight:600;padding:0;white-space:nowrap" onclick="toggleAllAccordions(false)">Thu gọn</button>
-    </div>
-  </div>
+  <div class="nav-group">Chức năng phân hệ</div>
   <nav id="nav"></nav>
   <div class="side-foot">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -3487,90 +3435,13 @@ function selectRoleAndScreen(portalKey, screenId){
 function renderSidebarNav(){
   const nav = document.getElementById('nav');
   if(!nav) return;
-  const qInput = document.getElementById('sideSearchInput');
-  const q = qInput ? qInput.value.trim().toLowerCase() : '';
-
-  if(sidebarMode === 'all'){
-    // Sổ xuống theo 6 Role (Accordion 2 tầng: Role -> Nhóm nghiệp vụ -> Màn hình)
-    let html = '';
-    Object.entries(PORTALS).forEach(([pKey, pObj]) => {
-      const isActivePortal = (pKey === currentPortal);
-      let filteredGroups = [];
-      let totalScreens = 0;
-
-      (pObj.groups || []).forEach(g => {
-        const items = g.items.filter(([id, ico, lbl]) => !q || lbl.toLowerCase().includes(q) || id.toLowerCase().includes(q) || g.title.toLowerCase().includes(q) || pObj.role.toLowerCase().includes(q));
-        if(items.length > 0){
-          filteredGroups.push({ title: g.title, items });
-          totalScreens += items.length;
-        }
-      });
-
-      if(q && filteredGroups.length === 0) return;
-      const isOpen = q ? true : !!openRolesState[pKey];
-
-      html += `
-        <div class="nav-acc ${isOpen ? 'open' : ''} ${isActivePortal ? 'active-role' : ''}">
-          <div class="nav-acc-head" onclick="toggleRoleAcc('${pKey}')">
-            <span class="nav-acc-title">
-              <span>${pObj.shortTitle || pObj.role}</span>
-            </span>
-            <span class="row" style="gap:4px">
-              <span class="nav-acc-badge">${totalScreens}</span>
-              <span class="nav-chev">▶</span>
-            </span>
-          </div>
-          <div class="nav-acc-body">
-            ${filteredGroups.map(g => `
-              <div class="nav-subgrp">${g.title}</div>
-              ${g.items.map(([id, ico, lbl]) => {
-                const isOn = (isActivePortal && currentScreen === id);
-                return `
-                  <button id="nav-${pKey}-${id}" class="${isOn ? 'on' : ''}" onclick="selectRoleAndScreen('${pKey}','${id}')">
-                    <span class="nav-icon">${ico}</span>
-                    <span style="overflow:hidden;text-overflow:ellipsis">${lbl}</span>
-                  </button>
-                `;
-              }).join('')}
-            `).join('')}
-          </div>
-        </div>
-      `;
-    });
-    nav.innerHTML = html || `<div style="padding:14px;text-align:center;color:var(--g400);font-size:12px">Không tìm thấy màn hình phù hợp</div>`;
-  } else {
-    // Chế độ xem riêng Role đang chọn (Sổ xuống theo từng Nhóm chức năng của Role đó)
-    const pObj = PORTALS[currentPortal];
-    if(!pObj) return;
-    let html = '';
-    (pObj.groups || []).forEach((g, idx) => {
-      const grpKey = `${currentPortal}_${idx}`;
-      const items = g.items.filter(([id, ico, lbl]) => !q || lbl.toLowerCase().includes(q) || id.toLowerCase().includes(q) || g.title.toLowerCase().includes(q));
-      if(q && items.length === 0) return;
-      const isOpen = q ? true : (openGroupsState[grpKey] !== false);
-
-      html += `
-        <div class="nav-acc ${isOpen ? 'open' : ''} active-role">
-          <div class="nav-acc-head" onclick="toggleGroupAcc('${grpKey}')">
-            <span class="nav-acc-title">${g.title}</span>
-            <span class="row" style="gap:4px">
-              <span class="nav-acc-badge">${items.length}</span>
-              <span class="nav-chev">▶</span>
-            </span>
-          </div>
-          <div class="nav-acc-body">
-            ${items.map(([id, ico, lbl]) => `
-              <button id="nav-${currentPortal}-${id}" class="${currentScreen === id ? 'on' : ''}" onclick="showS('${id}')">
-                <span class="nav-icon">${ico}</span>
-                <span style="overflow:hidden;text-overflow:ellipsis">${lbl}</span>
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    });
-    nav.innerHTML = html || `<div style="padding:14px;text-align:center;color:var(--g400);font-size:12px">Không tìm thấy màn hình phù hợp</div>`;
-  }
+  const o = PORTALS[currentPortal];
+  if(!o) return;
+  nav.innerHTML = o.m.map(([id, ico, lbl]) => `
+    <button id="nav-${id}" class="${currentScreen === id ? 'on' : ''}" onclick="showS('${id}')">
+      <span class="nav-icon">${ico}</span>${lbl}
+    </button>
+  `).join('');
 }
 
 function setPortal(p, syncHash = true, targetScreen = null){
