@@ -1,4 +1,4 @@
-"""[THÊM] Verify fresh install and 003→004 with disposable databases in a supplied test container."""
+"""[THÊM] Verify fresh install and 003/004→005 with disposable databases in a supplied test container."""
 from pathlib import Path
 import argparse
 import hashlib
@@ -15,7 +15,10 @@ ROOT = Path(__file__).resolve().parents[2]
 BASELINE = '64e4f18328658c86a92875aa8ffeb07c46206f50'
 parser = argparse.ArgumentParser()
 parser.add_argument('--container', required=True)
+parser.add_argument('--baseline004', action='store_true')
 args = parser.parse_args()
+if args.baseline004:
+    BASELINE = 'd02ac19'
 if not re.fullmatch(r'educenter-(?:test|db004)-[a-f0-9]+', args.container):
     raise SystemExit('Refusing non-test container name.')
 
@@ -89,7 +92,11 @@ try:
     order = json.loads(source('install-order.json'))
     baseline = source('schema.sql') + '\n' + '\n'.join(source(name) for name in order)
     baseline += '\n' + source('seeders/001_reference.sql')
+    if args.baseline004:
+        baseline += '\n' + source('seeders/004_business_policy.sql')
     baseline += "\nINSERT INTO schema_migrations(version,status,applied_at) VALUES ('001_feature_based','applied',NOW()),('002_routine_review','applied',NOW()),('003_attribute_review','applied',NOW());"
+    if args.baseline004:
+        baseline += "\nINSERT INTO schema_migrations(version,status,applied_at) VALUES('004_business_rules','applied',NOW());"
     baseline += '\n' + source('seeders/002_demo.sql')
     sql(baseline, old_db)
     fields, before = snapshot(old_db)
@@ -97,12 +104,12 @@ try:
     run_action('preflight', old_db)
     run_action('migrate', old_db)
     _, after = snapshot(old_db, fields)
-    assert original_history == sql("SELECT JSON_ARRAY(version,status,applied_at) FROM schema_migrations WHERE version<>'004_business_rules' ORDER BY version", old_db), 'Old migration timestamps changed'
+    assert original_history == sql("SELECT JSON_ARRAY(version,status,applied_at) FROM schema_migrations WHERE version IN ('001_feature_based','002_routine_review','003_attribute_review'" + (",'004_business_rules'" if args.baseline004 else "") + ") ORDER BY version", old_db), 'Old migration timestamps changed'
     for table in fields:
         if table not in ['role_group_function', 'cau_hinh', 'schema_migrations']:
             assert before[table] == after[table], f'Original values changed: {table}'
     old_versions = sql("SELECT COUNT(*) FROM schema_migrations WHERE status='applied'", old_db)
-    assert old_versions == '4'
+    assert old_versions == '5'
     full_fields, full_hash = snapshot(old_db)
     run_action('migrate', old_db)
     assert full_hash == snapshot(old_db, full_fields)[1], 'Repeated migrate changed data'
@@ -111,7 +118,7 @@ try:
     assert run_action('init', new_db, success=False).returncode != 0, 'Init accepted non-empty DB'
     assert structure(old_db) == structure(new_db), 'Fresh and upgraded schema differ'
     run_action('check', new_db)
-    print('PASS: installer fresh 004, upgrade 003, preserved old values, matching schema, repeat migration, refused duplicate init.')
+    print('PASS: installer fresh 005, upgrade 003/004, preserved old values, matching schema, repeat migration, refused duplicate init.')
 finally:
     for name in [old_db, new_db]:
         sql(f'DROP DATABASE IF EXISTS `{name}`')

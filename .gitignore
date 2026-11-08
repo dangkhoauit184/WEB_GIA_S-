@@ -36,6 +36,9 @@ coverage/
 
 # Cấu hình server cá nhân
 config/server.env
+config/deploy.env
+config/mysql.env
+__pycache__/
 
 # PHP / CodeIgniter dependencies and runtime data
 vendor/

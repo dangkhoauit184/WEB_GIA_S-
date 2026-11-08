@@ -1,5 +1,7 @@
 # Database 004 — nghiệp vụ đã chốt
 
+> Hiện hành: [baseline](business-rules-baseline.md) và [DB/server005](db-server-readiness.md). Các mốc/schema/quy tắc cũ bên dưới là lịch sử; ưu tiên xác nhận mới.
+
 Phiên bản 004_business_rules ngày 08/11/2026: 41 bảng, 4 function, 13 procedure, 47 trigger. Giữ 35 bảng nghiệp vụ gốc và bảng lịch sử migration; bổ sung 5 bảng để hỗ trợ nghiệp vụ mới.
 
 ## Thay đổi

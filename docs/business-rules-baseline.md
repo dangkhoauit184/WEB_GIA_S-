@@ -1,55 +1,34 @@
 # Nghiệp vụ EduCenter — quyết định hiện hành
 
-Nguồn: các xác nhận trực tiếp của người dùng ngày 08/11/2026. Khi khác với Word v2 hoặc architecture.md cũ, dùng các quyết định mới ở đây. Chưa đánh lại mã BR vì tài liệu cũ dùng mã khác nhau.
+Nguồn: xác nhận trực tiếp ngày 08/11/2026, gồm phần trả lời 1–10 sau khi merge PR #7. Các quyết định này thay thế phần khác trong Word v2/architecture cũ. Không cần hỏi lại tên khóa hoặc chọn GPS/ảnh.
 
-## Đã chốt
-
-| Phần | Quy tắc |
+| Phần | Quy tắc đã chốt |
 | --- | --- |
-| Khóa học | Các sản phẩm đăng ký riêng như “Học kỳ 1 cơ bản”, “Giải đề nâng cao”. Học viên chọn khóa muốn học. |
-| Học phí | Thu trọn từng khóa, không chia kỳ/đợt thu. Tự thôi học không hoàn học phí. |
-| Học bù | BỎ hoàn toàn hạn mức 10 buổi, đếm số buổi được bù và tính/thu tiền bù. Phụ huynh và trung tâm tự liên hệ thỏa thuận; giáo vụ chỉ xếp lịch kèm/bù và lưu người học, thời gian, ghi chú. |
-| Nghỉ cả lớp | Admin duyệt; giáo vụ không tự duyệt lớp nghỉ. |
-| Nghỉ cá nhân | Giáo vụ duyệt. Admin có quyền quản trị; API phải xác thực đúng người thực hiện. |
-| Xếp lịch | Giáo vụ xếp lịch, không tự loại ngày lễ. |
-| Công/lương | Giáo vụ không chốt công hoặc trả lương. Chỉ Admin duyệt điều chỉnh công, chốt, trả lương và mở khóa. |
-| Đơn giá | Tiền/giờ, gán theo từng người. Admin xem và thay đổi. Mức mới áp dụng từ lúc thay đổi; giữ nguyên công đã dạy. |
-| Công thực trả | Chỉ tính phần thời gian có mặt nằm trong khung giờ lịch; đến sớm/về muộn không cộng thêm công. Check-in sau giờ lịch phải đánh dấu trễ. |
-| Gia đình | Mỗi học viên một phụ huynh; một phụ huynh có thể có nhiều con. |
-| Chấm bài | Một điểm bài chấm mỗi buổi cho từng học viên. |
+| Khóa học | Sản phẩm CRUD độc lập: cơ bản học kỳ 1, cơ bản năm học, nâng cao học kỳ 2, gia sư 1 kèm 1, ôn luyện chuyên. Admin sửa tên/nội dung/giá, bật/tắt đăng ký. |
+| Học phí | Thu trọn từng khóa, không kỳ/đợt. Tự thôi học không hoàn tiền. Snapshot giá khi đăng ký. |
+| Thu tiền | Đăng ký → giáo vụ chốt học phí/phát hành hóa đơn → phụ huynh nhận thông báo → thanh toán trên web → đối soát tiền → Admin và giáo vụ thấy kết quả. Bấm “đã chuyển” không đồng nghĩa đã nhận tiền. |
+| Xếp lớp | Chỉ Admin xếp lớp, độc lập với tình trạng tiền. Có thể xếp khi chưa đóng hoặc chưa có hóa đơn. Chuỗi trả tiền rồi xếp lớp là ví dụ, không phải điều kiện bắt buộc. |
+| Xếp lịch | Giáo vụ/điều phối xếp, không tự loại ngày lễ. |
+| Học bù | Phụ huynh và điều phối tự liên hệ chốt ngoài hệ thống. Giáo vụ chỉ lưu lịch/học viên, đánh loại “bù”, có thể ghi chú. Không cần đơn xin bù, quy trình thương lượng/duyệt bù, đếm hạn mức, số buổi còn lại hoặc phí bù. |
+| Nghỉ | Nghỉ cả lớp do Admin duyệt. Nghỉ cá nhân theo đặc tả do giáo vụ duyệt. Đơn nghỉ cũ có thể liên kết lịch bù, không phải điều kiện xếp bù. |
+| Check-in/out | Chỉ bấm nút, ghi giờ server đúng ca/người xác thực. Không GPS/ảnh; không truy cập camera/vị trí. Quản lý có tại nơi dạy; minh chứng để phát triển sau. |
+| Giờ check-in/out | Không giới hạn đến sớm/về muộn, bỏ cửa sổ 30 phút. Lưu giờ thực và giới hạn phút công trong lịch phân công. |
+| Công | Giao giữa thời gian có mặt và khung lịch; sớm/muộn không thêm công, đến sau giờ lịch là trễ, về sớm giảm phút. Thiếu check-out không tự tính đủ; dùng điều chỉnh công do Admin xử lý. |
+| Lương | Tiền/giờ theo từng người, chỉ Admin xem/sửa. Mức mới từ lúc thay đổi, giữ ca đã dạy/đang dạy. Chỉ Admin duyệt điều chỉnh/chốt/trả/mở công. |
+| Gia đình/chấm bài | Một học viên một phụ huynh, một phụ huynh nhiều con. Một bài chấm/điểm mỗi buổi cho từng học viên. |
+| Quyền khác | Theo đặc tả và ma trận hiện có; ưu tiên các xác nhận mới về xếp lớp/công/lương ở trên. |
 
-Ví dụ lịch 18:00–20:00:
+Lịch 18:00–20:00:
 
-| Check-in | Check-out | Phút công | Trễ |
+| Vào | Ra | Phút công | Trễ |
 | --- | --- | --- | --- |
-| 17:50 | 20:10 | 120 | Không |
+| 06:00 | 23:00 | 120 | Không |
 | 17:50 | 19:30 | 90 | Không |
 | 18:10 | 20:05 | 110 | Có |
 | 18:10 | 19:30 | 80 | Có |
 
-Tiền công theo đơn giá giờ × phút công / 60. SQL tiếp tục dùng làm tròn VND của fn_tien_cong hiện có; chưa bổ sung thưởng/phạt do trễ. Giữ giờ check-in/out gốc riêng với phút được tính lương.
+Không mặc định mọi ca luôn 2 giờ: lấy giờ được phân công. Tiền = đơn giá giờ × phút công / 60, làm tròn VND theo fn_tien_cong. Chưa thêm thưởng/phạt trễ.
 
-## Đã cập nhật ở DB 004
+DB004 đã có trọn khóa, lịch bù, snapshot lương và công theo lịch. DB005 bổ sung giao dịch/webhook chống trùng, thông báo học phí/nhận tiền, dấu vết Admin xếp lớp và chính sách check-in mới. Không xóa GPS nullable/đơn nghỉ lịch sử; luồng mới không yêu cầu chúng.
 
-- Thêm khoa_hoc, dang_ky_khoa_hoc và liên kết lớp/ghi danh. Snapshot học phí theo lúc đăng ký; hóa đơn khóa không cần giả tháng/năm hoặc ghi danh lớp.
-- Thêm hoc_bu_hoc_vien, pham_vi_bu để buổi bù cá nhân không làm hủy buổi gốc của lớp. Không có hạn mức hay giá bù.
-- Thêm yeu_cau_nghi_lop, kiểm tra Admin khi duyệt và cập nhật buổi nghỉ. Nghỉ cá nhân kiểm tra giáo vụ/Admin.
-- Thêm phút công theo khung lịch, cờ trễ và snapshot lịch. Công 003 giữ chế độ lịch sử; không tính lại dữ liệu cũ khi nâng cấp.
-- Thêm lịch sử đơn giá và procedure sp_dat_don_gia_gio. Thay đổi cập nhật mức giờ người dạy và các ca tương lai chưa check-in, giữ ca đã dạy/đang dạy. Nếu ca tương lai nằm trong kỳ đã khóa, thao tác bị từ chối và rollback để Admin xử lý khóa trước.
-- Chỉ Admin được chốt/trả/mở công; cấm cấp quyền ChamCongLuong cho nhóm khác. Một user_id hợp lệ không thay thế xác thực web.
-- DB đang dùng đã được sao lưu, khôi phục thử và nâng lên 004; các giá trị nghiệp vụ cũ được đối chiếu bảo toàn. Chi tiết [database-004.md](database-004.md).
-
-## Còn cần đặc tả trước khi code tiếp
-
-- GPS hay ảnh check-in: chưa chọn. Nếu chọn ảnh, cần chốt chụp trực tiếp hay tải ảnh, chỉ check-in hay cả check-out và ai xem được ảnh.
-- Giờ mở check-in, quên check-out và quy trình Admin sửa công; thời lượng khác buổi chuẩn 2 giờ cần kịch bản nghiệm thu riêng.
-- Nghỉ người dạy được thay người hay xin nghỉ cả lớp; lịch bù hủy/đổi và cách thông báo hai bên.
-- Danh sách khóa, giá cụ thể, thời lượng và cách gán các lớp cũ vào khóa. Không tự tạo khóa/giá giả từ dữ liệu cũ.
-- Phân biệt bài chấm mỗi buổi, bài giao về nhà và bài thi định kỳ trong phần học vụ.
-- Thông tin lương chỉ Admin biết: API cũ vẫn trả một số trường lương; phải lọc đọc/ghi ở backend khi được yêu cầu viết tiếp. Thay DB không tự che được JSON của API cũ.
-
-## Check-in bằng GPS hay ảnh
-
-Chỉ lấy tọa độ GPS cần ít lưu trữ hơn ảnh, nhưng xác minh địa điểm cần bán kính, độ chính xác và xử lý lỗi. Ảnh minh chứng để Admin xem thủ công thuận tiện trình diễn; không mặc định có nhận diện khuôn mặt. input capture không bảo đảm chặn ảnh cũ trên mọi trình duyệt. Camera trực tiếp và GPS cần quyền thiết bị và secure context khi triển khai.
-
-Tài liệu: [Geolocation](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition), [HTML capture](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/capture), [camera](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia).
+Bàn giao DB/server và thứ tự code: [db-server-readiness.md](db-server-readiness.md). Các API cũ còn cần cập nhật quyền xếp lớp/lọc lương khi code BE; DB không tự thay JSON hoặc xác thực người bấm nút.

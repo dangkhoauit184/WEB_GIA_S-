@@ -31,7 +31,9 @@ Cấp lớp giữ ID/cấp học chuẩn 1–12 vì thuật toán chuyên môn d
 
 Settings hỗ trợ:
 
-- checkin_truoc_phut, checkin_tre_sau_phut: số nguyên 0–1440 phút.
+- checkin_truoc_phut, checkout_sau_phut: số nguyên -1–1440 phút, -1 = không giới hạn (mặc định005).
+- checkin_tre_sau_phut: 0–1440, mặc định0.
+- checkin_minh_chung: chỉ nhận chuỗi khong theo nghiệp vụ hiện hành, không GPS/ảnh.
 - han_nhap_bao_cao_gio: số nguyên 1–8760 giờ.
 
 Request ví dụ `{"giaTri":30}`. Không dùng API này để ghi JWT_SECRET, mật khẩu DB hoặc biến môi trường. Khóa cấu hình ngoài danh sách trả 404. Mọi thay đổi danh mục/cấu hình ghi audit trong cùng transaction.

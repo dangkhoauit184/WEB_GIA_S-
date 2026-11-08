@@ -6,6 +6,20 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
+    // Server wiring only. Notification APIs/worker are implemented in the later BE phase.
+    public function __construct()
+    {
+        parent::__construct();
+        $this->protocol = getenv('MAIL_PROTOCOL') ?: 'smtp';
+        $this->SMTPHost = getenv('MAIL_HOST') ?: 'mailpit';
+        $this->SMTPPort = (int) (getenv('MAIL_PORT') ?: 1025);
+        $this->SMTPUser = getenv('MAIL_USERNAME') ?: '';
+        $this->SMTPPass = getenv('MAIL_PASSWORD') ?: '';
+        $this->SMTPCrypto = getenv('MAIL_ENCRYPTION') ?: '';
+        $this->fromEmail = getenv('MAIL_FROM_EMAIL') ?: 'noreply@educenter.test';
+        $this->fromName = getenv('MAIL_FROM_NAME') ?: 'EduCenter';
+    }
+
     public string $fromEmail  = '';
     public string $fromName   = '';
     public string $recipients = '';

@@ -65,7 +65,7 @@ BEGIN
   UPDATE khoa_hoc SET hoc_phi=2000000 WHERE id=v_k;
   IF (SELECT hoc_phi_snapshot FROM dang_ky_khoa_hoc WHERE id=v_d)<>1000000 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Đổi giá khóa làm đổi đăng ký cũ'; END IF; SET v_n=v_n+1;
   UPDATE lop_hoc SET khoa_hoc_id=v_k WHERE id=1;
-  UPDATE lop_hoc_vien SET dang_ky_khoa_hoc_id=v_d WHERE id=1;
+  UPDATE lop_hoc_vien SET dang_ky_khoa_hoc_id=v_d,xep_boi=1,xep_luc=NOW() WHERE id=1;
   SET v_failed=FALSE; BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET v_failed=TRUE;
     UPDATE lop_hoc_vien SET dang_ky_khoa_hoc_id=v_d WHERE id=2;
   END;

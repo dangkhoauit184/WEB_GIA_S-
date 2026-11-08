@@ -11,6 +11,9 @@ RUN sed -ri 's!/var/www/html!/var/www/educenter/backend/public!g' /etc/apache2/s
     && printf '<Directory /var/www/educenter/backend/public>\nAllowOverride All\nRequire all granted\n</Directory>\nServerName localhost\n' > /etc/apache2/conf-available/educenter.conf \
     && a2enconf educenter
 WORKDIR /var/www/educenter/backend
+COPY config/php.ini /usr/local/etc/php/conf.d/educenter.ini
+COPY config/apache.conf /etc/apache2/conf-available/educenter-server.conf
+RUN a2enconf educenter-server
 
 FROM runtime AS application
 COPY backend/composer.json backend/composer.lock ./
