@@ -148,4 +148,3 @@ END$$
 DELIMITER ;
 CALL test_business_rules();
 DROP PROCEDURE test_business_rules;
-

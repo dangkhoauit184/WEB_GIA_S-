@@ -93,9 +93,11 @@ try:
     baseline += '\n' + source('seeders/002_demo.sql')
     sql(baseline, old_db)
     fields, before = snapshot(old_db)
+    original_history = sql('SELECT JSON_ARRAY(version,status,applied_at) FROM schema_migrations ORDER BY version', old_db)
     run_action('preflight', old_db)
     run_action('migrate', old_db)
     _, after = snapshot(old_db, fields)
+    assert original_history == sql("SELECT JSON_ARRAY(version,status,applied_at) FROM schema_migrations WHERE version<>'004_business_rules' ORDER BY version", old_db), 'Old migration timestamps changed'
     for table in fields:
         if table not in ['role_group_function', 'cau_hinh', 'schema_migrations']:
             assert before[table] == after[table], f'Original values changed: {table}'
