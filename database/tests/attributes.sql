@@ -15,6 +15,7 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Chỉ chạy trên demo _test.';
   END IF;
   START TRANSACTION;
+  UPDATE account SET status='active' WHERE user_id=1;
   UPDATE thong_bao SET doc_luc='2026-11-03 10:00:00' WHERE user_id=3;
   IF EXISTS(SELECT 1 FROM thong_bao WHERE user_id=3 AND da_doc<>1) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Đã đọc không suy ra từ thời điểm đọc';
@@ -118,11 +119,11 @@ BEGIN
   SET v_failed=FALSE;
   BEGIN
     DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET v_failed=TRUE;
-    UPDATE bang_cong_thang SET trang_thai='da_tra',tra_boi=2,tra_luc=NOW(),ngay_tra=CURDATE() WHERE id=v_bc;
+    UPDATE bang_cong_thang SET trang_thai='da_tra',tra_boi=1,tra_luc=NOW(),ngay_tra=CURDATE() WHERE id=v_bc;
   END;
   IF NOT v_failed THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Trả lương chưa chốt'; END IF;
   SET v_num=v_num+1;
-  UPDATE bang_cong_thang SET trang_thai='da_chot' WHERE id=v_bc;
+  UPDATE bang_cong_thang SET trang_thai='da_chot',chot_boi=1,chot_luc=NOW() WHERE id=v_bc;
   SET v_failed=FALSE;
   BEGIN
     DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET v_failed=TRUE;
@@ -130,7 +131,7 @@ BEGIN
   END;
   IF NOT v_failed THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Trả lương thiếu người/thời điểm'; END IF;
   SET v_num=v_num+1;
-  UPDATE bang_cong_thang SET trang_thai='da_tra',tra_boi=2,tra_luc=NOW(),ngay_tra=CURDATE(),ma_giao_dich_chi='CHI-003' WHERE id=v_bc;
+  UPDATE bang_cong_thang SET trang_thai='da_tra',tra_boi=1,tra_luc=NOW(),ngay_tra=CURDATE(),ma_giao_dich_chi='CHI-003' WHERE id=v_bc;
   IF NOT EXISTS(SELECT 1 FROM bang_cong_thang WHERE id=v_bc AND trang_thai='da_tra' AND ma_giao_dich_chi='CHI-003') THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Trả lương hợp lệ';
   END IF;
@@ -151,8 +152,8 @@ BEGIN
   END;
   IF NOT v_failed THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Hủy buổi thiếu dấu vết'; END IF;
   SET v_num=v_num+1;
-  UPDATE buoi_hoc SET trang_thai='huy',nguoi_huy_id=2,huy_luc=NOW(),ly_do_huy_doi='Báo nghỉ' WHERE id=v_buoi;
-  IF NOT EXISTS(SELECT 1 FROM buoi_hoc WHERE id=v_buoi AND trang_thai='huy' AND nguoi_huy_id=2) THEN
+  UPDATE buoi_hoc SET trang_thai='huy',nguoi_huy_id=1,huy_luc=NOW(),ly_do_huy_doi='Báo nghỉ' WHERE id=v_buoi;
+  IF NOT EXISTS(SELECT 1 FROM buoi_hoc WHERE id=v_buoi AND trang_thai='huy' AND nguoi_huy_id=1) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Hủy buổi hợp lệ';
   END IF;
   SET v_num=v_num+1;

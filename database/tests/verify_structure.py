@@ -80,7 +80,7 @@ schema = (ROOT / 'database/schema.sql').read_text('utf-8')
 original = (ROOT / 'docs/reference/database/schema-original.sql').read_text('utf-8')
 old, new = tables(original), tables(schema)
 require(len(old) == 35, 'Expected original 35 tables')
-require(set(new) == set(old) | {'schema_migrations'}, 'Unexpected tables')
+require(set(new) == set(old) | {'schema_migrations','khoa_hoc','dang_ky_khoa_hoc','lich_su_don_gia_gio','yeu_cau_nghi_lop','hoc_bu_hoc_vien'}, 'Unexpected tables')
 removed = {'hoa_don_chi_tiet': {'hoc_vien_id'}, 'de_xuat_nhan_su': {'ly_do_tu_choi'}}
 for name in old:
     before = {k: v for k, v in columns(old[name]).items() if k not in removed.get(name, set())}

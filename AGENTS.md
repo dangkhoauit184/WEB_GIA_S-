@@ -13,3 +13,6 @@
 - Mã nghiệp vụ nằm tại `backend/app/Modules/<Module>/Features/<Feature>/`. Không thêm server Node.js song song.
 - Giữ nguyên dữ liệu MySQL đang dùng. Chỉ chạy integration test trên database riêng có tên kết thúc `_test`, với `TEST_WITH_DB=1`.
 - Giữ 4 README của dự án và 1 mẫu PR. Feature chưa triển khai giữ khung PHP có chú thích TODO, không quảng cáo là hoàn tất.
+- Người dùng đã yêu cầu ưu tiên chốt nghiệp vụ, thiết kế DB và môi trường server trước khi viết tiếp backend/frontend. Câu hỏi về việc "nên code chưa" không phải lệnh triển khai. Chỉ viết tiếp tính năng khi người dùng yêu cầu thực hiện trong phạm vi đã rõ.
+- Quyết định nghiệp vụ mới và câu hỏi còn mở nằm tại `docs/business-rules-baseline.md`; ưu tiên các quyết định người dùng đã xác nhận so với Word/Markdown cũ. Không tự biến phần đề xuất hoặc câu hỏi còn mở thành quy tắc đã chốt; không áp dụng migration chỉ vì đã có bản rà soát.
+- Người dùng đã yêu cầu áp dụng DB theo nghiệp vụ mới. Phiên bản hiện hành `004_business_rules`: thu trọn khóa, KHÔNG có kỳ thu/hạn mức/phí bù; giáo vụ xếp bù theo thỏa thuận; chỉ Admin quản trị công/lương. Check-in 18:10 → out 20:05 trên lịch 18–20 tính 110 phút/trễ; out 19:30 tính 80 phút/trễ. Đơn giá tiền/giờ tăng từ lúc thay đổi, giữ ca đã dạy.

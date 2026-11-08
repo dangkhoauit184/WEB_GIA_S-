@@ -22,6 +22,7 @@ BEGIN
   SET v_num=v_num+1;
 
   START TRANSACTION;
+  UPDATE account SET status='active' WHERE user_id=1;
   SET v_failed=FALSE;
   BEGIN
     DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET v_failed=TRUE;
@@ -94,9 +95,9 @@ BEGIN
   IF NOT v_failed THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Nhân viên mở khóa'; END IF;
   SET v_num=v_num+1;
   CALL sp_mo_khoa_cong(v_bc,1,'Kiểm thử mở khóa đúng quyền');
-  UPDATE phan_cong_buoi_hoc SET don_gia=150000 WHERE id=v_pc;
+  UPDATE phan_cong_buoi_hoc SET don_gia=150000,luong_sua_boi=1 WHERE id=v_pc;
   CALL sp_chot_cong(3,10,2026,1);
-  IF NOT EXISTS (SELECT 1 FROM bang_cong_thang WHERE id=v_bc AND tong_thu_nhap=150000 AND trang_thai='da_chot') THEN
+  IF NOT EXISTS (SELECT 1 FROM bang_cong_thang WHERE id=v_bc AND tong_thu_nhap=300000 AND trang_thai='da_chot') THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Chốt lại kỳ đã mở';
   END IF;
   SET v_num=v_num+1;

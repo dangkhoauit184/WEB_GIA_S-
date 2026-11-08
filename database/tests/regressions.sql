@@ -14,6 +14,7 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Chỉ chạy trên demo _test.';
   END IF;
   START TRANSACTION;
+  UPDATE account SET status='active' WHERE user_id=1;
   IF fn_tien_cong('theo_gio',70000,95)<>110833 OR fn_tien_cong('theo_buoi',140000,127)<>140000 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Công thức snapshot/làm tròn tiền công';
   END IF;
@@ -40,7 +41,7 @@ BEGIN
   IF NOT v_failed THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Đổi ID phiếu thu'; END IF;
   SET v_num=v_num+1;
   -- [THÊM] Kỳ đã chốt nhưng chưa có ca gắn bảng công: UPDATE buổi và DELETE phân công vẫn phải bị chặn.
-  INSERT INTO bang_cong_thang(user_id,thang,nam,trang_thai) VALUES(3,11,2026,'da_chot');
+  INSERT INTO bang_cong_thang(user_id,thang,nam,trang_thai,chot_boi,chot_luc) VALUES(3,11,2026,'da_chot',1,NOW());
   SELECT id INTO v_id FROM buoi_hoc WHERE lop_id=1 AND ngay='2026-10-06';
   SET v_failed=FALSE;
   BEGIN
@@ -49,7 +50,7 @@ BEGIN
   END;
   IF NOT v_failed THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='FAIL: Dời ca sang kỳ đã khóa'; END IF;
   SET v_num=v_num+1;
-  INSERT INTO bang_cong_thang(user_id,thang,nam,trang_thai) VALUES(3,10,2026,'da_chot');
+  INSERT INTO bang_cong_thang(user_id,thang,nam,trang_thai,chot_boi,chot_luc) VALUES(3,10,2026,'da_chot',1,NOW());
   SET v_failed=FALSE;
   BEGIN
     DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET v_failed=TRUE;
@@ -59,7 +60,8 @@ BEGIN
   SET v_num=v_num+1;
   ROLLBACK;
   START TRANSACTION;
-  UPDATE buoi_hoc SET trang_thai='huy',nguoi_huy_id=2,huy_luc=NOW(),ly_do_huy_doi='Kiểm thử học bù' WHERE id=v_id;
+  UPDATE account SET status='active' WHERE user_id=1;
+  UPDATE buoi_hoc SET trang_thai='huy',nguoi_huy_id=1,huy_luc=NOW(),ly_do_huy_doi='Kiểm thử học bù' WHERE id=v_id;
   INSERT INTO buoi_hoc(lop_id,loai,buoi_goc_id,ngay,gio_bat_dau,gio_ket_thuc)
     VALUES(1,'bu',v_id,'2026-11-03','18:00','20:00');
   SET v_failed=FALSE;

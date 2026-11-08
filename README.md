@@ -1,10 +1,12 @@
 # EduCenter ERP — Quản lý trung tâm gia sư
 
+Nghiệp vụ hiện hành ở [business-rules-baseline](docs/business-rules-baseline.md); DB mới ở [database-004](docs/database-004.md).
+
 Đồ án dùng **PHP 8.4 + CodeIgniter 4 (MVC, Ajax) + MySQL 8.4**. Backend đã chuyển từ Node.js/Express sang PHP để phù hợp đề cương IS207. Composer lock cố định phiên bản thư viện; chạy bằng Docker, không cần cài PHP trực tiếp trên Windows.
 
 ## Trạng thái
 
-- Database: giữ schema 36 bảng, 25 trigger, 12 procedure/function, dữ liệu và quy trình cài đặt hiện có.
+- Database: schema 004 gồm 41 bảng, 47 trigger, 17 procedure/function, dữ liệu và quy trình cài đặt hiện có.
 - Backend: đăng nhập/JWT, phân quyền, phụ huynh/học viên, giáo viên/gia sư, gợi ý ghép BR02, lớp/ghi danh, lịch tuần/sinh buổi học BR03 đã có API PHP.
 - Quản trị: đã có API danh mục (môn, cấp lớp, khu vực, cơ sở, cấu hình), nhóm quyền/ma trận quyền và gán nhóm cho tài khoản. Xem [hợp đồng API quản trị](docs/administration-api.md).
 - Có trang MVC đăng nhập, xem/tìm dữ liệu và đổi mật khẩu qua Ajax tại `http://localhost:5000/`. Đây là giao diện khởi đầu; chưa triển khai toàn bộ màn hình Figma.

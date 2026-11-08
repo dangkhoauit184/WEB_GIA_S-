@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Build and test on isolated MySQL containers
         shell: pwsh
         run: ./backend/scripts/test.ps1

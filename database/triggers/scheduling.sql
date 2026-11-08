@@ -12,10 +12,11 @@ BEGIN
   IF NEW.trang_thai='huy' AND (NEW.nguoi_huy_id IS NULL OR NEW.huy_luc IS NULL OR NEW.ly_do_huy_doi IS NULL OR TRIM(NEW.ly_do_huy_doi)='') THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Hủy buổi học cần người thực hiện, thời điểm và lý do.';
   END IF;
+  IF NEW.trang_thai='huy' AND fn_la_admin(NEW.nguoi_huy_id)<>1 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Nghỉ cả lớp cần Admin duyệt.'; END IF;
   SELECT co_so_id INTO v_coso FROM lop_hoc WHERE id=NEW.lop_id;
   IF NEW.co_so_id IS NULL THEN SET NEW.co_so_id=v_coso; END IF;
   CALL sp_kiem_tra_buoi(0,NEW.lop_id,NEW.lich_hoc_id,NEW.loai,NEW.buoi_goc_id,
-    NEW.ngay,NEW.gio_bat_dau,NEW.gio_ket_thuc,NEW.co_so_id,NEW.phong_hoc,NEW.trang_thai);
+    NEW.ngay,NEW.gio_bat_dau,NEW.gio_ket_thuc,NEW.co_so_id,NEW.phong_hoc,NEW.trang_thai,NEW.pham_vi_bu);
 END$$
 
 -- [SỬA] trg_buoi_bu: tách theo nghiệp vụ; kiểm tra cả thao tác ghi tương ứng.
@@ -25,6 +26,13 @@ BEGIN
   IF NEW.trang_thai='huy' AND OLD.trang_thai<>'huy'
     AND (NEW.nguoi_huy_id IS NULL OR NEW.huy_luc IS NULL OR NEW.ly_do_huy_doi IS NULL OR TRIM(NEW.ly_do_huy_doi)='') THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Hủy buổi học cần người thực hiện, thời điểm và lý do.';
+  END IF;
+  IF NEW.trang_thai='huy' AND OLD.trang_thai<>'huy' AND fn_la_admin(NEW.nguoi_huy_id)<>1 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Nghỉ cả lớp cần Admin duyệt.';
+  END IF;
+  IF (NEW.ngay<>OLD.ngay OR NEW.gio_bat_dau<>OLD.gio_bat_dau OR NEW.gio_ket_thuc<>OLD.gio_ket_thuc)
+    AND EXISTS(SELECT 1 FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=OLD.id AND quy_tac_cong=4 AND checkin_luc IS NOT NULL) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Buổi đã check-in; không sửa lịch làm thay đổi công.';
   END IF;
   -- [SỬA] Giữ ID buổi ổn định và không làm vô hiệu liên kết học bù đã có.
   IF NEW.id<>OLD.id THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Không đổi ID buổi học.'; END IF;
@@ -38,6 +46,6 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Buổi học thuộc bảng công đã khóa.';
   END IF;
   CALL sp_kiem_tra_buoi(OLD.id,NEW.lop_id,NEW.lich_hoc_id,NEW.loai,NEW.buoi_goc_id,
-    NEW.ngay,NEW.gio_bat_dau,NEW.gio_ket_thuc,NEW.co_so_id,NEW.phong_hoc,NEW.trang_thai);
+    NEW.ngay,NEW.gio_bat_dau,NEW.gio_ket_thuc,NEW.co_so_id,NEW.phong_hoc,NEW.trang_thai,NEW.pham_vi_bu);
 END$$
 DELIMITER ;

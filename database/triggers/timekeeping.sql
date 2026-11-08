@@ -8,7 +8,7 @@ DROP TRIGGER IF EXISTS trg_pc_bi$$
 CREATE TRIGGER trg_pc_bi BEFORE INSERT ON phan_cong_buoi_hoc FOR EACH ROW
 BEGIN
   DECLARE v_user BIGINT UNSIGNED;
-  DECLARE v_method VARCHAR(20);
+  DECLARE v_rate DECIMAL(12,0);
   SELECT user_id INTO v_user FROM users WHERE user_id=NEW.user_id FOR UPDATE;
   IF EXISTS (SELECT 1 FROM bang_cong_thang bc JOIN buoi_hoc b ON b.id=NEW.buoi_hoc_id
     WHERE bc.user_id=NEW.user_id AND bc.nam=YEAR(b.ngay) AND bc.thang=MONTH(b.ngay) AND bc.trang_thai<>'mo') THEN
@@ -20,9 +20,13 @@ BEGIN
   IF NEW.trang_thai<>'da_go' AND fn_trung_lich(NEW.user_id,NEW.buoi_hoc_id,0)=1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Trùng lịch người dạy hoặc trợ giảng.';
   END IF;
-  -- [THÊM] Snapshot cách tính lương; không đọc lại giá/cách tính hiện tại của lớp khi quyết toán.
-  SELECT l.cach_tinh_luong INTO v_method FROM buoi_hoc b JOIN lop_hoc l ON l.id=b.lop_id WHERE b.id=NEW.buoi_hoc_id;
-  IF NEW.cach_tinh_luong IS NULL THEN SET NEW.cach_tinh_luong=v_method; END IF;
+  -- [SỬA] 004: Mức tiền/giờ theo từng người; giá lớp và input caller không ghi đè snapshot mới.
+  SELECT ns.don_gia_gio_chuan INTO v_rate FROM nhan_su_chuyen_mon ns WHERE ns.user_id=NEW.user_id AND ns.deleted_at IS NULL;
+  IF v_rate IS NULL THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Phân công cần hồ sơ người dạy có đơn giá giờ.'; END IF;
+  SET NEW.don_gia=v_rate,NEW.cach_tinh_luong='theo_gio',NEW.quy_tac_cong=4;
+  SET NEW.gio_lich_bat_dau=(SELECT TIMESTAMP(ngay,gio_bat_dau) FROM buoi_hoc WHERE id=NEW.buoi_hoc_id);
+  SET NEW.gio_lich_ket_thuc=(SELECT TIMESTAMP(ngay,gio_ket_thuc) FROM buoi_hoc WHERE id=NEW.buoi_hoc_id);
+  SET NEW.checkin_tre=IF(NEW.checkin_luc IS NULL,0,NEW.checkin_luc>NEW.gio_lich_bat_dau);
 END$$
 
 -- [SỬA] trg_pc_bu: tách theo nghiệp vụ; kiểm tra cả thao tác ghi tương ứng.
@@ -54,6 +58,22 @@ BEGIN
      WHERE bc.id=NEW.bang_cong_id AND bc.user_id=NEW.user_id AND bc.nam=YEAR(b.ngay) AND bc.thang=MONTH(b.ngay)) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Bảng công không cùng người dạy hoặc kỳ công.';
   END IF;
+  -- [THÊM] Không hạ phiên bản để tính lại toàn bộ thời gian đến sớm/về muộn.
+  IF OLD.quy_tac_cong=4 AND NEW.quy_tac_cong<>4 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Không hạ quy tắc công 004.'; END IF;
+  IF NOT (NEW.checkin_luc <=> OLD.checkin_luc) OR NOT (NEW.checkout_luc <=> OLD.checkout_luc)
+    OR NEW.buoi_hoc_id<>OLD.buoi_hoc_id THEN SET NEW.quy_tac_cong=4; END IF;
+  IF NEW.quy_tac_cong=4 THEN
+    IF OLD.checkin_luc IS NULL OR OLD.quy_tac_cong=3 OR NEW.buoi_hoc_id<>OLD.buoi_hoc_id THEN
+      SET NEW.gio_lich_bat_dau=(SELECT TIMESTAMP(ngay,gio_bat_dau) FROM buoi_hoc WHERE id=NEW.buoi_hoc_id);
+      SET NEW.gio_lich_ket_thuc=(SELECT TIMESTAMP(ngay,gio_ket_thuc) FROM buoi_hoc WHERE id=NEW.buoi_hoc_id);
+    ELSE
+      SET NEW.gio_lich_bat_dau=OLD.gio_lich_bat_dau,NEW.gio_lich_ket_thuc=OLD.gio_lich_ket_thuc;
+    END IF;
+    SET NEW.checkin_tre=IF(NEW.checkin_luc IS NULL,0,NEW.checkin_luc>NEW.gio_lich_bat_dau);
+  END IF;
+  IF NOT (NEW.don_gia <=> OLD.don_gia) OR NOT (NEW.cach_tinh_luong <=> OLD.cach_tinh_luong) THEN
+    IF fn_la_admin(NEW.luong_sua_boi)<>1 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Sửa đơn giá cần Admin thực hiện.'; END IF;
+  END IF;
   IF NEW.trang_thai<>'da_go' AND fn_trung_lich(NEW.user_id,NEW.buoi_hoc_id,NEW.id)=1 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Trùng lịch người dạy hoặc trợ giảng.';
   END IF;
@@ -81,6 +101,9 @@ DROP TRIGGER IF EXISTS trg_dcc_bi$$
 CREATE TRIGGER trg_dcc_bi BEFORE INSERT ON dieu_chinh_cong FOR EACH ROW
 BEGIN
   DECLARE v_user BIGINT UNSIGNED;
+  IF NEW.trang_thai IN ('da_duyet','tu_choi') AND (fn_la_admin(NEW.nguoi_duyet_id)<>1 OR NEW.duyet_luc IS NULL) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Chỉ Admin được duyệt điều chỉnh công.';
+  END IF;
   SELECT user_id INTO v_user FROM phan_cong_buoi_hoc WHERE id=NEW.phan_cong_id;
   SELECT user_id INTO v_user FROM users WHERE user_id=v_user FOR UPDATE;
 END$$
@@ -91,6 +114,9 @@ BEGIN
   -- [SỬA] Đơn đã gửi không chuyển sang một ca khác để làm lệch lịch sử phê duyệt.
   IF NEW.phan_cong_id<>OLD.phan_cong_id OR NEW.id<>OLD.id THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Không đổi ca hoặc ID của đơn điều chỉnh công.';
+  END IF;
+  IF NEW.trang_thai IN ('da_duyet','tu_choi') AND (fn_la_admin(NEW.nguoi_duyet_id)<>1 OR NEW.duyet_luc IS NULL) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Chỉ Admin được duyệt điều chỉnh công.';
   END IF;
   SELECT user_id INTO v_user FROM phan_cong_buoi_hoc WHERE id=NEW.phan_cong_id;
   SELECT user_id INTO v_user FROM users WHERE user_id=v_user FOR UPDATE;
