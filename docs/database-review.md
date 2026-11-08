@@ -1,5 +1,7 @@
 # Rà soát Database EduCenter ERP
 
+> Cập nhật 08/11/2026: [nghiệp vụ mới](business-rules-baseline.md) và [DB 004](database-004.md) được ưu tiên nếu khác nội dung lịch sử dưới đây. Chỉ Admin quản trị công-lương, thu trọn khóa, học bù theo thỏa thuận không hạn mức/phí.
+
 ## Cập nhật thuộc tính phiên bản 003 ngày 03/11/2026
 
 Đã áp dụng rà soát thuộc tính vào schema, helper, trigger, seed và migration `003_attribute_review`:

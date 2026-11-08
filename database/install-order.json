@@ -1,11 +1,13 @@
 [
   "routines/functions.sql",
   "routines/helpers.sql",
+  "routines/business_rules.sql",
   "routines/procedures.sql",
   "triggers/timekeeping.sql",
   "triggers/classes.sql",
   "triggers/scheduling.sql",
   "triggers/academic.sql",
   "triggers/tuition.sql",
-  "triggers/payroll.sql"
+  "triggers/payroll.sql",
+  "triggers/business_rules.sql"
 ]

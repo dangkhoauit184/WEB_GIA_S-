@@ -67,7 +67,8 @@ try {
     $order=Get-Content database/install-order.json -Raw | ConvertFrom-Json
     foreach($file in $order) { $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot "database/$file")) }
     $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/001_reference.sql'))
-    $sql+="`nINSERT INTO schema_migrations(version,status,applied_at) VALUES ('001_feature_based','applied',NOW()),('002_routine_review','applied',NOW()),('003_attribute_review','applied',NOW());"
+    $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/004_business_policy.sql'))
+    $sql+="`nINSERT INTO schema_migrations(version,status,applied_at) VALUES ('001_feature_based','applied',NOW()),('002_routine_review','applied',NOW()),('003_attribute_review','applied',NOW()),('004_business_rules','applied',NOW());"
     [void](Invoke-TestSql $sql)
     Invoke-PhpTest 'test'
     Invoke-PhpTest 'test:db'
@@ -78,13 +79,15 @@ try {
     if($LASTEXITCODE -ne 0) { throw 'Không tạo được database SQL test.' }
     $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/002_demo.sql'))
     [void](Invoke-TestSql $sql)
-    foreach($file in @('integrity.sql','regressions.sql','attributes.sql','workflows.sql')) {
+    foreach($file in @('integrity.sql','regressions.sql','attributes.sql','workflows.sql','business_rules.sql')) {
         $report=Invoke-TestSql ([IO.File]::ReadAllText((Join-Path $projectRoot "database/tests/$file")))
         if($report -match '(?m)^FAIL\s' -or $report -match '(?m)^VI_PHAM\t[^\t]+\t[1-9]') { throw $report }
         Write-Output $report
     }
     $report=Invoke-TestSql ([IO.File]::ReadAllText((Join-Path $projectRoot 'database/checks.sql')))
     if($report -match '(?m)^VI_PHAM\t[^\t]+\t[1-9]') { throw $report }
+    & python database/tests/verify_upgrade.py --container $testContainer
+    if($LASTEXITCODE -ne 0) { throw 'Kiểm thử nâng cấp database thất bại.' }
     Write-Host 'PASS: PHP, HTTP/MySQL và bộ SQL regression.' -ForegroundColor Green
 } finally {
     # Names are generated above and only refer to this run's temporary container/network.

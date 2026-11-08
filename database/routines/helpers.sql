@@ -18,7 +18,7 @@ END$$
 DROP PROCEDURE IF EXISTS sp_kiem_tra_buoi$$
 CREATE PROCEDURE sp_kiem_tra_buoi(IN p_id BIGINT UNSIGNED,IN p_lop BIGINT UNSIGNED,
  IN p_lich BIGINT UNSIGNED,IN p_loai VARCHAR(20),IN p_goc BIGINT UNSIGNED,
- IN p_ngay DATE,IN p_bd TIME,IN p_kt TIME,IN p_coso INT UNSIGNED,IN p_phong VARCHAR(50),IN p_tt VARCHAR(20))
+ IN p_ngay DATE,IN p_bd TIME,IN p_kt TIME,IN p_coso INT UNSIGNED,IN p_phong VARCHAR(50),IN p_tt VARCHAR(20),IN p_pham_vi VARCHAR(20))
 BEGIN
   DECLARE v_resource BIGINT UNSIGNED;
   DECLARE v_user BIGINT UNSIGNED;
@@ -32,7 +32,7 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Lịch tuần không thuộc lớp của buổi học.';
   END IF;
   IF p_loai='bu' AND (p_goc IS NULL OR p_goc=p_id OR NOT EXISTS
-    (SELECT 1 FROM buoi_hoc WHERE id=p_goc AND lop_id=p_lop AND loai='thuong' AND trang_thai IN ('huy','doi'))) THEN
+    (SELECT 1 FROM buoi_hoc WHERE id=p_goc AND lop_id=p_lop AND loai='thuong' AND (p_pham_vi='ca_nhan' OR trang_thai IN ('huy','doi')))) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Ca bù cần buổi gốc thường cùng lớp đã hủy hoặc dời.';
   END IF;
   IF p_loai='thuong' AND p_goc IS NOT NULL THEN
@@ -75,6 +75,11 @@ BEGIN
     WHERE b.id=p_buoi AND l.hoc_vien_id=p_hv AND l.ngay_vao<=b.ngay AND (l.ngay_roi IS NULL OR l.ngay_roi>=b.ngay)) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Học viên không thuộc lớp trong ngày học.';
   END IF;
+  -- [THÊM] 004: Buổi bù cá nhân chỉ ghi học vụ cho học viên được xếp, không điểm danh cả lớp.
+  IF EXISTS(SELECT 1 FROM buoi_hoc WHERE id=p_buoi AND loai='bu' AND pham_vi_bu='ca_nhan')
+    AND NOT EXISTS(SELECT 1 FROM hoc_bu_hoc_vien WHERE buoi_bu_id=p_buoi AND hoc_vien_id=p_hv) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Học viên chưa được xếp vào buổi bù cá nhân.';
+  END IF;
   IF p_bt IS NOT NULL AND NOT EXISTS (SELECT 1 FROM bai_tap bt JOIN buoi_hoc source ON source.id=bt.buoi_hoc_id
     JOIN buoi_hoc target ON target.id=p_buoi WHERE bt.id=p_bt AND source.lop_id=target.lop_id) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Bài tập không thuộc lớp của học viên.';
@@ -97,10 +102,12 @@ DROP PROCEDURE IF EXISTS sp_kiem_tra_khoan_thu$$
 -- [THÊM] Chi tiết hóa đơn theo buổi/tháng/khóa cùng học viên và lớp, không tự sinh phí thiếu chính sách.
 CREATE PROCEDURE sp_kiem_tra_khoan_thu(IN p_hd BIGINT UNSIGNED,IN p_buoi BIGINT UNSIGNED)
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM hoa_don hd JOIN lop_hoc_vien lhv ON lhv.id=hd.lop_hoc_vien_id
-    WHERE hd.id=p_hd AND (p_buoi IS NULL OR EXISTS
-      (SELECT 1 FROM buoi_hoc WHERE id=p_buoi AND lop_id=lhv.lop_id))) THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Khoản thu không đúng học viên hoặc lớp của hóa đơn.';
+  IF NOT EXISTS (SELECT 1 FROM hoa_don hd WHERE hd.id=p_hd AND
+    ((hd.dang_ky_khoa_hoc_id IS NOT NULL AND p_buoi IS NULL)
+    OR (hd.lop_hoc_vien_id IS NOT NULL AND (p_buoi IS NULL OR EXISTS
+      (SELECT 1 FROM lop_hoc_vien lhv JOIN buoi_hoc b ON b.lop_id=lhv.lop_id
+        WHERE lhv.id=hd.lop_hoc_vien_id AND b.id=p_buoi))))) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Khoản thu không đúng học viên/lớp hoặc hóa đơn trọn khóa.';
   END IF;
 END$$
 

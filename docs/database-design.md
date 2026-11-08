@@ -1,6 +1,8 @@
 # Cơ sở dữ liệu EduCenter ERP
 
-Database phục vụ đồ án quản lý trung tâm gia sư và đào tạo. Phiên bản hiện tại: **003_attribute_review**, gồm 36 bảng, 2 function, 10 procedure và 25 trigger.
+> Quy tắc hiện hành và cách nâng 003 → 004 ở [database-004](database-004.md). Các phần mô tả 001–003 dưới đây giữ để tham khảo lịch sử; hạn mức/phí bù đã được bỏ, chỉ Admin quản trị công-lương.
+
+Database phục vụ đồ án quản lý trung tâm gia sư và đào tạo. Phiên bản hiện tại: **004_business_rules**, gồm 41 bảng, 4 function, 13 procedure và 47 trigger.
 
 ## Yêu cầu và cấu hình
 
@@ -21,14 +23,14 @@ pwsh -File database/scripts/run.ps1 -Action init
 pwsh -File database/scripts/run.ps1 -Action check
 ```
 
-`init` từ chối database không rỗng. Script nạp `schema.sql`, các module trong `install-order.json`, seed danh mục rồi đánh dấu 001/002/003 đã áp dụng. Chưa tạo tài khoản Admin hay dữ liệu người dùng.
+`init` từ chối database không rỗng. Script nạp `schema.sql`, các module trong `install-order.json`, seed danh mục/policy rồi đánh dấu 001/002/003/004 đã áp dụng. Chưa tạo tài khoản Admin hay dữ liệu người dùng.
 
 ## Nâng cấp từ SQL gốc, 001 hoặc 002
 
 1. Sao lưu và thử khôi phục; dừng ghi ứng dụng. Kiểm tra trước trên bản sao.
 2. Chạy `-Action preflight`, xử lý các dòng `VI_PHAM` bằng cách đối chiếu nguồn dữ liệu.
 3. Chạy `-Action migrate`, sau đó `-Action check`.
-4. Database gốc chạy thay đổi cấu trúc 001, ghi nhận 002, áp dụng 003 và nạp toàn bộ routine/trigger mới. Database 001/002 chỉ chạy phần còn thiếu. Database đã ở 003 được kiểm tra, không chạy lại DDL.
+4. Database gốc/001/002 chạy phần còn thiếu đến 003 rồi 004; database 003 chỉ áp dụng 004. Database đã ở 004 được kiểm tra, không chạy lại DDL. Đường 003→004 đã được kiểm chứng tự động với dữ liệu demo và bản sao dữ liệu đang dùng.
 5. Gặp phiên bản lạ hoặc migration `applying`, script dừng. DDL MySQL tự COMMIT: cần đối chiếu tiến độ và khôi phục backup hoặc lập kế hoạch sửa tiếp, không xóa cờ để chạy lại mù quáng.
 
 ```powershell

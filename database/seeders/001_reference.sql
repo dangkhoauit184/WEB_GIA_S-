@@ -23,9 +23,9 @@ INSERT INTO role_group_function (group_id, function_id, `add`, `edit`, `delete`,
  -- Nhân viên
  (2, 3, 1, 1, 0, 1, 1), (2, 4, 1, 1, 0, 1, 1), (2, 5, 1, 1, 0, 1, 1), (2, 7, 1, 1, 0, 1, 1), (2, 8, 0, 0, 0, 1, 1),
  -- Giảng viên (Giáo viên / Gia sư chính)
- (3, 5, 1, 1, 0, 1, 1), (3, 6, 0, 0, 0, 1, 1),
+ (3, 5, 1, 1, 0, 1, 1), (3, 6, 0, 0, 0, 0, 0),
  -- Trợ giảng (chỉ hỗ trợ điểm danh & check-in công của mình)
- (4, 5, 0, 1, 0, 0, 1), (4, 6, 0, 0, 0, 0, 1),
+ (4, 5, 0, 1, 0, 0, 1), (4, 6, 0, 0, 0, 0, 0),
  -- Phụ huynh
  (5, 5, 0, 0, 0, 1, 1), (5, 7, 0, 0, 0, 1, 1);
 
@@ -43,7 +43,7 @@ INSERT INTO khu_vuc (id, ten) VALUES
 
 INSERT INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES
  ('checkin_truoc_phut','30','Được check-in sớm tối đa trước giờ học'),
- ('checkin_tre_sau_phut','15','Sau mốc này bị tính là đi trễ'),
+ ('checkin_tre_sau_phut','0','Đến sau giờ lịch là trễ'),
  ('han_nhap_bao_cao_gio','24','Thời hạn người dạy nhập nhận xét & bài tập');
 
 

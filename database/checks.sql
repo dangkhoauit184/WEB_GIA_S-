@@ -1,4 +1,12 @@
 -- [THÊM] Báo cáo CHỈ ĐỌC sau triển khai. Mọi dòng VI_PHAM phải có số lượng bằng 0.
+-- [THÊM] 004: Khóa cũ chưa gán sản phẩm được báo để đối chiếu, không tự tạo khóa hoặc giá giả.
+SELECT 'CAN_XAC_NHAN' AS loai,'lop_chua_gan_khoa' AS noi_dung,COUNT(*) AS ket_qua FROM lop_hoc WHERE khoa_hoc_id IS NULL AND deleted_at IS NULL;
+SELECT 'VI_PHAM' AS loai,'cong_004_thieu_snapshot_lich' AS noi_dung,COUNT(*) AS ket_qua FROM phan_cong_buoi_hoc
+WHERE quy_tac_cong=4 AND checkin_luc IS NOT NULL AND (gio_lich_bat_dau IS NULL OR gio_lich_ket_thuc IS NULL);
+SELECT 'VI_PHAM' AS loai,'quyen_luong_ngoai_admin' AS noi_dung,COUNT(*) AS ket_qua
+FROM role_group_function p JOIN `function` f ON f.function_id=p.function_id JOIN role_group g ON g.group_id=p.group_id
+WHERE f.name_function='ChamCongLuong' AND g.group_name<>'Admin' AND p.is_deleted=0
+  AND (p.view<>0 OR p.`add`<>0 OR p.edit<>0 OR p.`delete`<>0 OR p.download<>0);
 SELECT 'PHIEN_BAN' AS loai,version AS noi_dung,status AS ket_qua FROM schema_migrations;
 SELECT 'CAU_TRUC' AS loai,'bang' AS noi_dung,COUNT(*) AS ket_qua FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE';
 SELECT 'CAU_TRUC' AS loai,'trigger' AS noi_dung,COUNT(*) AS ket_qua FROM information_schema.triggers WHERE trigger_schema=DATABASE();

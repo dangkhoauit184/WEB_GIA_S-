@@ -1,6 +1,8 @@
 # Hướng dẫn chạy database EduCenter ERP
 
-**Chạy các lệnh từ thư mục gốc repository**, không phải từ bên trong `database/`. Phiên bản schema hiện tại là `003_attribute_review`.
+> Quy tắc hiện hành và cách nâng 003 → 004 ở [database-004](../docs/database-004.md). Các phần mô tả 001–003 dưới đây giữ để tham khảo lịch sử; hạn mức/phí bù đã được bỏ, chỉ Admin quản trị công-lương.
+
+**Chạy các lệnh từ thư mục gốc repository**, không phải từ bên trong `database/`. Phiên bản schema hiện tại là `004_business_rules`.
 
 ## 1. Chuẩn bị trước khi chạy
 
@@ -61,7 +63,7 @@ pwsh -File database/scripts/run.ps1 -Action check
 | Bước | File / thao tác |
 | --- | --- |
 | 1 | `schema.sql`: tạo cấu trúc bảng mới nhất |
-| 2 | Ghi lịch sử 001/002/003 ở trạng thái `applying` |
+| 2 | Ghi lịch sử 001/002/003/004 ở trạng thái `applying` |
 | 3 | `routines/functions.sql` |
 | 4 | `routines/helpers.sql` |
 | 5 | `routines/procedures.sql` |
@@ -75,7 +77,7 @@ pwsh -File database/scripts/run.ps1 -Action check
 | 13 | Đánh dấu các phiên bản đã `applied` |
 | 14 | Lệnh `check` chạy `checks.sql` để kiểm tra |
 
-Thứ tự routine/trigger được quản lý tại [install-order.json](install-order.json). Cài mới **không chạy lại các file migration**, vì `schema.sql` đã là cấu trúc 003. `init` chưa tạo tài khoản Admin ứng dụng hay dữ liệu người dùng.
+Thứ tự routine/trigger được quản lý tại [install-order.json](install-order.json). Cài mới **không chạy lại các file migration**, vì `schema.sql` đã là cấu trúc 004. `init` chưa tạo tài khoản Admin ứng dụng hay dữ liệu người dùng. Policy 004 chỉ điều chỉnh đúng quyền công-lương và ngưỡng đánh trễ.
 
 Kết quả mong đợi là `Hoàn tất thao tác Database: init.`, sau đó `check` không có dòng `VI_PHAM` khác 0. Dòng `CAN_XAC_NHAN` cần được đối chiếu theo [thiết kế database](../docs/database-design.md).
 
@@ -90,7 +92,7 @@ pwsh -File database/scripts/run.ps1 -Action check
 ```
 
 - `preflight`: kiểm tra dữ liệu trước khi thay đổi.
-- `migrate`: nhận diện SQL gốc/001/002, chạy phần còn thiếu theo thứ tự 001 → 002 → 003, nạp routine và trigger. Database đã ở 003 được kiểm tra, không ALTER lại.
+- `migrate`: nhận diện SQL gốc/001/002/003, chạy phần còn thiếu theo thứ tự 001 → 002 → 003 → 004, nạp routine và trigger. Database đã ở 004 được kiểm tra, không ALTER lại. Backup/restore thử trước khi nâng cấp.
 - `check`: kiểm tra toàn vẹn sau nâng cấp.
 
 Nếu có `VI_PHAM` hoặc migration còn `applying`, dừng và đối chiếu dữ liệu/tiến độ. MySQL DDL tự COMMIT; không xóa trạng thái để chạy lại tùy ý. Không import `schema.sql` lên database đang có dữ liệu. Chi tiết thay đổi tại [docs/database-design.md](../docs/database-design.md).
@@ -109,7 +111,9 @@ pwsh -File database/scripts/run.ps1 -Action test -EnvFile database/.env.test.loc
 pwsh -File database/scripts/run.ps1 -Action check -EnvFile database/.env.test.local
 ```
 
-`seed-demo` chạy `seeders/002_demo.sql`, yêu cầu chưa có người dùng; không nạp demo hai lần. `test` lần lượt chạy `integrity.sql` → `regressions.sql` → `attributes.sql` → `workflows.sql` trong `database/tests/`. Có 51 ca hành vi; suite workflow có COMMIT và làm thay đổi demo. Tài khoản demo trong MySQL bị khóa, không phải tài khoản đăng nhập của demo HTML.
+`seed-demo` chạy `seeders/002_demo.sql`, yêu cầu chưa có người dùng; không nạp demo hai lần. `test` lần lượt chạy `integrity.sql` → `regressions.sql` → `attributes.sql` → `workflows.sql` → `business_rules.sql` trong `database/tests/`. Có 78 ca SQL (51 hồi quy + 27 nghiệp vụ 004); các suite có COMMIT làm thay đổi demo. Tài khoản demo bị khóa, không phải tài khoản đăng nhập của demo HTML.
+
+Với Docker hiện có, dùng PowerShell 7 và `-Container educenter-mysql -EnvFile config/server.env` cho các Action. Script đọc mật khẩu root bên trong container; không cần cài mysql.exe trên Windows. Chỉ dùng tùy chọn này cho môi trường Docker local được bạn quản lý. Chi tiết nâng cấp và kiểm chứng ở [DB 004](../docs/database-004.md).
 
 Kiểm tra cấu trúc repository, không cần MySQL:
 

@@ -32,7 +32,7 @@ BEGIN
     SET v_day=DATE_ADD(v_day,INTERVAL 1 DAY);
   END WHILE;
   INSERT INTO phan_cong_buoi_hoc(buoi_hoc_id,user_id,vai_tro,don_gia,cach_tinh_luong)
-  SELECT b.id,ns.user_id,'day_chinh',l.muc_tra_chinh,l.cach_tinh_luong
+  SELECT b.id,ns.user_id,'day_chinh',ns.don_gia_gio_chuan,'theo_gio'
     FROM buoi_hoc b JOIN lop_hoc l ON l.id=b.lop_id JOIN nhan_su_chuyen_mon ns ON ns.id=l.nguoi_day_chinh_id
     WHERE b.lop_id=p_lop_id AND b.ngay BETWEEN p_tu AND p_den AND b.trang_thai='du_kien'
       AND NOT EXISTS (SELECT 1 FROM phan_cong_buoi_hoc pc WHERE pc.buoi_hoc_id=b.id
@@ -55,10 +55,10 @@ BEGIN
   IF p_thang IS NULL OR p_thang NOT BETWEEN 1 AND 12 OR p_nam IS NULL OR p_nam NOT BETWEEN 1000 AND 9998 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Kỳ công không hợp lệ.';
   END IF;
-  -- [LƯU Ý] Tài liệu Word và architecture.md khác người chốt; cho phép Admin hoặc NhanVien theo mô tả giáo vụ.
+  -- [SỬA] 004: Người dùng xác nhận chỉ Admin chốt công; giáo vụ không có quyền này.
   IF NOT EXISTS (SELECT 1 FROM account a JOIN role_group g ON g.group_id=a.group_id
-    WHERE a.user_id=p_nguoi_chot AND a.status='active' AND a.is_deleted=0 AND g.is_deleted=0 AND g.group_name IN ('Admin','NhanVien')) THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Người chốt phải là Admin hoặc Nhân viên đang hoạt động.';
+    WHERE a.user_id=p_nguoi_chot AND a.status='active' AND a.is_deleted=0 AND g.is_deleted=0 AND g.group_name='Admin') THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Người chốt phải là Admin đang hoạt động.';
   END IF;
   SET v_from=STR_TO_DATE(CONCAT(p_nam,'-',LPAD(p_thang,2,'0'),'-01'),'%Y-%m-%d');
   SET v_to=DATE_ADD(v_from,INTERVAL 1 MONTH);
@@ -81,7 +81,7 @@ BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Còn đơn điều chỉnh công chờ duyệt trong kỳ.';
   END IF;
   IF EXISTS (SELECT 1 FROM phan_cong_buoi_hoc pc JOIN buoi_hoc b ON b.id=pc.buoi_hoc_id
-    WHERE pc.user_id=p_user AND b.ngay>=v_from AND b.ngay<v_to AND pc.trang_thai_cong='hop_le' AND pc.cach_tinh_luong IS NULL) THEN
+    WHERE pc.user_id=p_user AND b.ngay>=v_from AND b.ngay<v_to AND pc.trang_thai_cong='hop_le' AND (pc.cach_tinh_luong IS NULL OR pc.so_phut_tinh_cong IS NULL)) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Cần xác minh snapshot cách tính lương lịch sử trước khi chốt.';
   END IF;
   -- [SỬA] Không âm thầm bỏ sót công hợp lệ nhưng trạng thái phân công/buổi học chưa hoàn thành.
@@ -94,12 +94,12 @@ BEGIN
   UPDATE phan_cong_buoi_hoc SET bang_cong_id=NULL WHERE bang_cong_id=v_id;
   UPDATE phan_cong_buoi_hoc pc JOIN buoi_hoc b ON b.id=pc.buoi_hoc_id SET pc.bang_cong_id=v_id
     WHERE pc.user_id=p_user AND b.ngay>=v_from AND b.ngay<v_to AND b.trang_thai='da_day'
-      AND pc.trang_thai='da_day' AND pc.trang_thai_cong='hop_le' AND pc.so_phut_thuc_te IS NOT NULL AND pc.bang_cong_id IS NULL;
+      AND pc.trang_thai='da_day' AND pc.trang_thai_cong='hop_le' AND pc.so_phut_tinh_cong IS NOT NULL AND pc.bang_cong_id IS NULL;
   UPDATE bang_cong_thang SET
     so_buoi=(SELECT COUNT(*) FROM phan_cong_buoi_hoc WHERE bang_cong_id=v_id),
-    tong_phut=(SELECT COALESCE(SUM(so_phut_thuc_te),0) FROM phan_cong_buoi_hoc WHERE bang_cong_id=v_id),
+    tong_phut=(SELECT COALESCE(SUM(so_phut_tinh_cong),0) FROM phan_cong_buoi_hoc WHERE bang_cong_id=v_id),
     -- [SỬA] Dùng cùng một function kiểm tra đầu vào và làm tròn VND cho mọi bảng công.
-    tong_thu_nhap=(SELECT COALESCE(SUM(fn_tien_cong(cach_tinh_luong,don_gia,so_phut_thuc_te)),0)
+    tong_thu_nhap=(SELECT COALESCE(SUM(fn_tien_cong(cach_tinh_luong,don_gia,so_phut_tinh_cong)),0)
       FROM phan_cong_buoi_hoc WHERE bang_cong_id=v_id),
     so_buoi_bu=(SELECT COUNT(*) FROM phan_cong_buoi_hoc pc JOIN buoi_hoc b ON b.id=pc.buoi_hoc_id WHERE pc.bang_cong_id=v_id AND b.loai='bu'),
     so_lan_tre=(SELECT COUNT(*) FROM phan_cong_buoi_hoc WHERE bang_cong_id=v_id AND checkin_tre=1),
@@ -132,7 +132,7 @@ BEGIN
   IF v_tt IS NULL OR v_tt<>'da_chot' THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Chỉ mở bảng đã chốt; bảng đã trả cần quy trình xác nhận riêng.';
   END IF;
-  UPDATE bang_cong_thang SET trang_thai='mo',chot_boi=NULL,chot_luc=NULL WHERE id=p_id;
+  UPDATE bang_cong_thang SET trang_thai='mo',chot_boi=NULL,chot_luc=NULL,mo_khoa_boi=p_admin,mo_khoa_luc=NOW(),ly_do_mo_khoa=p_ly_do WHERE id=p_id;
   INSERT INTO audit_log(user_id,hanh_dong,bang,ban_ghi_id,du_lieu_cu,du_lieu_moi)
     VALUES(p_admin,'mo_khoa_cong','bang_cong_thang',p_id,JSON_OBJECT('trang_thai',v_tt),JSON_OBJECT('trang_thai','mo','ly_do',p_ly_do));
   COMMIT;
