@@ -82,7 +82,10 @@ try {
     $initialSetting=array_column($settings,'giaTri','khoa')['checkin_truoc_phut'];
     check(requestOk($catalog.'/settings/checkin_truoc_phut','PUT',['giaTri'=>45],$token)['giaTri']==='45','integer setting persisted as string');
     requestOk($catalog.'/settings/checkin_truoc_phut','PUT',['giaTri'=>(int)$initialSetting],$token);
-    check(http($catalog.'/settings/checkin_truoc_phut','PUT',['giaTri'=>-1],$token)[0]===400,'negative setting denied');
+    check(http($catalog.'/settings/checkin_truoc_phut','PUT',['giaTri'=>-2],$token)[0]===400,'values below unlimited sentinel denied');
+    check(requestOk($catalog.'/settings/checkout_sau_phut','PUT',['giaTri'=>-1],$token)['giaTri']==='-1','unlimited checkout policy persisted');
+    check(requestOk($catalog.'/settings/checkin_minh_chung','PUT',['giaTri'=>'khong'],$token)['giaTri']==='khong','no proof policy persisted');
+    check(http($catalog.'/settings/checkin_minh_chung','PUT',['giaTri'=>'gps'],$token)[0]===400,'proof collection not enabled by current policy');
     check(http($catalog.'/settings/han_nhap_bao_cao_gio','PUT',['giaTri'=>0],$token)[0]===400,'report deadline must be positive');
     check(http($catalog.'/settings/JWT_SECRET','PUT',['giaTri'=>1],$token)[0]===404,'setting key whitelist');
 

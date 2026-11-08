@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet('init','preflight','migrate','seed-demo','check','test')][string]$Action,
+    [ValidateSet('init','preflight','migrate','seed-demo','seed-courses','check','test')][string]$Action,
     [string]$EnvFile = (Join-Path $PSScriptRoot '../.env'),
     [string]$Container = ''
 )
@@ -114,10 +114,10 @@ try {
             [void](Invoke-Sql "CREATE DATABASE IF NOT EXISTS ``$db`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" -NoDatabase)
             $tables = Invoke-Sql 'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE();'
             if ($tables -ne '0') { throw 'Init chỉ dành cho database rỗng. Database cũ dùng preflight/migrate.' }
-            # [SỬA] Schema mới đã có cấu trúc 004; chỉ ghi lịch sử, không ALTER lại.
-            $sql = (Read-Sql 'schema.sql') + "`nINSERT INTO schema_migrations(version,status) VALUES('001_feature_based','applying'),('002_routine_review','applying'),('003_attribute_review','applying'),('004_business_rules','applying');`n" +
-                (Read-Modules) + "`n" + (Read-Sql 'seeders/001_reference.sql') + "`n" + (Read-Sql 'seeders/004_business_policy.sql') +
-                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE status='applying' AND version IN ('001_feature_based','002_routine_review','003_attribute_review','004_business_rules');"
+            # [SỬA] Schema mới đã có cấu trúc 005; chỉ ghi lịch sử, không ALTER lại.
+            $sql = (Read-Sql 'schema.sql') + "`nINSERT INTO schema_migrations(version,status) VALUES('001_feature_based','applying'),('002_routine_review','applying'),('003_attribute_review','applying'),('004_business_rules','applying'),('005_operations_ready','applying');`n" +
+                (Read-Modules) + "`n" + (Read-Sql 'seeders/001_reference.sql') + "`n" + (Read-Sql 'seeders/004_business_policy.sql') + "`n" + (Read-Sql 'seeders/005_operations_policy.sql') +
+                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE status='applying' AND version IN ('001_feature_based','002_routine_review','003_attribute_review','004_business_rules','005_operations_ready');"
             [void](Invoke-Sql $sql)
         }
         'preflight' {
@@ -131,7 +131,8 @@ try {
             } else {
                 $latest = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='003_attribute_review' AND status='applied';"
                 $has004 = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='004_business_rules' AND status='applied';"
-                $reportFile = if ($has004 -eq '1') { 'checks.sql' } elseif ($latest -eq '1') { 'migrations/004_preflight.sql' } else { 'migrations/003_preflight.sql' }
+                $has005 = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='005_operations_ready' AND status='applied';"
+                $reportFile = if ($has005 -eq '1') { 'checks.sql' } elseif ($has004 -eq '1') { 'migrations/005_preflight.sql' } elseif ($latest -eq '1') { 'migrations/004_preflight.sql' } else { 'migrations/003_preflight.sql' }
                 $report = Invoke-Sql (Read-Sql $reportFile)
                 Write-Output $report
                 Assert-Report $report
@@ -142,6 +143,7 @@ try {
             $hasHistory = Invoke-Sql "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='schema_migrations';"
             $sql = ''
             $has003 = '0'
+            $has004 = '0'
             if ($hasHistory -eq '0') {
                 $issues = Invoke-Sql (Read-Sql 'migrations/preflight.sql')
                 if ($issues) { throw "Dừng nâng cấp. Các vấn đề dữ liệu:`n$issues" }
@@ -154,17 +156,18 @@ try {
                 if ($dirty -ne '0') { throw 'Migration còn applying; kiểm tra DDL đã chạy, không tự tiếp tục.' }
                 $baseline = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='001_feature_based' AND status='applied';"
                 if ($baseline -ne '1') { throw 'Không nhận diện baseline 001; cần đối chiếu cấu trúc.' }
-                $unknown = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN ('001_feature_based','002_routine_review','003_attribute_review','004_business_rules');"
+                $unknown = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN ('001_feature_based','002_routine_review','003_attribute_review','004_business_rules','005_operations_ready');"
                 if ($unknown -ne '0') { throw 'Database có phiên bản mới hơn hoặc tùy chỉnh; không tự hạ phiên bản.' }
-                $done = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='004_business_rules' AND status='applied';"
+                $done = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='005_operations_ready' AND status='applied';"
                 if ($done -eq '1') {
                     $report = Invoke-Sql (Read-Sql 'checks.sql')
                     Assert-Report $report
-                    Write-Output 'Database đã ở 004; không chạy lại migration.'
+                    Write-Output 'Database đã ở 005; không chạy lại migration.'
                     break
                 }
                 $has003 = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='003_attribute_review' AND status='applied';"
-                $preflightFile = if ($has003 -eq '1') { 'migrations/004_preflight.sql' } else { 'migrations/003_preflight.sql' }
+                $has004 = Invoke-Sql "SELECT COUNT(*) FROM schema_migrations WHERE version='004_business_rules' AND status='applied';"
+                $preflightFile = if ($has004 -eq '1') { 'migrations/005_preflight.sql' } elseif ($has003 -eq '1') { 'migrations/004_preflight.sql' } else { 'migrations/003_preflight.sql' }
                 $report = Invoke-Sql (Read-Sql $preflightFile)
                 Write-Output $report
                 Assert-Report $report
@@ -172,10 +175,14 @@ try {
                 if ($has002 -eq '0') { $sql += (Read-Sql 'migrations/002_routine_review.sql') + "`n" }
             }
             if ($has003 -ne '1') { $sql += (Read-Sql 'migrations/003_attribute_review.sql') + "`n" }
-            $sql += (Read-Sql 'migrations/004_business_rules.sql') + "`n" + (Read-Modules) + "`n" +
-                (Read-Sql 'seeders/004_business_policy.sql') +
-                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE status='applying' AND version IN ('001_feature_based','002_routine_review','003_attribute_review','004_business_rules');"
+            if ($has004 -ne '1') { $sql += (Read-Sql 'migrations/004_business_rules.sql') + "`n" }
+            $sql += (Read-Sql 'migrations/005_operations_ready.sql') + "`n" + (Read-Modules) + "`n" +
+                (Read-Sql 'seeders/004_business_policy.sql') + "`n" + (Read-Sql 'seeders/005_operations_policy.sql') +
+                "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE status='applying' AND version IN ('001_feature_based','002_routine_review','003_attribute_review','004_business_rules','005_operations_ready');"
             [void](Invoke-Sql $sql)
+        }
+        'seed-courses' {
+            [void](Invoke-Sql (Read-Sql 'seeders/003_courses_example.sql'))
         }
         'seed-demo' {
             # [LƯU Ý] Chỉ cho nạp dữ liệu mẫu vào database thử nghiệm đã init và chưa có người dùng.
@@ -194,7 +201,7 @@ try {
             if ($settings.DB_NAME -notmatch '_test$') { throw 'Test chỉ chạy trên database có hậu tố _test.' }
             $users = Invoke-Sql 'SELECT COUNT(*) FROM users;'
             if ($users -ne '8') { throw 'Suite yêu cầu đúng demo đã seed, không dùng với dữ liệu thật.' }
-            foreach ($file in @('tests/integrity.sql','tests/regressions.sql','tests/attributes.sql','tests/workflows.sql','tests/business_rules.sql')) {
+            foreach ($file in @('tests/integrity.sql','tests/regressions.sql','tests/attributes.sql','tests/workflows.sql','tests/business_rules.sql','tests/operations_ready.sql')) {
                 Write-Output (Invoke-Sql (Read-Sql $file))
             }
         }

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([ValidateRange(1,65535)][int]$Port = 5000, [string]$DatabaseContainer = 'educenter-mysql')
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -26,7 +26,7 @@ try {
     $env:EDUCENTER_DB_CONTAINER = $DatabaseContainer
     Invoke-Docker compose build backend
     Invoke-Docker compose run --rm --no-deps backend composer install --no-interaction --prefer-dist
-    Invoke-Docker compose up -d backend
+    Invoke-Docker compose --profile tools up -d backend mailpit
     $healthy = $false
     for ($attempt=0; $attempt -lt 15; $attempt++) {
         try {

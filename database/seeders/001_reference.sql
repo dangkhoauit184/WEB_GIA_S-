@@ -42,7 +42,7 @@ INSERT INTO khu_vuc (id, ten) VALUES
  (1,'Thủ Đức'),(2,'Bình Thạnh'),(3,'Gò Vấp'),(4,'Phú Nhuận'),(5,'Tân Bình'),(6,'Quận 1'),(7,'Quận 3');
 
 INSERT INTO cau_hinh (khoa, gia_tri, mo_ta) VALUES
- ('checkin_truoc_phut','30','Được check-in sớm tối đa trước giờ học'),
+ ('checkin_truoc_phut','-1','Không giới hạn check-in sớm; phút công chỉ tính trong lịch phân công'),
  ('checkin_tre_sau_phut','0','Đến sau giờ lịch là trễ'),
  ('han_nhap_bao_cao_gio','24','Thời hạn người dạy nhập nhận xét & bài tập');
 

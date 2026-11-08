@@ -23,6 +23,19 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  mailpit:
+    image: axllent/mailpit:v1.27.4
+    profiles: [tools]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    networks:
+      - database
 networks:
   database:
     name: educenter-erp

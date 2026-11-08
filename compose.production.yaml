@@ -1,0 +1,63 @@
+# Standalone release stack: uses the existing MySQL container on educenter-erp.
+# docker compose --env-file config/deploy.env -f compose.production.yaml up -d --build
+name: educenter-release
+services:
+  backend:
+    image: educenter-php:release
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: application
+    restart: unless-stopped
+    env_file: config/server.env
+    environment:
+      CI_ENVIRONMENT: production
+      DB_HOST: ${EDUCENTER_DB_CONTAINER:-educenter-mysql}
+      DB_PORT: 3306
+    volumes:
+      - writable:/var/www/educenter/backend/writable
+    networks:
+      - database
+      - web
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/api/health') === false ? 1 : 0);"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      EDUCENTER_DOMAIN: ${EDUCENTER_DOMAIN:?Set EDUCENTER_DOMAIN in config/deploy.env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - web
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+networks:
+  database:
+    name: educenter-erp
+    external: true
+  web:
+volumes:
+  writable:
+  caddy_data:
+  caddy_config:

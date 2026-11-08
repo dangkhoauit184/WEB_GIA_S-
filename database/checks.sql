@@ -43,3 +43,13 @@ SELECT 'CAN_XAC_NHAN','hoa_don_cu_thieu_dau_vet_huy',COUNT(*) FROM hoa_don WHERE
 SELECT 'CAN_XAC_NHAN','phieu_cu_thieu_dau_vet_huy',COUNT(*) FROM thanh_toan WHERE trang_thai='da_huy' AND huy_luc IS NULL;
 SELECT 'CAN_XAC_NHAN','buoi_cu_thieu_dau_vet_huy',COUNT(*) FROM buoi_hoc WHERE trang_thai='huy' AND huy_luc IS NULL;
 SELECT 'CAN_XAC_NHAN','ky_luong_cu_thieu_dau_vet_tra',COUNT(*) FROM bang_cong_thang WHERE trang_thai='da_tra' AND tra_luc IS NULL;
+
+-- [THÊM] 005: Phiếu đối soát phải cùng học phí/số tiền. Trạng thái phiếu hủy vẫn giữ lịch sử lần nhận.
+SELECT 'VI_PHAM','giao_dich_lech_phieu_thu',COUNT(*) FROM giao_dich_truc_tuyen g
+JOIN thanh_toan t ON t.id=g.thanh_toan_id
+WHERE g.trang_thai='thanh_cong' AND (t.hoa_don_id<>g.hoa_don_id OR t.so_tien<>g.so_tien OR t.loai<>'thu' OR t.nguoi_thu_id<>g.xac_nhan_boi);
+-- Người giám hộ hiện tại có thể khác người đã thanh toán trong lịch sử; không sửa chứng từ cũ.
+SELECT 'CAN_XAC_NHAN','giao_dich_phu_huynh_khac_hien_tai',COUNT(*) FROM giao_dich_truc_tuyen g
+WHERE g.phu_huynh_id<>fn_phu_huynh_hoa_don(g.hoa_don_id);
+SELECT 'CAN_XAC_NHAN','ghi_danh_cu_chua_co_nguoi_xep',COUNT(*) FROM lop_hoc_vien
+WHERE dang_ky_khoa_hoc_id IS NOT NULL AND xep_boi IS NULL;

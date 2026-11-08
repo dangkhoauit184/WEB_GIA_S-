@@ -1,5 +1,7 @@
 # Đối chiếu và chuyển đổi theo IS207
 
+> Hiện hành: [baseline](business-rules-baseline.md) và [DB/server005](db-server-readiness.md). Các mốc/schema/quy tắc cũ bên dưới là lịch sử; ưu tiên xác nhận mới.
+
 Căn cứ file đề cương IS207 (1).pdf người dùng cung cấp, trang 3 và 6–8 đề cập PHP/MySQL, MVC, CodeIgniter, Ajax; phần bài tập 3 trang 17–19 yêu cầu PHP framework/MVC. Đồ án A1 trang 21 còn yêu cầu chức năng và tài liệu hoàn chỉnh. Chọn CodeIgniter 4 để bám sát framework được học; không đổi đề tài EduCenter thành đề bán hàng của phần bài tập khác.
 
 ## Đã chuyển trong đợt này

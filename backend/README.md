@@ -65,6 +65,10 @@ docker compose run --rm --no-deps backend composer test
 pwsh -File backend/scripts/test.ps1
 ```
 
-Core test không ghi database. Script thứ hai tạo container MySQL dùng một lần, chạy API tích hợp và 4 bộ SQL test rồi xóa container/volume tạm. Integration từ chối chạy nếu thiếu `TEST_WITH_DB=1` hoặc tên DB không kết thúc `_test`. Chi tiết chạy trực tiếp và triển khai: [server-setup](../docs/server-setup.md). Phạm vi đồ án còn lại: [IS207](../docs/is207-migration.md).
+Core test không ghi database. Script thứ hai tạo container MySQL dùng một lần, chạy API tích hợp và 6 bộ SQL test rồi xóa container/volume tạm. Integration từ chối chạy nếu thiếu `TEST_WITH_DB=1` hoặc tên DB không kết thúc `_test`. Chi tiết chạy trực tiếp và triển khai: [server-setup](../docs/server-setup.md). Phạm vi đồ án còn lại: [IS207](../docs/is207-migration.md).
 
 Suite quản trị chạy bằng `composer test:admin` trên môi trường DB kiểm thử tương tự `test:db`; đã được gọi trong script test.ps1 và CI. Hợp đồng request/response, quyền và giới hạn: [administration-api.md](../docs/administration-api.md).
+
+## DB/server 005
+
+`pwsh -File backend/scripts/doctor.ps1` kiểm tra môi trường đang chạy; SMTP local ở http://localhost:8025/. Bản release HTTPS: compose.production.yaml. [Bàn giao005](../docs/db-server-readiness.md) nêu rõ migration, sao lưu/restore, các thay đổi quyền cần cập nhật vào API cũ và thứ tự làm BE/FE. Lần005 chỉ thêm hạ tầng/config và sửa validator cấu hình để tương thích giá trị không giới hạn; chưa viết tính năng thanh toán/check-in.

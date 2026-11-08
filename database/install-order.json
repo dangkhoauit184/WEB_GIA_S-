@@ -2,6 +2,7 @@
   "routines/functions.sql",
   "routines/helpers.sql",
   "routines/business_rules.sql",
+  "routines/payments.sql",
   "routines/procedures.sql",
   "triggers/timekeeping.sql",
   "triggers/classes.sql",
@@ -9,5 +10,6 @@
   "triggers/academic.sql",
   "triggers/tuition.sql",
   "triggers/payroll.sql",
-  "triggers/business_rules.sql"
+  "triggers/business_rules.sql",
+  "triggers/payments.sql"
 ]

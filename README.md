@@ -1,12 +1,12 @@
 # EduCenter ERP — Quản lý trung tâm gia sư
 
-Nghiệp vụ hiện hành ở [business-rules-baseline](docs/business-rules-baseline.md); DB mới ở [database-004](docs/database-004.md).
+Nghiệp vụ hiện hành ở [business-rules-baseline](docs/business-rules-baseline.md); DB/server hiện hành ở [bàn giao 005](docs/db-server-readiness.md).
 
 Đồ án dùng **PHP 8.4 + CodeIgniter 4 (MVC, Ajax) + MySQL 8.4**. Backend đã chuyển từ Node.js/Express sang PHP để phù hợp đề cương IS207. Composer lock cố định phiên bản thư viện; chạy bằng Docker, không cần cài PHP trực tiếp trên Windows.
 
 ## Trạng thái
 
-- Database: schema 004 gồm 41 bảng, 47 trigger, 17 procedure/function, dữ liệu và quy trình cài đặt hiện có.
+- Database: schema 005 gồm 43 bảng, 57 trigger, 20 procedure/function, dữ liệu và quy trình cài đặt hiện có.
 - Backend: đăng nhập/JWT, phân quyền, phụ huynh/học viên, giáo viên/gia sư, gợi ý ghép BR02, lớp/ghi danh, lịch tuần/sinh buổi học BR03 đã có API PHP.
 - Quản trị: đã có API danh mục (môn, cấp lớp, khu vực, cơ sở, cấu hình), nhóm quyền/ma trận quyền và gán nhóm cho tài khoản. Xem [hợp đồng API quản trị](docs/administration-api.md).
 - Có trang MVC đăng nhập, xem/tìm dữ liệu và đổi mật khẩu qua Ajax tại `http://localhost:5000/`. Đây là giao diện khởi đầu; chưa triển khai toàn bộ màn hình Figma.
@@ -22,7 +22,7 @@ cd D:\WEB
 powershell -ExecutionPolicy Bypass -File backend/scripts/start.ps1
 ```
 
-Script bật lại container MySQL `educenter-mysql`, nối mạng nội bộ, cài Composer và chạy Apache/PHP. Nó dùng lại volume MySQL hiện có. Mở [ứng dụng](http://localhost:5000/) hoặc [health check](http://localhost:5000/api/health).
+Script bật SMTP local Mailpit (xem thư tại http://localhost:8025/), bật lại container MySQL `educenter-mysql`, nối mạng nội bộ, cài Composer và chạy Apache/PHP. Nó dùng lại volume MySQL hiện có. Mở [ứng dụng](http://localhost:5000/) hoặc [health check](http://localhost:5000/api/health).
 
 Nếu chưa có tài khoản ứng dụng:
 
@@ -33,6 +33,8 @@ powershell -ExecutionPolicy Bypass -File backend/scripts/bootstrap-admin.ps1
 Nếu `admin` đã tồn tại nhưng đang bị khóa bởi seed demo, thêm `-Reset` để chủ động đặt mật khẩu mới. Mật khẩu ứng dụng độc lập với mật khẩu MySQL. Token cũ của Node.js cần đăng nhập lại sau khi chuyển PHP.
 
 Máy mới: làm [database/README.md](database/README.md) trước, rồi [docs/server-setup.md](docs/server-setup.md). Không chạy lại schema lên database đang có dữ liệu.
+
+Kiểm tra môi trường bằng `pwsh -File backend/scripts/doctor.ps1`. Sao lưu/khôi phục thử, migration và cấu hình HTTPS release: [bàn giao DB/server](docs/db-server-readiness.md). Luồng web thanh toán/check-in/thông báo sẽ triển khai ở bước BE/FE; DB sẵn sàng không đồng nghĩa các màn hình này đã có.
 
 ## Cấu trúc
 

@@ -5,6 +5,8 @@
 **/.env
 **/.env.*
 config/server.env
+config/*.env
+**/__pycache__
 **/*.log
 backend/writable/*
 docs

@@ -1,5 +1,7 @@
 # Cơ sở dữ liệu EduCenter ERP
 
+> Hiện hành: [baseline](business-rules-baseline.md) và [DB/server005](db-server-readiness.md). Các mốc/schema/quy tắc cũ bên dưới là lịch sử; ưu tiên xác nhận mới.
+
 > Quy tắc hiện hành và cách nâng 003 → 004 ở [database-004](database-004.md). Các phần mô tả 001–003 dưới đây giữ để tham khảo lịch sử; hạn mức/phí bù đã được bỏ, chỉ Admin quản trị công-lương.
 
 Database phục vụ đồ án quản lý trung tâm gia sư và đào tạo. Phiên bản hiện tại: **004_business_rules**, gồm 41 bảng, 4 function, 13 procedure và 47 trigger.

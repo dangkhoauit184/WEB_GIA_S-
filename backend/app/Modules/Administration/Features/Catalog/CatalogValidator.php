@@ -42,12 +42,20 @@ final class CatalogValidator
 
     public static function setting(string $key,array $body): string
     {
+        // DB005: server policy uses -1 for an unlimited window, and no proof collection.
+        if ($key==='checkin_minh_chung') {
+            if (array_keys($body)!==['giaTri'] || $body['giaTri']!=='khong') Input::fail('giaTri');
+            return 'khong';
+        }
         $range=match($key) {
-            'checkin_truoc_phut','checkin_tre_sau_phut'=>[0,1440],
+            'checkin_truoc_phut','checkout_sau_phut'=>[-1,1440],
+            'checkin_tre_sau_phut'=>[0,1440],
             'han_nhap_bao_cao_gio'=>[1,8760],
             default=>throw new ApiException(404,'Không tìm thấy cấu hình được hỗ trợ.','SETTING_NOT_FOUND'),
         };
         if(array_diff(array_keys($body),['giaTri'])) Input::fail('fields');
+        if (in_array($key,['checkin_truoc_phut','checkout_sau_phut'],true)
+            && in_array($body['giaTri']??null,[-1,'-1'],true)) return '-1';
         $data=Input::validate($body,['giaTri'=>['integer',true]]);
         if($data['giaTri']<$range[0] || $data['giaTri']>$range[1]) Input::fail('giaTri');
         return (string)$data['giaTri'];

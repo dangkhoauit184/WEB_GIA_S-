@@ -1,5 +1,7 @@
 # Kết quả kiểm chứng database phiên bản 003
 
+> Hiện hành: [baseline](business-rules-baseline.md) và [DB/server005](db-server-readiness.md). Các mốc/schema/quy tắc cũ bên dưới là lịch sử; ưu tiên xác nhận mới.
+
 > Cập nhật 08/11/2026: [nghiệp vụ mới](business-rules-baseline.md) và [DB 004](database-004.md) được ưu tiên nếu khác nội dung lịch sử dưới đây. Chỉ Admin quản trị công-lương, thu trọn khóa, học bù theo thỏa thuận không hạn mức/phí.
 
 Ngày chạy: **03/11/2026**. Môi trường: MySQL Community Server **8.4.13**, Windows, InnoDB, utf8mb4, session `+07:00`, `READ COMMITTED`, PowerShell 7.

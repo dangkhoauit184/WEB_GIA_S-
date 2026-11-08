@@ -1,8 +1,29 @@
 # Hướng dẫn chạy database EduCenter ERP
 
-> Quy tắc hiện hành và cách nâng 003 → 004 ở [database-004](../docs/database-004.md). Các phần mô tả 001–003 dưới đây giữ để tham khảo lịch sử; hạn mức/phí bù đã được bỏ, chỉ Admin quản trị công-lương.
+> Bản hiện hành **005_operations_ready**: [bàn giao DB/server](../docs/db-server-readiness.md), gồm thanh toán/thông báo và check-in chỉ bấm nút, không giới hạn sớm/muộn. Lịch sử 003 → 004 ở [database-004](../docs/database-004.md); hạn mức/phí bù đã bỏ, chỉ Admin quản trị công-lương.
 
-**Chạy các lệnh từ thư mục gốc repository**, không phải từ bên trong `database/`. Phiên bản schema hiện tại là `004_business_rules`.
+**Chạy các lệnh từ thư mục gốc repository**, không phải từ bên trong `database/`. Phiên bản schema hiện tại là `005_operations_ready`.
+
+## Bắt đầu với Docker trên Windows
+
+Máy hiện có database dùng lại container/volume cũ. Máy mới cũng chạy được lệnh sau sau khi cài Docker Desktop, PowerShell7 và mở Engine:
+
+```powershell
+pwsh -File database/scripts/start-local.ps1
+```
+
+Script tái sử dụng container cũ; chỉ khi chưa có container/volume mới tạo MySQL8.4, lưu mật khẩu root ngẫu nhiên riêng vào config/mysql.env (đã gitignore). Không in mật khẩu, không xóa dữ liệu, không tự migrate/seed. Nếu chỉ còn volume, script dừng để tránh khởi tạo nhầm.
+
+Tiếp theo tạo config/server.env từ mẫu, điền DB_NAME, DB_USER/DB_PASSWORD ứng dụng và JWT_SECRET riêng. Cài database mới bằng:
+
+```powershell
+pwsh -File database/scripts/run.ps1 -Action init -Container educenter-mysql -EnvFile config/server.env
+pwsh -File database/scripts/run.ps1 -Action check -Container educenter-mysql -EnvFile config/server.env
+```
+
+DB cũ dùng backup/verify → preflight → migrate → check theo [bàn giao005](../docs/db-server-readiness.md), không init lại. Sau đó tạo user API và chạy PHP theo [server-setup](../docs/server-setup.md). Với máy đang dùng, không sao chép đè file env riêng.
+
+Các bước dưới đây dành cho MySQL CLI cài trực tiếp; dùng Docker thì không cần cài thêm MySQL Server/mysql.exe trên Windows.
 
 ## 1. Chuẩn bị trước khi chạy
 
@@ -62,22 +83,14 @@ pwsh -File database/scripts/run.ps1 -Action check
 
 | Bước | File / thao tác |
 | --- | --- |
-| 1 | `schema.sql`: tạo cấu trúc bảng mới nhất |
-| 2 | Ghi lịch sử 001/002/003/004 ở trạng thái `applying` |
-| 3 | `routines/functions.sql` |
-| 4 | `routines/helpers.sql` |
-| 5 | `routines/procedures.sql` |
-| 6 | `triggers/timekeeping.sql` |
-| 7 | `triggers/classes.sql` |
-| 8 | `triggers/scheduling.sql` |
-| 9 | `triggers/academic.sql` |
-| 10 | `triggers/tuition.sql` |
-| 11 | `triggers/payroll.sql` |
-| 12 | `seeders/001_reference.sql`: nạp danh mục chuẩn |
-| 13 | Đánh dấu các phiên bản đã `applied` |
-| 14 | Lệnh `check` chạy `checks.sql` để kiểm tra |
+| 1 | schema.sql: cấu trúc005; ghi lịch sử001–005 applying |
+| 2 | functions → helpers → business_rules → payments → procedures trong routines/ |
+| 3 | timekeeping → classes → scheduling → academic → tuition → payroll → business_rules → payments trong triggers/ |
+| 4 | seeders/001_reference.sql → 004_business_policy.sql → 005_operations_policy.sql |
+| 5 | Đánh dấu applying thành applied, giữ applied_at của phiên bản cũ |
+| 6 | check chạy checks.sql |
 
-Thứ tự routine/trigger được quản lý tại [install-order.json](install-order.json). Cài mới **không chạy lại các file migration**, vì `schema.sql` đã là cấu trúc 004. `init` chưa tạo tài khoản Admin ứng dụng hay dữ liệu người dùng. Policy 004 chỉ điều chỉnh đúng quyền công-lương và ngưỡng đánh trễ.
+Thứ tự routine/trigger được quản lý tại [install-order.json](install-order.json). Cài mới **không chạy lại các file migration**, vì `schema.sql` đã là cấu trúc 005. `init` chưa tạo tài khoản Admin ứng dụng hay dữ liệu người dùng. Policy 004 chỉ điều chỉnh đúng quyền công-lương và ngưỡng đánh trễ.
 
 Kết quả mong đợi là `Hoàn tất thao tác Database: init.`, sau đó `check` không có dòng `VI_PHAM` khác 0. Dòng `CAN_XAC_NHAN` cần được đối chiếu theo [thiết kế database](../docs/database-design.md).
 
@@ -92,7 +105,7 @@ pwsh -File database/scripts/run.ps1 -Action check
 ```
 
 - `preflight`: kiểm tra dữ liệu trước khi thay đổi.
-- `migrate`: nhận diện SQL gốc/001/002/003, chạy phần còn thiếu theo thứ tự 001 → 002 → 003 → 004, nạp routine và trigger. Database đã ở 004 được kiểm tra, không ALTER lại. Backup/restore thử trước khi nâng cấp.
+- `migrate`: nhận diện SQL gốc/001/002/003/004, chạy phần còn thiếu theo thứ tự 001 → 002 → 003 → 004 → 005, nạp routine và trigger. Database đã ở 005 được kiểm tra, không ALTER lại. Backup/restore thử trước khi nâng cấp.
 - `check`: kiểm tra toàn vẹn sau nâng cấp.
 
 Nếu có `VI_PHAM` hoặc migration còn `applying`, dừng và đối chiếu dữ liệu/tiến độ. MySQL DDL tự COMMIT; không xóa trạng thái để chạy lại tùy ý. Không import `schema.sql` lên database đang có dữ liệu. Chi tiết thay đổi tại [docs/database-design.md](../docs/database-design.md).
@@ -111,9 +124,9 @@ pwsh -File database/scripts/run.ps1 -Action test -EnvFile database/.env.test.loc
 pwsh -File database/scripts/run.ps1 -Action check -EnvFile database/.env.test.local
 ```
 
-`seed-demo` chạy `seeders/002_demo.sql`, yêu cầu chưa có người dùng; không nạp demo hai lần. `test` lần lượt chạy `integrity.sql` → `regressions.sql` → `attributes.sql` → `workflows.sql` → `business_rules.sql` trong `database/tests/`. Có 78 ca SQL (51 hồi quy + 27 nghiệp vụ 004); các suite có COMMIT làm thay đổi demo. Tài khoản demo bị khóa, không phải tài khoản đăng nhập của demo HTML.
+`seed-demo` chạy `seeders/002_demo.sql`, yêu cầu chưa có người dùng; không nạp demo hai lần. `test` lần lượt chạy `integrity.sql` → `regressions.sql` → `attributes.sql` → `workflows.sql` → `business_rules.sql` → `operations_ready.sql` trong `database/tests/`. Có 98 ca SQL (51 hồi quy + 27 nghiệp vụ004 + 20 nghiệp vụ005); các suite có COMMIT làm thay đổi demo. Tài khoản demo bị khóa, không phải tài khoản đăng nhập của demo HTML.
 
-Với Docker hiện có, dùng PowerShell 7 và `-Container educenter-mysql -EnvFile config/server.env` cho các Action. Script đọc mật khẩu root bên trong container; không cần cài mysql.exe trên Windows. Chỉ dùng tùy chọn này cho môi trường Docker local được bạn quản lý. Chi tiết nâng cấp và kiểm chứng ở [DB 004](../docs/database-004.md).
+Với Docker hiện có, dùng PowerShell 7 và `-Container educenter-mysql -EnvFile config/server.env` cho các Action. Script đọc mật khẩu root bên trong container; không cần cài mysql.exe trên Windows. Chỉ dùng tùy chọn này cho Docker local được bạn quản lý. Chi tiết nâng cấp/backup ở [DB/server005](../docs/db-server-readiness.md).
 
 Kiểm tra cấu trúc repository, không cần MySQL:
 
@@ -138,4 +151,4 @@ Kết quả SQL đã ghi nhận trước đây tại [docs/database-validation.m
 
 SQL gốc ở `docs/reference/database/schema-original.sql` chứa lệnh xóa database và chỉ phục vụ tham khảo. File đó không nằm trong thứ tự cài đặt.
 
-Sau khi database sẵn sàng, xem [hướng dẫn cấu hình server](../docs/server-setup.md). Frontend/backend hiện chỉ là file khung rỗng, chưa có chương trình kết nối database.
+Sau khi database sẵn sàng, xem [hướng dẫn cấu hình server](../docs/server-setup.md). Backend PHP đã có một số API và trang đăng nhập; frontend vẫn giữ khung. Phạm vi còn lại ghi tại [bàn giao DB/server](../docs/db-server-readiness.md).

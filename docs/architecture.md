@@ -1,5 +1,7 @@
 # TÀI LIỆU KIẾN TRÚC & QUY TẮC NGHIỆP VỤ (V2.0)
 
+> Hiện hành: [baseline](business-rules-baseline.md) và [DB/server005](db-server-readiness.md). Các mốc/schema/quy tắc cũ bên dưới là lịch sử; ưu tiên xác nhận mới.
+
 > Cập nhật 08/11/2026: [nghiệp vụ mới](business-rules-baseline.md) và [DB 004](database-004.md) được ưu tiên nếu khác nội dung lịch sử dưới đây. Chỉ Admin quản trị công-lương, thu trọn khóa, học bù theo thỏa thuận không hạn mức/phí.
 
 Hệ thống Quản trị Trung tâm Gia sư & Đào tạo EduCenter ERP tuân thủ nghiêm ngặt 20 Business Rules (`BR01` - `BR20`) được đặc tả chi tiết dưới đây:
