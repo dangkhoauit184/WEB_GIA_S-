@@ -242,7 +242,7 @@ Không dùng Reset như một lệnh khởi động hằng ngày. Mật khẩu M
 
 Bản web hiện có đăng nhập/đổi mật khẩu, tra cứu/tìm học viên, lớp và lịch qua Ajax; các API hồ sơ/quản trị nêu trong [tiến độ](thong-tin-do-an.md#tien-do). Các màn Figma chưa được code đầy đủ. Thanh toán, check-in, học bù, lương và thông báo chưa có đầy đủ API/màn hình dù DB đã hỗ trợ dữ liệu. Mailpit chỉ hứng thư thử, không tự gửi thông báo khi chưa có worker BE.
 
-Demo HTML tại [reference/demo/index.html](../reference/demo/index.html) là bản minh họa dùng localStorage, có đăng nhập nhanh riêng, không gọi PHP/MySQL. Không dùng demo đó để kết luận hệ thống thật đã chạy một tính năng.
+Demo HTML tại [docs/demo/index.html](demo/index.html) là bản minh họa dùng localStorage, có đăng nhập nhanh riêng, không gọi PHP/MySQL. Không dùng demo đó để kết luận hệ thống thật đã chạy một tính năng.
 
 <a id="hang-ngay"></a>
 ## 8. Chạy hằng ngày và cập nhật mã nguồn

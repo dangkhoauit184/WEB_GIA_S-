@@ -412,7 +412,7 @@ Nguồn giữ nguyên byte:
 
 - [Word nghiệp vụ gốc](../reference/quy_trinh_nghiep_vu_v2.docx): chỉ tham khảo lịch sử khi khác quyết định mới.
 - [SQL gốc](../reference/database/schema-original.sql): không chạy vào DB hiện có.
-- [Demo HTML](../reference/demo/index.html): mô phỏng, không gọi API thật.
+- [Demo HTML](demo/index.html): mô phỏng, không gọi API thật.
 - [Manifest hash](../reference/preserved-files.json): kiểm tra bảo toàn3 nguồn trên.
 
 Đề cương IS207 PDF là file chủ đồ án cung cấp trong cuộc trao đổi, không được tự thêm bản vào repo. Mật khẩu web/DB/JWT, file env cá nhân, backup và tài khoản merchant không nằm trong hai tài liệu hoặc lịch sử code được chủ động bổ sung.
