@@ -1,20 +1,14 @@
-# Quy ước công nghệ của dự án
+# Quy ước làm việc với EduCenter ERP
 
-- Backend của EduCenter ERP phải sử dụng **PHP**, theo yêu cầu người dùng ngày 08/11/2026.
-- Database sử dụng **MySQL 8.4**. Môi trường phát triển hiện chạy MySQL bằng Docker, truy cập từ Windows qua `127.0.0.1:3307`.
-- Các feature backend triển khai tiếp theo cần tuân theo lựa chọn PHP và cấu trúc module → feature của dự án.
-- Căn cứ đề cương IS207 người dùng cung cấp (`C:/Users/dkhoa/Downloads/IS207 (1).pdf`, 21 trang):
-  - Trang 3: G3.1/G3.2 yêu cầu PHP và kết nối, truy vấn MySQL trong PHP; G5.1/G5.2 đề cập MVC và CodeIgniter.
-  - Trang 6-8: nội dung giảng dạy, thực hành và rubric G5 có CodeIgniter, MVC, Ajax.
-  - Trang 17-19: bài tập 3 yêu cầu sử dụng framework PHP và tổ chức code theo MVC.
-  - Trang 21: đồ án A1 gồm khảo sát, phân quyền, thiết kế và nhập dữ liệu, giao diện, chức năng tìm kiếm/in ấn/thêm-xóa-sửa/thống kê/hiển thị/gửi mail, triển khai server và báo cáo.
-- Backend dùng **CodeIgniter 4**, MVC và Ajax, đã chuyển từ Node.js theo yêu cầu người dùng. PHP 8.4 chạy qua Docker; Composer lock được commit, `vendor/` không commit.
-- Đối chiếu EduCenter với bộ tiêu chí đồ án A1 ở trang 21. Các đề giỏ hàng, bán hàng và SB-Admin 2 trong phần bài tập được xem trong đúng phạm vi bài tập tương ứng.
-- Mã nghiệp vụ nằm tại `backend/app/Modules/<Module>/Features/<Feature>/`. Không thêm server Node.js song song.
-- Giữ nguyên dữ liệu MySQL đang dùng. Chỉ chạy integration test trên database riêng có tên kết thúc `_test`, với `TEST_WITH_DB=1`.
-- Giữ 4 README của dự án và 1 mẫu PR. Feature chưa triển khai giữ khung PHP có chú thích TODO, không quảng cáo là hoàn tất.
-- Người dùng đã yêu cầu ưu tiên chốt nghiệp vụ, thiết kế DB và môi trường server trước khi viết tiếp backend/frontend. Câu hỏi về việc "nên code chưa" không phải lệnh triển khai. Chỉ viết tiếp tính năng khi người dùng yêu cầu thực hiện trong phạm vi đã rõ.
-- Quyết định nghiệp vụ mới và câu hỏi còn mở nằm tại `docs/business-rules-baseline.md`; ưu tiên các quyết định người dùng đã xác nhận so với Word/Markdown cũ. Không tự biến phần đề xuất hoặc câu hỏi còn mở thành quy tắc đã chốt; không áp dụng migration chỉ vì đã có bản rà soát.
-- Người dùng đã yêu cầu áp dụng DB theo nghiệp vụ mới. Phiên bản hiện hành `004_business_rules`: thu trọn khóa, KHÔNG có kỳ thu/hạn mức/phí bù; giáo vụ xếp bù theo thỏa thuận; chỉ Admin quản trị công/lương. Check-in 18:10 → out 20:05 trên lịch 18–20 tính 110 phút/trễ; out 19:30 tính 80 phút/trễ. Đơn giá tiền/giờ tăng từ lúc thay đổi, giữ ca đã dạy.
-- Xác nhận tiếp theo 08/11/2026: chỉ bấm check-in/out, không GPS/ảnh, không giới hạn đến sớm/về muộn; giữ cách tính giao khung lịch và trễ ở trên. Bù do gia đình/trung tâm thỏa thuận ngoài hệ thống, giáo vụ chỉ lưu lịch loại bù; không bắt buộc đơn xin bù. Chỉ Admin xếp lớp, độc lập với tình trạng thanh toán. Phát hành học phí thông báo phụ huynh; thanh toán xác nhận xong Admin và giáo vụ đều xem được.
-- DB mới nhất `005_operations_ready`: dữ liệu yêu cầu thanh toán/webhook chống trùng, phiếu thu xác nhận Admin, thông báo học phí, dấu vết xếp lớp và chính sách check-in. Xem `docs/db-server-readiness.md` trước khi viết BE/FE. Chưa tích hợp cổng thanh toán/worker email hoặc cấp VPS/domain; không báo là tính năng web đã xong chỉ vì có DB/server.
+- Backend **PHP 8.4 / CodeIgniter 4**, MVC/Ajax, MySQL 8.4; không thêm Node backend song song. Lựa chọn bám đề cương IS207: PHP/MySQL/MVC/CodeIgniter, yêu cầu đồ án A1.
+- Source BE tại backend/app/Modules/Module/Features/Feature, FE tại frontend/src/modules/module/features/feature; manifest shared/modules.json có 6 module/21 feature. Feature chưa làm giữ TODO/status planned, không báo hoàn tất.
+- `docs` chỉ có **2 file chính thức** theo yêu cầu09/11/2026: [hướng dẫn cài/chạy cho đồng đội](docs/huong-dan-cai-dat-va-su-dung.md) và [thông tin/đặc tả đồ án](docs/thong-tin-do-an.md). Mọi cập nhật tài liệu thêm vào đúng file, không tạo Markdown thứ ba trong docs.
+- Giữ4 README (gốc/backend/frontend/database) làm chỉ dẫn ngắn và 1 mẫu PR. Word/demo/SQL gốc nằm tại reference/, bảo toàn nội dung/hash theo reference/preserved-files.json; bản cũ chỉ tham khảo khi khác đặc tả hiện hành.
+- Quyết định trực tiếp mới của người dùng ưu tiên hơn Word/Figma/tài liệu lịch sử. Không tự biến đề xuất/câu hỏi thành quy tắc hoặc áp migration chỉ vì có bản rà soát.
+- Người dùng ưu tiên nghiệp vụ/DB/server trước BE/FE; câu hỏi “nên code chưa” không phải lệnh viết tính năng. Chỉ triển khai trong phạm vi đã giao rõ.
+- DB hiện hành005_operations_ready. Giữ container educenter-mysql, volume educenter_mysql_data, dữ liệu và env/secret riêng. Local Windows gọi127.0.0.1:3307; PHP container gọiDB:3306. Không ghi mật khẩu/token/backup vào repo.
+- Integration/SQL suite chỉ chạy DB riêng tên `_test`, PHP integration thêm TEST_WITH_DB=1. MySQL DDL tự COMMIT: backup/restore thử→preflight→migrate→check, không xóa marker applying hoặc dùng init đè DB cũ.
+- Nghiệp vụ: thu trọn khóa; không kỳ thu, hạn mức/phí bù; giáo vụ nhập bù theo thỏa thuận ngoài hệ thống, không bắt buộc đơn. Chỉ Admin xếp lớp, độc lập tiền; nghỉ cả lớp do Admin, nghỉ cá nhân giáo vụ.
+- Check-in/out chỉ bấm nút/giờ server, không GPS/ảnh và không giới hạn sớm/muộn. Phút công là giao thời gian có mặt với lịch; lịch18–20, vào18:10/ra20:05=110 phút/trễ, ra19:30=80 phút/trễ. Không cộng giờ ngoài lịch.
+- Lương tiền/giờ theo người, chỉ Admin xem/sửa/duyệt/chốt/trả/mở. Tăng giá từ lúc đổi, giữ ca đã bắt đầu. Kỳ đã trả chưa có quy trình mở/sửa tự động. Một học viên một phụ huynh, một phụ huynh nhiều con; một bài chấm mỗi buổi/học viên.
+- DB 005 có intent/event chống trùng, Admin đối soát phiếu thu và thông báo học phí, chưa có tích hợp gateway/worker/màn FE thật. API cũ còn cần che lương và chỉ Admin xếp lớp; đọc mục Tiến độ trong đặc tả trước khi giao việc. Không báo đã deploy public/thanh toán thật khi chỉ có DB/config.
