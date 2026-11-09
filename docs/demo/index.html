@@ -264,9 +264,377 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
   #modalPrintPreview .no-print{display:none!important}
 }
 
+/* ═══════════════════════════════════════
+   PUBLIC WEBSITE / LANDING PAGE STYLES
+   ═══════════════════════════════════════ */
+.pub-page{display:none;min-height:100vh;background:#f8fafc;color:var(--g900)}
+.pub-page.show{display:block}
+.pub-nav{position:sticky;top:0;z-index:80;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--g200);padding:0 24px;height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.pub-nav-inner{max-width:1260px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.pub-links{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pub-links a{text-decoration:none;color:var(--g700);font-size:13.5px;font-weight:600;padding:7px 12px;border-radius:var(--rs);transition:all .15s;cursor:pointer}
+.pub-links a:hover,.pub-links a.active{color:var(--pri-d);background:var(--pri-ll)}
+.pub-hero{background:radial-gradient(circle at 85% 20%,rgba(20,184,166,.22),transparent 42%),radial-gradient(circle at 15% 80%,rgba(59,130,246,.18),transparent 45%),linear-gradient(135deg,#0f172a 0%,#134e4a 100%);color:#fff;padding:64px 24px 56px}
+.pub-container{max-width:1260px;margin:0 auto}
+.pub-hero-grid{display:grid;grid-template-columns:1.25fr .95fr;gap:36px;align-items:center}
+.pub-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(20,184,166,.2);border:1px solid rgba(94,234,212,.35);color:#5eead4;padding:5px 14px;border-radius:99px;font-size:12px;font-weight:600;margin-bottom:16px}
+.pub-hero h1{font-size:2.35rem;line-height:1.2;font-weight:800;margin-bottom:14px;letter-spacing:-.02em;color:#fff}
+.pub-hero p{font-size:15px;color:#cbd5e1;line-height:1.65;margin-bottom:24px;max-width:600px}
+.pub-hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px;padding-top:26px;border-top:1px solid rgba(255,255,255,.12)}
+.pub-hstat b{display:block;font-size:1.55rem;font-weight:800;color:#5eead4}
+.pub-hstat span{font-size:12px;color:#cbd5e1}
+.pub-hero-card{background:rgba(255,255,255,.07);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.pub-sec{padding:56px 24px}
+.pub-sec.alt{background:#fff;border-top:1px solid var(--g200);border-bottom:1px solid var(--g200)}
+.pub-sec-head{text-align:center;max-width:680px;margin:0 auto 36px}
+.pub-sec-head .sub-tag{display:inline-block;background:var(--pri-ll);color:var(--pri-d);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:4px 12px;border-radius:99px;margin-bottom:8px}
+.pub-sec-head h2{font-size:1.7rem;font-weight:800;color:var(--g900);justify-content:center;margin-bottom:8px}
+.pub-sec-head p{font-size:14px;color:var(--g500);margin:0}
+.pub-feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.pub-feat-card{background:#fff;border:1px solid var(--g200);border-radius:14px;padding:22px;transition:transform .15s,box-shadow .15s}
+.pub-feat-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(0,0,0,.07);border-color:var(--pri-l)}
+.pub-feat-ico{width:44px;height:44px;border-radius:10px;background:var(--pri-ll);color:var(--pri-d);display:grid;place-items:center;font-size:22px;margin-bottom:14px}
+.pub-feat-card h3{font-size:15px;font-weight:700;margin-bottom:6px;color:var(--g900)}
+.pub-feat-card p{font-size:13px;color:var(--g600);line-height:1.55;margin:0}
+.pub-course-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.pub-course-card{background:#fff;border:1px solid var(--g200);border-radius:14px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;transition:all .15s;position:relative;overflow:hidden}
+.pub-course-card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(0,0,0,.08);border-color:var(--pri)}
+.pub-course-card .c-price{font-size:1.35rem;font-weight:800;color:var(--pri-d)}
+.pub-tutor-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.pub-tutor-card{background:#fff;border:1px solid var(--g200);border-radius:14px;padding:20px;display:flex;flex-direction:column;justify-content:space-between;transition:all .15s}
+.pub-tutor-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.07);border-color:var(--pri-l)}
+.pub-avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--info));color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;flex-shrink:0}
+.pub-contact-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:28px;align-items:start}
+.pub-footer{background:#0f172a;color:#94a3b8;padding:42px 24px 28px;font-size:13px}
+.pub-footer b{color:#fff}
+@media(max-width:1024px){
+  .pub-hero-grid,.pub-contact-grid{grid-template-columns:1fr}
+  .pub-feat-grid,.pub-tutor-grid{grid-template-columns:repeat(2,1fr)}
+  .pub-course-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .pub-feat-grid,.pub-tutor-grid,.pub-course-grid,.pub-hero-stats{grid-template-columns:1fr}
+  .pub-hero h1{font-size:1.75rem}
+}
+
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════
+     PUBLIC WEBSITE / LANDING PAGE (KHÁCH CHƯA ĐĂNG NHẬP XEM ĐƯỢC)
+     ═══════════════════════════════════════ -->
+<div id="publicLanding" class="pub-page">
+  <!-- Sticky Public Header -->
+  <header class="pub-nav">
+    <div class="pub-nav-inner">
+      <div class="row" style="gap:10px;cursor:pointer" onclick="scrollPublicSection('pubHero')">
+        <div class="brand-icon" style="width:38px;height:38px;font-size:18px">E</div>
+        <div>
+          <b style="font-size:16px;color:var(--g900);display:block;line-height:1.1">EduCenter Vietnam</b>
+          <small style="font-size:11px;color:var(--g500)">Trung tâm Gia sư &amp; Đào tạo Chất lượng cao</small>
+        </div>
+      </div>
+
+      <nav class="pub-links">
+        <a onclick="scrollPublicSection('pubHero')">Trang chủ</a>
+        <a onclick="scrollPublicSection('pubHighlights')">Điểm nổi bật</a>
+        <a onclick="scrollPublicSection('pubCourses')">Khóa học &amp; Học phí</a>
+        <a onclick="scrollPublicSection('pubTeachers')">Đội ngũ Giáo viên/Gia sư</a>
+        <a onclick="scrollPublicSection('pubConsult')">Liên hệ &amp; Đăng ký tư vấn</a>
+      </nav>
+
+      <div class="row" style="gap:8px">
+        <button type="button" class="btn sm" onclick="scrollPublicSection('pubConsult')">📝 Đăng ký học / Tìm gia sư</button>
+        <button type="button" class="btn p sm" id="pubLoginBtn" onclick="showLoginScreen()">🔐 Đăng nhập Hệ thống</button>
+        <button type="button" class="btn dark sm" id="pubBackErpBtn" style="display:none" onclick="returnToErpFromLanding()">🚀 Vào Cổng Quản lý</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1. TRANG CHỦ: HERO & GIỚI THIỆU TRUNG TÂM -->
+  <section class="pub-hero" id="pubHero">
+    <div class="pub-container">
+      <div class="pub-hero-grid">
+        <div>
+          <div class="pub-badge">✨ Hệ thống Đào tạo &amp; Gia sư Chuẩn hóa Quy trình Học vụ</div>
+          <h1>Đồng hành cùng Học sinh Bứt phá Điểm số với Lộ trình Cá nhân hóa</h1>
+          <p>
+            <b>EduCenter</b> kết nối học sinh từ Lớp 1 – Lớp 12 với đội ngũ Giáo viên cơ hữu, Gia sư 1:1 và Trợ giảng giỏi chuyên môn tại TP.HCM &amp; Online. Cam kết học phí trọn khóa minh bạch, theo dõi điểm số và sổ học vụ trực tiếp sau từng buổi học.
+          </p>
+          <div class="row" style="gap:12px;flex-wrap:wrap">
+            <button type="button" class="btn p" style="padding:11px 20px;font-size:14px;font-weight:700" onclick="scrollPublicSection('pubConsult')">🚀 Đăng ký Tư vấn &amp; Tìm Gia sư</button>
+            <button type="button" class="btn" style="padding:11px 18px;font-size:14px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff" onclick="scrollPublicSection('pubCourses')">📚 Xem Danh mục Khóa học &amp; Học phí</button>
+            <button type="button" class="btn" style="padding:11px 16px;font-size:13px;background:rgba(13,148,136,.25);border-color:#5eead4;color:#5eead4" onclick="showLoginScreen()">🔐 Cổng Đăng nhập (6 Vai trò)</button>
+          </div>
+
+          <div class="pub-hero-stats">
+            <div class="pub-hstat"><b>1.500+</b><span>Học viên đang theo học</span></div>
+            <div class="pub-hstat"><b>120+</b><span>Giáo viên &amp; Gia sư tuyển chọn</span></div>
+            <div class="pub-hstat"><b>96.4%</b><span>Phụ huynh hài lòng &amp; tiến bộ</span></div>
+            <div class="pub-hstat"><b>3 Cơ sở</b><span>Thủ Đức · Quận 1 · Quận 3 &amp; Online</span></div>
+          </div>
+        </div>
+
+        <!-- Khung tra cứu nhanh & Đăng nhập nhanh cổng thành viên -->
+        <div class="pub-hero-card">
+          <div class="row-b" style="margin-bottom:12px">
+            <span class="tag ok" style="background:#0d9488;color:#fff">🌱 Tuyển sinh Học kỳ Mới 2026</span>
+            <span style="font-size:12px;color:#94a3b8">Hotline: <b style="color:#fff">1900 6868</b></span>
+          </div>
+          <h3 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Vì sao Phụ huynh chọn EduCenter?</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#e2e8f0;margin-bottom:18px">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <span style="color:#5eead4;font-weight:800">✓</span>
+              <div><b>Duyệt hồ sơ Gia sư trực tuyến:</b> Phụ huynh xem trước chuyên môn, kinh nghiệm và xác nhận đồng ý trước khi xếp lớp.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <span style="color:#5eead4;font-weight:800">✓</span>
+              <div><b>Học phí trọn khóa rõ ràng:</b> Thu trọn gói theo khóa học đăng ký, không thu phí ẩn, thanh toán trực tuyến qua Web.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <span style="color:#5eead4;font-weight:800">✓</span>
+              <div><b>Sổ buổi học điện tử minh bạch:</b> Cập nhật chuyên cần, điểm chấm bài từng buổi và phiếu BTVN PDF ngay trên Cổng Phụ huynh.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <span style="color:#5eead4;font-weight:800">✓</span>
+              <div><b>Hỗ trợ xếp lịch học bù linh hoạt:</b> Học sinh bận đột xuất được Giáo vụ thỏa thuận và xếp lịch học bù phù hợp.</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(15,23,42,.55);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px">
+            <div style="font-size:11.5px;font-weight:700;color:#5eead4;margin-bottom:8px">⚡ DÀNH CHO THÀNH VIÊN &amp; HỘI ĐỒNG CHẤM ĐỒ ÁN (VÀO CỔNG NHANH):</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+              <button type="button" class="btn sm" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff;justify-content:center" onclick="quickLogin('admin')">👑 Cổng Admin</button>
+              <button type="button" class="btn sm" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff;justify-content:center" onclick="quickLogin('staff')">📋 Cổng Giáo vụ</button>
+              <button type="button" class="btn sm" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff;justify-content:center" onclick="quickLogin('teacher')">👨‍🏫 Giáo viên</button>
+              <button type="button" class="btn sm" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff;justify-content:center" onclick="quickLogin('tutor')">🎓 Gia sư 1:1</button>
+              <button type="button" class="btn sm" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff;justify-content:center" onclick="quickLogin('ta')">🤝 Trợ giảng</button>
+              <button type="button" class="btn sm" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff;justify-content:center" onclick="quickLogin('parent')">👨‍👩‍👧 Phụ huynh</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. ĐIỂM NỔI BẬT CỦA TRUNG TÂM -->
+  <section class="pub-sec" id="pubHighlights">
+    <div class="pub-container">
+      <div class="pub-sec-head">
+        <span class="sub-tag">Điểm khác biệt của EduCenter</span>
+        <h2>Mô hình Đào tạo Kết hợp Lớp Nhóm &amp; Gia sư Kèm 1:1</h2>
+        <p>Quy trình quản lý chất lượng khép kín từ khâu tư vấn xếp lớp, điểm danh ca dạy đến đánh giá sự tiến bộ từng buổi học.</p>
+      </div>
+
+      <div class="pub-feat-grid">
+        <div class="pub-feat-card">
+          <div class="pub-feat-ico">🎯</div>
+          <h3>Tuyển chọn &amp; Ghép Gia sư Chuẩn xác</h3>
+          <p>Hệ thống đối chiếu tự động chuyên môn, khu vực và khung giờ rảnh để đề xuất Giáo viên/Gia sư phù hợp nhất với từng học sinh.</p>
+        </div>
+        <div class="pub-feat-card">
+          <div class="pub-feat-ico">📖</div>
+          <h3>Chấm bài &amp; Nhận xét Mỗi buổi học</h3>
+          <p>100% buổi học đều có sổ đầu bài điện tử, chấm điểm bài tập trên lớp và giao phiếu bài tập PDF để Phụ huynh nắm sát việc học của con.</p>
+        </div>
+        <div class="pub-feat-card">
+          <div class="pub-feat-ico">🔄</div>
+          <h3>Chính sách Học bù Thỏa thuận</h3>
+          <p>Học sinh nghỉ có phép được bộ phận Giáo vụ tiếp nhận và chủ động sắp xếp lịch học bù phù hợp, đảm bảo không bị hổng kiến thức.</p>
+        </div>
+        <div class="pub-feat-card">
+          <div class="pub-feat-ico">💳</div>
+          <h3>Học phí Trọn khóa &amp; Thanh toán Web</h3>
+          <p>Niêm yết học phí trọn gói theo từng khóa học. Hỗ trợ Phụ huynh tra cứu công nợ, thanh toán VietQR/VNPay và tải phiếu thu ngay trên Web.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. DANH SÁCH KHÓA HỌC, HỌC PHÍ & CHI TIẾT TỪNG KHÓA -->
+  <section class="pub-sec alt" id="pubCourses">
+    <div class="pub-container">
+      <div class="pub-sec-head">
+        <span class="sub-tag">Chương trình Đào tạo &amp; Học phí</span>
+        <h2>Các Khóa học Tiêu biểu tại EduCenter</h2>
+        <p>Học phí được tính trọn khóa minh bạch (không phát sinh phụ phí). Bấm vào từng khóa học để xem chi tiết lộ trình hoặc đăng ký tư vấn.</p>
+      </div>
+
+      <div class="row" style="justify-content:center;gap:8px;margin-bottom:26px;flex-wrap:wrap" id="pubCourseFilterChips">
+        <span class="chip on" onclick="filterPublicCourses('all')">Tất cả khóa học</span>
+        <span class="chip" onclick="filterPublicCourses('1on1')">Gia sư Kèm 1:1</span>
+        <span class="chip" onclick="filterPublicCourses('group')">Lớp Nhóm Cơ bản &amp; Nâng cao</span>
+        <span class="chip" onclick="filterPublicCourses('exam')">Luyện thi Chuyên &amp; Tuyển sinh 10</span>
+      </div>
+
+      <div class="pub-course-grid" id="pubCourseGrid"></div>
+    </div>
+  </section>
+
+  <!-- 4. ĐỘI NGŨ GIÁO VIÊN / GIA SƯ TIÊU BIỂU -->
+  <section class="pub-sec" id="pubTeachers">
+    <div class="pub-container">
+      <div class="pub-sec-head">
+        <span class="sub-tag">Đội ngũ Sư phạm</span>
+        <h2>Giáo viên Cơ hữu &amp; Gia sư 1:1 Tiêu biểu</h2>
+        <p>100% Giáo viên và Gia sư tại EduCenter đều qua phỏng vấn chuyên môn, kiểm tra bằng cấp và giảng thử trước khi nhận lớp.</p>
+      </div>
+
+      <div class="pub-tutor-grid" id="pubTutorGrid"></div>
+    </div>
+  </section>
+
+  <!-- 5. LIÊN HỆ & ĐĂNG KÝ TƯ VẤN / TÌM GIA SƯ -->
+  <section class="pub-sec alt" id="pubConsult">
+    <div class="pub-container">
+      <div class="pub-contact-grid">
+        <div>
+          <span class="tag ok" style="margin-bottom:10px">📞 Hỗ trợ Tư vấn Học vụ 24/7</span>
+          <h2 style="font-size:1.6rem;font-weight:800;margin-bottom:10px">Đăng ký Tư vấn Lộ trình &amp; Tìm Gia sư Miễn phí</h2>
+          <p style="font-size:13.5px;color:var(--g600);margin-bottom:20px">
+            Điền thông tin nhu cầu học tập của con. Bộ phận <b>Giáo vụ EduCenter</b> sẽ tiếp nhận yêu cầu ngay trên hệ thống, lọc Giáo viên/Gia sư phù hợp và liên hệ tư vấn trong vòng 30 phút!
+          </p>
+
+          <div class="card" style="background:var(--g50);margin-bottom:14px">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">🏫 Hệ thống Cơ sở Đào tạo EduCenter</h3>
+            <div class="item"><span><b>Cơ sở 1 (Trụ sở Thủ Đức):</b></span><span>12 Võ Văn Ngân, P. Bình Thọ, TP. Thủ Đức</span></div>
+            <div class="item"><span><b>Cơ sở 2 (Chi nhánh Quận 1):</b></span><span>22 Trần Hưng Đạo, P. Phạm Ngũ Lão, Quận 1</span></div>
+            <div class="item"><span><b>Cơ sở 3 (Chi nhánh Quận 3):</b></span><span>108 Nguyễn Đình Chiểu, P. Võ Thị Sáu, Quận 3</span></div>
+            <div class="item"><span><b>Hotline / Email:</b></span><b>1900 6868 · tuyensinh@educenter.edu.vn</b></div>
+          </div>
+
+          <div class="card" style="border-color:var(--pri-l);background:var(--pri-ll)">
+            <h3 style="font-size:13.5px;font-weight:700;color:var(--pri-d);margin-bottom:6px">🔄 Quy trình 4 bước từ Đăng ký Website đến Xếp lớp:</h3>
+            <ol style="margin:0;padding-left:18px;font-size:12.5px;color:var(--g700);line-height:1.7">
+              <li><b>Bước 1:</b> Phụ huynh gửi form Đăng ký tư vấn trên trang này (lưu trực tiếp vào danh sách Tuyển sinh của Giáo vụ).</li>
+              <li><b>Bước 2:</b> Giáo vụ lọc ứng viên theo môn, khu vực &amp; khung giờ rảnh, gửi Đề xuất Gia sư.</li>
+              <li><b>Bước 3:</b> Phụ huynh đăng nhập Cổng Phụ huynh để xác nhận đồng ý Giáo viên/Gia sư và đóng học phí trọn khóa.</li>
+              <li><b>Bước 4:</b> Quản trị viên (Admin) duyệt xếp lớp chính thức và khởi tạo Thời khóa biểu.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="card" style="padding:26px;box-shadow:0 12px 32px rgba(0,0,0,.06);border-color:var(--pri-l)">
+          <h3 style="font-size:17px;font-weight:800;margin-bottom:4px;color:var(--g900)">📝 Phiếu Đăng ký Tư vấn Khóa học &amp; Tìm Gia sư</h3>
+          <p style="font-size:12px;color:var(--g500);margin-bottom:16px">Thông tin đăng ký tại đây sẽ được chuyển thẳng vào màn hình <b>Tuyển sinh &amp; Ghép lớp</b> của Giáo vụ.</p>
+
+          <form id="pubConsultForm" onsubmit="handlePublicConsultSubmit(event)">
+            <div class="row" style="gap:12px">
+              <div style="flex:1">
+                <label>Họ và tên Phụ huynh <span style="color:var(--err)">*</span></label>
+                <input type="text" id="pubParentName" placeholder="VD: Nguyễn Minh Tuấn" required>
+              </div>
+              <div style="flex:1">
+                <label>Số điện thoại liên hệ <span style="color:var(--err)">*</span></label>
+                <input type="tel" id="pubParentPhone" placeholder="VD: 0909123456" required>
+              </div>
+            </div>
+
+            <div class="row" style="gap:12px">
+              <div style="flex:1">
+                <label>Họ tên Học sinh <span style="color:var(--err)">*</span></label>
+                <input type="text" id="pubStudentName" placeholder="VD: Nguyễn Gia Bảo" required>
+              </div>
+              <div style="width:150px">
+                <label>Khối lớp <span style="color:var(--err)">*</span></label>
+                <select id="pubGrade">
+                  <option value="Lớp 9">Lớp 9 (Ôn thi 10)</option>
+                  <option value="Lớp 6">Lớp 6</option>
+                  <option value="Lớp 7">Lớp 7</option>
+                  <option value="Lớp 8">Lớp 8</option>
+                  <option value="Lớp 10">Lớp 10</option>
+                  <option value="Lớp 11">Lớp 11</option>
+                  <option value="Lớp 12">Lớp 12 (Ôn THPT)</option>
+                  <option value="Tiểu học (Lớp 1-5)">Tiểu học (Lớp 1-5)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row" style="gap:12px">
+              <div style="flex:1">
+                <label>Khóa học đăng ký <span style="color:var(--err)">*</span></label>
+                <select id="pubCourseSelect"></select>
+              </div>
+              <div style="width:180px">
+                <label>Môn học cần đăng ký <span style="color:var(--err)">*</span></label>
+                <select id="pubSubject">
+                  <option value="Toán">Toán học</option>
+                  <option value="Tiếng Anh">Tiếng Anh / IELTS</option>
+                  <option value="Vật Lý">Vật Lý</option>
+                  <option value="Hóa Học">Hóa Học</option>
+                  <option value="Ngữ Văn">Ngữ Văn</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row" style="gap:12px">
+              <div style="flex:1">
+                <label>Khu vực / Cơ sở học</label>
+                <select id="pubArea">
+                  <option value="Thủ Đức">TP. Thủ Đức (Tại nhà / Cơ sở 1)</option>
+                  <option value="Quận 1">Quận 1 (Tại nhà / Cơ sở 2)</option>
+                  <option value="Quận 3">Quận 3 (Tại nhà / Cơ sở 3)</option>
+                  <option value="Online">Học Trực tuyến (Online 1:1)</option>
+                </select>
+              </div>
+              <div style="flex:1">
+                <label>Khung giờ học mong muốn</label>
+                <input type="text" id="pubSchedule" value="T3, T5 (18:00–20:00)" placeholder="VD: T2, T4, T6 (18:30-20:30)">
+              </div>
+            </div>
+
+            <label>Ghi chú học lực hiện tại / Yêu cầu Giáo viên (nếu có)</label>
+            <textarea id="pubNote" rows="2" placeholder="VD: Cháu cần củng cố hình học lớp 9 và luyện đề thi tuyển sinh vào lớp 10..."></textarea>
+
+            <div style="margin-top:16px">
+              <button type="submit" class="btn p" style="width:100%;justify-content:center;padding:11px;font-size:14px;font-weight:700">
+                🚀 Gửi Đăng ký Tư vấn &amp; Nhận Đề xuất Gia sư
+              </button>
+            </div>
+          </form>
+
+          <div id="pubConsultSuccess" style="display:none;margin-top:14px;background:var(--ok-l);border:1px solid #86efac;color:var(--ok);padding:12px 14px;border-radius:var(--rs);font-size:12.5px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Public Footer -->
+  <footer class="pub-footer">
+    <div class="pub-container">
+      <div class="row-b" style="flex-wrap:wrap;gap:16px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.1)">
+        <div>
+          <b style="font-size:15px">TRUNG TÂM GIA SƯ &amp; ĐÀO TẠO EDUCENTER ERP</b>
+          <div style="margin-top:4px;font-size:12px">Đồ án môn Phát triển Ứng dụng Web (IS207) · Kiến trúc CodeIgniter 4 MVC &amp; MySQL 8.4 (DB 005)</div>
+        </div>
+        <div class="row" style="gap:10px">
+          <button type="button" class="btn sm" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:#fff" onclick="scrollPublicSection('pubHero')">↑ Lên đầu trang</button>
+          <button type="button" class="btn p sm" onclick="showLoginScreen()">🔐 Đăng nhập Hệ thống Quản lý</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px">
+        <span>© 2026 EduCenter Vietnam. All rights reserved.</span>
+        <span>Hỗ trợ 6 cổng phân quyền: Admin · Giáo vụ · Giáo viên · Gia sư 1:1 · Trợ giảng · Phụ huynh</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- Modal Chi tiết Khóa học trên Website Công khai -->
+<div class="modal-ov" id="modalPublicCourseDetail" onclick="if(event.target===this) closePublicCourseDetail()">
+  <div class="modal-box" style="max-width:600px">
+    <h3>
+      <span id="pcdTitle">Chi tiết Khóa học</span>
+      <button style="border:0;background:0;font-size:18px;color:var(--g500);cursor:pointer" onclick="closePublicCourseDetail()">✕</button>
+    </h3>
+    <div id="pcdBody"></div>
+    <div class="modal-act">
+      <button type="button" class="btn sm" onclick="closePublicCourseDetail()">Đóng</button>
+      <button type="button" class="btn p sm" id="pcdRegisterBtn">📝 Đăng ký tư vấn khóa này</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════
      LOGIN SCREEN (AUTH PORTAL)
@@ -337,8 +705,12 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
         <a href="javascript:void(0)" onclick="toast('Tài khoản demo có mật khẩu chung là: 123456','info')">Quên mật khẩu?</a>
       </div>
 
-      <button type="submit" class="btn p full" style="padding:10px;font-size:14px;font-weight:600">Đăng nhập hệ thống</button>
+      <button type="submit" class="btn p full" style="width:100%;justify-content:center;padding:10px;font-size:14px;font-weight:600">Đăng nhập hệ thống</button>
     </form>
+
+    <div style="margin-top:10px;text-align:center">
+      <button type="button" class="btn sm" style="width:100%;justify-content:center;background:var(--g50)" onclick="showPublicLanding()">🌐 ← Quay lại Website Giới thiệu Trung tâm (Landing Page)</button>
+    </div>
 
     <div class="login-hint">
       💡 Gợi ý: Bấm các nút <b>⚡ Đăng nhập nhanh</b> ở trên để trải nghiệm ngay từng phân hệ nghiệp vụ.
@@ -352,7 +724,7 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
      SIDEBAR
      ═══════════════════════════════════════ -->
 <aside class="side" id="sidebar">
-  <div class="brand"><div class="brand-icon">E</div><div><b>EduCenter ERP</b><small>Quản trị Trung tâm Gia sư</small></div></div>
+  <div class="brand" style="cursor:pointer" onclick="showPublicLanding()" title="Xem Website công khai của Trung tâm"><div class="brand-icon">E</div><div><b>EduCenter ERP</b><small>Quản trị Trung tâm Gia sư</small></div></div>
   <div class="side-user">
     <span class="su-role" id="sRole">Quản trị viên</span>
     <div class="su-name" id="sName">Trần Quang Huy</div>
@@ -361,9 +733,9 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
   <div class="nav-group">Chức năng phân hệ</div>
   <nav id="nav"></nav>
   <div class="side-foot">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span>© EduCenter 2026</span>
-      <button class="btn sm" style="background:rgba(255,255,255,.08);border-color:transparent;color:var(--g400)" onclick="handleLogout()">Đăng xuất</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+      <button class="btn sm" style="background:rgba(13,148,136,.2);border-color:transparent;color:var(--pri-l);padding:4px 8px;font-size:11px" onclick="showPublicLanding()">🌐 Website</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.08);border-color:transparent;color:var(--g400);padding:4px 8px;font-size:11px" onclick="handleLogout()">Đăng xuất</button>
     </div>
   </div>
 </aside>
@@ -375,7 +747,8 @@ input.is-invalid, select.is-invalid, textarea.is-invalid{border-color:var(--err)
 <header class="topbar">
   <div class="row">
     <button class="btn sm mob-toggle" style="display:none" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-    <span style="font-size:11px;font-weight:600;color:var(--g500);white-space:nowrap">Chuyển nhanh Role:</span>
+    <button class="btn sm" style="border-color:var(--pri-l);background:var(--pri-ll);color:var(--pri-d);font-weight:600" onclick="showPublicLanding()" title="Mở trang Landing Page giới thiệu Trung tâm (Khách chưa đăng nhập vẫn xem được)">🌐 Website Trung tâm</button>
+    <span style="font-size:11px;font-weight:600;color:var(--g500);white-space:nowrap">Role:</span>
     <div class="seg" id="seg"></div>
   </div>
   <div class="top-r">
@@ -2321,7 +2694,270 @@ function clearAuthSession(){
   localStorage.removeItem(AUTH_KEY);
 }
 
+function showPublicLanding(scrollToId){
+  const pl = document.getElementById('publicLanding');
+  const ls = document.getElementById('loginScreen');
+  const ar = document.getElementById('appRoot');
+  if(pl) pl.classList.add('show');
+  if(ls) ls.classList.remove('show');
+  if(ar) ar.style.display = 'none';
+
+  const sess = getAuthSession();
+  const backBtn = document.getElementById('pubBackErpBtn');
+  const loginBtn = document.getElementById('pubLoginBtn');
+  if(backBtn) backBtn.style.display = sess ? 'inline-flex' : 'none';
+  if(loginBtn) loginBtn.textContent = sess ? `🔐 Đổi tài khoản (${sess.name.split(' ').pop()})` : '🔐 Đăng nhập Hệ thống';
+
+  renderPublicLandingData();
+  history.replaceState(null, '', '#/home');
+  if(scrollToId){
+    setTimeout(() => scrollPublicSection(scrollToId), 60);
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function hidePublicLanding(){
+  const pl = document.getElementById('publicLanding');
+  if(pl) pl.classList.remove('show');
+}
+
+function returnToErpFromLanding(){
+  const sess = getAuthSession();
+  if(!sess){
+    showLoginScreen();
+    return;
+  }
+  hidePublicLanding();
+  hideLoginScreen();
+  setPortal(sess.portal || 'admin', true);
+}
+
+function scrollPublicSection(secId){
+  const el = document.getElementById(secId);
+  if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+let currentPubCourseFilter = 'all';
+const PUBLIC_COURSE_META = {
+  'KHOA-CB-HK1': { cat:'group', badge:'Lớp Nhóm (Tối đa 12 HV)', sessions:'24 buổi / Học kỳ 1 (2 buổi/tuần · 120 phút/buổi)', grade:'Lớp 6 – Lớp 12', syllabus:['Hệ thống hóa toàn bộ trọng tâm kiến thức SGK Học kỳ 1','Luyện tập các dạng bài từ cơ bản đến vận dụng theo từng chương','Kiểm tra định kỳ 4 tuần/lần và chấm chữa bài tập giấy mỗi buổi','Báo cáo kết quả học tập trực tuyến gửi Phụ huynh sau từng ca học'] },
+  'KHOA-CB-NAM': { cat:'group', badge:'Lớp Nhóm Trọn Năm', sessions:'48 buổi / Cả năm học (HK1 + HK2 · 120 phút/buổi)', grade:'Lớp 6 – Lớp 12', syllabus:['Lộ trình xuyên suốt 9 tháng năm học (Học kỳ 1 & Học kỳ 2)','Tiết kiệm học phí trọn khóa so với đăng ký lẻ từng học kỳ','Kèm sát năng lực từng học sinh với Giáo viên chính & Trợ giảng','Hỗ trợ xếp lịch học bù thỏa thuận khi học sinh vắng có phép'] },
+  'KHOA-NC-HK2': { cat:'group', badge:'Lớp Nâng Cao & Chuyên Đề', sessions:'24 buổi / Học kỳ 2 (2 buổi/tuần · 120 phút/buổi)', grade:'Lớp 7 – Lớp 12', syllabus:['Chuyên đề nâng cao & bài toán vận dụng cao lấy điểm 9 – 10','Rèn kỹ năng trình bày tự luận chặt chẽ và phản xạ trắc nghiệm','Tổng ôn thi học kỳ 2 với bộ đề chuẩn cấu trúc Sở GD&ĐT','Chấm chữa chi tiết từng bài tập ngay trong sổ buổi học'] },
+  'KHOA-GS-11': { cat:'1on1', badge:'Gia sư Kèm 1:1 (Tại nhà / Online)', sessions:'24 buổi Trọn khóa (Lịch linh hoạt 2–3 buổi/tuần)', grade:'Lớp 1 – Lớp 12', syllabus:['1 Thầy / Cô kèm 1 Học sinh theo đúng năng lực và mục tiêu riêng','Phụ huynh được xem hồ sơ & xác nhận đồng ý Gia sư trước khi học','Linh hoạt chọn học tại nhà (Thủ Đức, Q.1, Q.3) hoặc trực tuyến','Lấy lại gốc nhanh cho học sinh mất căn bản hoặc bồi dưỡng học sinh giỏi'] },
+  'KHOA-OL-CHUYEN': { cat:'exam', badge:'Luyện Thi Tuyển Sinh 10 / Trường Chuyên', sessions:'36 buổi Chuyên sâu (3 buổi/tuần · 120 phút/buổi)', grade:'Lớp 9 & Lớp 12', syllabus:['Luyện đề thi tuyển sinh vào lớp 10 công lập trọng điểm & Chuyên','Chiến thuật phân bổ thời gian và xử lý câu hỏi phân loại điểm 9+','Thi thử định kỳ hàng tháng và phân tích lỗi sai cá nhân hóa','Đội ngũ Giáo viên cơ hữu giàu kinh nghiệm luyện thi trực tiếp giảng dạy'] }
+};
+
+function filterPublicCourses(cat){
+  currentPubCourseFilter = cat;
+  const wrap = document.getElementById('pubCourseFilterChips');
+  if(wrap){
+    wrap.querySelectorAll('.chip').forEach(c => {
+      c.classList.toggle('on', c.getAttribute('onclick').includes(`'${cat}'`));
+    });
+  }
+  renderPublicCourses();
+}
+
+function renderPublicCourses(){
+  const grid = document.getElementById('pubCourseGrid');
+  if(!grid) return;
+
+  const list = COURSES.filter(c => {
+    const meta = PUBLIC_COURSE_META[c.code] || { cat:'group' };
+    if(currentPubCourseFilter === 'all') return true;
+    return meta.cat === currentPubCourseFilter;
+  });
+
+  grid.innerHTML = list.map(c => {
+    const meta = PUBLIC_COURSE_META[c.code] || {
+      cat:'group', badge:'Khóa tiêu chuẩn', sessions:'24 buổi trọn khóa (120p/buổi)', grade:'Lớp 6 – Lớp 12',
+      syllabus:['Bám sát chương trình SGK & nâng cao','Chấm bài và nhận xét từng buổi học']
+    };
+    const is1on1 = meta.cat === '1on1';
+    return `
+      <div class="pub-course-card">
+        <div>
+          <div class="row-b" style="margin-bottom:10px">
+            <span class="tag ${is1on1 ? 'purple' : 'i'}">${meta.badge}</span>
+            <span class="mono" style="font-size:11px;color:var(--g400);font-weight:600">${c.code}</span>
+          </div>
+          <h3 style="font-size:16.5px;font-weight:800;color:var(--g900);margin-bottom:6px">${c.name}</h3>
+          <p style="font-size:13px;color:var(--g600);margin-bottom:14px;min-height:38px">${c.desc}</p>
+          <div style="background:var(--g50);border:1px solid var(--g200);border-radius:var(--rs);padding:10px 12px;margin-bottom:14px;font-size:12px">
+            <div class="row-b" style="margin-bottom:4px"><span style="color:var(--g500)">Đối tượng:</span><b>${meta.grade}</b></div>
+            <div class="row-b" style="margin-bottom:4px"><span style="color:var(--g500)">Thời lượng khóa:</span><b>${meta.sessions.split('(')[0]}</b></div>
+            <div class="row-b"><span style="color:var(--g500)">Chính sách thu:</span><span class="tag ok" style="font-size:10.5px">Thu trọn khóa · Hỗ trợ học bù</span></div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--g100);padding-top:14px">
+          <div class="row-b" style="margin-bottom:12px">
+            <div>
+              <span style="font-size:11px;color:var(--g500);display:block">Học phí trọn khóa</span>
+              <span class="c-price">${c.fee.toLocaleString()}đ</span>
+            </div>
+            <span class="tag ${c.active ? 'ok' : 'w'}">${c.active ? 'Đang mở đăng ký' : 'Sắp khai giảng'}</span>
+          </div>
+          <div class="row" style="gap:8px">
+            <button type="button" class="btn sm" style="flex:1;justify-content:center" onclick="openPublicCourseDetail('${c.code}')">🔍 Xem chi tiết</button>
+            <button type="button" class="btn p sm" style="flex:1;justify-content:center" onclick="selectCourseForConsult('${c.code}')">📝 Đăng ký ngay</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openPublicCourseDetail(courseCode){
+  const c = COURSES.find(x => x.code === courseCode) || COURSES[0];
+  const meta = PUBLIC_COURSE_META[c.code] || PUBLIC_COURSE_META['KHOA-CB-HK1'];
+  document.getElementById('pcdTitle').textContent = `${c.name} (${c.code})`;
+  document.getElementById('pcdBody').innerHTML = `
+    <div style="background:var(--pri-ll);border:1px solid var(--pri-l);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px">
+      <div class="row-b">
+        <span class="tag ok">${meta.badge}</span>
+        <b style="font-size:18px;color:var(--pri-d)">Học phí trọn khóa: ${c.fee.toLocaleString()}đ</b>
+      </div>
+      <div style="font-size:12.5px;color:var(--g700);margin-top:6px">${c.desc}</div>
+    </div>
+    <div class="item"><span>Đối tượng học sinh</span><b>${meta.grade}</b></div>
+    <div class="item"><span>Thời lượng &amp; Lịch học</span><b>${meta.sessions}</b></div>
+    <div class="item"><span>Hình thức điểm danh &amp; Sổ học vụ</span><b>Cập nhật trực tiếp sau mỗi buổi học trên Cổng Phụ huynh</b></div>
+    <div class="item"><span>Chính sách học phí &amp; Học bù (DB 004/005)</span><b>Thu trọn khóa · Xếp lịch học bù theo thỏa thuận</b></div>
+    <div style="margin-top:12px">
+      <b style="font-size:13px;display:block;margin-bottom:6px;color:var(--g800)">📌 Nội dung &amp; Quyền lợi trọng tâm của khóa học:</b>
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--g700);line-height:1.7">
+        ${meta.syllabus.map(s => `<li>${s}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+  const regBtn = document.getElementById('pcdRegisterBtn');
+  if(regBtn){
+    regBtn.onclick = () => {
+      closePublicCourseDetail();
+      selectCourseForConsult(c.code);
+    };
+  }
+  document.getElementById('modalPublicCourseDetail').classList.add('show');
+}
+
+function closePublicCourseDetail(){
+  const m = document.getElementById('modalPublicCourseDetail');
+  if(m) m.classList.remove('show');
+}
+
+function renderPublicTeachers(){
+  const grid = document.getElementById('pubTutorGrid');
+  if(!grid) return;
+  const featured = [
+    { name:'ThS. Nguyễn Minh Anh', role:'Giáo viên Cơ hữu', subj:'Toán 8 – 9 & Luyện thi 10', exp:'ĐH Sư phạm TP.HCM · 5 năm KN', area:'Thủ Đức, Quận 1', rate:'Tỷ lệ đỗ NV1 98%', badge:'Giáo viên Xuất sắc' },
+    { name:'Thầy Lê Văn Cường', role:'Giáo viên Cơ hữu', subj:'Tiếng Anh 6 – 12 & IELTS', exp:'IELTS 8.0 · 6 năm KN Sư phạm', area:'Thủ Đức, Online', rate:'Hơn 300 HV đạt mục tiêu', badge:'Chuyên gia Ngoại ngữ' },
+    { name:'Thầy Trần Quốc Bảo', role:'Gia sư Kèm 1:1', subj:'Vật Lý 10 – 12 & Luyện ĐH', exp:'ĐH KHTN · Giải Nhì HSG Tỉnh', area:'Quận 3, Online 1:1', rate:'Chuyên kèm 1-1 lấy gốc nhanh', badge:'Gia sư Tiêu biểu' },
+    { name:'Thầy Võ Thanh Dũng', role:'Giáo viên Luyện thi', subj:'Toán Chuyên & Bồi dưỡng HSG', exp:'7 năm KN luyện thi Chuyên Toán', area:'Thủ Đức, Quận 3', rate:'Nhiều học sinh đỗ Chuyên', badge:'Luyện thi Chuyên' }
+  ];
+  grid.innerHTML = featured.map(t => {
+    const initials = t.name.split(' ').slice(-2).map(w => w[0]).join('');
+    return `
+      <div class="pub-tutor-card">
+        <div>
+          <div class="row" style="gap:12px;margin-bottom:12px">
+            <div class="pub-avatar">${initials}</div>
+            <div>
+              <span class="tag ok" style="font-size:10px;margin-bottom:3px">${t.role}</span>
+              <h3 style="font-size:15px;font-weight:800;margin:0;color:var(--g900)">${t.name}</h3>
+              <span style="font-size:11.5px;color:var(--pri-d);font-weight:600">${t.subj}</span>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:var(--g600);background:var(--g50);padding:10px;border-radius:var(--rs);margin-bottom:12px">
+            <div style="margin-bottom:4px">🎓 <b>Bằng cấp:</b> ${t.exp}</div>
+            <div style="margin-bottom:4px">📍 <b>Khu vực dạy:</b> ${t.area}</div>
+            <div>⭐ <b>Thành tích:</b> ${t.rate}</div>
+          </div>
+        </div>
+        <button type="button" class="btn sm" style="width:100%;justify-content:center;border-color:var(--pri-l);color:var(--pri-d);font-weight:600" onclick="selectTeacherForConsult('${t.name}','${t.subj}')">
+          🤝 Đăng ký học cùng ${t.name.split(' ').slice(-2).join(' ')}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPublicLandingData(){
+  renderPublicCourses();
+  renderPublicTeachers();
+  const sel = document.getElementById('pubCourseSelect');
+  if(sel){
+    sel.innerHTML = COURSES.map(c => `<option value="${c.code}">${c.name} (${c.fee.toLocaleString()}đ/khóa)</option>`).join('');
+  }
+}
+
+function selectCourseForConsult(courseCode){
+  scrollPublicSection('pubConsult');
+  const sel = document.getElementById('pubCourseSelect');
+  if(sel) sel.value = courseCode;
+  const pInput = document.getElementById('pubParentName');
+  if(pInput) setTimeout(() => pInput.focus(), 350);
+  toast(`Đã chọn khóa học ${courseCode}. Vui lòng điền thông tin để Giáo vụ liên hệ tư vấn!`, 'info');
+}
+
+function selectTeacherForConsult(teacherName, subj){
+  scrollPublicSection('pubConsult');
+  const note = document.getElementById('pubNote');
+  if(note) note.value = `Gia đình mong muốn đăng ký học môn ${subj} cùng ${teacherName}.`;
+  const sel = document.getElementById('pubCourseSelect');
+  if(sel) sel.value = 'KHOA-GS-11';
+  toast(`Đã điền yêu cầu học cùng ${teacherName} vào phiếu đăng ký tư vấn!`, 'info');
+}
+
+function handlePublicConsultSubmit(ev){
+  ev.preventDefault();
+  const parentName = document.getElementById('pubParentName').value.trim();
+  const phone = document.getElementById('pubParentPhone').value.trim();
+  const studentName = document.getElementById('pubStudentName').value.trim();
+  const grade = document.getElementById('pubGrade').value;
+  const courseCode = document.getElementById('pubCourseSelect').value;
+  const subject = document.getElementById('pubSubject').value;
+  const area = document.getElementById('pubArea').value;
+  const schedule = document.getElementById('pubSchedule').value.trim() || 'T3, T5 (18:00–20:00)';
+  const note = document.getElementById('pubNote').value.trim();
+
+  const courseObj = COURSES.find(c => c.code === courseCode) || COURSES[0];
+  const newReqId = 'YC-00' + (REQUESTS.length + 1);
+  const todayStr = new Date().toLocaleDateString('vi-VN');
+
+  REQUESTS.unshift({
+    id: newReqId,
+    student: `${studentName} (${grade})`,
+    parent: parentName,
+    phone: phone,
+    subject: `${subject} · ${grade} (${courseCode})`,
+    schedule: schedule,
+    area: area,
+    budget: courseObj ? Math.round(courseObj.fee / 12) : 200000,
+    status: 'moi',
+    date: todayStr,
+    note: note
+  });
+
+  saveStorage();
+
+  const box = document.getElementById('pubConsultSuccess');
+  if(box){
+    box.style.display = 'block';
+    box.innerHTML = `
+      <b>🎉 Đã gửi đăng ký tư vấn thành công (Mã hồ sơ: ${newReqId})!</b><br>
+      Yêu cầu của Phụ huynh <b>${parentName}</b> cho học sinh <b>${studentName} (${grade})</b> đã được ghi nhận trực tiếp vào danh sách <b>Tuyển sinh &amp; Ghép lớp</b> của Giáo vụ.<br>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn p sm" onclick="quickLogin('staff');showS('staff-enroll')">📋 Đăng nhập ngay Cổng Giáo vụ để xem hồ sơ ${newReqId} →</button>
+        <button type="button" class="btn sm" onclick="quickLogin('parent')">👨‍👩‍👧 Vào Cổng Phụ huynh</button>
+      </div>
+    `;
+  }
+  toast(`Đã gửi đăng ký tư vấn thành công! Mã yêu cầu ${newReqId} đã chuyển vào Cổng Giáo vụ.`, 'ok');
+  ev.target.reset();
+}
+
 function showLoginScreen(){
+  hidePublicLanding();
   const ls = document.getElementById('loginScreen');
   const ar = document.getElementById('appRoot');
   if(ls) ls.classList.add('show');
@@ -2330,6 +2966,7 @@ function showLoginScreen(){
 }
 
 function hideLoginScreen(){
+  hidePublicLanding();
   const ls = document.getElementById('loginScreen');
   const ar = document.getElementById('appRoot');
   if(ls) ls.classList.remove('show');
@@ -2393,8 +3030,8 @@ function handleLogout(){
     confirmClass: 'danger',
     onConfirm: () => {
       clearAuthSession();
-      showLoginScreen();
-      toast('Đã đăng xuất khỏi hệ thống an toàn.','info');
+      showPublicLanding();
+      toast('Đã đăng xuất khỏi hệ thống và quay về Website Trung tâm.','info');
     }
   });
 }
@@ -5124,6 +5761,7 @@ document.addEventListener('keydown', (e) => {
     closeParentPayModal();
     closeChangePwdModal();
     closePrintPreview();
+    closePublicCourseDetail();
     closeConfirm(false);
     const ud = document.getElementById('userDropdown');
     if(ud) ud.classList.remove('show');
@@ -5150,14 +5788,18 @@ function initApp(){
     <button data-p="${k}" onclick="setPortal('${k}')">${segLabels[k] || v.role}</button>
   `).join('');
 
-  // 3. Kiểm tra phiên đăng nhập & Điều hướng Hash Router
+  // 3. Kiểm tra phiên đăng nhập & Điều hướng Website công khai / Hash Router
   const sess = getAuthSession();
-  if(!sess){
+  const hash = window.location.hash.slice(2);
+  if(hash === 'home' || hash === 'landing' || (!hash && !sess)){
+    showPublicLanding();
+  } else if(hash === 'login'){
     showLoginScreen();
+  } else if(!sess){
+    showPublicLanding();
   } else {
     hideLoginScreen();
-    const hash = window.location.hash.slice(2);
-    if(hash && hash !== 'login'){
+    if(hash){
       const parts = hash.split('/');
       const p = parts[0];
       const s = parts[1];
