@@ -1,6 +1,6 @@
 # Hướng dẫn cài đặt và sử dụng EduCenter ERP cho thành viên nhóm
 
-Cập nhật 09/11/2026, áp dụng schema `005_operations_ready`. Đây là tài liệu thao tác duy nhất cho máy mới, máy đang dùng, chia sẻ dữ liệu, kiểm thử và triển khai. Đặc tả và thiết kế nằm trong [Thông tin đồ án](thong-tin-do-an.md).
+Cập nhật 11/11/2026 (bổ sung quy tắc phối hợp nhóm), áp dụng schema `005_operations_ready`. Đây là tài liệu thao tác duy nhất cho máy mới, máy đang dùng, chia sẻ dữ liệu, kiểm thử và triển khai. Đặc tả và thiết kế nằm trong [Thông tin đồ án](thong-tin-do-an.md).
 
 Đọc theo thứ tự: **cài công cụ → lấy repo → tạo cấu hình riêng → bật MySQL → cài DB mới hoặc phục hồi DB → cấp user API → bật PHP → tạo tài khoản web → kiểm tra**. Máy đã có dữ liệu đi thẳng đến [chạy hằng ngày](#hang-ngay) hoặc [nâng cấp DB](#db-cu).
 
@@ -14,6 +14,7 @@ Cập nhật 09/11/2026, áp dụng schema `005_operations_ready`. Đây là tà
 6. [Cấp tài khoản DB và chạy PHP](#chay-web)
 7. [Đăng nhập và sử dụng bản hiện có](#tai-khoan)
 8. [Bật/tắt, cập nhật và nâng cấp DB](#hang-ngay)
+   - [Lưu ý phối hợp 3 người và bàn giao PR](#phoi-hop-nhom)
 9. [Backup, restore và chia sẻ](#chia-se)
 10. [Kiểm thử và cách chạy PHP trực tiếp](#kiem-thu)
 11. [Triển khai public](#deploy)
@@ -308,6 +309,19 @@ Khi mọi kiểm tra đạt:
 pwsh -File backend/scripts/start.ps1
 pwsh -File backend/scripts/doctor.ps1
 ```
+
+<a id="phoi-hop-nhom"></a>
+### 8.3. Lưu ý phối hợp 3 người và bàn giao PR
+
+Phân công theo cổng sử dụng: **người 1 là chủ đồ án, phụ trách Admin/Giáo vụ và tích hợp; người 2 phụ trách đăng nhập, trang giới thiệu, Phụ huynh và thành phần dùng chung; người 3 phụ trách Giáo viên/Gia sư/Trợ giảng**. Phạm vi và quy tắc API chi tiết nằm ở [mục 10.1 của đặc tả](thong-tin-do-an.md#quy-tac-phoi-hop). Đây là phân công phát triển, không tự cấp thêm quyền cho vai trò trên hệ thống.
+
+1. **Chốt dữ liệu, trạng thái và quyền trước khi code:** người 1 chốt hợp đồng API trong đặc tả; hướng dẫn cài/chạy hoặc kiểm thử thay đổi thì cập nhật trong file này. Không tạo thêm Markdown trong docs. Hai người còn lại đối chiếu hợp đồng trước khi nối FE; không tự đổi trường, trạng thái hoặc nghiệp vụ để khớp demo.
+2. **Tách thao tác gửi yêu cầu và duyệt/xử lý:** người 2 làm luồng gửi của Phụ huynh; người 3 làm luồng gửi của người dạy/trợ giảng; người 1 làm xử lý của Admin/Giáo vụ theo đúng quyền. Ví dụ người 3 gửi đề nghị điều chỉnh công, chỉ Admin duyệt và áp dụng; người 2 tạo giao dịch thanh toán, không tự xác nhận đã thu. Hai bên dùng chung dữ liệu và trạng thái đã chốt.
+3. **Thống nhất người giữ file dùng chung trước khi sửa:** ghi đầu mối feature và danh sách route/service/shared cần sửa trong mô tả task/PR. Phần Admin/Giáo vụ do người 1 giữ; đăng nhập và thành phần FE dùng chung do người 2 giữ; cổng người dạy do người 3 giữ. Feature có cả thao tác gửi và duyệt phải chọn một người ghép route/service chính; trao đổi trước khi người khác sửa cùng file. Không sao chép thành feature/bảng riêng cho từng cổng.
+4. **Mỗi task dùng nhánh và PR nhỏ:** cập nhật từ main sau khi đã lưu thay đổi cá nhân; tách PR theo một luồng hoặc thay đổi có thể review. PR ghi phần đã làm, API/quyền thay đổi, phụ thuộc, kết quả kiểm thử và phần còn thiếu. Người 1 review, tích hợp và kiểm thử luồng xuyên suốt trước khi merge; không ghi thẳng main.
+5. **Mỗi người tự kiểm thử phần mình:** thử luồng đúng, dữ liệu sai, sai quyền và đổi id sang dữ liệu người khác. Kiểm thử DB chỉ dùng DB riêng tên kết thúc `_test`; PHP integration cần `TEST_WITH_DB=1`. Ghi lệnh/kết quả thực chạy trong PR, không dùng số kiểm tra lịch sử thay cho kết quả hiện tại. Các kiểm tra bắt buộc phải đạt trước khi merge.
+6. **Không tự đổi DB/server dùng chung:** thay schema/routine/trigger phải thống nhất với người 1, có migration và quy trình backup/restore thử → preflight → migrate → check. Giữ nguyên dữ liệu/volume đang dùng; không init đè DB cũ, không đưa env, mật khẩu, token hoặc backup vào Git.
+7. **Chỉ báo hoàn thành khi đã nối và kiểm thử:** giao diện dùng dữ liệu giả/demo hoặc feature chỉ có DB/khung file vẫn ghi rõ phần thiếu; giữ TODO/status planned cho phần chưa triển khai. Hoàn thành một luồng cần FE gọi API PHP thật, quyền được chặn ở BE và dữ liệu lưu/đọc đúng MySQL.
 
 <a id="chia-se"></a>
 ## 9. Sao lưu, khôi phục và chia sẻ với đồng đội

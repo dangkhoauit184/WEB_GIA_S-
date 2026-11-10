@@ -1,6 +1,6 @@
 # Thông tin và đặc tả tổng hợp đồ án EduCenter ERP
 
-Cập nhật 09/11/2026, căn cứ code trên main sau PR #8, schema `005_operations_ready`, đặc tả gốc và các xác nhận trực tiếp của chủ đồ án đến ngày 09/11/2026. Đây là nguồn đặc tả hiện hành duy nhất. Cách tải/cài/chạy/chia sẻ môi trường ở [Hướng dẫn cài đặt và sử dụng](huong-dan-cai-dat-va-su-dung.md).
+Cập nhật quy tắc phối hợp nhóm ngày 11/11/2026. Phần kỹ thuật và kết quả kiểm chứng giữ mốc code trên main sau PR #8, schema `005_operations_ready`, đặc tả gốc và các xác nhận nghiệp vụ của chủ đồ án đến ngày 09/11/2026; bổ sung phân công theo cổng sử dụng tại mục 10.1. Đây là nguồn đặc tả hiện hành duy nhất. Cách tải/cài/chạy/chia sẻ môi trường ở [Hướng dẫn cài đặt và sử dụng](huong-dan-cai-dat-va-su-dung.md).
 
 Tài liệu mô tả cả thiết kế mục tiêu và phần đã triển khai; các nhãn **đã có**, **còn phải làm**, **lịch sử** dùng để tránh nhầm DB/prototype với một website hoàn chỉnh. Không áp dụng lại quy tắc cũ từ Word, demo hoặc Figma khi khác quyết định hiện hành.
 
@@ -16,6 +16,7 @@ Tài liệu mô tả cả thiết kế mục tiêu và phần đã triển khai;
 8. [API đang có và trách nhiệm BE](#api)
 9. [Figma và giao diện còn thiếu](#figma)
 10. [Tiến độ, kiểm chứng và thứ tự làm tiếp](#tien-do)
+    - [Phân công 3 người và quy tắc phối hợp API](#quy-tac-phoi-hop)
 11. [Lịch sử và tài liệu nguồn](#lich-su)
 12. [Chi tiết API quản trị](#api-quan-tri)
 13. [Từ điển dữ liệu toàn bộ 43 bảng](#tu-dien-du-lieu)
@@ -390,6 +391,39 @@ Kết quả đã ghi nhận08/11/2026 trên nền005:
 Còn có 220 file PHP lint, Composer lock, structure/hash, cài mới và nâng003/004→005, giữ giá trị/applied_at cũ, migration lặp không đổi dữ liệu, từ chối init DB không rỗng. Backup dữ liệu thật đã khôi phục/nâng thử, đối chiếu hash rồi mới áp dụng005; có bản backup sau005 đã verify. DB local thời điểm kiểm tra43 bảng/57 trigger/20 routine, không VI_PHAM và CAN_XAC_NHAN khác0.
 
 Script MySQL đã thử trên container/volume riêng: tạo mới, dừng/bật giữ dữ liệu, từ chối tự khởi tạo khi chỉ còn volume. Apache configtest, Caddy validate, Compose release, image application build và doctor PHP/MySQL/SMTP/HTTP đạt. Không thử thanh toán ngân hàng thật, gửi mail người thật, cấp chứng chỉ public hoặc kiểm chứng tải đồng thời. Các con số là bằng chứng của phiên bản/thời điểm đó; chạy lại kiểm tra khi source thay đổi, không xem là chứng nhận mọi feature đã hoàn thiện.
+
+<a id="quy-tac-phoi-hop"></a>
+### 10.1. Phân công 3 người và quy tắc phối hợp API
+
+**Phân công đã chốt:** người 1 là chủ đồ án, giữ toàn bộ cổng Admin/Giáo vụ và quyết định nghiệp vụ; người 2 giữ đăng nhập, trang giới thiệu và cổng Phụ huynh; người 3 giữ cổng Giáo viên/Gia sư/Trợ giảng. Mỗi người làm BE/FE trong phạm vi được giao, tận dụng code đã có. Phân công này không thay quyền nghiệp vụ tại mục 2–4 và không có nghĩa các feature đã hoàn thành.
+
+| Người | Phạm vi phát triển | Ranh giới khi phối hợp |
+| --- | --- | --- |
+| 1 — chủ đồ án | Quản trị tài khoản/quyền, danh mục/khóa, tuyển sinh/điều phối, lớp/ghi danh/lịch/bù, màn duyệt nghỉ/điều chỉnh công, hóa đơn/đối soát, đơn giá/chốt/trả/mở công, báo cáo; review và tích hợp chung | Admin mới xếp lớp, xác nhận thu và quản trị công/lương; Giáo vụ chỉ xử lý đúng quyền đã chốt. Giữ các API duyệt/chốt/xử lý, hợp đồng dữ liệu và thay đổi DB/server dùng chung. |
+| 2 | Cơ chế đăng nhập/đăng xuất/đổi mật khẩu/phiên, khung FE và Ajax dùng chung, trang giới thiệu, hồ sơ/chọn con/đăng ký/nhu cầu/phản hồi, phụ huynh xem lịch/học vụ/tài liệu, gửi nghỉ, hóa đơn/khởi tạo thanh toán/lịch sử; thông báo web và worker email | Màn quản lý tài khoản/ma trận quyền thuộc người 1. Chỉ thao tác con thuộc phụ huynh xác thực; gửi yêu cầu hoặc tạo giao dịch không đồng nghĩa duyệt/đã thu. Mọi thay đổi quyền và cập nhật tài chính phải theo hợp đồng người 1 chốt. |
+| 3 | Hồ sơ/chuyên môn/lịch rảnh của người dạy, phản hồi đề xuất, lịch/lớp được phân công, check-in/out/phút công, đề nghị điều chỉnh, nội dung buổi/điểm danh/điểm/tài liệu, gửi nghỉ và xem lịch bù | Chỉ truy cập ca/học viên được phân công; phân biệt quyền Giáo viên/Gia sư/Trợ giảng. Không trả đơn giá/tiền lương cho các cổng này; không tự duyệt công hoặc xếp lớp. |
+
+#### Chốt hợp đồng API trước khi triển khai
+
+Người 1 chốt trong tài liệu này trước khi các bên code/nối API: endpoint và HTTP method; người giữ feature/file; request/response và ý nghĩa ID; trường bắt buộc; trạng thái ban đầu, chuyển trạng thái và bên được chuyển; nhóm quyền kèm phạm vi dữ liệu; lỗi/xung đột; cách xử lý gửi lặp đối với thao tác tài chính hoặc thao tác cần chống trùng. Theo quy ước API tại mục 8 và tên trạng thái DB hiện hành; không tự tạo trạng thái chỉ để khớp nhãn demo.
+
+API dùng chung do người 1 và đầu mối feature thống nhất; không tạo bản sao dữ liệu/service theo từng cổng. Thay đổi hợp đồng phải cập nhật đặc tả và báo người phụ thuộc trước khi tích hợp; nếu có thay đổi cài/chạy/kiểm thử thì cập nhật thêm hướng dẫn sử dụng. Nội dung tài liệu mới chỉ thêm vào hai file chính thức hiện có.
+
+#### Người gửi yêu cầu và người duyệt/xử lý
+
+Người 2/3 triển khai thao tác gửi, xem và theo dõi kết quả trong cổng của mình; người 1 triển khai thao tác xử lý của Admin/Giáo vụ. Ví dụ: người dạy gửi điều chỉnh công → Admin duyệt và áp dụng nhất quán; phụ huynh gửi đơn nghỉ → Giáo vụ xử lý; phụ huynh khởi tạo thanh toán → xác thực giao dịch và Admin đối soát/xác nhận theo luồng mục 4.3. Check-in/out và nhập học vụ là thao tác trực tiếp theo quyền, không tự thêm bước chờ duyệt ngoài nghiệp vụ đã chốt.
+
+BE luôn kiểm tra tài khoản, quyền, scope và chuyển trạng thái; không tin vai trò/actor/giờ check-in/số tiền đã thu do FE gửi, không dùng ẩn nút thay cho kiểm tra quyền. Xếp lớp độc lập tiền đóng; dữ liệu lương chỉ Admin. Thao tác gửi yêu cầu không được tự cấp quyền duyệt hoặc làm thay đổi kết quả tài chính.
+
+#### Người giữ file, PR và điều kiện bàn giao
+
+- Trước task, ghi đầu mối feature và file dùng chung trong mô tả task/PR. Người 1 giữ phần xử lý Admin/Giáo vụ; người 2 giữ cơ chế đăng nhập và khung FE dùng chung; người 3 giữ cổng người dạy. Feature giao nhau phải chỉ định một người giữ route/service chính để ghép phần gửi và phần duyệt; trao đổi trước khi sửa cùng file, không nhân đôi feature hoặc thêm backend Node.
+- Làm trên nhánh riêng, chia PR nhỏ theo luồng có thể review; ghi API/quyền đã đổi, phụ thuộc, hướng kiểm tra, kết quả thực chạy và phần chưa làm. Không tự đổi nghiệp vụ/DB/schema trong PR giao diện. Thay đổi DB cần người 1 thống nhất, migration và quy trình an toàn tại mục 7.
+- Mỗi người tự kiểm thử luồng đúng, dữ liệu sai, sai quyền và truy cập chéo đối tượng; phần gửi/duyệt phải thử cả hai phía. Đặc biệt kiểm tra phụ huynh đổi id con, người dạy đổi id ca, vai trò khác đọc lương/xếp lớp, gửi lặp và các trạng thái bị khóa. Integration/SQL chỉ chạy DB riêng tên kết thúc `_test`; PHP integration thêm `TEST_WITH_DB=1`.
+- Người 1 review và kiểm thử luồng xuyên suốt liên quan trước khi merge: đăng ký → phát hành hóa đơn/thanh toán/đối soát; xếp lớp độc lập thanh toán → lịch → check-in/học vụ/checkout → chốt công; gửi nghỉ/điều chỉnh → xử lý theo quyền. Không có bước hoàn thiện nào cho phép bỏ qua kiểm tra bắt buộc hoặc commit secret/backup.
+- Chỉ đánh dấu hoàn thành khi phần được giao gọi API PHP thật, lưu/đọc MySQL đúng, quyền được kiểm tra ở BE và có kết quả kiểm thử. Demo/localStorage, DB hoặc khung file riêng lẻ chưa chứng minh luồng đã chạy; phần chưa triển khai giữ TODO/status planned.
+
+Checklist thao tác dành cho đồng đội nằm ở [mục 8.3 của hướng dẫn sử dụng](huong-dan-cai-dat-va-su-dung.md#phoi-hop-nhom).
 
 <a id="lich-su"></a>
 ## 11. Lịch sử và tài liệu nguồn
