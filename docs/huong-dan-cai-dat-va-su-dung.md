@@ -70,8 +70,8 @@ Repo riêng tư cần được chủ repo mời làm collaborator và đăng nh�
 ```powershell
 git clone https://github.com/dangkhoauit184/WEB_GIA_S-.git D:\WEB
 cd D:\WEB
-git switch main
-git pull --ff-only origin main
+git switch develop
+git pull --ff-only origin develop
 ```
 
 Nếu đã clone thì không clone đè: vào đúng thư mục, kiểm tra `git status`, xử lý/lưu thay đổi cá nhân rồi mới pull. Có thể dùng đường dẫn khác; mọi lệnh trong tài liệu chạy từ **thư mục gốc repo**, nơi có compose.yaml. Mở terminal PowerShell 7 tại đó.
@@ -269,7 +269,25 @@ docker compose --profile tools ps
 docker compose logs --tail 50 backend
 ```
 
-Sau khi nhóm merge PR: kiểm tra git status, lưu thay đổi cá nhân, về nhánh phù hợp và pull; đọc thay đổi migration trước khi chạy. Thay code/dependency/Dockerfile/env thì chạy lại start.ps1. Không đưa vendor, writable, .cache, env, backup vào Git. Khi làm task mới dùng nhánh codex/ hoặc quy ước nhóm, mở PR để review, không ghi thẳng main.
+Repo chỉ giữ hai nhánh trên GitHub: **develop** để thành viên cùng phát triển và **main** để giữ bản ổn định. Thành viên làm việc/push vào develop; khi kiểm thử và demo đạt, người 1 review PR **develop → main** rồi mới merge. Không push thẳng main hoặc force-push develop/main.
+
+Trước khi bắt đầu làm, kiểm tra git status và lưu thay đổi cá nhân rồi cập nhật:
+
+```powershell
+git switch develop
+git pull --ff-only origin develop
+```
+
+Sau khi sửa, chọn đúng file để stage và commit; không stage env/secret/backup. Khi working tree đã sạch và đã có commit của mình, đồng bộ lần nữa trước khi push:
+
+```powershell
+git pull --rebase origin develop
+git push origin develop
+```
+
+Nếu rebase có xung đột, xử lý từng file, kiểm thử lại và hoàn tất rebase trước khi push; không dùng force-push để bỏ qua thay đổi của đồng đội. Nếu chưa biết xử lý, giữ nguyên trạng thái và nhờ người 1 hỗ trợ. CI chạy khi push develop/main và khi mở PR vào hai nhánh này; kiểm tra kết quả của đúng commit mới nhất trước khi duyệt.
+
+Sau khi merge develop → main, đồng bộ develop với main trước đợt làm tiếp; người 1 ưu tiên merge commit khi duyệt PR để giữ lịch sử chung. Không reset/force-push khi hai nhánh khác nhau. Đọc thay đổi migration trước khi chạy. Thay code/dependency/Dockerfile/env thì chạy lại start.ps1. Không đưa vendor, writable, .cache, env, backup vào Git.
 
 ### 8.1. Đổi cổng HTTP local
 
@@ -318,7 +336,7 @@ Phân công theo cổng sử dụng: **người 1 là chủ đồ án, phụ tr�
 1. **Chốt dữ liệu, trạng thái và quyền trước khi code:** người 1 chốt hợp đồng API trong đặc tả; hướng dẫn cài/chạy hoặc kiểm thử thay đổi thì cập nhật trong file này. Không tạo thêm Markdown trong docs. Hai người còn lại đối chiếu hợp đồng trước khi nối FE; không tự đổi trường, trạng thái hoặc nghiệp vụ để khớp demo.
 2. **Tách thao tác gửi yêu cầu và duyệt/xử lý:** người 2 làm luồng gửi của Phụ huynh; người 3 làm luồng gửi của người dạy/trợ giảng; người 1 làm xử lý của Admin/Giáo vụ theo đúng quyền. Ví dụ người 3 gửi đề nghị điều chỉnh công, chỉ Admin duyệt và áp dụng; người 2 tạo giao dịch thanh toán, không tự xác nhận đã thu. Hai bên dùng chung dữ liệu và trạng thái đã chốt.
 3. **Thống nhất người giữ file dùng chung trước khi sửa:** ghi đầu mối feature và danh sách route/service/shared cần sửa trong mô tả task/PR. Phần Admin/Giáo vụ do người 1 giữ; đăng nhập và thành phần FE dùng chung do người 2 giữ; cổng người dạy do người 3 giữ. Feature có cả thao tác gửi và duyệt phải chọn một người ghép route/service chính; trao đổi trước khi người khác sửa cùng file. Không sao chép thành feature/bảng riêng cho từng cổng.
-4. **Mỗi task dùng nhánh và PR nhỏ:** cập nhật từ main sau khi đã lưu thay đổi cá nhân; tách PR theo một luồng hoặc thay đổi có thể review. PR ghi phần đã làm, API/quyền thay đổi, phụ thuộc, kết quả kiểm thử và phần còn thiếu. Người 1 review, tích hợp và kiểm thử luồng xuyên suốt trước khi merge; không ghi thẳng main.
+4. **Mỗi task dùng commit nhỏ trên develop:** cập nhật develop trước khi làm; trao đổi file đang sửa, commit theo một luồng có thể review rồi đồng bộ trước khi push. Khi một đợt tích hợp đã đạt, mở PR develop → main; PR ghi phần đã làm, API/quyền thay đổi, phụ thuộc, kết quả kiểm thử và phần còn thiếu. Người 1 review, duyệt demo và kiểm thử luồng xuyên suốt trước khi merge; không push thẳng main. Không tạo thêm nhánh trên GitHub theo quy trình hiện hành của nhóm.
 5. **Mỗi người tự kiểm thử phần mình:** thử luồng đúng, dữ liệu sai, sai quyền và đổi id sang dữ liệu người khác. Kiểm thử DB chỉ dùng DB riêng tên kết thúc `_test`; PHP integration cần `TEST_WITH_DB=1`. Ghi lệnh/kết quả thực chạy trong PR, không dùng số kiểm tra lịch sử thay cho kết quả hiện tại. Các kiểm tra bắt buộc phải đạt trước khi merge.
 6. **Không tự đổi DB/server dùng chung:** thay schema/routine/trigger phải thống nhất với người 1, có migration và quy trình backup/restore thử → preflight → migrate → check. Giữ nguyên dữ liệu/volume đang dùng; không init đè DB cũ, không đưa env, mật khẩu, token hoặc backup vào Git.
 7. **Chỉ báo hoàn thành khi đã nối và kiểm thử:** giao diện dùng dữ liệu giả/demo hoặc feature chỉ có DB/khung file vẫn ghi rõ phần thiếu; giữ TODO/status planned cho phần chưa triển khai. Hoàn thành một luồng cần FE gọi API PHP thật, quyền được chặn ở BE và dữ liệu lưu/đọc đúng MySQL.

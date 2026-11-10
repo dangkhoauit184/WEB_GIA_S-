@@ -2,9 +2,9 @@ name: Pull Request Verification
 
 on:
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, develop ]
   push:
-    branches: [ main, master, 'codex/**' ]
+    branches: [ main, develop ]
 
 jobs:
   structure:
