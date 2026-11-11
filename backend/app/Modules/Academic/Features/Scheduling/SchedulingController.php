@@ -3,6 +3,8 @@ namespace App\Modules\Academic\Features\Scheduling;
 
 final class SchedulingController extends \App\Shared\ApiController
 {
+    public function adminCreate() { return $this->respond(fn()=>AdminSchedule::save($this->input()),201); }
+    public function adminUpdate($id) { return $this->respond(fn()=>AdminSchedule::save($this->input(),(int)$id)); }
     public function weekly() { return $this->respond(fn()=>SchedulingService::weekly($this->request->getGet())); }
     public function createWeekly() { return $this->respond(fn()=>SchedulingService::createWeekly($this->input()),201); }
     public function sessions() { return $this->respond(fn()=>SchedulingService::sessions($this->request->getGet())); }

@@ -51,7 +51,96 @@ code,.mono{
 }
 button,input,select,textarea{font:inherit}
 button{cursor:pointer;user-select:none}
-svg.ui-ico{width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0}
+svg.ui-ico,svg.svg-ico{width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0;vertical-align:middle}
+svg.ui-ico.sm,svg.svg-ico.sm{width:14px;height:14px}
+
+/* Custom Calendar Date / Period Picker (Matches Reference Image 3) */
+.period-picker{position:relative;display:inline-flex;align-items:center}
+.period-picker .period-trigger{
+  min-width:185px;height:36px;padding:0 12px;background:var(--w);
+  border:1px solid var(--g300);border-radius:var(--rs);
+  color:var(--g900);font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:space-between;gap:10px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04);transition:all .14s;
+}
+.period-picker .period-trigger:hover{border-color:var(--g400);background:var(--g50)}
+.period-picker .period-pop{
+  position:absolute;top:calc(100% + 6px);right:0;width:276px;
+  background:#ffffff;border:1px solid #94a3b8;border-radius:6px;
+  box-shadow:0 14px 32px rgba(15,23,42,.18),0 2px 6px rgba(15,23,42,.08);
+  padding:14px 16px;z-index:130;display:none;user-select:none;
+}
+.period-picker .period-pop.open{display:block;animation:fin .14s ease-out}
+.period-picker .period-pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.period-picker .period-month-title{
+  border:0;background:transparent;font-size:14px;font-weight:700;color:#0f172a;
+  display:inline-flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;
+}
+.period-picker .period-month-title:hover{background:#f1f5f9}
+.period-picker .period-arrows{display:inline-flex;align-items:center;gap:6px}
+.period-picker .period-arr{
+  border:0;background:transparent;color:#1e293b;width:28px;height:28px;
+  border-radius:4px;display:inline-grid;place-items:center;font-size:16px;
+}
+.period-picker .period-arr:hover{background:#f1f5f9;color:#0f172a}
+.period-picker .period-weekdays{
+  display:grid;grid-template-columns:repeat(7,1fr);text-align:center;
+  font-size:12px;font-weight:500;color:#1e293b;margin-bottom:6px;
+}
+.period-picker .period-days{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;text-align:center}
+.period-picker .period-day{
+  width:32px;height:32px;margin:0 auto;border:0;background:transparent;
+  border-radius:3px;font-size:13px;color:#0f172a;display:grid;place-items:center;
+}
+.period-picker .period-day:hover{background:#f1f5f9}
+.period-picker .period-day.other{color:#94a3b8}
+.period-picker .period-day.on{
+  background:#0066ff;color:#ffffff;font-weight:700;
+  outline:1.5px solid #0f172a;border-radius:2px;
+}
+.period-picker .period-months-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}
+.period-picker .period-m-cell{
+  border:1px solid #e2e8f0;background:#f8fafc;color:#1e293b;
+  font-size:12.5px;font-weight:600;padding:8px 4px;border-radius:5px;text-align:center;
+}
+.period-picker .period-m-cell:hover{border-color:#0066ff;color:#0066ff;background:#eff6ff}
+.period-picker .period-m-cell.on{background:#0066ff;color:#ffffff;border-color:#0f172a;font-weight:700}
+.period-picker .period-pop-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:4px}
+.period-picker .period-foot-link{border:0;background:transparent;color:#0066ff;font-size:13px;font-weight:500;padding:2px 4px}
+.period-picker .period-foot-link:hover{text-decoration:underline}
+
+/* Unified Catalog CRUD Workspace (Horizontal Card Layout) */
+.cat-crud-bar{
+  display:block;
+  background:var(--w);
+  border:1px solid var(--g200);
+  border-radius:var(--r);
+  padding:16px 18px;
+  margin-bottom:14px;
+  box-shadow:var(--sh);
+}
+.cat-crud-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--g100);
+  flex-wrap:wrap;
+}
+.cat-crud-grid{
+  display:grid;
+  grid-template-columns:175px repeat(auto-fit,minmax(160px,1fr)) auto;
+  gap:12px;
+  align-items:end;
+}
+@media(max-width:960px){.cat-crud-grid{grid-template-columns:1fr 1fr}}
+.cat-crud-grid > div{min-width:0}
+.cat-crud-grid label{margin:0 0 5px;font-size:12px;font-weight:600;color:var(--g700);display:block}
+.cat-crud-grid input,.cat-crud-grid select{height:36px;background:var(--w);width:100%}
+.cat-settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px}
+.cat-setting-card{background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:13px 15px;display:flex;flex-direction:column;justify-content:space-between;gap:10px}
 
 /* ══════════════════════════════════════════════════
    ENTERPRISE APP SHELL & SIDEBAR (LINEAR / VERCEL STYLE)
@@ -255,46 +344,48 @@ svg.ui-ico{width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-line
 }
 .top-r{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .top-r .perm{
-  font-size:11.5px;
-  color:var(--pri-d);
-  background:var(--pri-ll);
-  border:1px solid #99f6e4;
-  padding:4.5px 12px;
-  border-radius:99px;
+  font-size:12.5px;
+  color:var(--g800);
+  background:var(--w);
+  border:1px solid var(--g200);
+  padding:6px 14px;
+  border-radius:999px;
   font-weight:600;
   white-space:nowrap;
-  max-width:280px;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  box-shadow:0 1px 2px rgba(15,23,42,.03);
 }
 .bell-btn{
   position:relative;
   background:var(--w);
   border:1px solid var(--g200);
-  border-radius:8px;
-  height:34px;
-  padding:0 11px;
+  border-radius:50%;
+  width:38px;
+  height:38px;
+  padding:0;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:4px;
   font-size:13px;
-  color:var(--g700);
-  box-shadow:var(--sh);
+  color:var(--g800);
+  box-shadow:0 1px 2px rgba(15,23,42,.04);
   transition:all .15s;
 }
 .bell-btn:hover{border-color:var(--g300);background:var(--g50);transform:translateY(-1px)}
 .bell-btn b{
   position:absolute;
-  top:-5px;
-  right:-5px;
-  background:var(--err);
+  top:-3px;
+  right:-3px;
+  background:#ea580c;
   color:var(--w);
   border-radius:99px;
-  font-size:9.5px;
+  font-size:10.5px;
   font-weight:700;
-  min-width:17px;
-  height:17px;
+  min-width:19px;
+  height:19px;
+  padding:0 4px;
   display:grid;
   place-items:center;
   border:2px solid var(--w);
@@ -676,24 +767,26 @@ input[type="checkbox"],input[type="radio"]{width:auto;box-shadow:none;accent-col
   display:inline-flex;
   align-items:center;
   gap:8px;
-  font-size:14.5px;
-  font-weight:800;
-  letter-spacing:-.015em;
+  font-size:13.5px;
+  font-weight:700;
+  letter-spacing:-.01em;
   color:var(--g900);
   padding:6px 14px;
   border-radius:var(--rs);
-  border:1px solid transparent;
+  border:1px solid var(--g200);
   background:var(--g50);
   cursor:pointer;
+  white-space:nowrap;
   transition:all .14s;
 }
-.cal-range-btn:hover{background:var(--g100);border-color:var(--g200)}
+.cal-range-btn:hover{background:var(--g100);border-color:var(--g300)}
 
-.cal-week-grid{display:flex;width:100%;overflow-x:auto}
+.cal-week-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));width:100%}
+@media(max-width:900px){.cal-week-grid{display:flex;overflow-x:auto}.cal-day-col{min-width:150px!important}}
 .cal-day-col{
   display:flex;
   flex-direction:column;
-  min-width:168px;
+  min-width:0;
   flex:1;
   border-right:1px solid var(--g200);
   background:var(--w);
@@ -703,11 +796,17 @@ input[type="checkbox"],input[type="radio"]{width:auto;box-shadow:none;accent-col
 .cal-day-col.is-today{background:linear-gradient(180deg,rgba(240,253,250,.7) 0%,rgba(255,255,255,1) 100%)}
 
 .cal-col-head{
-  padding:12px 10px;
+  height:60px;
+  padding:8px 6px;
   text-align:center;
   background:var(--g50);
   color:var(--g700);
   border-bottom:1px solid var(--g200);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
 }
 .cal-col-head.is-today{
   background:linear-gradient(135deg,#0f172a 0%,#0f766e 100%);
@@ -717,22 +816,27 @@ input[type="checkbox"],input[type="radio"]{width:auto;box-shadow:none;accent-col
 .cal-col-head .d-name{
   font-size:10.5px;
   font-weight:700;
-  letter-spacing:.06em;
+  letter-spacing:.04em;
   text-transform:uppercase;
   color:var(--g500);
-  margin-bottom:2px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  line-height:1.1;
 }
 .cal-col-head.is-today .d-name{color:#5eead4}
-.cal-col-head .d-num{font-size:14.5px;font-weight:800;letter-spacing:-.02em}
+.cal-col-head .d-num{font-size:14px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
 .cal-col-head .d-today-badge{
   display:inline-block;
-  font-size:9.5px;
+  font-size:9px;
   font-weight:700;
-  margin-top:3px;
-  padding:1px 7px;
+  padding:1px 6px;
   border-radius:99px;
-  background:rgba(45,212,191,.2);
+  background:rgba(45,212,191,.22);
   color:#5eead4;
+  text-transform:none;
+  letter-spacing:0;
 }
 
 .cal-col-body{
@@ -928,32 +1032,76 @@ input[type="checkbox"],input[type="radio"]{width:auto;box-shadow:none;accent-col
   flex-wrap:wrap;
 }
 
-/* Notification Drawer, Toast & Telemetry Bar */
+/* Notification Popover Dropdown (Matches Reference Image 4), Toast & Telemetry Bar */
 .notif-panel{
   position:fixed;
-  top:0;
-  right:-400px;
-  width:390px;
-  height:100vh;
+  top:58px;
+  right:24px;
+  width:360px;
+  max-width:calc(100vw - 24px);
+  max-height:460px;
   background:var(--w);
-  border-left:1px solid var(--g200);
-  z-index:50;
-  transition:right .25s cubic-bezier(.16,1,.3,1);
-  display:flex;
+  border:1px solid var(--g200);
+  border-radius:16px;
+  z-index:135;
+  display:none;
   flex-direction:column;
-  box-shadow:-12px 0 32px rgba(15,23,42,.1);
+  overflow:hidden;
+  box-shadow:0 20px 45px -10px rgba(15,23,42,.18),0 4px 12px rgba(15,23,42,.06);
 }
-.notif-panel.open{right:0}
-.np-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--g200);background:var(--g50)}
-.np-head h3{font-size:15px;font-weight:700}
-.np-close{background:0;border:0;font-size:18px;color:var(--g500);padding:4px}
-.np-list{flex:1;overflow-y:auto}
-.np-item{padding:14px 18px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .1s}
-.np-item:hover{background:var(--g50)}
-.np-item.unread{background:var(--pri-ll);border-left:3.5px solid var(--pri)}
-.np-item b{font-size:13px;display:block;margin-bottom:3px;color:var(--g900)}
-.np-item p{font-size:12.2px;color:var(--g600);margin:0;line-height:1.45}
-.np-item time{font-size:11px;color:var(--g400);display:block;margin-top:4px}
+.notif-panel.open{display:flex;animation:fin .15s ease-out}
+.np-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 18px;
+  border-bottom:1px solid var(--g200);
+  background:var(--w);
+}
+.np-head h3{font-size:16.5px;font-weight:700;color:var(--g900);margin:0}
+.np-read-all{
+  background:transparent;
+  border:0;
+  font-size:13px;
+  font-weight:600;
+  color:#115e59;
+  padding:2px 4px;
+  border-radius:4px;
+  cursor:pointer;
+}
+.np-read-all:hover{background:var(--pri-ll);color:var(--pri-d)}
+.np-list{flex:1;overflow-y:auto;max-height:390px}
+.np-date-group{
+  padding:7px 18px;
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--g500);
+  background:#f8fafc;
+  border-bottom:1px solid var(--g200);
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.np-item{
+  padding:13px 18px;
+  border-bottom:1px solid var(--g200);
+  background:var(--w);
+  cursor:pointer;
+  transition:background .12s;
+}
+.np-item:last-child{border-bottom:0}
+.np-item:hover{background:#f1f5f9}
+.np-item.unread{background:#eaf3ec}
+.np-item.unread:hover{background:#dfece2}
+.np-item-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:4px;
+}
+.np-item b{font-size:14px;font-weight:700;color:var(--g900);line-height:1.35;margin:0}
+.np-item time{font-size:12px;font-weight:500;color:var(--g500);flex-shrink:0;margin:0}
+.np-item p{font-size:13px;color:var(--g500);margin:0;line-height:1.45}
 
 .toast{
   position:fixed;
@@ -1754,7 +1902,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
   <div class="side-user">
     <span class="su-role" id="sRole">Quản trị viên</span>
     <div class="su-name" id="sName">Trần Quang Huy</div>
-    <div class="su-route" id="sRoute">/admin</div>
+    <div class="su-route" id="sRoute" style="display:none"></div>
   </div>
   <div class="nav-group">Chức năng phân hệ</div>
   <nav id="nav"></nav>
@@ -1773,18 +1921,20 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 <header class="topbar">
   <div class="row">
     <button class="btn sm mob-toggle" style="display:none" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-    <button class="btn sm" style="border-color:#99f6e4;background:var(--pri-ll);color:var(--pri-d);font-weight:600" onclick="showPublicLanding()" title="Mở trang Landing Page giới thiệu Trung tâm (Khách chưa đăng nhập vẫn xem được)">
+    <button class="btn sm" style="border-color:#99f6e4;background:var(--pri-ll);color:var(--pri-d);font-weight:600" onclick="showPublicLanding()" title="Mở trang Landing Page giới thiệu Trung tâm">
       <svg class="ui-ico" style="width:14px;height:14px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
       Website Trung tâm
     </button>
-    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--g400);white-space:nowrap">Vai trò:</span>
-    <div class="seg" id="seg"></div>
+    <div class="seg" id="seg" style="display:none"></div>
   </div>
   <div class="top-r">
-    <span class="perm" id="permLbl">Toàn quyền hệ thống</span>
-    <button class="bell-btn" onclick="toggleNotif()" title="Thông báo hệ thống">
-      <svg class="ui-ico" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <b id="nCount">4</b>
+    <span class="perm" id="permLbl">
+      <svg class="ui-ico sm" style="color:var(--g500)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="topDateText">Thứ Tư, 11/11/2026</span>
+    </span>
+    <button class="bell-btn" id="bellBtn" onclick="toggleNotif(event)" title="Thông báo hệ thống">
+      <svg class="ui-ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <b id="nCount" style="display:none">0</b>
     </button>
     <div style="position:relative">
       <button class="acct-btn" id="acctBtn" onclick="toggleUserDropdown()" title="Menu tài khoản">H</button>
@@ -1813,18 +1963,18 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 <section class="screen" id="admin-dash">
   <div class="pg-head">
     <div>
-      <h1>Tổng quan Quản trị cấp cao (Admin)</h1>
-      <p class="sub">Chuẩn DB 005 · Chỉ Admin quản trị Khóa học, Xếp lớp, Đơn giá giờ, Chốt/Trả lương &amp; Đối soát tiền</p>
+      <h1>Tổng quan Quản trị Hệ thống</h1>
+      <p class="sub">Theo dõi hoạt động đào tạo, khóa học, lớp học, doanh thu và các công việc cần xử lý</p>
     </div>
     <div class="row">
-      <button class="btn sm" onclick="showS('admin-courses')">📚 Khóa học &amp; Xếp lớp</button>
-      <button class="btn p sm" onclick="showS('admin-schedule')">📊 Giám sát Lịch toàn chuỗi</button>
+      <button class="btn sm" onclick="showS('admin-courses')">Khóa học &amp; Xếp lớp</button>
+      <button class="btn p sm" onclick="showS('admin-schedule')">Giám sát Lịch toàn chuỗi</button>
     </div>
   </div>
 
   <div class="stats">
     <div class="st"><div class="n">128</div><span>Học viên đang theo học</span></div>
-    <div class="st g"><div class="n">5 Khóa</div><span>Sản phẩm khóa học (KHOA_HOC)</span></div>
+    <div class="st g"><div class="n">5 Khóa</div><span>Khóa học đang mở</span></div>
     <div class="st i"><div class="n">94</div><span>Lớp đang vận hành</span></div>
     <div class="st w"><div class="n">412.5 tr</div><span>Doanh thu trọn khóa T10</span></div>
   </div>
@@ -1841,111 +1991,104 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
         </div>
       </div>
       <div class="card">
-        <h2>Việc cần Admin phê duyệt &amp; đối soát ngay (DB 004/005)</h2>
-        <div class="item"><span>💳 <b>Giao dịch GD-201</b>: PH Nguyễn Thị Hoa báo đã chuyển 800.000đ (Chờ đối soát)</span><button class="btn sm p" onclick="showS('admin-payments')">Đối soát tiền</button></div>
-        <div class="item"><span>🏫 <b>Đăng ký DK-502</b>: HV Lê Hoàng Nam chờ Admin xếp vào lớp Vật Lý 11</span><button class="btn sm i" onclick="showS('admin-courses')">Xếp lớp ngay</button></div>
-        <div class="item"><span>⏱️ <b>Điều chỉnh công</b> &amp; <b>Đơn nghỉ nguyên buổi cả lớp</b> chờ Admin duyệt</span><button class="btn sm warn" onclick="showS('admin-exceptions')">Phê duyệt</button></div>
-        <div class="item"><span>🔓 <b>Mở khóa bảng công tháng 9</b> (Trợ giảng Phạm Gia Huy)</span><button class="btn sm purple" onclick="showS('admin-exceptions')">Xem xét</button></div>
+        <h2>Việc cần Admin phê duyệt &amp; đối soát ngay</h2>
+        <div class="item"><span><b>Giao dịch GD-201</b>: PH Nguyễn Thị Hoa báo đã chuyển 800.000đ (Chờ đối soát)</span><button class="btn sm p" onclick="showS('admin-payments')">Đối soát tiền</button></div>
+        <div class="item"><span><b>Đăng ký DK-502</b>: HV Lê Hoàng Nam chờ xếp vào lớp Vật Lý 11</span><button class="btn sm i" onclick="showS('admin-courses')">Xếp lớp ngay</button></div>
+        <div class="item"><span><b>Điều chỉnh công</b> &amp; <b>Đơn nghỉ nguyên buổi cả lớp</b> chờ phê duyệt</span><button class="btn sm warn" onclick="showS('admin-exceptions')">Phê duyệt</button></div>
+        <div class="item"><span><b>Mở khóa bảng công tháng 9</b> (Trợ giảng Phạm Gia Huy)</span><button class="btn sm purple" onclick="showS('admin-exceptions')">Xem xét</button></div>
       </div>
     </div>
     <div class="card">
-      <h2>Hoạt động kiểm toán gần đây (AUDIT_LOG)</h2>
-      <div class="item"><div><b>Trần Quang Huy (Admin)</b><br><span style="font-size:12px;color:var(--g500)">sp_dat_don_gia_gio: Cập nhật đơn giá giờ GV Nguyễn Minh Anh</span></div><span class="tag purple">Đơn giá giờ</span></div>
-      <div class="item"><div><b>Trần Quang Huy (Admin)</b><br><span style="font-size:12px;color:var(--g500)">sp_chot_cong: Chốt công tháng T10 (chỉ Admin thực thi)</span></div><span class="tag ok">Chốt công</span></div>
-      <div class="item"><div><b>Lê Thị Mai (Giáo vụ)</b><br><span style="font-size:12px;color:var(--g500)">Phát hành hóa đơn trọn khóa HD-101 → Thông báo PH</span></div><span class="tag i">Hóa đơn</span></div>
-      <div class="item"><div><b>Nguyễn Minh Anh (GV)</b><br><span style="font-size:12px;color:var(--g500)">Check-in 18:10 → Out 20:05 (Giao lịch 18–20h = 110p, Trễ)</span></div><span class="tag w">Chấm công 004</span></div>
+      <h2>Hoạt động kiểm toán gần đây</h2>
+      <div class="item"><div><b>Trần Quang Huy (Admin)</b><br><span style="font-size:12px;color:var(--g500)">Cập nhật đơn giá giờ giảng dạy GV Nguyễn Minh Anh</span></div><span class="tag purple">Đơn giá giờ</span></div>
+      <div class="item"><div><b>Trần Quang Huy (Admin)</b><br><span style="font-size:12px;color:var(--g500)">Chốt bảng công giảng dạy kỳ Tháng 10</span></div><span class="tag ok">Chốt công</span></div>
+      <div class="item"><div><b>Lê Thị Mai (Giáo vụ)</b><br><span style="font-size:12px;color:var(--g500)">Phát hành hóa đơn trọn khóa HD-101 và gửi thông báo</span></div><span class="tag i">Hóa đơn</span></div>
+      <div class="item"><div><b>Nguyễn Minh Anh (GV)</b><br><span style="font-size:12px;color:var(--g500)">Check-in 18:10 → Out 20:05 (Khung 18–20h = 110 phút)</span></div><span class="tag w">Chấm công</span></div>
     </div>
   </div>
 </section>
 
-<!-- ADMIN: Quản lý Khóa học (KHOA_HOC) & Xếp lớp độc lập thanh toán (LOP_HOC_VIEN) -->
+<!-- ADMIN: Quản lý Khóa học & Xếp lớp -->
 <section class="screen" id="admin-courses">
   <div class="pg-head">
     <div>
-      <h1>Sản phẩm Khóa học &amp; Đặc quyền Admin Xếp lớp</h1>
-      <p class="sub">Quản lý 5 sản phẩm khóa học độc lập (KHOA_HOC) · Chỉ Admin xếp học viên vào lớp, độc lập tình trạng đóng tiền (DB 004/005)</p>
+      <h1>Quản lý Khóa học &amp; Điều phối Xếp lớp</h1>
+      <p class="sub">Quản lý 5 sản phẩm khóa học trọn khóa và phân bổ học viên vào lớp học phù hợp</p>
     </div>
     <div class="row">
       <button class="btn sm" onclick="openCourseModal()">+ Thêm Khóa học mới</button>
-      <button class="btn p sm" onclick="openAdminEnrollModal()">+ Admin Xếp học viên vào lớp</button>
+      <button class="btn p sm" onclick="openAdminEnrollModal()">+ Xếp học viên vào lớp</button>
     </div>
   </div>
 
   <div class="card">
     <div class="row-b" style="margin-bottom:10px">
-      <h2 style="margin:0">1. Danh mục Sản phẩm Khóa học độc lập (KHOA_HOC — Thu trọn khóa, không chia kỳ/đợt)</h2>
-      <span class="tag ok">Snapshot giá khi đăng ký</span>
+      <h2 style="margin:0">1. Danh mục Chương trình Khóa học</h2>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>Mã khóa</th><th>Tên khóa học</th><th>Mô tả chương trình</th><th>Học phí trọn khóa</th><th>Trạng thái ĐK</th><th>Thao tác Admin</th></tr></thead>
+      <thead><tr><th>Mã khóa</th><th>Tên khóa học</th><th>Mô tả chương trình</th><th>Học phí trọn khóa</th><th>Trạng thái ĐK</th><th>Thao tác</th></tr></thead>
       <tbody id="adminCoursesBody"></tbody>
     </table></div>
   </div>
 
   <div class="card">
     <div class="row-b" style="margin-bottom:10px">
-      <h2 style="margin:0">2. Danh sách Đăng ký Khóa học &amp; Xếp lớp (DANG_KY_KHOA_HOC → LOP_HOC_VIEN)</h2>
-      <span class="tag purple">Chỉ Admin xếp lớp (xep_boi, xep_luc) · Không bắt buộc đóng tiền trước</span>
+      <h2 style="margin:0">2. Danh sách Đăng ký Khóa học &amp; Xếp lớp</h2>
     </div>
-    <div class="hint"><span>Quy tắc DB 005: Chỉ Admin có quyền xếp học viên vào lớp, có thể xếp ngay khi chưa đóng tiền hoặc chưa phát hành hóa đơn. Tự thôi học không hoàn tiền.</span></div>
     <div class="tw"><table>
-      <thead><tr><th>Mã ĐK</th><th>Học viên</th><th>Khóa đăng ký</th><th>Giá Snapshot</th><th>Hóa đơn / TT Tiền</th><th>Lớp đã xếp</th><th>Dấu vết Admin xếp (005)</th><th>Thao tác Admin</th></tr></thead>
+      <thead><tr><th>Mã ĐK</th><th>Học viên</th><th>Khóa đăng ký</th><th>Mức học phí</th><th>Hóa đơn / Học phí</th><th>Lớp đã xếp</th><th>Người xếp / Thời gian</th><th>Thao tác</th></tr></thead>
       <tbody id="adminEnrollmentsBody"></tbody>
     </table></div>
   </div>
 </section>
 
-<!-- ADMIN: Đối soát Thanh toán Trực tuyến (GIAO_DICH_TRUC_TUYEN & sp_xac_nhan_giao_dich) -->
+<!-- ADMIN: Đối soát Thanh toán Trực tuyến -->
 <section class="screen" id="admin-payments">
   <div class="pg-head">
     <div>
-      <h1>Đối soát Giao dịch Thanh toán Trực tuyến</h1>
-      <p class="sub">Kiểm tra giao dịch cổng thanh toán / chuyển khoản web (GIAO_DICH_TRUC_TUYEN, SU_KIEN_THANH_TOAN) &amp; gọi sp_xac_nhan_giao_dich (DB 005)</p>
+      <h1>Đối soát Giao dịch Thanh toán Học phí</h1>
+      <p class="sub">Kiểm tra giao dịch chuyển khoản học phí trực tuyến và xác nhận lập phiếu thu chính thức</p>
     </div>
   </div>
-  <div class="hint"><span><b>Nguyên tắc chống gian lận DB 005:</b> Phụ huynh bấm "Đã chuyển" hoặc nhận Webhook chỉ ghi nhận trạng thái <code>cho_xac_nhan</code>, tuyệt đối chưa tăng tiền. Chỉ khi đối soát hợp lệ và Admin xác nhận (<code>sp_xac_nhan_giao_dich</code>), hệ thống mới sinh Phiếu thu (<code>THANH_TOAN</code>), trừ công nợ và thông báo cho Phụ huynh + Giáo vụ.</span></div>
   <div class="card">
-    <h2>Danh sách Yêu cầu Thanh toán &amp; Đối soát Admin</h2>
+    <h2>Danh sách Yêu cầu Thanh toán &amp; Đối soát</h2>
     <div class="tw"><table>
-      <thead><tr><th>Mã YC / Giao dịch</th><th>Hóa đơn · Học viên</th><th>Phụ huynh</th><th>Kênh / Cổng</th><th>Số tiền (VND)</th><th>Webhook Hash</th><th>Trạng thái</th><th>Thao tác Đối soát (Admin)</th></tr></thead>
+      <thead><tr><th>Mã YC / Giao dịch</th><th>Hóa đơn · Học viên</th><th>Phụ huynh</th><th>Kênh thanh toán</th><th>Số tiền (VND)</th><th>Mã tham chiếu</th><th>Trạng thái</th><th>Thao tác Đối soát</th></tr></thead>
       <tbody id="adminOnlineTxBody"></tbody>
     </table></div>
   </div>
 </section>
 
-<!-- ADMIN: Quản trị Công, Đơn giá giờ & Quyết toán Lương (CHỈ ADMIN THEO DB 004/005) -->
+<!-- ADMIN: Quản trị Công, Đơn giá giờ & Quyết toán Lương -->
 <section class="screen" id="admin-payroll">
   <div class="pg-head">
     <div>
-      <h1>Quản trị Chấm công, Đơn giá giờ &amp; Quyết toán Lương</h1>
-      <p class="sub">Đặc quyền riêng của Admin (DB 004/005): Đặt đơn giá tiền/giờ (sp_dat_don_gia_gio), tính công theo giao khung lịch, chốt công (sp_chot_cong) &amp; chi trả lương</p>
+      <h1>Quản trị Chấm công, Đơn giá &amp; Quyết toán Lương</h1>
+      <p class="sub">Quản lý đơn giá theo giờ, tổng hợp thời lượng giảng dạy thực tế, chốt bảng công và xác nhận chi trả lương</p>
     </div>
     <div class="row">
       <select style="width:145px"><option>Kỳ: Tháng 10/2026</option><option>Kỳ: Tháng 09/2026</option></select>
-      <button class="btn p sm" onclick="staffClosePayrollMonth()">🔒 Admin Chốt công tháng (sp_chot_cong)</button>
+      <button class="btn p sm" onclick="staffClosePayrollMonth()">Chốt bảng công tháng</button>
     </div>
   </div>
   <div id="staffPayrollWarn"></div>
 
   <div class="card">
     <div class="row-b" style="margin-bottom:10px">
-      <h2 style="margin:0">1. Bảng tổng hợp Công &amp; Lương tháng 10/2026 (BANG_CONG_THANG)</h2>
-      <span class="tag i">Tiền công = Đơn giá giờ × Số phút tính công / 60</span>
+      <h2 style="margin:0">1. Bảng tổng hợp Công &amp; Lương tháng 10/2026</h2>
     </div>
-    <div class="hint"><span><b>Quy tắc công 004:</b> Chỉ tính phần giao giữa giờ check-in/out thực tế và khung giờ lịch phân công (đến sớm/về muộn không cộng thêm công; vào sau giờ bắt đầu lịch bị gắn cờ Trễ). Đổi đơn giá giờ chỉ áp dụng từ thời điểm đổi cho ca tương lai, giữ nguyên ca đã dạy.</span></div>
     <div class="tw"><table>
-      <thead><tr><th>Mã BC</th><th>Nhân sự giảng dạy</th><th>Vai trò</th><th>Đơn giá / giờ hiện hành</th><th>Số buổi (Bù / Trễ)</th><th>Phút tính công</th><th>Tổng lương</th><th>Trạng thái</th><th>Thao tác Admin</th></tr></thead>
+      <thead><tr><th>Mã bảng công</th><th>Nhân sự giảng dạy</th><th>Vai trò</th><th>Đơn giá / giờ</th><th>Số buổi</th><th>Số giờ công</th><th>Tổng lương</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
       <tbody id="adminPayrollBody"></tbody>
     </table></div>
   </div>
 
   <div class="card">
     <div class="row-b" style="margin-bottom:10px">
-      <h2 style="margin:0">2. Lịch sử thay đổi Đơn giá tiền/giờ (LICH_SU_DON_GIA_GIO)</h2>
-      <span class="tag purple">Chỉ Admin xem &amp; sửa · Ẩn hoàn toàn với Giáo vụ</span>
+      <h2 style="margin:0">2. Lịch sử cập nhật Đơn giá theo giờ</h2>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>Nhân sự</th><th>Đơn giá giờ mới</th><th>Hiệu lực từ (hieu_luc_tu)</th><th>Người đặt (nguoi_dat_id)</th><th>Ghi chú áp dụng</th></tr></thead>
+      <thead><tr><th>Nhân sự</th><th>Đơn giá giờ mới</th><th>Thời điểm hiệu lực</th><th>Người cập nhật</th><th>Ghi chú áp dụng</th></tr></thead>
       <tbody id="rateHistoryBody"></tbody>
     </table></div>
   </div>
@@ -1954,7 +2097,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 <!-- ADMIN: Tài khoản, Nhân sự & Hồ sơ chuyên môn -->
 <section class="screen" id="admin-staff">
   <div class="pg-head">
-    <div><h1>Nhân sự, Tài khoản &amp; Hồ sơ chuyên môn</h1><p class="sub">Quản lý tài khoản, gán nhóm quyền, xem/sửa hồ sơ chuyên môn, lịch rảnh và đặt đơn giá giờ (sp_dat_don_gia_gio)</p></div>
+    <div><h1>Nhân sự, Tài khoản &amp; Hồ sơ chuyên môn</h1><p class="sub">Quản lý tài khoản, phân nhóm quyền, cập nhật hồ sơ chuyên môn, lịch rảnh và đơn giá giảng dạy</p></div>
     <button class="btn p" onclick="openStaffForm()">+ Thêm tài khoản nhân sự</button>
   </div>
   <div class="card">
@@ -1973,28 +2116,28 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
       <span style="font-size:12px;color:var(--g500)" id="staffCount"></span>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>Họ tên</th><th>Email · SĐT</th><th>Vai trò / Nhóm quyền</th><th>Chuyên môn &amp; Lịch rảnh</th><th>Đơn giá / giờ (Admin)</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <thead><tr><th>Họ tên</th><th>Email · SĐT</th><th>Vai trò / Nhóm quyền</th><th>Chuyên môn &amp; Lịch rảnh</th><th>Đơn giá / giờ</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
       <tbody id="staffRows"></tbody>
     </table></div>
   </div>
 </section>
 
-<!-- ADMIN: Phân quyền 8 Phân hệ & 5 Nhóm quyền chuẩn DB (ROLE_GROUP_FUNCTION) -->
+<!-- ADMIN: Phân quyền hệ thống -->
 <section class="screen" id="admin-perms">
   <div class="pg-head">
     <div>
-      <h1>Ma trận Phân quyền 8 Phân hệ &amp; 5 Nhóm quyền (ROLE_GROUP_FUNCTION)</h1>
-      <p class="sub">Đồng bộ 100% với bảng role_group &amp; function trong MySQL · Kiểm tra version chống ghi đè (PERMISSIONS_VERSION_CONFLICT)</p>
+      <h1>Phân quyền Hệ thống theo Nhóm vai trò</h1>
+      <p class="sub">Thiết lập quyền truy cập chi tiết cho từng nhóm người dùng trên toàn bộ các phân hệ nghiệp vụ</p>
     </div>
-    <button class="btn p" onclick="savePermissionsMatrix()">💾 Lưu ma trận phân quyền</button>
+    <button class="btn p" onclick="savePermissionsMatrix()">Lưu cấu hình phân quyền</button>
   </div>
   <div class="card" style="padding:12px 16px;margin-bottom:14px">
     <div class="row-b">
       <div class="row" style="gap:6px">
-        <span style="font-size:12px;font-weight:600;color:var(--g600)">Chọn 1 trong 5 nhóm quyền chuẩn (ROLE_GROUP):</span>
+        <span style="font-size:12px;font-weight:600;color:var(--g600)">Chọn nhóm vai trò:</span>
         <div class="chips" id="permRoleTabs"></div>
       </div>
-      <span class="mono" style="font-size:11px;color:var(--g500)" id="permVersionBadge">version: 8f4a2c...91e0</span>
+      <span class="mono" style="font-size:11px;color:var(--g500)" id="permVersionBadge">Phiên bản: 8f4a2c...91e0</span>
     </div>
   </div>
   <div class="row-b" style="margin-bottom:10px">
@@ -2010,52 +2153,50 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 <!-- ADMIN: Danh mục & Cấu hình hệ thống -->
 <section class="screen" id="admin-catalog">
   <div class="pg-head">
-    <div><h1>Danh mục &amp; Cấu hình tham số vận hành</h1><p class="sub">Quản lý Môn học, Cơ sở, Phòng học, Cấp lớp (1–12) và Tham số Check-in/Báo cáo chuẩn DB 005</p></div>
+    <div><h1>Danh mục Dùng chung &amp; Cấu hình Hệ thống</h1><p class="sub">Quản lý tập trung Phòng học, Môn học, Cơ sở đào tạo, Cấp lớp và các tham số vận hành hệ thống</p></div>
   </div>
   <div class="tabs" id="catTabs"></div>
   <div id="catContent"></div>
 </section>
 
-<!-- ADMIN: Phê duyệt Ngoại lệ, Nghỉ cả lớp & Điều chỉnh giờ công (DB 004/005) -->
+<!-- ADMIN: Phê duyệt Nghỉ cả lớp, Điều chỉnh giờ công & Mở khóa công -->
 <section class="screen" id="admin-exceptions">
   <div class="pg-head">
     <div>
-      <h1>Phê duyệt của Admin: Nghỉ cả lớp, Điều chỉnh công &amp; Mở khóa công</h1>
-      <p class="sub">Theo chuẩn DB 004/005: Chỉ Admin duyệt nghỉ nguyên buổi cả lớp (YEU_CAU_NGHI_LOP), duyệt điều chỉnh giờ công (DIEU_CHINH_CONG) và mở khóa bảng công đã chốt</p>
+      <h1>Phê duyệt Nghỉ cả lớp, Điều chỉnh công &amp; Mở khóa kỳ công</h1>
+      <p class="sub">Xét duyệt yêu cầu nghỉ nguyên buổi cả lớp, xác nhận điều chỉnh giờ chấm công và mở khóa bảng công tháng</p>
     </div>
   </div>
 
   <div class="card">
-    <h2>1. Duyệt Yêu cầu Nghỉ nguyên buổi của cả lớp (YEU_CAU_NGHI_LOP — Chỉ Admin duyệt)</h2>
-    <div class="hint"><span>Nghỉ cá nhân học viên do Giáo vụ duyệt; riêng nghỉ nguyên buổi của cả lớp bắt buộc phải do Admin phê duyệt.</span></div>
+    <h2>1. Duyệt Yêu cầu Nghỉ nguyên buổi của cả lớp</h2>
     <div class="tw"><table>
-      <thead><tr><th>Mã đơn</th><th>Lớp · Buổi học</th><th>Người gửi</th><th>Lý do xin nghỉ cả lớp</th><th>Trạng thái</th><th>Thao tác Admin</th></tr></thead>
+      <thead><tr><th>Mã đơn</th><th>Lớp · Buổi học</th><th>Người gửi</th><th>Lý do xin nghỉ cả lớp</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
       <tbody id="adminClassLeaveBody"></tbody>
     </table></div>
   </div>
 
   <div class="card">
-    <h2>2. Duyệt Yêu cầu Điều chỉnh giờ công (DIEU_CHINH_CONG — Quên check-in/out)</h2>
-    <div class="hint"><span>Ca dạy thiếu check-out không tự tính đủ giờ; người dạy gửi giải trình và chỉ Admin có quyền duyệt cập nhật phút công.</span></div>
+    <h2>2. Duyệt Yêu cầu Điều chỉnh giờ công</h2>
     <div class="tw"><table>
-      <thead><tr><th>Mã YC</th><th>Người dạy</th><th>Ca dạy liên quan</th><th>Giờ đề xuất &amp; Lý do</th><th>Phút công mới</th><th>Trạng thái</th><th>Thao tác Admin</th></tr></thead>
+      <thead><tr><th>Mã YC</th><th>Người dạy</th><th>Ca dạy liên quan</th><th>Giờ đề xuất &amp; Lý do</th><th>Giờ công đề xuất</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
       <tbody id="adminTimeAdjBody"></tbody>
     </table></div>
   </div>
 
   <div class="card">
-    <h2>3. Mở khóa bảng công tháng đã chốt (BANG_CONG_THANG — mo_khoa_boi, ly_do_mo_khoa)</h2>
+    <h2>3. Mở khóa bảng công tháng đã chốt</h2>
     <div class="tw"><table>
-      <thead><tr><th>Mã yêu cầu</th><th>Nhân sự cần mở</th><th>Kỳ công</th><th>Lý do mở khóa</th><th>Trạng thái</th><th>Thao tác Admin</th></tr></thead>
+      <thead><tr><th>Mã bảng công</th><th>Nhân sự</th><th>Kỳ công</th><th>Ghi chú / Lý do</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
       <tbody>
         <tr>
           <td><b>EX-01</b></td>
           <td><b>Phạm Gia Huy (Trợ giảng)</b></td>
           <td>Tháng 09/2026</td>
-          <td>Bổ sung 120 phút công ca trợ giảng lớp LOP-E6G sau khi giải trình</td>
-          <td><span class="tag w" id="ex01StatusTag">Chờ Admin mở khóa</span></td>
+          <td>Bổ sung 2 giờ công ca trợ giảng lớp LOP-E6G sau khi giải trình</td>
+          <td><span class="tag w" id="ex01StatusTag">Chờ mở khóa</span></td>
           <td>
-            <button class="btn purple sm" onclick="adminUnlockPayroll('Phạm Gia Huy')">🔓 Mở khóa bảng công</button>
+            <button class="btn purple sm" onclick="adminUnlockPayroll('Phạm Gia Huy')">Mở khóa bảng công</button>
           </td>
         </tr>
       </tbody>
@@ -2065,7 +2206,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 
 <!-- ADMIN: Kiểm toán & Giám sát -->
 <section class="screen" id="admin-audit">
-  <div class="pg-head"><div><h1>Nhật ký kiểm toán &amp; Giám sát (AUDIT_LOG)</h1><p class="sub">Truy vết mọi thao tác thay đổi dữ liệu quan trọng kèm actor &amp; dữ liệu trước/sau</p></div></div>
+  <div class="pg-head"><div><h1>Nhật ký Hoạt động &amp; Kiểm toán Hệ thống</h1><p class="sub">Tra cứu lịch sử thao tác, người thực hiện, thời điểm và dữ liệu chi tiết trước/sau khi thay đổi</p></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Thời gian</th><th>Người thao tác</th><th>Phân hệ</th><th>Hành động</th><th>Chi tiết</th></tr></thead>
@@ -2079,9 +2220,9 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
   <div class="pg-head">
     <div>
       <h1>Thống kê &amp; Giám sát Lịch toàn chuỗi</h1>
-      <p class="sub">Bảng thời khóa biểu giám sát toàn bộ ca dạy thường và ca dạy bù trên tất cả cơ sở</p>
+      <p class="sub">Bảng thời khóa biểu giám sát toàn bộ ca dạy định kỳ và ca dạy bù trên tất cả cơ sở</p>
     </div>
-    <button class="btn sm" onclick="exportSchedulePdf()">🖨️ In / Xuất báo cáo Lịch</button>
+    <button class="btn sm" onclick="exportSchedulePdf()">In / Xuất báo cáo Lịch</button>
   </div>
   <div id="adminCalContainer"></div>
 </section>
@@ -2766,7 +2907,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
   </div>
 </div>
 
-<!-- 2. Modal Thêm / Sửa Buổi học & Lưu lịch học bù (HOC_BU_HOC_VIEN) -->
+<!-- 2. Modal Thêm / Sửa Buổi học & Lưu lịch học bù -->
 <div class="modal-ov" id="modalSessionForm" onclick="if(event.target===this) closeModalSessionForm()">
   <div class="modal-box" style="max-width:600px">
     <h3>
@@ -2775,7 +2916,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
     </h3>
     <form id="sessionFormElement" onsubmit="handleSessionFormSubmit(event)">
       <div id="sfConflictBanner" style="display:none" class="warn-box">
-        <b style="display:block;margin-bottom:2px">⚠ Xung đột lịch giáo viên (BR01)!</b>
+        <b style="display:block;margin-bottom:2px">⚠ Xung đột lịch giáo viên!</b>
         <span id="sfConflictText">Giáo viên đã có ca dạy khác vào khung giờ này.</span>
       </div>
 
@@ -2785,10 +2926,10 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
           <select id="sfClassSelect" onchange="onSfClassChanged()"></select>
         </div>
         <div style="flex:1">
-          <label>Loại buổi học (DB 004)</label>
+          <label>Loại buổi học</label>
           <select id="sfSessionType" onchange="onSfTypeChanged()">
             <option value="upcoming">Buổi học thường định kỳ</option>
-            <option value="makeup">Buổi học bù theo thỏa thuận (loai='bu')</option>
+            <option value="makeup">Buổi học bù theo thỏa thuận</option>
           </select>
         </div>
       </div>
@@ -2796,9 +2937,9 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
       <div id="sfMakeupWrap" style="display:none;background:var(--purple-l);border:1px solid #ddd6fe;padding:10px;border-radius:var(--rs);margin-top:8px">
         <div class="row" style="gap:10px">
           <div style="flex:1">
-            <label style="margin-top:0;color:var(--purple)">Phạm vi bù (pham_vi_bu)</label>
+            <label style="margin-top:0;color:var(--purple)">Phạm vi bù</label>
             <select id="sfMakeupScope">
-              <option value="ca_nhan">Bù cá nhân (HOC_BU_HOC_VIEN)</option>
+              <option value="ca_nhan">Bù cá nhân</option>
               <option value="ca_lop">Bù nguyên cả lớp</option>
             </select>
           </div>
@@ -2817,7 +2958,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 
       <div class="row" style="gap:10px;margin-top:6px">
         <div style="flex:1">
-          <label>Giáo viên chính (BR02) <span style="color:var(--err)">*</span></label>
+          <label>Giáo viên chính <span style="color:var(--err)">*</span></label>
           <select id="sfTeacherSelect" onchange="checkSfConflicts()"></select>
         </div>
         <div style="flex:1">
@@ -2867,7 +3008,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 
       <div id="sfRecurringWrap" style="margin-top:10px;padding:8px 10px;border:1px dashed var(--g300);border-radius:var(--rs)">
         <div class="row-b">
-          <span style="font-size:12px;font-weight:600">🔁 Lặp lại hàng tuần (sp_sinh_buoi_hoc — Tự lấy đơn giá giờ từng người)</span>
+          <span style="font-size:12px;font-weight:600">🔁 Lặp lại hàng tuần (Tự lấy đơn giá giờ từng người)</span>
           <input type="checkbox" id="sfIsRecurring" onchange="document.getElementById('sfRecurOptions').style.display=this.checked?'block':'none'" style="width:16px;height:16px">
         </div>
         <div id="sfRecurOptions" style="display:none;margin-top:6px">
@@ -3024,7 +3165,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
       </div>
 
       <div class="form-group">
-        <label>Chuyên môn &amp; Khung giờ rảnh (NHAN_SU_MON, NHAN_SU_LICH_RANH)</label>
+        <label>Chuyên môn &amp; Khung giờ rảnh</label>
         <input type="text" id="sfStaffSpec" value="Toán 8-9 · Thủ Đức · Rảnh T3, T5, T7 (18:00-21:00)">
       </div>
 
@@ -3036,7 +3177,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
   </div>
 </div>
 
-<!-- 7. Modal Hồ sơ Chuyên môn, Lịch rảnh & Cập nhật Đơn giá giờ (sp_dat_don_gia_gio) -->
+<!-- 7. Modal Hồ sơ Chuyên môn, Lịch rảnh & Cập nhật Đơn giá giờ -->
 <div class="modal-ov" id="modalTeacherProfile" onclick="if(event.target===this) closeTeacherProfileModal()">
   <div class="modal-box" style="max-width:580px">
     <h3>
@@ -3047,18 +3188,17 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
   </div>
 </div>
 
-<!-- 8. Modal Admin Xếp Học Viên Vào Lớp (Độc lập thanh toán — DB 005) -->
+<!-- 8. Modal Admin Xếp Học Viên Vào Lớp -->
 <div class="modal-ov" id="modalAdminEnroll" onclick="if(event.target===this) closeAdminEnrollModal()">
   <div class="modal-box" style="max-width:520px">
     <h3>
-      <span>🛡️ Đặc quyền Admin: Xếp học viên vào lớp (DB 005)</span>
+      <span>Xếp học viên vào lớp</span>
       <button style="border:0;background:0;font-size:16px;color:var(--g500)" onclick="closeAdminEnrollModal()">✕</button>
     </h3>
     <form onsubmit="handleAdminEnrollSubmit(event)">
-      <div class="hint"><span><b>Quy tắc DB 005:</b> Chỉ Admin có quyền xếp lớp (ghi nhận <code>xep_boi</code>, <code>xep_luc</code>). Có thể xếp lớp ngay cả khi học viên chưa đóng tiền hoặc chưa phát hành hóa đơn.</span></div>
-      <label>Chọn Hồ sơ Đăng ký Khóa học (DANG_KY_KHOA_HOC)</label>
+      <label>Chọn Hồ sơ Đăng ký Khóa học</label>
       <select id="aeEnrollmentSelect"></select>
-      <label>Chọn Lớp học tương ứng với Khóa (LOP_HOC)</label>
+      <label>Chọn Lớp học tương ứng với Khóa</label>
       <select id="aeClassSelect"></select>
       <div class="modal-act">
         <button type="button" class="btn sm" onclick="closeAdminEnrollModal()">Hủy</button>
@@ -3141,25 +3281,11 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
 <!-- Toast & Notif Panel -->
 <div class="notif-panel" id="notifPanel">
   <div class="np-head">
-    <h3>Thông báo hệ thống (THONG_BAO)</h3>
-    <button class="np-close" onclick="toggleNotif()">✕</button>
+    <h3>Thông báo</h3>
+    <button type="button" class="np-read-all" onclick="markAllNotifsRead()">Đọc tất cả</button>
   </div>
-  <div class="np-list">
-    <div class="np-item unread">
-      <b>Đơn xin nghỉ học mới</b>
-      <p>PH Nguyễn Thị B gửi đơn xin nghỉ buổi Tiếng Anh 6 ngày 24/10.</p>
-      <time>10 phút trước</time>
-    </div>
-    <div class="np-item unread">
-      <b>Kết quả bài tập giấy đã chấm</b>
-      <p>Thầy Cường đã chấm xong phiếu BT-102 (Điểm: 8.75/10).</p>
-      <time>1 giờ trước</time>
-    </div>
-    <div class="np-item">
-      <b>Thông báo đối soát học phí</b>
-      <p>Đã hoàn tất kết xuất hóa đơn tháng 10 cho toàn bộ học viên.</p>
-      <time>Hôm qua</time>
-    </div>
+  <div class="np-list" id="notifList">
+    <div style="padding:28px 18px;text-align:center;color:var(--g400);font-size:13px">Chưa có thông báo mới.</div>
   </div>
 </div>
 
@@ -3176,7 +3302,7 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{border-color:var(--err)!i
      ═══════════════════════════════════════ -->
 <script>
 /* ═══════════════════════════════════════
-   1. MAPPING VAI TRÒ & NHÓM MÀN HÌNH SỔ XUỐNG CHUẨN DB 005
+   1. MAPPING VAI TRÒ & NHÓM MÀN HÌNH SỔ XUỐNG
    ═══════════════════════════════════════ */
 const PORTALS={
   admin:{
@@ -3186,31 +3312,31 @@ const PORTALS={
       { title:'Điều hành & Giám sát', items:[
         ['admin-dash','📊','Tổng quan quản trị','KPI'],
         ['admin-schedule','📅','Giám sát Lịch toàn chuỗi','TKB'],
-        ['admin-audit','📜','Nhật ký kiểm toán (AUDIT_LOG)','Log']
+        ['admin-audit','📜','Nhật ký kiểm toán','Log']
       ]},
-      { title:'Khóa học, Xếp lớp & Danh mục (005)', items:[
-        ['admin-courses','📚','Khóa học & Xếp lớp Admin','005'],
-        ['admin-catalog','⚙️','Danh mục & Cấu hình 005','Cfg']
+      { title:'Khóa học, Xếp lớp & Danh mục', items:[
+        ['admin-courses','📚','Khóa học & Xếp lớp','Khóa'],
+        ['admin-catalog','⚙️','Danh mục & Cấu hình','Cfg']
       ]},
-      { title:'Tài chính, Công & Lương (Đặc quyền)', items:[
-        ['admin-payments','💳','Đối soát Thanh toán Web','005'],
-        ['admin-payroll','💰','Công, Đơn giá giờ & Lương','004'],
-        ['admin-exceptions','🔓','Duyệt Nghỉ lớp / Công / Mở khóa','004']
+      { title:'Tài chính, Công & Lương', items:[
+        ['admin-payments','💳','Đối soát Thanh toán Web','TT'],
+        ['admin-payroll','💰','Công, Đơn giá giờ & Lương','Lương'],
+        ['admin-exceptions','🔓','Duyệt Nghỉ lớp / Công / Mở khóa','Duyệt']
       ]},
       { title:'Nhân sự & Phân quyền RBAC', items:[
         ['admin-staff','👥','Nhân sự & Hồ sơ chuyên môn','HR'],
-        ['admin-perms','🔐','Phân quyền 8 phân hệ · 5 nhóm','RBAC']
+        ['admin-perms','🔐','Phân quyền hệ thống','RBAC']
       ]}
     ],
     m:[
       ['admin-dash','📊','Tổng quan & Thống kê'],
-      ['admin-courses','📚','Khóa học & Xếp lớp (005)'],
-      ['admin-payments','💳','Đối soát Thanh toán Web (005)'],
-      ['admin-payroll','💰','Công, Đơn giá giờ & Lương (004)'],
+      ['admin-courses','📚','Khóa học & Xếp lớp'],
+      ['admin-payments','💳','Đối soát Thanh toán Web'],
+      ['admin-payroll','💰','Công, Đơn giá giờ & Lương'],
       ['admin-exceptions','🔓','Duyệt Nghỉ lớp, Công & Mở khóa'],
       ['admin-staff','👥','Nhân sự & Hồ sơ chuyên môn'],
-      ['admin-perms','🔐','Phân quyền 8 phân hệ (5 nhóm)'],
-      ['admin-catalog','⚙️','Danh mục & Cấu hình (005)'],
+      ['admin-perms','🔐','Phân quyền hệ thống'],
+      ['admin-catalog','⚙️','Danh mục & Cấu hình'],
       ['admin-audit','📜','Kiểm toán & Giám sát'],
       ['admin-schedule','📅','Giám sát Lịch toàn chuỗi']
     ]
@@ -4186,8 +4312,8 @@ function renderSharedCalendar(targetContainerId, roleScope){
   });
 
   const rangeTitle = (calViewMode === 'week') ?
-    `${pad(mon.getDate())}/${pad(mon.getMonth()+1)} – ${pad(sun.getDate())}/${pad(sun.getMonth()+1)}/${sun.getFullYear()}` :
-    `Tháng ${calCurrentDate.getMonth()+1}/${calCurrentDate.getFullYear()}`;
+    `Tuần: ${pad(mon.getDate())}/${pad(mon.getMonth()+1)} – ${pad(sun.getDate())}/${pad(sun.getMonth()+1)}/${sun.getFullYear()}` :
+    `Tháng ${pad(calCurrentDate.getMonth()+1)} / ${calCurrentDate.getFullYear()}`;
 
   const isStaffOrAdmin = (roleScope === 'admin' || roleScope === 'staff');
 
@@ -4217,7 +4343,7 @@ function renderSharedCalendar(targetContainerId, roleScope){
           <option value="">Tất cả trạng thái</option>
           <option value="upcoming" ${calFilters.status==='upcoming'?'selected':''}>Sắp diễn ra</option>
           <option value="completed" ${calFilters.status==='completed'?'selected':''}>Đã hoàn thành</option>
-          <option value="makeup" ${calFilters.status==='makeup'?'selected':''}>Buổi dạy bù (BR09)</option>
+          <option value="makeup" ${calFilters.status==='makeup'?'selected':''}>Buổi dạy bù</option>
           <option value="cancelled" ${calFilters.status==='cancelled'?'selected':''}>Đã hủy</option>
         </select>
         <button class="btn sm" onclick="resetCalFilters()" style="margin-left:auto;color:var(--err)">Đặt lại lọc</button>
@@ -4238,9 +4364,8 @@ function renderSharedCalendar(targetContainerId, roleScope){
       colsHtml += `
         <div class="cal-day-col ${isToday?'is-today':''}">
           <div class="cal-col-head ${isToday?'is-today':''}">
-            <div class="d-name">${dayLabels[i]}</div>
+            <div class="d-name">${dayLabels[i]}${isToday ? `<span class="d-today-badge">Hôm nay</span>` : ''}</div>
             <div class="d-num">${pad(d.getDate())}/${pad(d.getMonth()+1)}</div>
-            ${isToday ? `<div class="d-today-badge">Hôm nay</div>` : ''}
           </div>
           <div class="cal-col-body">
             ${daySessions.length > 0 ? daySessions.map(s => renderSessionCardHtml(s)).join('') : '<div class="cal-col-empty">—</div>'}
@@ -4409,7 +4534,7 @@ function openSessionDetail(sessionId){
   let stTag = '<span class="tag i">Sắp diễn ra</span>';
   if(s.status === 'completed') stTag = '<span class="tag ok">Đã hoàn thành</span>';
   else if(s.status === 'cancelled') stTag = '<span class="tag r">Đã hủy</span>';
-  else if(s.status === 'makeup') stTag = '<span class="tag purple">Buổi dạy bù (BR09)</span>';
+  else if(s.status === 'makeup') stTag = '<span class="tag purple">Buổi dạy bù</span>';
 
   document.getElementById('dtModalTitle').innerHTML = `
     <div class="row">
@@ -4427,9 +4552,9 @@ function openSessionDetail(sessionId){
       <div class="item"><span>Tên lớp</span><b>${s.className} (${s.subject})</b></div>
       <div class="item"><span>Thời gian</span><b>${s.date} · ${s.startTime} – ${s.endTime}</b></div>
       <div class="item"><span>Địa điểm</span><span>${s.isOnline ? `<a href="${s.onlineLink||'#'}" target="_blank" style="color:var(--info);font-weight:600">Vào phòng Zoom/Meet →</a>` : (s.room || s.branch)}</span></div>
-      <div class="item"><span>Giáo viên chính (BR02)</span><b>${s.mainTeacher}</b></div>
+      <div class="item"><span>Giáo viên chính</span><b>${s.mainTeacher}</b></div>
       <div class="item"><span>Trợ giảng</span><span>${s.ta || '—'}</span></div>
-      ${s.originalSessionId ? `<div class="item"><span>Buổi gốc (BR09)</span><span class="tag purple">${s.originalSessionId}</span></div>` : ''}
+      ${s.originalSessionId ? `<div class="item"><span>Buổi gốc</span><span class="tag purple">${s.originalSessionId}</span></div>` : ''}
     </div>
 
     <div class="card" style="padding:12px 14px;margin-bottom:12px">
@@ -5210,7 +5335,12 @@ function setPortal(p, syncHash = true, targetScreen = null){
   document.getElementById('sRole').textContent = o.role;
   document.getElementById('sName').textContent = o.who;
   document.getElementById('sRoute').textContent = o.route;
-  document.getElementById('permLbl').textContent = o.perms;
+  const topDateEl = document.getElementById('topDateText');
+  if(topDateEl){
+    const daysVi = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+    const now = new Date();
+    topDateEl.textContent = `${daysVi[now.getDay()]}, ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+  }
   document.getElementById('permLbl').title = o.perms;
   document.getElementById('acctBtn').textContent = o.who.split(' ').pop()[0] || 'U';
   const udName = document.getElementById('udName');
@@ -5318,9 +5448,38 @@ function toast(msg, type='ok'){
   setTimeout(()=>{ t.style.display = 'none'; }, 3500);
 }
 
-function toggleNotif(){
-  document.getElementById('notifPanel').classList.toggle('open');
+function toggleNotif(ev){
+  if(ev) ev.stopPropagation();
+  const panel = document.getElementById('notifPanel');
+  if(panel) panel.classList.toggle('open');
 }
+
+function syncNotifBadge(){
+  const unread = document.querySelectorAll('#notifPanel .np-item.unread').length;
+  const badge = document.getElementById('nCount');
+  if(!badge) return;
+  badge.textContent = String(unread);
+  badge.style.display = unread > 0 ? 'grid' : 'none';
+}
+
+function markNotifItemRead(el){
+  if(el) el.classList.remove('unread');
+  syncNotifBadge();
+}
+
+function markAllNotifsRead(){
+  document.querySelectorAll('#notifPanel .np-item.unread').forEach(el => el.classList.remove('unread'));
+  syncNotifBadge();
+  toast('Đã đánh dấu đọc tất cả thông báo.', 'ok');
+}
+
+document.addEventListener('click', ev => {
+  const panel = document.getElementById('notifPanel');
+  const bell = document.getElementById('bellBtn');
+  if(panel && panel.classList.contains('open') && !panel.contains(ev.target) && (!bell || !bell.contains(ev.target))){
+    panel.classList.remove('open');
+  }
+});
 
 // 8.1 ADMIN: KHÓA HỌC & ĐẶC QUYỀN ADMIN XẾP LỚP (KHOA_HOC, DANG_KY_KHOA_HOC, LOP_HOC_VIEN)
 function renderAdminCourses(){
@@ -5497,8 +5656,8 @@ function adminConfirmOnlineTx(txCode){
   if(!tx) return;
   const invId = tx.invoiceCode || tx.invCode;
   confirmAction({
-    title: 'Xác nhận giao dịch trực tuyến (sp_xac_nhan_giao_dich)',
-    message: `Xác nhận giao dịch ${txCode} (${(tx.amount||0).toLocaleString()}đ) cho hóa đơn ${invId}? Hệ thống sẽ tự động sinh Phiếu thu (THANH_TOAN), cập nhật công nợ HOA_DON và gửi thông báo cho Phụ huynh + Giáo vụ.`,
+    title: 'Xác nhận giao dịch trực tuyến',
+    message: `Xác nhận giao dịch ${txCode} (${(tx.amount||0).toLocaleString()}đ) cho hóa đơn ${invId}? Hệ thống sẽ tự động sinh Phiếu thu, cập nhật công nợ hóa đơn và gửi thông báo cho Phụ huynh + Giáo vụ.`,
     icon: '💳',
     confirmText: 'Xác nhận & Sinh phiếu thu',
     confirmClass: 'p',
@@ -5514,23 +5673,24 @@ function adminConfirmOnlineTx(txCode){
       AUDIT_LOGS.unshift({
         timestamp: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),
         user: 'Trần Quang Huy (Admin)',
-        module: 'Học phí (sp_xac_nhan_giao_dich)',
+        module: 'Đối soát Học phí',
         action: 'Xác nhận thanh toán trực tuyến',
         detail: `Xác nhận ${txCode} (${(tx.amount||0).toLocaleString()}đ) → Cập nhật ${invId}`
       });
       saveStorage();
       renderAdminOnlinePayments();
-      toast(`Đã chạy sp_xac_nhan_giao_dich cho ${txCode}: Sinh phiếu thu và cập nhật công nợ thành công!`, 'ok');
+      toast(`Đã xác nhận giao dịch ${txCode}: Sinh phiếu thu và cập nhật công nợ thành công!`, 'ok');
     }
   });
 }
 
-// 8.3 ADMIN: QUẢN TRỊ CHẤM CÔNG, ĐƠN GIÁ GIỜ & CHI TRẢ LƯƠNG (DB 004/005)
+// 8.3 ADMIN: QUẢN TRỊ CHẤM CÔNG, ĐƠN GIÁ GIỜ & CHI TRẢ LƯƠNG
 function renderAdminPayroll(){
   const tb = document.getElementById('adminPayrollBody') || document.getElementById('staffPayrollBody');
   if(tb){
     tb.innerHTML = PAYROLLS.map((p, idx) => {
       const rateStr = p.hourlyRate ? `${p.hourlyRate.toLocaleString()}đ/giờ` : (p.rate || '90.000đ/giờ');
+      const hoursVal = Number(((p.mins || 0) / 60).toFixed(2));
       return `
         <tr>
           <td><b class="mono">${p.id || ('BC-0'+(idx+1))}</b></td>
@@ -5538,12 +5698,12 @@ function renderAdminPayroll(){
           <td><span class="tag i">${p.role}</span></td>
           <td><b class="mono" style="color:var(--pri-d)">${rateStr}</b></td>
           <td>${p.buoi} buổi <span style="font-size:11px;color:var(--g500)">(${p.extra || '0 trễ'})</span></td>
-          <td><b>${p.mins} phút</b></td>
+          <td><b>${hoursVal} giờ</b></td>
           <td><b style="color:var(--ok)">${p.total}</b></td>
           <td>
             ${p.paid
-              ? '<span class="tag ok">✓ Đã chi trả (da_tra)</span>'
-              : (p.locked ? '<span class="tag purple">🔒 Đã chốt (da_chot)</span>' : '<span class="tag w">Tạm tính (tam_tinh)</span>')}
+              ? '<span class="tag ok">✓ Đã chi trả</span>'
+              : (p.locked ? '<span class="tag purple">🔒 Đã chốt</span>' : '<span class="tag w">Tạm tính</span>')}
           </td>
           <td>
             <div class="row">
@@ -5576,16 +5736,16 @@ function renderAdminPayroll(){
 
 function staffClosePayrollMonth(){
   confirmAction({
-    title: 'Admin Chốt công tháng (sp_chot_cong)',
-    message: 'Theo chuẩn DB 004/005: Chỉ Admin có quyền chốt bảng công tháng. Sau khi chốt, dữ liệu công tháng 10/2026 sẽ được khóa sổ để chuyển sang chi trả lương.',
+    title: 'Admin Chốt công tháng',
+    message: 'Chỉ Admin có quyền chốt bảng công tháng. Sau khi chốt, dữ liệu công tháng đang chọn sẽ được khóa sổ để chuyển sang chi trả lương.',
     icon: '🔒',
-    confirmText: 'Chốt công tháng 10',
+    confirmText: 'Chốt công tháng',
     confirmClass: 'p',
     onConfirm: () => {
       PAYROLLS.forEach(p => { p.locked = true; p.st = 'da_chot'; });
       saveStorage();
       renderAdminPayroll();
-      toast('Admin đã thực thi sp_chot_cong: Toàn bộ bảng công tháng 10 đã khóa sổ!', 'ok');
+      toast('Admin đã chốt công tháng: Toàn bộ bảng công tháng đã khóa sổ!', 'ok');
     }
   });
 }
@@ -5735,12 +5895,12 @@ function openTeacherProfileModal(empIdOrName){
     body.innerHTML = `
       <div style="background:var(--g50);padding:12px;border-radius:var(--rs);border:1px solid var(--g200);margin-bottom:12px">
         <div class="item"><span>Họ tên &amp; Vai trò</span><b>${e.name} (${e.role})</b></div>
-        <div class="item"><span>Môn &amp; Khối lớp nhận dạy (NHAN_SU_MON)</span><b>${e.spec || 'Toán 8–9, Luyện thi vào 10'}</b></div>
+        <div class="item"><span>Môn &amp; Khối lớp nhận dạy</span><b>${e.spec || 'Toán 8–9, Luyện thi vào 10'}</b></div>
         <div class="item"><span>Tài khoản ngân hàng nhận lương</span><span>${e.bank || 'Vietcombank'}</span></div>
       </div>
       ${isAdmin ? `
         <div class="card" style="padding:12px;border-color:var(--pri-l);background:var(--pri-ll);margin-bottom:0">
-          <h4 style="font-size:13px;color:var(--pri-dd);margin-bottom:6px">🛡️ Đặc quyền Admin: Cập nhật Đơn giá tiền/giờ (sp_dat_don_gia_gio)</h4>
+          <h4 style="font-size:13px;color:var(--pri-dd);margin-bottom:6px">🛡️ Đặc quyền Admin: Cập nhật Đơn giá tiền/giờ</h4>
           <p style="font-size:11.5px;color:var(--g600);margin-bottom:8px">Đơn giá mới chỉ áp dụng từ thời điểm hiệu lực cho các ca tương lai, giữ nguyên đơn giá các ca đã dạy trước đó.</p>
           <div class="row" style="gap:10px">
             <div style="flex:1">
@@ -5752,17 +5912,17 @@ function openTeacherProfileModal(empIdOrName){
               <input type="number" id="tpNewRate" value="${curHr + 15000}" step="5000">
             </div>
           </div>
-          <label>Thời điểm bắt đầu hiệu lực (hieu_luc_tu)</label>
+          <label>Thời điểm bắt đầu hiệu lực</label>
           <input type="text" id="tpEffectiveFrom" value="2026-11-01 00:00:00">
           <label>Ghi chú quyết định</label>
           <input type="text" id="tpRateNote" value="Tăng đơn giá theo đánh giá định kỳ (Giữ nguyên các ca đã dạy)">
           <div class="modal-act">
             <button type="button" class="btn sm" onclick="closeTeacherProfileModal()">Đóng</button>
-            <button type="button" class="btn p sm" onclick="adminUpdateHourlyRate()">💾 Lưu đơn giá mới (sp_dat_don_gia_gio)</button>
+            <button type="button" class="btn p sm" onclick="adminUpdateHourlyRate()">💾 Lưu đơn giá mới</button>
           </div>
         </div>
       ` : `
-        <div class="hint"><span>Đơn giá thù lao theo giờ do Admin quản trị trực tiếp theo quy định bảo mật lương DB 004/005.</span></div>
+        <div class="hint"><span>Đơn giá thù lao theo giờ do Admin quản trị trực tiếp theo quy định bảo mật lương.</span></div>
         <div class="modal-act">
           <button type="button" class="btn p sm" onclick="closeTeacherProfileModal()">Đóng</button>
         </div>
@@ -5870,62 +6030,252 @@ function handleStaffAddSubmit(e){
   toast(`Đã tạo tài khoản cho ${newStaff.name} (${newStaff.role}) thành công!`,'ok');
 }
 
-// 8.6 DANH MỤC HỆ THỐNG & CẤU HÌNH SETTINGS (DB 005)
+// 8.6 DANH MỤC HỆ THỐNG & CẤU HÌNH THAM SỐ VẬN HÀNH (UNIFIED CRUD)
+let currentCatFilter = 'all';
+let editingCatKey = null;
+let editingCatIdx = null;
+
 function renderCatalog(){
   const tabs = document.getElementById('catTabs');
-  if(!tabs) return;
+  const c = document.getElementById('catContent');
+  if(!tabs || !c) return;
+
+  const catLabels = {
+    rooms: 'Phòng học',
+    subjects: 'Môn học',
+    branches: 'Cơ sở đào tạo',
+    grades: 'Cấp lớp'
+  };
+
+  const counts = {
+    rooms: (CATALOG.rooms || []).length,
+    subjects: (CATALOG.subjects || []).length,
+    branches: (CATALOG.branches || []).length,
+    grades: (CATALOG.grades || []).length
+  };
+  const totalCount = counts.rooms + counts.subjects + counts.branches + counts.grades;
+
   tabs.innerHTML = `
-    <div class="chips">
-      <span class="chip on" onclick="switchCat('rooms')">Phòng học (PHONG_HOC)</span>
-      <span class="chip" onclick="switchCat('subjects')">Môn học (MON_HOC)</span>
-      <span class="chip" onclick="switchCat('branches')">Cơ sở (CO_SO)</span>
-      <span class="chip" onclick="switchCat('grades')">Cấp lớp 1–12 (CAP_LOP)</span>
-      <span class="chip" onclick="switchCat('settings')">Cấu hình vận hành (settings)</span>
+    <div class="cat-crud-bar">
+      <div class="cat-crud-head">
+        <div>
+          <b style="font-size:13.5px;color:var(--g800)" id="catFormTitle">${editingCatKey ? 'Chỉnh sửa mục danh mục' : 'Biểu mẫu dùng chung — Thêm hoặc cập nhật nhanh danh mục'}</b>
+          <span style="font-size:12px;color:var(--g500);margin-left:8px">Chọn phân loại và nhập thông tin cần lưu tại một nơi</span>
+        </div>
+        ${editingCatKey ? `<button class="btn sm" onclick="cancelCatUnifiedEdit()">Hủy sửa</button>` : ''}
+      </div>
+      <div class="cat-crud-grid">
+        <div>
+          <label>Loại danh mục</label>
+          <select id="catUnifiedType" ${editingCatKey ? 'disabled' : ''}>
+            <option value="rooms" ${(editingCatKey||'rooms')==='rooms'?'selected':''}>Phòng học</option>
+            <option value="subjects" ${editingCatKey==='subjects'?'selected':''}>Môn học</option>
+            <option value="branches" ${editingCatKey==='branches'?'selected':''}>Cơ sở đào tạo</option>
+            <option value="grades" ${editingCatKey==='grades'?'selected':''}>Cấp lớp</option>
+          </select>
+        </div>
+        <div>
+          <label>Mã / Ký hiệu</label>
+          <input type="text" id="catUnifiedCode" placeholder="VD: P-301, TOAN, CS1...">
+        </div>
+        <div>
+          <label>Tên hiển thị <span style="color:var(--err)">*</span></label>
+          <input type="text" id="catUnifiedName" placeholder="Nhập tên phòng, môn học, cơ sở hoặc khối lớp...">
+        </div>
+        <div>
+          <label>Ghi chú / Thông tin phụ</label>
+          <input type="text" id="catUnifiedNote" placeholder="Địa chỉ, sức chứa, mô tả...">
+        </div>
+        <div>
+          <button class="btn p" style="height:36px" onclick="saveCatUnifiedItem()">
+            ${editingCatKey ? 'Lưu cập nhật' : '+ Lưu vào danh mục'}
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="row-b" style="margin-bottom:10px">
+      <div class="chips" style="margin-bottom:0">
+        <span class="chip ${currentCatFilter==='all'?'on':''}" onclick="switchCat('all')">Tất cả (${totalCount})</span>
+        <span class="chip ${currentCatFilter==='rooms'?'on':''}" onclick="switchCat('rooms')">Phòng học (${counts.rooms})</span>
+        <span class="chip ${currentCatFilter==='subjects'?'on':''}" onclick="switchCat('subjects')">Môn học (${counts.subjects})</span>
+        <span class="chip ${currentCatFilter==='branches'?'on':''}" onclick="switchCat('branches')">Cơ sở đào tạo (${counts.branches})</span>
+        <span class="chip ${currentCatFilter==='grades'?'on':''}" onclick="switchCat('grades')">Cấp lớp (${counts.grades})</span>
+      </div>
+      <div style="width:240px">
+        <input type="text" id="catUnifiedSearch" placeholder="Tìm nhanh trong danh mục..." oninput="renderCatUnifiedTable()">
+      </div>
     </div>
   `;
-  switchCat('rooms');
+
+  renderCatUnifiedTable();
+}
+
+function renderCatUnifiedTable(){
+  const c = document.getElementById('catContent');
+  if(!c) return;
+  const qEl = document.getElementById('catUnifiedSearch');
+  const q = qEl ? qEl.value.trim().toLowerCase() : '';
+
+  const catMeta = {
+    rooms: { label: 'Phòng học', badge: 'i', prefix: 'PHONG' },
+    subjects: { label: 'Môn học', badge: 'ok', prefix: 'MON' },
+    branches: { label: 'Cơ sở đào tạo', badge: 'purple', prefix: 'CS' },
+    grades: { label: 'Cấp lớp', badge: 'w', prefix: 'KHOI' }
+  };
+
+  const rows = [];
+  ['rooms','subjects','branches','grades'].forEach(k => {
+    if(currentCatFilter !== 'all' && currentCatFilter !== k) return;
+    (CATALOG[k] || []).forEach((item, idx) => {
+      const name = typeof item === 'object' ? (item.name || item.val || '') : String(item);
+      const code = (typeof item === 'object' && item.code) ? item.code : `${catMeta[k].prefix}-${String(idx+1).padStart(2,'0')}`;
+      const note = (typeof item === 'object' && item.note) ? item.note : 'Đang sử dụng trong vận hành trung tâm';
+      if(q && !name.toLowerCase().includes(q) && !code.toLowerCase().includes(q) && !catMeta[k].label.toLowerCase().includes(q)) return;
+      rows.push({ k, idx, code, name, note, meta: catMeta[k] });
+    });
+  });
+
+  const settings = CATALOG.settings || [];
+
+  c.innerHTML = `
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Phân loại</th>
+              <th>Mã danh mục</th>
+              <th>Tên thuộc tính / Danh mục</th>
+              <th>Thông tin chi tiết</th>
+              <th>Trạng thái</th>
+              <th style="text-align:right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.length ? rows.map(r => `
+              <tr>
+                <td><span class="tag ${r.meta.badge}">${r.meta.label}</span></td>
+                <td class="mono" style="font-weight:700;color:var(--pri-d)">${r.code}</td>
+                <td><b>${r.name}</b></td>
+                <td style="font-size:12px;color:var(--g600)">${r.note}</td>
+                <td><span class="tag ok">Đang hoạt động</span></td>
+                <td style="text-align:right">
+                  <div class="row" style="justify-content:flex-end;gap:6px">
+                    <button class="btn sm" onclick="startCatUnifiedEdit('${r.k}', ${r.idx})">Sửa</button>
+                    <button class="btn sm danger" onclick="deleteCatUnifiedItem('${r.k}', ${r.idx})">Xóa</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--g500);padding:20px">Không tìm thấy mục danh mục phù hợp.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="row-b" style="margin-bottom:10px">
+        <div>
+          <h2 style="margin-bottom:2px">Thông số Cấu hình Vận hành Hệ thống</h2>
+          <p class="sub" style="margin:0;font-size:12px">Thiết lập các ngưỡng thời gian và quy tắc chấm công, báo cáo buổi học toàn trung tâm</p>
+        </div>
+      </div>
+      <div class="cat-settings-grid">
+        ${settings.map((s, sIdx) => `
+          <div class="cat-setting-card">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:var(--g800)">${s.desc || s.key}</div>
+              <div class="mono" style="font-size:11px;color:var(--g500);margin-top:2px">Tham số: ${s.key}</div>
+            </div>
+            <div class="row" style="gap:8px;margin-top:4px">
+              <input type="text" id="catSettingVal_${sIdx}" value="${s.val}" style="flex:1;font-weight:700;color:var(--pri-d)">
+              <button class="btn sm p" onclick="saveCatSettingItem(${sIdx})">Lưu</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
 }
 
 function switchCat(k){
-  const c = document.getElementById('catContent');
-  if(!c) return;
-  const labels = {
-    rooms: 'Danh mục Phòng học (PHONG_HOC)',
-    subjects: 'Danh mục Môn học (MON_HOC)',
-    branches: 'Danh mục Cơ sở (CO_SO)',
-    grades: 'Danh mục Cấp lớp chuẩn (CAP_LOP)',
-    settings: 'Thông số Cấu hình Hệ thống (settings — DB 005)'
-  };
-  const items = CATALOG[k] || [];
-  c.innerHTML = `
-    <div class="card" style="margin-top:10px">
-      <div class="row-b" style="margin-bottom:10px">
-        <h2>${labels[k] || k}</h2>
-        <button class="btn sm p" onclick="addCatItem('${k}')">+ Thêm mục mới</button>
-      </div>
-      <div class="chips">
-        ${items.map(item => {
-          if(typeof item === 'object' && item !== null){
-            return `<span class="chip on"><b>${item.key} = ${item.val}</b> (${item.desc})</span>`;
-          }
-          return `<span class="chip on">${item}</span>`;
-        }).join('')}
-      </div>
-    </div>
-  `;
+  currentCatFilter = k;
+  renderCatalog();
+}
+
+function saveCatUnifiedItem(){
+  const typeEl = document.getElementById('catUnifiedType');
+  const codeEl = document.getElementById('catUnifiedCode');
+  const nameEl = document.getElementById('catUnifiedName');
+  const noteEl = document.getElementById('catUnifiedNote');
+  const k = editingCatKey || (typeEl ? typeEl.value : 'rooms');
+  const name = nameEl ? nameEl.value.trim() : '';
+  if(!name){
+    toast('Vui lòng nhập tên mục danh mục cần lưu!', 'warn');
+    return;
+  }
+  const entry = noteEl && noteEl.value.trim()
+    ? { code: (codeEl && codeEl.value.trim()) || '', name, note: noteEl.value.trim() }
+    : name;
+
+  if(!CATALOG[k]) CATALOG[k] = [];
+  if(editingCatKey !== null && editingCatIdx !== null){
+    CATALOG[editingCatKey][editingCatIdx] = entry;
+    editingCatKey = null;
+    editingCatIdx = null;
+    toast(`Đã cập nhật "${name}" thành công!`, 'ok');
+  } else {
+    CATALOG[k].push(entry);
+    toast(`Đã thêm "${name}" vào danh mục hệ thống!`, 'ok');
+  }
+  saveStorage();
+  renderCatalog();
+}
+
+function startCatUnifiedEdit(k, idx){
+  const item = (CATALOG[k] || [])[idx];
+  if(item === undefined) return;
+  editingCatKey = k;
+  editingCatIdx = idx;
+  renderCatalog();
+  const nameEl = document.getElementById('catUnifiedName');
+  const codeEl = document.getElementById('catUnifiedCode');
+  const noteEl = document.getElementById('catUnifiedNote');
+  if(nameEl) nameEl.value = typeof item === 'object' ? (item.name || item.val || '') : String(item);
+  if(codeEl) codeEl.value = (typeof item === 'object' && item.code) ? item.code : '';
+  if(noteEl) noteEl.value = (typeof item === 'object' && item.note) ? item.note : '';
+}
+
+function cancelCatUnifiedEdit(){
+  editingCatKey = null;
+  editingCatIdx = null;
+  renderCatalog();
+}
+
+function deleteCatUnifiedItem(k, idx){
+  const item = (CATALOG[k] || [])[idx];
+  const label = typeof item === 'object' ? (item.name || item.val || '') : String(item);
+  CATALOG[k].splice(idx, 1);
+  saveStorage();
+  renderCatalog();
+  toast(`Đã xóa "${label}" khỏi danh mục.`, 'ok');
+}
+
+function saveCatSettingItem(sIdx){
+  const inp = document.getElementById(`catSettingVal_${sIdx}`);
+  if(!inp || !CATALOG.settings || !CATALOG.settings[sIdx]) return;
+  CATALOG.settings[sIdx].val = inp.value.trim();
+  saveStorage();
+  toast(`Đã lưu cấu hình "${CATALOG.settings[sIdx].desc || CATALOG.settings[sIdx].key}"!`, 'ok');
 }
 
 function addCatItem(k){
-  const val = prompt(`Thêm mục mới vào ${k}:`);
-  if(val){
-    if(!CATALOG[k]) CATALOG[k] = [];
-    CATALOG[k].push(val);
-    switchCat(k);
-    toast('Đã thêm vào danh mục hệ thống.','ok');
-  }
+  currentCatFilter = k || 'all';
+  renderCatalog();
+  const nameEl = document.getElementById('catUnifiedName');
+  if(nameEl) nameEl.focus();
 }
 
-// 8.7 MA TRẬN PHÂN QUYỀN 8 PHÂN HỆ × 5 NHÓM QUYỀN (DB 005)
+// 8.7 MA TRẬN PHÂN QUYỀN HỆ THỐNG
 function renderPerms(){
   const tabs = document.getElementById('permRoleTabs');
   if(!tabs) return;
@@ -5936,7 +6286,7 @@ function renderPerms(){
   const isLockedAdmin = (permRole.toUpperCase().includes('ADMIN'));
   document.getElementById('permRoleLabel').innerHTML = `
     Cấu hình phân quyền cho nhóm: <b style="color:var(--pri-d)">${permRole}</b>
-    ${isLockedAdmin ? '<span class="tag r" style="margin-left:8px">🔒 Nhóm Admin gốc được bảo vệ cố định (Không thể hạ quyền)</span>' : '<span class="tag i" style="margin-left:8px">Optimistic Locking: version=8f4a2c...91e0</span>'}
+    ${isLockedAdmin ? '<span class="tag r" style="margin-left:8px">🔒 Nhóm Admin gốc được bảo vệ cố định (Không thể hạ quyền)</span>' : '<span class="tag i" style="margin-left:8px">Phiên bản phân quyền đồng bộ</span>'}
   `;
 
   const cards = document.getElementById('permCards');
@@ -5969,14 +6319,14 @@ function permBatch(v){
 function savePermissionsMatrix(){
   const newVer = Math.random().toString(16).slice(2, 10) + '...' + Math.random().toString(16).slice(2, 6);
   const vb = document.getElementById('permVersionBadge');
-  if(vb) vb.textContent = `version: ${newVer}`;
-  toast('Đã lưu Ma trận phân quyền 8 phân hệ (PUT /api/administration/permissions) và cập nhật version mới!', 'ok');
+  if(vb) vb.textContent = `Phiên bản: ${newVer}`;
+  toast('Đã lưu Ma trận phân quyền hệ thống thành công!', 'ok');
 }
 
 // Admin Unlock Payroll
 function adminUnlockPayroll(who){
   confirmAction({
-    title: 'Xác nhận mở khóa bảng công (BANG_CONG_THANG)',
+    title: 'Xác nhận mở khóa bảng công',
     message: `Đặc quyền Admin: Bạn có đồng ý mở khóa bảng công đã chốt của "${who}" về trạng thái Tạm tính để cập nhật lại dữ liệu không?`,
     icon: '🛡️',
     confirmText: 'Mở khóa bảng công',
@@ -5991,7 +6341,7 @@ function adminUnlockPayroll(who){
       if(exTag){ exTag.textContent = 'Đã mở khóa'; exTag.className = 'tag ok'; }
       AUDIT_LOGS.unshift({
         timestamp: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),
-        user: 'Trần Quang Huy (Admin)', module:'Chấm công (BANG_CONG_THANG)', action:'Mở khóa bảng công', detail:`Đặc quyền Admin: Mở khóa công ${who} để điều chỉnh`
+        user: 'Trần Quang Huy (Admin)', module:'Chấm công', action:'Mở khóa bảng công', detail:`Đặc quyền Admin: Mở khóa công ${who} để điều chỉnh`
       });
       saveStorage();
       renderAdminPayroll();

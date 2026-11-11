@@ -10,7 +10,7 @@ final class ClassesValidator
         if($create) $input+=['loaiLop'=>'kem_1_1','hinhThuc'=>'offline','siSoToiThieu'=>1,'siSoToiDa'=>1,
             'cachThuPhi'=>'theo_buoi','hocPhiBuoi'=>0,'hocPhiKhoa'=>0,'mucTraChinh'=>0,'mucTraTroGiang'=>0,
             'cachTinhLuong'=>'theo_buoi','trangThai'=>'sap_bat_dau'];
-        $rules=['maLop'=>['string',true],'tenLop'=>['string',true],'loaiLop'=>[['kem_1_1','kem_1_2','nhom'],true],
+        $rules=['maLop'=>['string',true],'tenLop'=>['string',true],'loaiLop'=>[['kem_1_1','kem_1_2','nhom'],true],'khoaHocId'=>['id',false],
             'deXuatId'=>['id',false],'monHocId'=>['id',true],'capLopId'=>['id',true],'nguoiDayChinhId'=>['id',true],
             'coSoId'=>['id',false],'phongHoc'=>['string',false],'hinhThuc'=>[['online','offline'],true],
             'diaDiem'=>['string',false],'linkHoc'=>['string',false],'khuVucId'=>['id',false],

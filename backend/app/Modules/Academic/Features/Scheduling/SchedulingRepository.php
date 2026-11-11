@@ -22,7 +22,10 @@ final class SchedulingRepository
     public static function sessions(array $filters,array $user,?int $id=null): array
     {
         [$scope,$params]=Access::classScope($user);
-        $sql='SELECT b.*,l.ma_lop,l.ten_lop,pc.user_id AS day_chinh_user_id,u.hoten AS ten_nguoi_day_chinh
+        $sql='SELECT b.*,l.ma_lop,l.ten_lop,pc.user_id AS day_chinh_user_id,u.hoten AS ten_nguoi_day_chinh,
+            (SELECT GROUP_CONCAT(ta.user_id) FROM phan_cong_buoi_hoc ta WHERE ta.buoi_hoc_id=b.id AND ta.vai_tro=\'tro_giang\' AND ta.trang_thai<>\'da_go\') AS tro_giang_ids,
+            (SELECT GROUP_CONCAT(hb.hoc_vien_id) FROM hoc_bu_hoc_vien hb WHERE hb.buoi_bu_id=b.id) AS hoc_bu_ids,
+            (SELECT GROUP_CONCAT(tu.hoten SEPARATOR \', \') FROM phan_cong_buoi_hoc ta JOIN users tu ON tu.user_id=ta.user_id WHERE ta.buoi_hoc_id=b.id AND ta.vai_tro=\'tro_giang\' AND ta.trang_thai<>\'da_go\') AS ten_tro_giang
             FROM buoi_hoc b JOIN lop_hoc l ON l.id=b.lop_id
             LEFT JOIN phan_cong_buoi_hoc pc ON pc.buoi_hoc_id=b.id AND pc.vai_tro=\'day_chinh\' AND pc.trang_thai<>\'da_go\'
             LEFT JOIN users u ON u.user_id=pc.user_id WHERE l.deleted_at IS NULL'.$scope;
@@ -59,10 +62,12 @@ final class SchedulingRepository
             'coSoId'=>'co_so_id','chuDeBaiHoc'=>'chu_de_bai_hoc','noiDungBaiHoc'=>'noi_dung_bai_hoc',
             'fileBaiGiangUrl'=>'file_bai_giang_url','trangThai'=>'trang_thai','huyBoi'=>'huy_boi','lyDoHuyDoi'=>'ly_do_huy_doi'];
         Store::transaction(function() use($id,$data,$callerId,$map) {
+            $before=Store::one('SELECT * FROM buoi_hoc WHERE id=? FOR UPDATE',[$id]);
             if(in_array($data['trangThai']??'', ['huy','doi'],true)) {
                 Store::execute('UPDATE buoi_hoc SET nguoi_huy_id=?,huy_luc=NOW() WHERE id=?',[$callerId,$id]);
             }
             Store::update('buoi_hoc','id',$id,$data,$map);
+            Store::recordAudit($callerId,'sua','buoi_hoc',$id,$before,Store::one('SELECT * FROM buoi_hoc WHERE id=?',[$id]));
         });
     }
 }

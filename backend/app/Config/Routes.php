@@ -2,12 +2,14 @@
 /** @var \CodeIgniter\Router\RouteCollection $routes */
 $routes->setAutoRoute(false);
 $routes->get('/', '\App\Controllers\Portal::index');
+$routes->get('admin', '\App\Controllers\Portal::administration');
+$routes->get('admin-assets/(:segment)', '\App\Controllers\Portal::administrationAsset/$1');
 $routes->get('api/health', '\App\Controllers\Health::index');
 $routes->get('health', '\App\Controllers\Health::index');
 $routes->get('api', '\App\Controllers\Health::manifest');
 $routes->options('(:any)', static fn()=>service('response')->setStatusCode(204));
 $modules=json_decode(file_get_contents(ROOTPATH.'../shared/modules.json'),true,512,JSON_THROW_ON_ERROR);
-$ready=['auth','parents','students','teachers','tutors','classes','scheduling','catalog','permissions'];
+$ready=['auth','parents','students','teachers','tutors','classes','scheduling','catalog','permissions','audit'];
 $pascal=static fn($name)=>str_replace(' ','',ucwords(str_replace('-',' ',$name)));
 foreach($modules as $module=>$features) {
     foreach($features as $feature) {

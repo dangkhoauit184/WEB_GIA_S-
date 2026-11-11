@@ -10,7 +10,7 @@ final class ClassesRepository
         FROM lop_hoc l JOIN mon_hoc m ON m.id=l.mon_hoc_id JOIN cap_lop cl ON cl.id=l.cap_lop_id
         JOIN nhan_su_chuyen_mon ns ON ns.id=l.nguoi_day_chinh_id JOIN users u ON u.user_id=ns.user_id
         LEFT JOIN co_so cs ON cs.id=l.co_so_id WHERE l.deleted_at IS NULL';
-    private const FIELDS=['maLop'=>'ma_lop','tenLop'=>'ten_lop','loaiLop'=>'loai_lop','deXuatId'=>'de_xuat_id',
+    private const FIELDS=['maLop'=>'ma_lop','tenLop'=>'ten_lop','loaiLop'=>'loai_lop','deXuatId'=>'de_xuat_id','khoaHocId'=>'khoa_hoc_id',
         'monHocId'=>'mon_hoc_id','capLopId'=>'cap_lop_id','nguoiDayChinhId'=>'nguoi_day_chinh_id','coSoId'=>'co_so_id',
         'phongHoc'=>'phong_hoc','hinhThuc'=>'hinh_thuc','diaDiem'=>'dia_diem','linkHoc'=>'link_hoc','khuVucId'=>'khu_vuc_id',
         'siSoToiThieu'=>'si_so_toi_thieu','siSoToiDa'=>'si_so_toi_da','cachThuPhi'=>'cach_thu_phi',
@@ -71,16 +71,23 @@ final class ClassesRepository
         $map=self::FIELDS; unset($map['maLop'],$map['deXuatId'],$map['nhanVienId']);
         Store::update('lop_hoc','id',$id,$data,$map,'AND deleted_at IS NULL');
     }
-    public static function enroll(int $id,array $data): int
+    public static function enroll(int $id,array $data,int $actor): int
     {
-        return Store::insert('lop_hoc_vien',['lop_id'=>$id,'hoc_vien_id'=>$data['hocVienId'],
-            'ngay_vao'=>$data['ngayVao'],'ngay_roi'=>$data['ngayRoi'],'trang_thai'=>$data['trangThai']]);
+        return Store::transaction(function() use($id,$data,$actor) {
+            $placement=Store::insert('lop_hoc_vien',['lop_id'=>$id,'hoc_vien_id'=>$data['hocVienId'],
+                'ngay_vao'=>$data['ngayVao'],'ngay_roi'=>$data['ngayRoi'],'trang_thai'=>$data['trangThai'],
+                'xep_boi'=>$actor,'xep_luc'=>date('Y-m-d H:i:s')]);
+            Store::recordAudit($actor,'them','lop_hoc_vien',$placement,null,Store::one('SELECT * FROM lop_hoc_vien WHERE id=?',[$placement]));
+            return $placement;
+        });
     }
-    public static function updateEnrollment(int $id,int $enrollmentId,array $data): void
+    public static function updateEnrollment(int $id,int $enrollmentId,array $data,int $actor): void
     {
-        if(!Store::one('SELECT id FROM lop_hoc_vien WHERE id=? AND lop_id=?',[$enrollmentId,$id])) {
-            throw new ApiException(404,'Không tìm thấy ghi danh.','ENROLLMENT_NOT_FOUND');
-        }
-        Store::update('lop_hoc_vien','id',$enrollmentId,$data,['ngayRoi'=>'ngay_roi','trangThai'=>'trang_thai']);
+        Store::transaction(function() use($id,$enrollmentId,$data,$actor) {
+            $before=Store::one('SELECT * FROM lop_hoc_vien WHERE id=? AND lop_id=? FOR UPDATE',[$enrollmentId,$id]);
+            if(!$before) throw new ApiException(404,'Không tìm thấy ghi danh.','ENROLLMENT_NOT_FOUND');
+            Store::update('lop_hoc_vien','id',$enrollmentId,$data,['ngayRoi'=>'ngay_roi','trangThai'=>'trang_thai']);
+            Store::recordAudit($actor,'sua','lop_hoc_vien',$enrollmentId,$before,Store::one('SELECT * FROM lop_hoc_vien WHERE id=?',[$enrollmentId]));
+        });
     }
 }

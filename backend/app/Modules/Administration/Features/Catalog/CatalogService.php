@@ -8,17 +8,20 @@ final class CatalogService
     public static function bootstrap(): array
     {
         CatalogFilter::read(); $data=[];
-        foreach(CatalogModel::RESOURCES as $resource=>$definition) $data[$resource]=self::all($resource,['isActive'=>'1']);
+        foreach(CatalogModel::RESOURCES as $resource=>$definition) {
+            if($resource==='courses') continue;
+            $data[$resource]=self::all($resource,['isActive'=>'1']);
+        }
         return $data;
     }
     public static function all(string $resource,array $query): array
     {
-        CatalogFilter::read();
+        if($resource==='courses') CatalogFilter::administer(); else CatalogFilter::read();
         return array_map(fn($row)=>CatalogModel::map($resource,$row),CatalogRepository::all($resource,CatalogValidator::filters($query)));
     }
     public static function detail(string $resource,int $id): array
     {
-        CatalogFilter::read();
+        if($resource==='courses') CatalogFilter::administer(); else CatalogFilter::read();
         return CatalogModel::map($resource,CatalogRepository::find($resource,$id));
     }
     public static function create(string $resource,array $input): array

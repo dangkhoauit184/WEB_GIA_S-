@@ -9,4 +9,8 @@ $routes->get($permissions.'/groups/(:num)/permissions',$controller.'matrix/$1');
 $routes->put($permissions.'/groups/(:num)/permissions',$controller.'updateMatrix/$1');
 $routes->put($permissions.'/groups/(:num)',$controller.'describe/$1');
 $routes->get($permissions.'/accounts',$controller.'accounts');
+$routes->get($permissions.'/account-candidates',$controller.'candidates');
+$routes->post($permissions.'/accounts',$controller.'createAccount');
+$routes->put($permissions.'/accounts/(:num)',$controller.'updateAccount/$1');
+$routes->put($permissions.'/accounts/(:num)/password',$controller.'resetPassword/$1');
 $routes->put($permissions.'/accounts/(:num)/group',$controller.'assign/$1');

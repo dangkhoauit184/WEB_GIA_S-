@@ -6,6 +6,7 @@ final class ClassesModel extends \CodeIgniter\Model
     public static function map(array $row, array $extras = []): array
     {
         $fields = [
+            'khoaHocId'=>'khoa_hoc_id',
             'id'=>'id',
             'maLop'=>'ma_lop',
             'tenLop'=>'ten_lop',
@@ -53,6 +54,7 @@ final class ClassesModel extends \CodeIgniter\Model
         if ($out['mucTraChinh'] !== null) $out['mucTraChinh'] = (float)$out['mucTraChinh'];
         if ($out['mucTraTroGiang'] !== null) $out['mucTraTroGiang'] = (float)$out['mucTraTroGiang'];
         if ($out['soBuoiDuKien'] !== null) $out['soBuoiDuKien'] = (int)$out['soBuoiDuKien'];
+        if(\App\Shared\Access::user()['role']!=='ADMIN') unset($out['mucTraChinh'],$out['mucTraTroGiang']);
         return array_merge($out, $extras);
     }
 }

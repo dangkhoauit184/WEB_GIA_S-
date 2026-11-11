@@ -48,7 +48,11 @@ final class PermissionsRepository
             if(!hash_equals($before['version'],$data['version'])) throw new ApiException(409,'Ma trận đã thay đổi. Hãy tải lại trước khi lưu.','PERMISSIONS_VERSION_CONFLICT');
             $actual=array_column($data['permissions'],'functionId'); sort($actual);
             if($actual!==array_column($before['permissions'],'functionId')) Input::fail('permissions: cần đủ từng chức năng đang hoạt động');
+            $names=array_column($before['permissions'],'functionName','functionId');
             foreach($data['permissions'] as $row) {
+                if($names[$row['functionId']]==='ChamCongLuong' && array_sum(array_intersect_key($row,array_flip(PermissionsModel::ACTIONS)))>0) {
+                    Input::fail('permissions: công/lương chỉ dành cho Admin');
+                }
                 Store::execute('INSERT INTO role_group_function (group_id,function_id,view,`add`,edit,`delete`,download,is_deleted)
                     VALUES (?,?,?,?,?,?,?,0) ON DUPLICATE KEY UPDATE view=?,`add`=?,edit=?,`delete`=?,download=?,is_deleted=0',
                     [$id,$row['functionId'],$row['view'],$row['add'],$row['edit'],$row['delete'],$row['download'],
@@ -88,7 +92,7 @@ final class PermissionsRepository
         return Store::one(self::ACCOUNT_SELECT.' AND a.account_id=?'.($lock?' FOR UPDATE':''),[$id])
             ?? throw new ApiException(404,'Không tìm thấy tài khoản.','ACCOUNT_NOT_FOUND');
     }
-    private static function validateProfile(int $userId,string $group): void
+    public static function validateProfile(int $userId,string $group): void
     {
         if($group==='NhanVien' && !Store::one("SELECT id FROM nhan_vien WHERE user_id=? AND trang_thai='dang_lam'",[$userId])) {
             throw new ApiException(400,'Cần có hồ sơ nhân viên đang làm trước khi gán nhóm Nhân viên.','ROLE_PROFILE_REQUIRED');
@@ -106,9 +110,7 @@ final class PermissionsRepository
         return Store::transaction(function() use($accountId,$groupId,$actor) {
             // Serialize admin-role changes, then recheck the actor inside the transaction.
             // Two admins cannot concurrently demote each other using stale authentication.
-            Store::one("SELECT group_id FROM role_group WHERE group_name='Admin' AND is_deleted=0 FOR UPDATE");
-            $operator=self::account((int)$actor['accountId']);
-            if($operator['groupName']!=='Admin' || $operator['status']!=='active') throw new ApiException(403,'Quyền quản trị đã thay đổi.','FORBIDDEN');
+            self::lockAdministrator($actor);
             $before=self::account($accountId,true); $group=self::group($groupId);
             if($before['groupId']===$groupId) return $before;
             if($accountId===(int)$actor['accountId']) throw new ApiException(403,'Không tự thay đổi nhóm quyền của chính mình.','SELF_ROLE_CHANGE_FORBIDDEN');
@@ -123,6 +125,73 @@ final class PermissionsRepository
             $after=self::account($accountId);
             Store::recordAudit((int)$actor['userId'],'sua','account',$accountId,$before,$after);
             return $after;
+        });
+    }
+
+    public static function lockAdministrator(array $actor): void
+    {
+        Store::one("SELECT group_id FROM role_group WHERE group_name='Admin' AND is_deleted=0 FOR UPDATE");
+        $operator=self::account((int)$actor['accountId']);
+        if($operator['groupName']!=='Admin' || $operator['status']!=='active') {
+            throw new ApiException(403,'Quyền quản trị đã thay đổi.','FORBIDDEN');
+        }
+    }
+
+    public static function candidates(array $filters): array
+    {
+        $term='%'.($filters['q']??'').'%';
+        return Store::rows("SELECT u.user_id AS userId,u.hoten AS hoTen,u.email FROM users u
+            WHERE u.is_deleted=0 AND NOT EXISTS (SELECT 1 FROM account a WHERE a.user_id=u.user_id)
+            AND (u.hoten LIKE ? OR u.email LIKE ?) ORDER BY u.user_id DESC LIMIT 100",[$term,$term]);
+    }
+
+    public static function createAccount(array $data,array $actor): array
+    {
+        return Store::transaction(function() use($data,$actor) {
+            self::lockAdministrator($actor);
+            $group=self::group($data['groupId']);
+            if(!Store::one('SELECT user_id FROM users WHERE user_id=? AND is_deleted=0 FOR UPDATE',[$data['userId']])) {
+                throw new ApiException(404,'Không tìm thấy hồ sơ người dùng.','USER_NOT_FOUND');
+            }
+            self::validateProfile($data['userId'],$group['groupName']);
+            $id=Store::insert('account',['user_id'=>$data['userId'],'group_id'=>$data['groupId'],
+                'username'=>$data['username'],'password_hash'=>password_hash($data['password'],PASSWORD_BCRYPT),
+                'status'=>$data['status']]);
+            $after=self::account($id);
+            Store::recordAudit((int)$actor['userId'],'them','account',$id,null,$after);
+            return $after;
+        });
+    }
+
+    public static function updateAccount(int $id,array $data,array $actor): array
+    {
+        return Store::transaction(function() use($id,$data,$actor) {
+            self::lockAdministrator($actor);
+            $before=self::account($id,true);
+            if($id===(int)$actor['accountId'] && isset($data['status']) && $data['status']!=='active') {
+                throw new ApiException(403,'Không tự khóa tài khoản đang sử dụng.','SELF_LOCK_FORBIDDEN');
+            }
+            if(($data['status']??null)==='active') {
+                self::validateProfile((int)$before['userId'],$before['groupName']);
+            }
+            Store::update('account','account_id',$id,$data,['username'=>'username','status'=>'status']);
+            $after=self::account($id);
+            Store::recordAudit((int)$actor['userId'],'sua','account',$id,$before,$after);
+            if($before['status']!==$after['status']) {
+                Store::audit((int)$actor['userId'],'khac',$id,['action'=>'account_status_changed','status'=>$after['status']]);
+            }
+            return $after;
+        });
+    }
+
+    public static function resetPassword(int $id,string $password,array $actor): array
+    {
+        return Store::transaction(function() use($id,$password,$actor) {
+            self::lockAdministrator($actor);
+            self::account($id,true);
+            Store::execute('UPDATE account SET password_hash=? WHERE account_id=?',[password_hash($password,PASSWORD_BCRYPT),$id]);
+            Store::audit((int)$actor['userId'],'sua',$id,['action'=>'admin_reset_password']);
+            return ['updated'=>true,'requiresLogin'=>true];
         });
     }
 }
