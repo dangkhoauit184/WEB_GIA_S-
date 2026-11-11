@@ -66,7 +66,7 @@ final class CatalogRepository
 
     public static function settings(): array
     {
-        return Store::rows('SELECT khoa,gia_tri AS giaTri,mo_ta AS moTa,updated_at AS updatedAt FROM cau_hinh ORDER BY khoa');
+        return Store::rows("SELECT khoa,gia_tri AS giaTri,mo_ta AS moTa,updated_at AS updatedAt FROM cau_hinh WHERE khoa NOT LIKE 'phong_hoc.%' ORDER BY khoa");
     }
 
     public static function setting(string $key,string $value,int $actor): array

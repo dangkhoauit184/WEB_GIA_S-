@@ -24,6 +24,7 @@ final class SchedulingModel extends \CodeIgniter\Model
             'gioBatDau'=>'gio_bat_dau','gioKetThuc'=>'gio_ket_thuc','coSoId'=>'co_so_id','phongHoc'=>'phong_hoc',
             'chuDeBaiHoc'=>'chu_de_bai_hoc','noiDungBaiHoc'=>'noi_dung_bai_hoc','fileBaiGiangUrl'=>'file_bai_giang_url',
             'trangThai'=>'trang_thai','huyBoi'=>'huy_boi','lyDoHuyDoi'=>'ly_do_huy_doi','nguoiHuyId'=>'nguoi_huy_id',
-            'huyLuc'=>'huy_luc','nguoiDayChinhUserId'=>'day_chinh_user_id','tenNguoiDayChinh'=>'ten_nguoi_day_chinh']);
+            'huyLuc'=>'huy_luc','nguoiDayChinhUserId'=>'day_chinh_user_id','tenNguoiDayChinh'=>'ten_nguoi_day_chinh',
+            'troGiangIds'=>'tro_giang_ids','tenTroGiang'=>'ten_tro_giang','phamViBu'=>'pham_vi_bu','hocBuIds'=>'hoc_bu_ids']);
     }
 }

@@ -1,4 +1,5 @@
 <?php
 namespace App\Modules\Reporting\Features\Dashboard;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+// Admin summary uses explicit camelCase aliases in DashboardRepository.
+final class DashboardModel extends \CodeIgniter\Model {}

@@ -60,7 +60,7 @@ Ma trận role_group_function có 5 cờ **view/add/edit/delete/download** trên
 
 Quyền chức năng phải đi cùng phạm vi dữ liệu: phụ huynh chỉ con mình; người dạy chỉ hồ sơ/phân công liên quan. Không để thay id trong URL để xem người khác. Nhân viên không mặc nhiên xem toàn bộ đơn giá/lương vì có quyền xem lớp. QuanLyNhanSu hiện chưa được seed cho giáo vụ; Admin cấp quyền phù hợp qua ma trận, code không tự cấp lại.
 
-**Chỉ Admin được xếp lớp và quản trị tiền lương.** Đây là xác nhận mới thay phần giao giáo vụ xếp lớp/chốt lương trong Word/Figma cũ. Các API legacy còn cần cập nhật theo mục 10; trigger/ID actor không thay cho xác thực web. Phạm vi theo cơ sở cần BE áp dụng ở từng truy vấn theo đặc tả và phân công, không tuyên bố mọi API cũ đã có đủ scope cơ sở.
+**Chỉ Admin được xếp lớp và quản trị tiền lương.** Đây là xác nhận mới thay phần giao giáo vụ xếp lớp/chốt lương trong Word/Figma cũ. Bản local 11/11 đã chặn xếp lớp legacy ngoài Admin và che các trường đơn giá/lương ở API hồ sơ, lớp và phân công ngoài Admin. Trigger/ID actor đi cùng xác thực web. Phạm vi theo cơ sở cần BE áp dụng ở từng truy vấn theo đặc tả và phân công, không tuyên bố mọi API cũ đã có đủ scope cơ sở.
 
 <a id="quy-tac"></a>
 ## 3. Quy tắc nghiệp vụ đã chốt
@@ -214,7 +214,7 @@ Trong feature: Controller nhận HTTP/MVC; Service điều phối nghiệp vụ/
 
 app/Shared gồm Access (JWT/RBAC/scope), Store (session DB/transaction/procedure), Input, ApiController/ApiException/ApiFilter. app/Config ghép routes từ manifest, tắt auto-route. backend/public là document root; Composer/config/env nằm ngoài public. Frontend shared giữ component/style/service dùng chung; shared/ gốc có manifest và hằng số trình duyệt.
 
-Compose local bind repo và dùng DB hiện có; image release chứa backend/shared và vendor, không đưa DB/Word/demo/secret vào public image. Phần reference đã được giữ nguyên byte để tham khảo, không phải chương trình triển khai.
+Compose local bind repo và dùng DB hiện có; image release chứa backend/shared, frontend/src và vendor, không đưa DB/Word/demo/secret vào public image. Phần reference đã được giữ nguyên byte để tham khảo, không phải chương trình triển khai.
 
 <a id="database"></a>
 ## 6. Thiết kế database
@@ -305,11 +305,10 @@ MySQL DDL tự COMMIT, không có cam kết rollback cả migration. Lỗi giữ
 | --- | --- |
 | 001_reference.sql | Danh mục/quyền chuẩn, chạy DB mới; không ghi đè quyền DB cũ |
 | 002_demo.sql | Dữ liệu8 users cho DB `_test`, account locked; không nạp vào DB làm việc |
-| 003_courses_example.sql | Action seed-courses:5 khóa giá minh họa/inactive; không ghi đè mã đã có, không tự tạo học viên/hóa đơn |
 | 004_business_policy.sql | Chỉ Admin công/lương, ngưỡng trễ0 |
 | 005_operations_policy.sql | checkin_truoc_phut=-1, checkout_sau_phut=-1, checkin_minh_chung=khong |
 
-han_nhap_bao_cao_gio hiện24 theo reference; các khóa cấu hình không phải chỗ lưu password/JWT. Giá mẫu1200000/2400000/1800000/3000000/2000000 VND chỉ để Admin sửa trước mở khóa đăng ký, không phải bảng giá đã ký với phụ huynh.
+han_nhap_bao_cao_gio hiện24 theo reference. Admin nhập tên, nội dung và học phí trọn khóa trên cổng quản trị; cấu hình vận hành được quản lý riêng với thông tin xác thực.
 
 ### 7.4. Luồng SQL khi ứng dụng hoạt động
 
@@ -362,19 +361,19 @@ Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí;
 
 | Phần | Đã có | Còn phải làm |
 | --- | --- | --- |
-| DB/server | Schema005, migration/seed/check, routine/trigger, Docker PHP/MySQL, SMTP local, backup/restore/doctor, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
-| PHP nền | Auth/JWT/scope, hồ sơ, lớp/lịch, matching, Catalog/Permissions | Cập nhật quyền legacy và che lương; không coi bộ cũ đã khớp toàn bộ 005 |
-| Administration | Auth, danh mục/quyền, audit khi sửa | Staff API đầy đủ, tra cứu Audit, các màn quản trị |
-| Khóa/tuyển sinh | Bảng/quan hệ và API matching | CRUD khóa/đăng ký, tiếp nhận/đề xuất/phản hồi/chốt đầy đủ |
-| Học vụ/nghỉ/bù | Bảng, ràng buộc | API/MVC/FE và kịch bản người dùng |
-| Tài chính/công | Hóa đơn/intent/event/phiếu, phút công/lương, procedure | Gateway/webhook xác thực, API chốt học phí/thu/công/lương, FE |
-| Thông báo | Dữ liệu, trigger học phí, SMTP thử | API đọc/thao tác, worker/retry/template/mail thật |
-| FE | Khung module rỗng, portal PHP đăng nhập/tra cứu cơ bản, Figma/demo | Các màn thực, responsive, kết nối API, loading/empty/error/success |
-| Báo cáo/nộp bài | Nguồn nghiệp vụ và nền kỹ thuật | Dashboard/thống kê/in/xuất, báo cáo môn học, ảnh minh chứng/phân công/kịch bản trình diễn |
+| DB/server | Schema005, migration/seed/check, Docker PHP/MySQL, SMTP local, backup/restore, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
+| PHP nền | Auth/JWT/scope, hồ sơ, lớp/lịch, matching, Catalog/Permissions; Admin-only xếp lớp và che lương ở các API liên quan | Tiếp tục kiểm chứng scope theo từng luồng/cơ sở khi nối các cổng |
+| Administration | Cổng Admin 10 màn theo prototype đã chốt, khóa/cấu hình, tài khoản/quyền, nhân sự/hồ sơ, audit | Nghiệm thu cùng chủ đồ án và tích hợp các cổng của đồng đội |
+| Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp đăng ký vào lớp độc lập tiền | Cổng phụ huynh đăng ký, tiếp nhận/đề xuất/phản hồi/chốt đầy đủ |
+| Học vụ/nghỉ/bù | Admin giám sát lịch, chỉnh buổi chưa dạy, nhập bù, duyệt nghỉ cả lớp | Cổng giáo vụ/người dạy/phụ huynh và học vụ từng buổi |
+| Tài chính/công | Admin đối soát giao dịch, duyệt điều chỉnh công, đơn giá, chốt/trả/mở khóa, in phiếu | Phát hành học phí từ cổng giáo vụ, checkout/gateway/webhook thật, check-in/out người dạy |
+| Thông báo | Dữ liệu, trigger học phí, SMTP thử, tổng việc chờ Admin | API thông báo đầy đủ, worker/retry/template/mail thật |
+| FE | Cổng Admin dùng API thật; prototype và file demo riêng | Các cổng còn lại theo phân công nhóm, kiểm thử responsive/liên thông |
+| Báo cáo/nộp bài | Dashboard Admin, in phiếu công/lương và lịch đang lọc | Báo cáo khác, xuất dữ liệu, báo cáo môn học, kịch bản trình diễn |
 
-**Hai việc BE đầu tiên:** chỉ Admin xếp lớp kể cả legacy, che đơn giá/tiền lương khỏi API ngoài Admin; sau đó CRUD khóa và đăng ký. Hiện TeachersModel/ClassesModel còn trả trường lương trong JSON cũ. DB không tự sửa các response này; cần hoàn thành trước mở web cho các vai trò khác sử dụng thực tế.
+Phạm vi local ngày 11/11/2026 theo mục 12.1. Phần Admin đã nối API thật gồm xếp lớp, đối soát tiền, công/lương và lịch. Các feature có nhiều cổng tiếp tục giữ `planned` cho luồng còn thiếu trong manifest. Các số liệu trên dashboard lấy DB của máy đang chạy.
 
-Tiếp theo: phát hành hóa đơn/thông báo/thanh toán/đối soát → Admin xếp lớp và giáo vụ xếp lịch/bù → check-in/học vụ/nghỉ → lương/báo cáo/mail → FE từng luồng nối API và kiểm thử ngay khi phần tương ứng xong → deploy/nghiệm thu. Không cần chờ toàn bộ Figma mới bắt đầu BE. Chỉ viết tiếp chức năng khi được giao; câu hỏi “nên code chưa” không phải lệnh triển khai.
+Các việc tiếp theo đi theo phân công nhóm gồm đăng ký/phát hành hóa đơn/thông báo, cổng thanh toán và webhook xác minh, giáo vụ vận hành lịch/học vụ, cổng check-in và gửi yêu cầu của người dạy, báo cáo/mail và kiểm thử liên thông trước triển khai public. Chỉ triển khai tiếp trong phạm vi được giao.
 
 Kết quả đã ghi nhận08/11/2026 trên nền005:
 
@@ -487,12 +486,12 @@ Cấp lớp giữ ID/cấp học chuẩn 1–12 vì thuật toán chuyên môn d
 
 Settings hỗ trợ:
 
-- checkin_truoc_phut, checkout_sau_phut: số nguyên -1–1440 phút, -1 = không giới hạn (mặc định005).
-- checkin_tre_sau_phut: 0–1440, mặc định0.
+- checkin_truoc_phut, checkout_sau_phut giữ giá trị -1 theo chính sách không giới hạn sớm/muộn đã chốt; API chỉ nhận lại đúng giá trị này.
+- checkin_tre_sau_phut giữ giá trị 0, vào sau giờ lịch được đánh dấu trễ.
 - checkin_minh_chung: chỉ nhận chuỗi khong theo nghiệp vụ hiện hành, không GPS/ảnh.
 - han_nhap_bao_cao_gio: số nguyên 1–8760 giờ.
 
-Request ví dụ `{"giaTri":30}`. Không dùng API này để ghi JWT_SECRET, mật khẩu DB hoặc biến môi trường. Khóa cấu hình ngoài danh sách trả 404. Mọi thay đổi danh mục/cấu hình ghi audit trong cùng transaction.
+Ví dụ sửa hạn nhập báo cáo dùng PUT `/settings/han_nhap_bao_cao_gio` với `{"giaTri":30}`. Không dùng API này để ghi JWT_SECRET, mật khẩu DB hoặc biến môi trường. Khóa cấu hình ngoài danh sách trả 404. Mọi thay đổi danh mục/cấu hình ghi audit trong cùng transaction.
 
 ### Phân quyền
 
@@ -521,11 +520,64 @@ GET ma trận trả `data.group`, `data.permissions`, `data.version`. Mỗi dòn
 
 Ví dụ trên chỉ minh họa một dòng; request thực phải chứa đủ chức năng từ GET. Thiếu/trùng chức năng hoặc bật add/edit/delete/download khi view=false trả 400. Nếu version cũ, trả 409 `PERMISSIONS_VERSION_CONFLICT`; frontend phải tải lại rồi để người dùng xem và lưu lại. Nhóm Admin luôn toàn quyền, sửa ma trận Admin trả 400 `ADMIN_PERMISSIONS_FIXED`.
 
-API giữ 5 nhóm Admin, NhanVien, GiangVien, TroGiang, PhuHuynh; chưa có chức năng tạo nhóm tùy ý. GiangVien tách vai trò Giáo viên/Gia sư theo phân loại chuyên môn. Muốn gán NhanVien phải có hồ sơ nhân viên đang làm; GiangVien/TroGiang phải có hồ sơ chuyên môn phù hợp đang hoạt động. Staff chưa có API tạo hồ sơ nhân viên đầy đủ, sẽ phát triển ở feature Staff.
+API giữ 5 nhóm Admin, NhanVien, GiangVien, TroGiang, PhuHuynh; chưa có chức năng tạo nhóm tùy ý. GiangVien tách vai trò Giáo viên/Gia sư theo phân loại chuyên môn. Muốn gán NhanVien phải có hồ sơ nhân viên đang làm; GiangVien/TroGiang phải có hồ sơ chuyên môn phù hợp đang hoạt động. Bản local 11/11 có API Staff tạo hồ sơ nhân viên/chuyên môn cùng tài khoản trong một transaction, chi tiết tại mục 12.1.
 
-Không tự đổi nhóm của chính mình. Các thay đổi nhóm Admin được tuần tự hóa và kiểm tra lại quyền người thao tác trong transaction, tránh hai admin đồng thời hạ quyền nhau làm mất toàn bộ quản trị. Danh sách tài khoản không trả password_hash. API này chưa tạo/xóa tài khoản hoặc đổi mật khẩu người khác.
+Không tự đổi nhóm của chính mình. Các thay đổi nhóm Admin được tuần tự hóa và kiểm tra lại quyền người thao tác trong transaction, tránh hai admin đồng thời hạ quyền nhau làm mất toàn bộ quản trị. Danh sách tài khoản không trả password_hash. Bổ sung tạo/cập nhật/đặt lại mật khẩu tài khoản tại bản local 11/11 được mô tả ở mục 12.1. Ma trận nhóm ngoài Admin không nhận quyền ChamCongLuong.
 
-Quyền/nhóm mới có hiệu lực ở request kế tiếp, kể cả khi JWT còn chứa vai trò cũ. Việc sửa ma trận/gán nhóm đều có audit trước/sau và actor. Chưa có màn hình/API tra cứu audit tổng quát.
+<a id="quan-tri-admin"></a>
+### 12.1. Bổ sung cổng quản trị ngày 11/11/2026
+
+Các phần dưới đây được triển khai trong bản làm việc local cho phạm vi quản trị. Bản chạy thật mở `/admin`, asset được phục vụ qua whitelist `/admin-assets/:name`; xác thực sử dụng Auth/JWT hiện có và mọi API bên dưới kiểm tra Admin ở BE. Token của cổng quản trị giữ trong bộ nhớ, tải lại trang cần đăng nhập lại. Cấu trúc vẫn dùng PHP 8.4 / CodeIgniter 4, MVC/Ajax và MySQL 005.
+
+| API | Thao tác và ràng buộc |
+| --- | --- |
+| GET `/api/reporting/dashboard?month=YYYY-MM` | Đếm học viên đang học, khóa đang mở, lớp đang học, công nợ hóa đơn đã phát hành; thực thu 4 tháng và số việc chờ, nhật ký gần đây. Chỉ Admin. |
+| GET/POST `/api/administration/catalog/courses` | Tra cứu theo q/isActive và tạo khóa bằng ma, ten, moTa, hocPhi, isActive. Học phí VND nguyên không âm, tối đa 999999999999 theo cột DECIMAL(12,0). |
+| GET/PUT/DELETE `/api/administration/catalog/courses/:id` | Xem/sửa/ngừng nhận đăng ký. Giá hiện hành ở khoa_hoc; giữ snapshot của đăng ký/hóa đơn và lịch sử tham chiếu. |
+| GET `/api/administration/permissions/account-candidates?q=...` | Tìm tối đa 100 hồ sơ chưa có account để cấp tài khoản. Tìm theo tên/email. |
+| POST `/api/administration/permissions/accounts` | Tạo account từ userId, groupId, username, password, status; status mặc định active. Giữ quan hệ một account/người và kiểm tra hồ sơ theo nhóm. |
+| PUT `/api/administration/permissions/accounts/:id` | Sửa username/status active/locked/pending. Chặn tự khóa hoặc đưa chính mình sang pending; ghi audit trong cùng transaction. |
+| PUT `/api/administration/permissions/accounts/:id/group` | Dùng luồng đổi nhóm đã có, kiểm tra lại Admin trong transaction và hồ sơ tương ứng. |
+| PUT `/api/administration/permissions/accounts/:id/password` | Đặt mật khẩu bằng trường password, bcrypt theo chính sách hiện có; ghi sự kiện đặt lại, phiên cũ mất hiệu lực. |
+| GET `/api/administration/audit` | Lọc q, bang, userId, hanhDong, tuNgay/denNgay, page/perPage; tối đa 100 mục/trang, sắp id giảm dần. |
+| GET `/api/administration/audit/:id` | Chi tiết actor, thao tác, đối tượng, IP, thời điểm, dữ liệu trước/sau; che trường mật khẩu/token/secret/authorization kể cả bên trong JSON lồng nhau. |
+| GET/POST `/api/administration/staff` | Danh sách/tạo nhân sự, users + account + hồ sơ nhân viên/chuyên môn và đơn giá ban đầu, ghi audit trong transaction. |
+| GET/PUT `/api/administration/staff/:userId/profile` | Đọc/sửa liên hệ, ngân hàng, môn/khối, khu vực và lịch rảnh; thay đơn giá qua API riêng. |
+| GET/POST `/api/administration/catalog/rooms` | Nhãn phòng học. Lưu khóa cấu hình `phong_hoc.<hash>` và hợp nhất nhãn lớp/buổi cũ. |
+| GET `/api/academic/classes/registrations` | Danh sách đăng ký, giá snapshot, tình trạng thu và lớp đã xếp. |
+| POST `/api/academic/classes/registrations/:id/assign` | Nhận lopId, kiểm đúng khóa/trạng thái/sĩ số, lưu xepBoi/xepLuc, độc lập thanh toán, gọi lại giữ cùng ghi danh. |
+| GET `/api/finance/tuition/transactions` | Danh sách giao dịch đối soát cùng hóa đơn/phụ huynh/học viên, nguồn sự kiện và người xác nhận. |
+| POST `/api/finance/tuition/transactions/:id/confirm` | Gọi sp_xac_nhan_giao_dich, lập phiếu một lần và cập nhật công nợ/thông báo. |
+| GET `/api/finance/payroll?month=YYYY-MM` | Bảng công tạm tính/đã chốt/đã trả cùng lịch sử đơn giá. |
+| POST `/api/finance/payroll/close` | Nhận userId, month; gọi sp_chot_cong và kiểm công/đơn chờ. |
+| POST `/api/finance/payroll/:id/pay` | Ghi nhận chi trả một lần từ kỳ đã chốt, maGiaoDich tùy chọn. |
+| POST `/api/finance/payroll/:id/unlock` | Nhận lyDo, gọi sp_mo_khoa_cong; kỳ đã trả được bảo vệ. |
+| PUT `/api/finance/payroll/rates/:nhanSuId` | Nhận donGiaGio, gọi sp_dat_don_gia_gio, giữ giá ca đã bắt đầu. |
+| GET `/api/finance/payroll/:userId/sessions?month=YYYY-MM` | Chi tiết công, phút giao lịch và giá snapshot để in phiếu. |
+| GET `/api/academic/leave-requests/classes` | Yêu cầu nghỉ cả lớp và kết quả xử lý. |
+| POST `/api/academic/leave-requests/classes/:id/decision` | Nhận trangThai da_duyet/tu_choi và ghiChu, duyệt hủy buổi theo trigger, xử lý lặp nhất quán. |
+| GET `/api/finance/timekeeping/corrections` | Yêu cầu chỉnh giờ/công và phút đề xuất. |
+| POST `/api/finance/timekeeping/corrections/:id/decision` | Duyệt/từ chối, kiểm giờ cũ và kỳ khóa, áp giờ/trạng thái/audit nguyên tử. |
+| POST `/api/academic/scheduling/admin-sessions` | Lưu buổi và phân công, lặp 1–24 tuần, loại thường/bù, nguồn buổi gốc và học viên bù. |
+| PUT `/api/academic/scheduling/admin-sessions/:id` | Sửa buổi chưa dạy/check-in, giữ nhiều trợ giảng và học viên bù hiện hữu, cập nhật snapshot lịch/phân công và audit. |
+
+10 màn giữ theo bản Admin đã chốt gồm Tổng quan, Khóa học & Xếp lớp, Đối soát Thanh toán Web, Công/Đơn giá/Lương, Duyệt Nghỉ lớp/Công/Mở khóa, Nhân sự/Hồ sơ, Phân quyền, Danh mục/Cấu hình, Kiểm toán và Lịch toàn chuỗi. Quản lý tài khoản mở từ Nhân sự hoặc menu tài khoản. Lịch có tuần/tháng, bộ lọc, chi tiết, chỉnh/hủy buổi và xếp bù theo thỏa thuận.
+
+Các card quyền lấy đúng 8 function hiện có trong DB gồm QuanLyTaiKhoan, QuanLyNhanSu, TiepNhanYeuCau, QuanLyLopHoc, VanHanhBuoiHoc, ChamCongLuong, HocPhiThanhToan và BaoCaoThongKe. Nhãn tổng quát system_admin/catalog_management/... trong dữ liệu mẫu prototype được thay bằng tên quyền thực tương ứng trên màn chạy thật. Các nhóm ngoài Admin giữ ràng buộc riêng cho lương.
+
+Response nghiệp vụ mới dùng camelCase theo hợp đồng API. JSON dữ liệu trước/sau trong Audit giữ tên cột gốc và được che secret. DB 005 giữ 43 bảng. Nhãn phòng được lưu trong `cau_hinh` theo khóa `phong_hoc.<hash>` do schema hiện hành chưa có bảng phòng riêng. Buổi online dùng nhãn Online, liên kết học lưu ở `lop_hoc.link_hoc` dùng chung cho lớp. Việc đối soát Admin và ghi nhận chi trả lương dùng dữ liệu nội bộ, phần tích hợp ngân hàng/gateway/webhook/worker thực tế tiếp tục theo tiến độ riêng.
+
+Khóa/mở tài khoản và đổi nhóm được tuần tự hóa qua khóa nhóm Admin, quyền người thao tác được kiểm tra lại trước khi ghi. Thay đổi trạng thái account ghi mốc phiên trong audit; JWT cũ không có hiệu lực trở lại sau khi mở khóa. Password/hash/token gốc không được trả qua API quản trị hoặc đưa vào audit mới. Thao tác tạo/sửa tài khoản, khóa học, danh mục/cấu hình và ma trận quyền ghi nhật ký trong transaction.
+
+Dashboard dùng ngày thanh toán theo giờ DB +07 để cộng phiếu thu hợp lệ và trừ phiếu hoàn hợp lệ. Hóa đơn nháp/hủy bị loại khỏi công nợ; thống kê khóa/lớp/học viên và việc chờ phản ánh dữ liệu hiện tại. Bốn tháng không có phiếu được điền 0; tháng lọc tác động phần thực thu. Các nút công việc chờ dẫn tới màn đối soát, xếp lớp và phê duyệt tương ứng.
+
+FE lấy trực tiếp HTML/CSS từ 10 màn Admin của `reference/Educenter.html` bằng `backend/scripts/build-admin-assets.py`. Script sinh template trong `administration.views.js`, view PHP và CSS để phục vụ cổng quản trị. Logic API được chia theo feature Catalog, Permissions, Audit, Staff, Tuition, Payroll, Timekeeping, LeaveRequests, Scheduling và Dashboard. Bản `/admin` dùng PHP/MySQL và giữ nguyên bố cục/menu/form đã chốt.
+
+Kiểm chứng local ngày 11/11 gồm suite PHP core, API nền, API Admin và SQL trên DB `_test`, nâng cấp/khôi phục thử, lint PHP/JavaScript, structure/hash và build image ứng dụng. Kết quả cuối đạt 71 kiểm tra PHP core, 81 API nền, 210 API quản trị và 98 ca SQL, tổng 460. Nâng cấp 003/004→005 và backup/restore trên DB thử đạt. Lint 225 file PHP, cú pháp 35 file JavaScript cùng hai demo, structure/hash và build image application đạt. Trình duyệt đã mở đủ 10 màn Admin với API thật, kiểm tra lịch tháng 42 ô, 5 nhóm × 8 quyền, form khóa/nhân sự và ghi nhận console không có lỗi.
+
+Quyền/nhóm mới có hiệu lực ở request kế tiếp, kể cả khi JWT còn chứa vai trò cũ. Việc sửa ma trận/gán nhóm đều có audit trước/sau và actor. Tra cứu audit tổng quát có tại menu Kiểm toán & Giám sát.
+
+Dữ liệu thử được dọn ngày 11/11/2026 sau khi chủ đồ án nghiệm thu demo. Đợt dọn gồm DEMO-A1, các khóa MAU/CRUD và tài khoản kiểm tra tạm. Backup và bằng chứng kiểm tra phục hồi lưu riêng trong `.cache`, được Git bỏ qua. Bộ test tự động CI tiếp tục xác minh nghiệp vụ trên DB `_test`. Source giữ giao diện gốc trong reference và cổng Admin PHP/MySQL.
 
 ### Kiểm thử
 

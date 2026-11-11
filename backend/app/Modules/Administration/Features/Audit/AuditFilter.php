@@ -1,4 +1,10 @@
 <?php
 namespace App\Modules\Administration\Features\Audit;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+final class AuditFilter
+{
+    public static function read(): array
+    {
+        return \App\Modules\Administration\Features\Permissions\PermissionsFilter::administer();
+    }
+}

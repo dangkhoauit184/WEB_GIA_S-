@@ -107,13 +107,17 @@ final class TeachersRepository
         });
     }
 
-    public static function update(int $id,int $userId,array $data): void
+    public static function update(int $id,int $userId,array $data,?int $actor=null): void
     {
-        Store::transaction(function() use($id,$userId,$data) {
+        Store::transaction(function() use($id,$userId,$data,$actor) {
+            $before=Store::one('SELECT * FROM nhan_su_chuyen_mon WHERE id=? FOR UPDATE',[$id]);
+            if($actor!==null) $before+=['user'=>Store::one('SELECT * FROM users WHERE user_id=?',[$userId]),'relations'=>self::extras($id)];
             Store::update('users','user_id',$userId,$data,self::USER_FIELDS);
             $map=self::NS_FIELDS; unset($map['maNs']);
             Store::update('nhan_su_chuyen_mon','id',$id,$data,$map,'AND deleted_at IS NULL');
             self::relations($id,$data);
+            if($actor!==null) Store::recordAudit($actor,'sua','nhan_su_chuyen_mon',$id,$before,
+                Store::one('SELECT * FROM nhan_su_chuyen_mon WHERE id=?',[$id])+['user'=>Store::one('SELECT * FROM users WHERE user_id=?',[$userId]),'relations'=>self::extras($id)]);
         });
     }
 }

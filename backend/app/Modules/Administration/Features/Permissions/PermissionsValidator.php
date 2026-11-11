@@ -5,6 +5,25 @@ use App\Shared\Input;
 
 final class PermissionsValidator
 {
+    public static function account(array $body,bool $create=true): array
+    {
+        $rules=['username'=>['string',true],'status'=>[['active','locked','pending'],true]];
+        if($create) {
+            $rules+=['userId'=>['id',true],'groupId'=>['id',true],'password'=>['password',true]];
+            $body+=['status'=>'active'];
+        }
+        if(!$body || array_diff(array_keys($body),array_keys($rules))) Input::fail('fields');
+        $data=Input::validate($body,$rules,$create);
+        if(isset($data['username']) && mb_strlen($data['username'])>100) Input::fail('username');
+        return $data;
+    }
+
+    public static function password(array $body): string
+    {
+        if(array_keys($body)!==['password']) Input::fail('fields');
+        return Input::validate($body,['password'=>['password',true]])['password'];
+    }
+
     public static function matrix(array $body): array
     {
         if(array_diff(array_keys($body),['version','permissions'])) Input::fail('fields');

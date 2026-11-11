@@ -3,6 +3,8 @@ namespace App\Modules\Administration\Features\Catalog;
 
 final class CatalogController extends \App\Shared\ApiController
 {
+    public function rooms() { return $this->respond(fn()=>RoomCatalog::all()); }
+    public function createRoom() { return $this->respond(fn()=>RoomCatalog::create($this->input()),201); }
     public function index() { return $this->respond(fn()=>CatalogService::bootstrap()); }
     public function list($resource) { return $this->respond(fn()=>CatalogService::all($resource,$this->request->getGet())); }
     public function show($resource,$id) { return $this->respond(fn()=>CatalogService::detail($resource,(int)$id)); }

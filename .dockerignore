@@ -10,7 +10,8 @@ config/*.env
 **/*.log
 backend/writable/*
 docs
-frontend
+frontend/*
+!frontend/src
 database
 .github
 

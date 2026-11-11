@@ -6,6 +6,8 @@ use App\Shared\ApiException;
 final class CatalogModel extends \CodeIgniter\Model
 {
     public const RESOURCES = [
+        'courses'=>['table'=>'khoa_hoc','fields'=>['id'=>'id','ma'=>'ma','ten'=>'ten','moTa'=>'mo_ta',
+            'hocPhi'=>'hoc_phi','isActive'=>'is_active','createdAt'=>'created_at']],
         'subjects'=>['table'=>'mon_hoc','fields'=>['id'=>'id','ma'=>'ma','ten'=>'ten','isActive'=>'is_active']],
         'grade-levels'=>['table'=>'cap_lop','fields'=>['id'=>'id','ten'=>'ten','capHoc'=>'cap_hoc']],
         'regions'=>['table'=>'khu_vuc','fields'=>['id'=>'id','ten'=>'ten','thanhPho'=>'thanh_pho','isActive'=>'is_active']],
@@ -24,6 +26,7 @@ final class CatalogModel extends \CodeIgniter\Model
         $data=[];
         foreach(self::definition($resource)['fields'] as $key=>$column) $data[$key]=$row[$column];
         if(isset($data['isActive'])) $data['isActive']=(bool)$data['isActive'];
+        if(isset($data['hocPhi'])) $data['hocPhi']=(int)$data['hocPhi'];
         return $data;
     }
 }

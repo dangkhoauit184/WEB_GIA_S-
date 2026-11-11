@@ -34,7 +34,9 @@ final class Access
 
     public static function fingerprint(array $account): string
     {
-        return hash_hmac('sha256', $account['password_hash'], self::secret());
+        $version=(int)($account['session_version']??0);
+        $value=$account['password_hash'].($version>0?'|'.$version:'');
+        return hash_hmac('sha256', $value, self::secret());
     }
 
     public static function user(): array

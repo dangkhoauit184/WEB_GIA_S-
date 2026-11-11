@@ -23,12 +23,14 @@ final class TeachersService
     }
     public static function create(array $input,string $type='giao_vien'): array
     {
-        TeachersFilter::check('add',true);
+        $actor=TeachersFilter::check('add',true);
+        if(array_key_exists('donGiaGioChuan',$input) && $actor['role']!=='ADMIN') \App\Shared\Access::forbidden();
         return self::detail(TeachersRepository::create(TeachersValidator::validate($input,true,$type)));
     }
     public static function update(int $id,array $input,?string $type=null): array
     {
         TeachersFilter::check('edit',true); $row=self::detail($id,$type);
+        if(array_key_exists('donGiaGioChuan',$input)) throw new ApiException(400,'Đổi đơn giá qua API quản trị đơn giá giờ để giữ snapshot ca đã dạy.');
         TeachersRepository::update($id,(int)$row['userId'],TeachersValidator::validate($input,false));
         return self::detail($id);
     }
