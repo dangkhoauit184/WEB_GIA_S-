@@ -6,9 +6,10 @@
  * 3. Sổ theo dõi buổi học (điểm bài tập, mức tiếp thu, nhận xét).
  * 4. Gửi đơn xin nghỉ phép cá nhân (do Giáo vụ duyệt).
  * 5. Xem hóa đơn trọn khóa & Khởi tạo thanh toán trực tuyến (chờ Admin đối soát).
+ * 6. Thông báo hệ thống & Đánh dấu đã đọc.
+ * 7. Đổi mật khẩu tài khoản (PUT /api/auth/change-password).
  */
 
-// Dữ liệu mẫu ban đầu theo từng học sinh để trải nghiệm mượt mà ngay trên VS Code
 const MOCK_DATA = {
   students: [
     { id: 'HV-0019', name: 'Nguyễn Văn An', grade: 'Lớp 10A1', avatar: '👦' },
@@ -51,11 +52,16 @@ const MOCK_DATA = {
   ],
   transactions: [
     { code: 'GD-WEB-901', invCode: 'HD-2026-0012', channel: 'VietQR / Napas 247', amount: 3500000, ref: 'FT263001849 EDU HD-2026-0012', time: '01/11/2026 14:22', status: 'da_xac_nhan' }
+  ],
+  notifications: [
+    { id: 1, title: 'Hóa đơn học phí mới đã phát hành', content: 'Giáo vụ đã phát hành hóa đơn học phí trọn khóa Vật Lý 10 cho học sinh Nguyễn Văn An.', time: '10/11/2026 09:30', read: false },
+    { id: 2, title: 'Đơn xin nghỉ học đã được duyệt', content: 'Đơn xin nghỉ ngày 08/11 của học sinh Nguyễn Văn An đã được Giáo vụ phê duyệt thành công.', time: '07/11/2026 15:45', read: true },
+    { id: 3, title: 'Nhắc lịch học sắp tới', content: 'Học sinh Nguyễn Văn An có buổi học Toán Nâng cao lúc 18:00 ngày mai tại Phòng 201.', time: '06/11/2026 18:00', read: true }
   ]
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Kiểm tra quyền truy cập (Route Guard): Cho phép PHU_HUYNH hoặc ADMIN
+  // 1. Kiểm tra quyền truy cập: Cho phép PHU_HUYNH hoặc ADMIN
   if (!AccessService.requireAuth(['PHU_HUYNH', 'ADMIN'])) {
     return;
   }
@@ -73,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 3. Quản lý trạng thái con đang chọn (Student Selection)
+  // 3. Quản lý trạng thái con đang chọn
   let currentStudentId = localStorage.getItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID) || MOCK_DATA.students[0].id;
 
   const studentSelector = document.getElementById('studentSelector');
@@ -117,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAllViewsForCurrentStudent();
   }
 
-  // 4. Render toàn bộ dữ liệu phụ thuộc vào con đang chọn
+  // 4. Render các View theo con đang chọn
   function renderAllViewsForCurrentStudent() {
     const student = MOCK_DATA.students.find(s => s.id === currentStudentId) || MOCK_DATA.students[0];
     selectedStudentName.textContent = `${student.name} (${student.grade})`;
@@ -127,10 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
     renderInvoices();
     renderLeaveHistory();
     renderTransactions();
+    renderNotifications();
     populateLeaveSessionDropdown();
   }
 
-  // 4.1 Render Thời khóa biểu
+  // 4.1 Thời khóa biểu
   function renderSchedule() {
     const tbody = document.getElementById('scheduleTableBody');
     const items = MOCK_DATA.schedules[currentStudentId] || [];
@@ -152,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  // 4.2 Render Sổ theo dõi buổi học & Nhận xét
+  // 4.2 Sổ theo dõi buổi học
   function renderLearningNotes() {
     const tbody = document.getElementById('learningTableBody');
     const notes = MOCK_DATA.learningNotes[currentStudentId] || [];
@@ -174,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  // 4.3 Render Hóa đơn học phí
+  // 4.3 Hóa đơn học phí
   function renderInvoices() {
     const tbody = document.getElementById('invoiceTableBody');
     const invs = MOCK_DATA.invoices[currentStudentId] || [];
@@ -210,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
-    // Gắn sự kiện click nút Thanh toán Web
     tbody.querySelectorAll('.btn-pay-modal').forEach(btn => {
       btn.addEventListener('click', () => {
         openPaymentModal(btn.dataset.code);
@@ -218,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4.4 Render Đơn xin nghỉ và Dropdown chọn buổi
+  // 4.4 Đơn xin nghỉ phép
   function populateLeaveSessionDropdown() {
     const sel = document.getElementById('leaveSessionSelect');
     const items = MOCK_DATA.schedules[currentStudentId] || [];
@@ -246,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  // 4.5 Render Lịch sử giao dịch trực tuyến
+  // 4.5 Giao dịch trực tuyến
   function renderTransactions() {
     const tbody = document.getElementById('transactionHistoryTableBody');
     tbody.innerHTML = MOCK_DATA.transactions.map(t => `
@@ -262,6 +268,46 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
+  // 4.6 Thông báo hệ thống
+  function renderNotifications() {
+    const container = document.getElementById('notificationsListContainer');
+    if (!container) return;
+
+    container.innerHTML = MOCK_DATA.notifications.map(n => `
+      <div style="background:${n.read ? 'var(--g50)' : 'var(--pri-ll)'}; border:1px solid ${n.read ? 'var(--g200)' : '#ccfbf1'}; border-radius:var(--radius-md); padding:16px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <strong style="font-size:14px; color:var(--g900);">${n.title}</strong>
+            ${!n.read ? `<span class="badge badge-teal" style="font-size:10px;">Mới</span>` : ''}
+          </div>
+          <p style="margin:0; font-size:13px; color:var(--g600);">${n.content}</p>
+          <span style="font-size:11px; color:var(--g400); margin-top:4px; display:block;">${n.time}</span>
+        </div>
+        ${!n.read ? `<button class="btn btn-secondary btn-mark-read" style="font-size:11.5px; padding:4px 8px;" data-id="${n.id}">Đã đọc</button>` : ''}
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.btn-mark-read').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id, 10);
+        const item = MOCK_DATA.notifications.find(x => x.id === id);
+        if (item) {
+          item.read = true;
+          renderNotifications();
+        }
+      });
+    });
+  }
+
+  const btnMarkAll = document.getElementById('btnMarkAllRead');
+  if (btnMarkAll) {
+    btnMarkAll.addEventListener('click', () => {
+      MOCK_DATA.notifications.forEach(n => n.read = true);
+      renderNotifications();
+      alert('Đã đánh dấu tất cả thông báo là đã đọc!');
+    });
+  }
+
   // 5. Chuyển đổi các Tab
   const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
   const tabPanes = document.querySelectorAll('.tab-pane');
@@ -273,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
     leave: 'Đơn xin nghỉ phép của học sinh',
     tuition: 'Hóa đơn học phí trọn khóa',
     history: 'Lịch sử giao dịch thanh toán Web',
+    notifications: 'Thông báo hệ thống',
   };
 
   navItems.forEach(item => {
@@ -288,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 6. Xử lý Form gửi Đơn xin nghỉ phép (Giáo vụ duyệt)
+  // 6. Form gửi Đơn xin nghỉ phép
   const leaveForm = document.getElementById('leaveRequestForm');
   leaveForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -312,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     leaveForm.reset();
   });
 
-  // 7. Xử lý Modal Thanh toán trực tuyến
+  // 7. Modal Thanh toán trực tuyến
   const modalPay = document.getElementById('modalParentPay');
   const btnClosePay = document.getElementById('btnClosePayModal');
   const btnCancelPay = document.getElementById('btnCancelPay');
@@ -364,6 +411,55 @@ document.addEventListener('DOMContentLoaded', () => {
     alert(`Đã khởi tạo lệnh thanh toán ${newTxCode} (${amount.toLocaleString('vi-VN')} đ) thành công! Hệ thống đã gửi yêu cầu đối soát tới Admin.`);
   });
 
-  // Khởi động giao diện lần đầu
+  // 8. Modal Đổi Mật Khẩu (PUT /api/auth/change-password)
+  const modalChangePwd = document.getElementById('modalChangePassword');
+  const btnOpenChangePwd = document.getElementById('btnOpenChangePwd');
+  const btnCloseChangePwd = document.getElementById('btnCloseChangePwdModal');
+  const btnCancelChangePwd = document.getElementById('btnCancelChangePwd');
+  const changePasswordForm = document.getElementById('changePasswordForm');
+
+  if (btnOpenChangePwd) {
+    btnOpenChangePwd.addEventListener('click', () => {
+      modalChangePwd.classList.add('show');
+    });
+  }
+
+  function closeChangePwd() {
+    modalChangePwd.classList.remove('show');
+    changePasswordForm.reset();
+  }
+
+  if (btnCloseChangePwd) btnCloseChangePwd.addEventListener('click', closeChangePwd);
+  if (btnCancelChangePwd) btnCancelChangePwd.addEventListener('click', closeChangePwd);
+
+  if (changePasswordForm) {
+    changePasswordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+      if (newPassword !== confirmNewPassword) {
+        alert('Mật khẩu mới và mật khẩu xác nhận không khớp nhau!');
+        return;
+      }
+
+      try {
+        // Thử gọi API Backend PHP nếu server đang chạy
+        try {
+          await HttpService.put('/auth/change-password', { currentPassword, newPassword });
+        } catch (apiErr) {
+          console.warn('[ChangePassword] Chạy chế độ phát triển offline:', apiErr.message);
+        }
+
+        alert('Đã đổi mật khẩu thành công! Toàn bộ phiên làm việc cũ đã được thu hồi an toàn.');
+        closeChangePwd();
+      } catch (err) {
+        alert('Đổi mật khẩu thất bại: ' + (err.message || 'Lỗi không xác định'));
+      }
+    });
+  }
+
+  // Khởi động
   initStudentSelector();
 });

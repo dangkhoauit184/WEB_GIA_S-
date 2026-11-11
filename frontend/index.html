@@ -122,7 +122,7 @@
       color: var(--g500);
     }
 
-    /* Courses Section */
+    /* Section Headings */
     .section-title {
       text-align: center;
       margin: 70px 0 12px;
@@ -137,6 +137,8 @@
       font-size: 15px;
       margin-bottom: 40px;
     }
+
+    /* Courses Section */
     .courses-grid {
       max-width: 1200px;
       margin: 0 auto;
@@ -154,10 +156,12 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      transition: all 0.2s ease;
     }
     .course-card:hover {
       box-shadow: var(--shadow-md);
       border-color: var(--pri-l);
+      transform: translateY(-3px);
     }
     .course-title {
       font-size: 19px;
@@ -175,6 +179,59 @@
       font-size: 13px;
       font-weight: normal;
       color: var(--g500);
+    }
+
+    /* Teachers Section (Giới thiệu người dạy) */
+    .teachers-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 24px;
+    }
+    .teacher-card {
+      background: #fff;
+      border: 1px solid var(--g200);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .teacher-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--pri-l);
+    }
+    .teacher-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--pri-ll);
+      border: 2px solid var(--pri-l);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+    .teacher-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--g900);
+      margin: 0 0 4px;
+    }
+    .teacher-role {
+      font-size: 13px;
+      color: var(--pri-d);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .teacher-desc {
+      font-size: 13px;
+      color: var(--g600);
+      line-height: 1.5;
     }
 
     /* Consultation Form Section */
@@ -262,7 +319,8 @@
       </a>
 
       <div class="nav-links">
-        <a href="#courses">Khóa học & Học phí</a>
+        <a href="#courses">Khóa học</a>
+        <a href="#teachers">Đội ngũ Người dạy</a>
         <a href="#consultation">Tư vấn Lộ trình</a>
         <a href="#contact">Liên hệ</a>
       </div>
@@ -359,6 +417,40 @@
     </div>
   </div>
 
+  <!-- Teachers Section (Giới thiệu người dạy theo yêu cầu) -->
+  <h2 id="teachers" class="section-title">Đội ngũ Giáo viên & Gia sư Tiêu biểu</h2>
+  <p class="section-sub">Hồ sơ chuyên môn minh bạch – Phụ huynh duyệt hồ sơ trước khi bắt đầu khóa học</p>
+
+  <div class="teachers-grid">
+    <div class="teacher-card">
+      <div class="teacher-avatar">👨‍🏫</div>
+      <h4 class="teacher-name">Thầy Nguyễn Văn A</h4>
+      <div class="teacher-role">Giáo viên Toán Chuyên · 8 năm KN</div>
+      <p class="teacher-desc">Thạc sĩ Sư phạm Toán ĐH Sư Phạm TP.HCM. Chuyên luyện thi vào lớp 10 Chuyên và bồi dưỡng học sinh giỏi.</p>
+    </div>
+
+    <div class="teacher-card">
+      <div class="teacher-avatar">👩‍🏫</div>
+      <h4 class="teacher-name">Cô Trần Thị B</h4>
+      <div class="teacher-role">Gia sư Vật Lý 1:1 · ĐH Bách Khoa</div>
+      <p class="teacher-desc">Thủ khoa đầu vào khối A1, giải Nhì HSG Quốc gia môn Vật Lý. Phương pháp giảng dạy trực quan, dễ hiểu.</p>
+    </div>
+
+    <div class="teacher-card">
+      <div class="teacher-avatar">👨‍🎓</div>
+      <h4 class="teacher-name">Thầy Lê Hoàng C</h4>
+      <div class="teacher-role">Gia sư Hóa học & KHTN · ĐH Y Dược</div>
+      <p class="teacher-desc">Á khoa ĐH Y Dược TP.HCM. 4 năm kinh nghiệm kèm 1-1, giúp học sinh lấy lại căn bản môn Hóa trong 12 buổi.</p>
+    </div>
+
+    <div class="teacher-card">
+      <div class="teacher-avatar">👩‍🎓</div>
+      <h4 class="teacher-name">Cô Phạm Mai D</h4>
+      <div class="teacher-role">Trợ giảng & Luyện thi Tiếng Anh</div>
+      <p class="teacher-desc">IELTS 8.0, Cử nhân ĐH Ngoại Thương. Nhiệt tình, theo sát bài tập về nhà và kiểm tra từ vựng từng buổi.</p>
+    </div>
+  </div>
+
   <!-- Consultation Form Section -->
   <section id="consultation" class="consult-section">
     <div class="consult-info">
@@ -393,7 +485,7 @@
           <input type="tel" id="parentPhone" class="form-control" placeholder="0901234567" required>
         </div>
         <div class="form-group">
-          <label for="studentGrade">Khóa học / Lớp cần tư vấn</label>
+          <label for="courseSelect">Khóa học / Lớp cần tư vấn</label>
           <select id="courseSelect" class="form-control" required>
             <option value="Gia sư 1 kèm 1">Gia sư 1 kèm 1 Toán - Lý - Hóa</option>
             <option value="Bồi dưỡng Văn hóa THCS">Bồi dưỡng Văn hóa THCS & Luyện thi vào 10</option>

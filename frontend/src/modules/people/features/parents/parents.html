@@ -43,6 +43,9 @@
         <button class="nav-item" data-tab="history">
           📑 <span>Lịch sử giao dịch</span>
         </button>
+        <button class="nav-item" data-tab="notifications">
+          🔔 <span>Thông báo hệ thống</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -50,7 +53,10 @@
           <span id="currentUserName" class="user-name">Phụ huynh</span>
           <span class="user-role">PHU_HUYNH</span>
         </div>
-        <button id="btnLogout" class="btn-logout" title="Đăng xuất">Thoát</button>
+        <div style="display:flex; gap:6px;">
+          <button id="btnOpenChangePwd" class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" title="Đổi mật khẩu">🔑</button>
+          <button id="btnLogout" class="btn-logout" title="Đăng xuất">Thoát</button>
+        </div>
       </div>
     </aside>
 
@@ -216,11 +222,24 @@
             </table>
           </div>
         </section>
+
+        <!-- Tab 6: Thông báo hệ thống (Yêu cầu Người 2) -->
+        <section id="tab-notifications" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Thông báo từ Trung tâm & Giáo vụ</h3>
+              <button class="btn btn-secondary" style="font-size:12px; padding:5px 10px;" id="btnMarkAllRead">Đánh dấu tất cả đã đọc</button>
+            </div>
+            <div id="notificationsListContainer" style="display:flex; flex-direction:column; gap:12px;">
+              <!-- Dynamic Notifications List -->
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   </div>
 
-  <!-- Modal Thanh toán trực tuyến Web (Theo prototype Figma / Demo) -->
+  <!-- Modal Thanh toán trực tuyến Web -->
   <div id="modalParentPay" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
@@ -254,6 +273,37 @@
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
           <button type="button" class="btn btn-secondary" id="btnCancelPay">Hủy bỏ</button>
           <button type="submit" class="btn btn-primary">📤 Tôi đã chuyển khoản (Gửi đối soát)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Đổi Mật Khẩu (Khớp yêu cầu đổi mật khẩu Người 2) -->
+  <div id="modalChangePassword" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">🔑 Đổi Mật Khẩu Tài Khoản</h3>
+        <button type="button" class="modal-close" id="btnCloseChangePwdModal">✕</button>
+      </div>
+      <form id="changePasswordForm">
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mật khẩu hiện tại</label>
+          <input type="password" id="currentPassword" class="form-control" placeholder="Nhập mật khẩu cũ..." required>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+          <input type="password" id="newPassword" class="form-control" minlength="6" placeholder="Nhập mật khẩu mới..." required>
+        </div>
+
+        <div class="form-group" style="margin-bottom:18px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Xác nhận mật khẩu mới</label>
+          <input type="password" id="confirmNewPassword" class="form-control" minlength="6" placeholder="Nhập lại mật khẩu mới..." required>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelChangePwd">Hủy bỏ</button>
+          <button type="submit" class="btn btn-primary">Cập nhật mật khẩu</button>
         </div>
       </form>
     </div>
