@@ -7,6 +7,9 @@ final class ClassesModel extends \CodeIgniter\Model
     {
         $fields = [
             'khoaHocId'=>'khoa_hoc_id',
+            'tenKhoa'=>'ten_khoa',
+            'lichTuan'=>'lich_tuan',
+            'tenTroGiang'=>'ten_tro_giang',
             'id'=>'id',
             'maLop'=>'ma_lop',
             'tenLop'=>'ten_lop',

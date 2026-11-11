@@ -1,0 +1,11 @@
+.staff-search { display: flex; align-items: end; gap: 12px; margin-bottom: 16px; }
+.staff-search label { margin: 0; flex: 1; max-width: 440px; }
+.staff-portal-link { display: block; padding: 13px 16px; color: var(--g300); font-size: 13px; }
+.staff-detail-list { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 12px; }
+.staff-detail-list dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.staff-detail-list dt { color: var(--g500); }
+#staffTaskList .item { gap: 16px; }
+#staff-billing .g2 { grid-template-columns: minmax(0,1.5fr) minmax(300px,1fr); }
+#staff-billing .card, #staff-classes .card { min-width: 0; }
+@media(max-width: 1200px) { #staff-billing .g2 { grid-template-columns: 1fr; } }
+@media(max-width: 600px) { .staff-detail-list { grid-template-columns: 1fr; gap: 4px; } .staff-detail-list dd { margin-bottom: 10px; } }

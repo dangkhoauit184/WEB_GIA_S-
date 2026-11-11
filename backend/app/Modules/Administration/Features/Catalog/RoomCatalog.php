@@ -10,6 +10,15 @@ final class RoomCatalog
     public static function all(): array
     {
         CatalogFilter::administer();
+        return self::rows();
+    }
+    public static function forOperations(): array
+    {
+        \App\Modules\Academic\Features\AcademicAffairs\AcademicAffairsFilter::check();
+        return self::rows();
+    }
+    private static function rows(): array
+    {
         return Store::rows("SELECT MIN(id) AS id,ten FROM (
             SELECT khoa AS id,gia_tri AS ten FROM cau_hinh WHERE khoa LIKE 'phong_hoc.%'
             UNION ALL SELECT CONCAT('class.',id),phong_hoc FROM lop_hoc WHERE phong_hoc IS NOT NULL

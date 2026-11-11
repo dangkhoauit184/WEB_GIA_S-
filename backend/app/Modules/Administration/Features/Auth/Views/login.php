@@ -32,6 +32,7 @@
         </form></details>
     </section>
     <p><a href="/admin">Mở cổng quản trị</a></p>
+    <p><a href="/staff">Mở cổng Tuyển sinh / Điều phối</a></p>
     <p id="notice" role="status" aria-live="polite"></p>
 </main>
 </body>

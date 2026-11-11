@@ -1,0 +1,59 @@
+<section class="screen active" id="staff-intake">
+  <div class="pg-head"><div><h1>Tuyển sinh &amp; Ghép người dạy</h1></div></div>
+  <div class="wf" id="intakeWF">
+    <div class="ws on" onclick="intakeStep(0)"><span>❶</span> Yêu cầu học</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(1)"><span>❷</span> Tìm người dạy</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(2)"><span>❸</span> Đề xuất nhân sự</div><span class="wa">→</span>
+    <div class="ws" onclick="intakeStep(3)"><span>❹</span> Bàn giao Admin xếp lớp</div>
+  </div>
+  <div class="intake-step" id="istep0">
+    <div class="card">
+      <div id="admissionsRequestFilters"></div><div class="row-b" style="margin-bottom:12px">
+        <h2 style="margin:0">Danh sách yêu cầu tuyển sinh</h2>
+        <button class="btn p sm" onclick="openRequestForm()">+ Tiếp nhận yêu cầu mới</button>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Mã YC</th><th>Học viên</th><th>Phụ huynh · SĐT</th><th>Môn &amp; Cấp lớp</th><th>Khung giờ yêu cầu</th><th>Khu vực</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="reqRows"></tbody>
+      </table></div><div id="admissionsRequestPager"></div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep1" style="display:none">
+    <div class="g3">
+      <div class="card">
+        <h2 style="margin:0 0 10px">Tiêu chí lọc người dạy</h2>
+        <label>Yêu cầu học viên</label>
+        <select id="matchReqSel" onchange="runMatch()"><option value="">Chọn yêu cầu học</option></select>
+        <label>Khu vực</label><input id="matchRegion" readonly>
+        <label>Ngân sách học phí dự kiến</label>
+        <input id="budgetSel" readonly>
+        <button class="btn p" style="width:100%;justify-content:center;margin-top:14px" onclick="runMatch()">⚡ Tìm người dạy</button>
+      </div>
+      <div class="card">
+        <h2 id="matchTitle">Người dạy phù hợp</h2>
+        <div class="tw"><table>
+          <thead><tr><th>Người dạy</th><th>Chuyên môn &amp; Kinh nghiệm</th><th>Khu vực dạy</th><th>Khớp lịch rảnh</th><th>Thao tác</th></tr></thead>
+          <tbody id="matchBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep2" style="display:none">
+    <div class="card">
+      <h2>Danh sách đề xuất người dạy</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã đề xuất</th><th>Yêu cầu</th><th>Người dạy đề xuất</th><th>Người dạy xác nhận</th><th>Phụ huynh xác nhận</th><th>Thao tác</th></tr></thead>
+        <tbody id="proposalBody"></tbody>
+      </table></div><div id="admissionsProposalPager"></div>
+    </div>
+  </div>
+  <div class="intake-step" id="istep3" style="display:none">
+    <div class="card">
+      <h2>Đề xuất đã đồng ý 2 bên — Bàn giao Admin Xếp lớp &amp; Giáo vụ Sinh lịch</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã đề xuất</th><th>Yêu cầu</th><th>Người dạy</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="createClassBody"></tbody>
+      </table></div><div id="admissionsHandoffPager"></div>
+    </div>
+  </div>
+</section>

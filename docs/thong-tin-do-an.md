@@ -132,7 +132,7 @@ Người dùng đăng nhập → kiểm tra bcrypt/tài khoản active → phát
 5. Giáo vụ tạo de_xuat_nhan_su; người dạy và phụ huynh phản hồi riêng cho/dong_y/tu_choi, lưu lý do đúng bên/thời điểm/actor. Hai bên đồng ý mới chuyển sang bước chốt người dạy theo đặc tả.
 6. Admin xếp lớp/ghi danh khóa. Giáo vụ tiếp tục xếp lịch. Không tự tạo lớp bằng quyền Giáo vụ chỉ vì hai bên đã đồng ý đề xuất.
 
-API lọc người dạy đã có; toàn bộ workflow tiếp nhận/đề xuất/khóa/đăng ký chưa có đủ API. Không coi đường endpoint minh họa trong Word là route đã triển khai.
+Luồng tuyển sinh/điều phối được triển khai trong feature Admissions, hợp đồng tại mục 12.2. Đăng ký khóa từ cổng phụ huynh và các màn phản hồi riêng thuộc phạm vi thành viên phụ trách cổng đó.
 
 ### 4.3. Chốt học phí, thông báo và thanh toán
 
@@ -364,16 +364,16 @@ Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí;
 | DB/server | Schema005, migration/seed/check, Docker PHP/MySQL, SMTP local, backup/restore, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
 | PHP nền | Auth/JWT/scope, hồ sơ, lớp/lịch, matching, Catalog/Permissions; Admin-only xếp lớp và che lương ở các API liên quan | Tiếp tục kiểm chứng scope theo từng luồng/cơ sở khi nối các cổng |
 | Administration | Cổng Admin 10 màn theo prototype đã chốt, khóa/cấu hình, tài khoản/quyền, nhân sự/hồ sơ, audit | Nghiệm thu cùng chủ đồ án và tích hợp các cổng của đồng đội |
-| Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp đăng ký vào lớp độc lập tiền | Cổng phụ huynh đăng ký, tiếp nhận/đề xuất/phản hồi/chốt đầy đủ |
-| Học vụ/nghỉ/bù | Admin giám sát lịch, chỉnh buổi chưa dạy, nhập bù, duyệt nghỉ cả lớp | Cổng giáo vụ/người dạy/phụ huynh và học vụ từng buổi |
-| Tài chính/công | Admin đối soát giao dịch, duyệt điều chỉnh công, đơn giá, chốt/trả/mở khóa, in phiếu | Phát hành học phí từ cổng giáo vụ, checkout/gateway/webhook thật, check-in/out người dạy |
+| Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp lớp độc lập tiền; Admissions tiếp nhận, ghép, đề xuất, API phản hồi theo người và bàn giao Admin | Màn gửi đăng ký/phản hồi trong cổng phụ huynh và người dạy do thành viên 2/3 tích hợp |
+| Học vụ/nghỉ/bù | Admin giám sát và duyệt nghỉ cả lớp; Giáo vụ xem lịch/lớp/sĩ số, xếp/sửa ca, duyệt nghỉ cá nhân và lưu bù theo thỏa thuận | Cổng người dạy/phụ huynh và học vụ từng buổi |
+| Tài chính/công | Giáo vụ tạo/phát hành hóa đơn trọn khóa, tra công nợ và phiếu thu; Admin xác nhận tiền, duyệt điều chỉnh công, đơn giá, chốt/trả/mở khóa, in phiếu | Checkout/gateway/webhook thật, check-in/out người dạy |
 | Thông báo | Dữ liệu, trigger học phí, SMTP thử, tổng việc chờ Admin | API thông báo đầy đủ, worker/retry/template/mail thật |
-| FE | Cổng Admin dùng API thật; prototype và file demo riêng | Các cổng còn lại theo phân công nhóm, kiểm thử responsive/liên thông |
+| FE | Cổng Admin và 8 màn Giáo vụ dùng API PHP/MySQL; giao diện gốc ở docs/demo/index.html | Các cổng còn lại theo phân công nhóm, kiểm thử responsive/liên thông |
 | Báo cáo/nộp bài | Dashboard Admin, in phiếu công/lương và lịch đang lọc | Báo cáo khác, xuất dữ liệu, báo cáo môn học, kịch bản trình diễn |
 
 Phạm vi local ngày 11/11/2026 theo mục 12.1. Phần Admin đã nối API thật gồm xếp lớp, đối soát tiền, công/lương và lịch. Các feature có nhiều cổng tiếp tục giữ `planned` cho luồng còn thiếu trong manifest. Các số liệu trên dashboard lấy DB của máy đang chạy.
 
-Các việc tiếp theo đi theo phân công nhóm gồm đăng ký/phát hành hóa đơn/thông báo, cổng thanh toán và webhook xác minh, giáo vụ vận hành lịch/học vụ, cổng check-in và gửi yêu cầu của người dạy, báo cáo/mail và kiểm thử liên thông trước triển khai public. Chỉ triển khai tiếp trong phạm vi được giao.
+Các việc tiếp theo đi theo phân công nhóm gồm cổng phụ huynh đăng ký/phản hồi/nhận thông báo, thanh toán và webhook xác minh, học vụ từng buổi, cổng check-in và gửi yêu cầu của người dạy, báo cáo/mail và kiểm thử liên thông trước triển khai public. Tiến độ Giáo vụ ngày 12/11 nằm tại mục 12.3. Chỉ triển khai tiếp trong phạm vi được giao.
 
 Kết quả đã ghi nhận08/11/2026 trên nền005:
 
@@ -447,7 +447,7 @@ Nguồn giữ nguyên byte:
 
 - [Word nghiệp vụ gốc](../reference/quy_trinh_nghiep_vu_v2.docx): chỉ tham khảo lịch sử khi khác quyết định mới.
 - [SQL gốc](../reference/database/schema-original.sql): không chạy vào DB hiện có.
-- [Demo HTML](demo/index.html): mô phỏng, không gọi API thật.
+- [Giao diện gốc](demo/index.html) dùng tham khảo bố cục và tính năng đã chốt.
 - [Manifest hash](../reference/preserved-files.json): kiểm tra bảo toàn3 nguồn trên.
 
 Đề cương IS207 PDF là file chủ đồ án cung cấp trong cuộc trao đổi, không được tự thêm bản vào repo. Mật khẩu web/DB/JWT, file env cá nhân, backup và tài khoản merchant không nằm trong hai tài liệu hoặc lịch sử code được chủ động bổ sung.
@@ -571,7 +571,7 @@ Khóa/mở tài khoản và đổi nhóm được tuần tự hóa qua khóa nh�
 
 Dashboard dùng ngày thanh toán theo giờ DB +07 để cộng phiếu thu hợp lệ và trừ phiếu hoàn hợp lệ. Hóa đơn nháp/hủy bị loại khỏi công nợ; thống kê khóa/lớp/học viên và việc chờ phản ánh dữ liệu hiện tại. Bốn tháng không có phiếu được điền 0; tháng lọc tác động phần thực thu. Các nút công việc chờ dẫn tới màn đối soát, xếp lớp và phê duyệt tương ứng.
 
-FE lấy trực tiếp HTML/CSS từ 10 màn Admin của `reference/Educenter.html` bằng `backend/scripts/build-admin-assets.py`. Script sinh template trong `administration.views.js`, view PHP và CSS để phục vụ cổng quản trị. Logic API được chia theo feature Catalog, Permissions, Audit, Staff, Tuition, Payroll, Timekeeping, LeaveRequests, Scheduling và Dashboard. Bản `/admin` dùng PHP/MySQL và giữ nguyên bố cục/menu/form đã chốt.
+FE lấy trực tiếp HTML/CSS từ 10 màn Admin của `docs/demo/index.html` bằng `backend/scripts/build-admin-assets.py`. Script sinh template trong `administration.views.js`, view PHP và CSS để phục vụ cổng quản trị. Logic API được chia theo feature Catalog, Permissions, Audit, Staff, Tuition, Payroll, Timekeeping, LeaveRequests, Scheduling và Dashboard. Bản `/admin` dùng PHP/MySQL và giữ nguyên bố cục/menu/form đã chốt.
 
 Kiểm chứng local ngày 11/11 gồm suite PHP core, API nền, API Admin và SQL trên DB `_test`, nâng cấp/khôi phục thử, lint PHP/JavaScript, structure/hash và build image ứng dụng. Kết quả cuối đạt 71 kiểm tra PHP core, 81 API nền, 210 API quản trị và 98 ca SQL, tổng 460. Nâng cấp 003/004→005 và backup/restore trên DB thử đạt. Lint 225 file PHP, cú pháp 35 file JavaScript cùng hai demo, structure/hash và build image application đạt. Trình duyệt đã mở đủ 10 màn Admin với API thật, kiểm tra lịch tháng 42 ô, 5 nhóm × 8 quyền, form khóa/nhân sự và ghi nhận console không có lỗi.
 
@@ -586,6 +586,66 @@ pwsh -File backend/scripts/test.ps1
 ```
 
 Script tạo MySQL riêng và chạy core, luồng cũ, suite administration và SQL regression. Không chạy integration trên database đang dùng. Muốn chạy riêng suite mới trên DB thử đã init, cấu hình TEST_WITH_DB=1 và DB_NAME kết thúc `_test`, sau đó `composer test:admin`.
+
+### 12.2. Tuyển sinh / Điều phối
+
+Người 1 giữ feature `Admissions`, routes/service/repository và màn điều phối. Triển khai trực tiếp vào các file khung hiện có. Cổng `/staff` dùng chung PHP shell, CSS, dialog và Ajax với `/admin`. Menu Admin có thêm Đăng ký khóa học và Tuyển sinh & Ghép người dạy. Nội dung màn ghép lấy từ `docs/demo/index.html`, phần `staff-intake`, giữ luồng 4 bước. Mẫu gốc giữ nguyên hash.
+
+Prefix API là `/api/academic/admissions`. Các route yêu cầu Bearer JWT, trả `{success:true,data:...}`. Danh sách có `items,total,page,perPage`, mặc định 20 và tối đa 100 bản ghi/trang. `q` tìm tên/mã/liên hệ, `trangThai` dùng giá trị DB hoặc `san_sang` ở danh sách đề xuất.
+
+| Method và route | Dữ liệu / kết quả | Quyền |
+| --- | --- | --- |
+| GET `/registrations` | Đọc đăng ký trọn khóa, học viên, phụ huynh, giá snapshot, lớp và trạng thái | Admin hoặc Giáo vụ có `TiepNhanYeuCau.view` |
+| GET `/lookups?q=...` | Môn/khối/khu vực/cơ sở active và tối đa 100 hồ sơ học viên khớp tìm kiếm | Như trên |
+| GET `/requests`, GET `/requests/:id` | Yêu cầu, liên hệ, lịch yêu cầu, người tiếp nhận | Như trên |
+| POST `/requests` | Tạo nhu cầu với lịch yêu cầu, trạng thái `moi`, HTTP 201 | `TiepNhanYeuCau.add` |
+| PUT `/requests/:id` | Cập nhật đầy đủ nhu cầu, liên kết hồ sơ học viên trước khi gửi đề xuất | `TiepNhanYeuCau.edit` |
+| POST `/requests/:id/receive` | Body `{}`, nhận yêu cầu chưa phân công, `moi` sang `dang_tim` | `TiepNhanYeuCau.edit` |
+| GET `/requests/:id/candidates` | Người dạy phù hợp tất cả khung giờ, chuyên môn, cấp lớp, khu vực và hình thức | `TiepNhanYeuCau.view` |
+| POST `/requests/:id/proposals` | `{nhanSuId,hocPhiDeXuat?,ghiChu?}`, tạo đề xuất chờ hai bên, HTTP 201 | `TiepNhanYeuCau.add` |
+| GET `/proposals` | Giáo vụ theo phạm vi cơ sở; phụ huynh theo con/người gửi; người dạy theo hồ sơ của mình | Giáo vụ có quyền tiếp nhận, bên phản hồi có quyền xem vận hành |
+| POST `/proposals/:id/respond` | `{trangThai:"dong_y" hoặc "tu_choi",lyDo?}` | Đúng phụ huynh hoặc người dạy trên đề xuất |
+
+Giáo vụ phải có hồ sơ nhân viên `dang_lam`. Nhân viên gắn cơ sở chỉ đọc/xử lý yêu cầu thuộc cơ sở đó hoặc chưa chọn cơ sở. Học viên/đăng ký chưa có lớp được tiếp nhận chung; học viên có lớp hiện hành chỉ xuất hiện trong phạm vi cơ sở có lớp đó. Admin có phạm vi toàn trung tâm. API lấy actor từ JWT và tra DB, từ chối trường actor/trạng thái/phản hồi do máy khách tự thêm.
+
+Body nhu cầu có `hocVienId?`, `hoTenLienHe?`, `sdtLienHe?`, `emailLienHe?`, `monHocId`, `capLopId`, `loaiLopMongMuon`, `coSoMongMuonId?`, `hinhThuc`, `khuVucId?`, `diaChiHoc?`, `nganSachMin?`, `nganSachMax?`, `donViNganSach?`, `mucTieu?`, `ghiChu?`, `nguon`, `lichYeuCau`. Lịch là mảng `{thu,gioBatDau,gioKetThuc}`, thứ 2–8, bắt đầu nhỏ hơn kết thúc, tối thiểu một khung giờ, các khung cùng thứ không chồng nhau. Khách tư vấn chưa có hồ sơ cần tên và số điện thoại liên hệ. Liên kết học viên/phụ huynh trước khi gửi đề xuất để có đúng người phản hồi.
+
+Ngân sách cần đơn vị rõ ràng. Học phí hồ sơ người dạy là giá tư vấn theo buổi, API chỉ so trực tiếp với ngân sách `theo_buoi`. Ngân sách theo giờ/khóa hoặc đơn vị lịch sử được giữ đúng đơn vị để giáo vụ đối chiếu khi tư vấn, trả cờ `nganSachCanThoaThuan`; không quy đổi thành giá buổi khi thiếu thời lượng/tổng buổi. Học phí đề xuất mới luôn là trọn khóa. Các trường lương/đơn giá nội bộ/ngân hàng được loại khỏi response matching cho mọi cổng.
+
+Matching kiểm tra mọi lịch yêu cầu nằm trong lịch rảnh. Loại người dạy có ca thực tế tương lai còn hiệu lực trùng thứ/giờ, hoặc lịch tuần của lớp sắp/đang học có ngày hiệu lực tương lai trùng yêu cầu. Khi tạo đề xuất khóa yêu cầu/người dạy và kiểm tra lại matching. Cặp yêu cầu/người dạy giữ khóa UNIQUE sẵn có, gửi trùng trả 409. Nhu cầu đã gửi đề xuất được giữ nguyên tiêu chí đã gửi cho hai bên.
+
+Đề xuất mới có `tt_nhan_su=cho`, `tt_phu_huynh=cho`. Mỗi bên tự phản hồi, lý do từ chối bắt buộc và lưu riêng từng bên, actor phụ huynh và thời gian server được ghi vào cột tương ứng. Giáo vụ/Admin chỉ theo dõi phản hồi. Gửi lại cùng phản hồi trả kết quả đã lưu, thay phản hồi đã chốt trả 409. Khóa yêu cầu trước đề xuất để tuần tự hóa phản hồi; khi hai bên cùng đồng ý, yêu cầu thành `da_chot`, xuất hiện ở bước bàn giao. Đề xuất khác của yêu cầu đã chốt không thể thành ứng viên được chọn tiếp. Trạng thái này ghi nhận thống nhất người dạy, Admin tiếp tục xếp lớp độc lập thanh toán qua luồng đã có.
+
+Tạo đề xuất/phản hồi ghi audit và thông báo web trong cùng transaction, khóa chống trùng theo đề xuất/sự kiện/người nhận. Thông báo phản hồi gửi người tiếp nhận, khi đủ hai đồng ý gửi thêm Admin. Màn phản hồi trong cổng phụ huynh/người dạy do người 2/3 nối vào các API trên; worker/email theo phân công thông báo chung.
+
+Kiểm chứng local ngày 12/11/2026 đạt 315 kiểm tra HTTP/MySQL quản trị, gồm 105 kiểm tra mới cho tuyển sinh. Kết hợp 71 core, 81 API nền và 98 ca SQL là 565 kiểm tra. Luồng API chạy trên DB riêng `_test`, gồm sai quyền, khác phụ huynh/người dạy, giới hạn cơ sở, tất cả lịch yêu cầu, xung đột lịch tuần/ca thực tế, đơn vị ngân sách, chống trùng và lịch sử phản hồi. Đã thử trình duyệt bằng Admin và Giáo vụ với bản DB thử riêng, từ form tiếp nhận đến tạo đề xuất chờ phản hồi, xem bàn giao và chuyển màn Admin xếp lớp. Cổng phụ huynh/người dạy tiếp tục theo phân công nhóm.
+
+### 12.3. Tám màn Giáo vụ / Điều phối
+
+Cổng `/staff` mở ở Tổng quan công việc, giữ 8 mục và bố cục từ mẫu `docs/demo/index.html`. Màn dùng chung PHP shell, sidebar, font/màu, bảng, dialog, lịch và Ajax với Admin. Các feature được triển khai ngay trong file khung hiện có. Tài khoản Giáo vụ cần hồ sơ nhân viên `dang_lam`, quyền chức năng và phạm vi cơ sở phù hợp. Các API chọn người dạy cho lịch trả hồ sơ vận hành an toàn, chỉ Admin xem đơn giá/lương.
+
+Theo điều chỉnh giao diện ngày 12/11/2026, tên bảng, mã BR/DB và các đoạn mô tả ràng buộc được lưu trong tài liệu. UI dùng nhãn thao tác và trạng thái ngắn gọn. Luồng xếp học bù nằm tại Thời khóa biểu → Xếp ca học mới → Loại buổi học → Buổi học bù. Các nút tạo học bù riêng đã được gỡ. Bộ tạo giao diện áp dụng cách trình bày này khi lấy mẫu index.
+
+| Màn | Thao tác đã nối API |
+| --- | --- |
+| Tổng quan công việc | Đếm yêu cầu mới/đang tìm người, đơn cá nhân chờ, ca bù và hóa đơn còn cần xử lý; danh sách việc chờ, lối tắt |
+| Tuyển sinh & Ghép lớp | Tiếp nhận, tìm người dạy, đề xuất và theo dõi phản hồi theo mục 12.2 |
+| Thời khóa biểu & Lưu lịch bù | Lịch tuần/tháng, lọc, xếp/sửa ca, lặp tuần, người dạy/trợ giảng/phòng, bù cá nhân/cả lớp theo buổi gốc |
+| Danh sách Lớp & Sĩ số | Khóa/lớp, sĩ số, người dạy/trợ giảng, lịch tuần và danh sách học viên; Admin tiếp tục giữ thao tác xếp lớp |
+| Học viên & ĐK Khóa | Tạo/sửa hồ sơ, liên kết một phụ huynh, đăng ký khóa theo giá snapshot, tra cứu đăng ký |
+| Hồ sơ Phụ huynh | Tìm, tạo/sửa thông tin liên hệ, xem nhiều con, thêm học viên gắn phụ huynh; Admin cấp tài khoản |
+| Duyệt nghỉ cá nhân & Học bù | Duyệt/từ chối đơn cá nhân, xem yêu cầu nghỉ cả lớp, sổ bù cá nhân và mở form lưu bù theo thỏa thuận |
+| Hóa đơn trọn khóa & Thu phí | Nháp từ đăng ký, phát hành/thông báo phụ huynh, số dư/phiếu thu, in/lưu PDF; Admin xác nhận thu |
+
+API bổ sung trong prefix `/api/academic/academic-affairs` gồm GET `/dashboard`, `/people`, `/rooms`, `/courses`, `/makeups`, `/notifications`; POST `/notifications/{id}/read`; GET/POST `/students/{id}/registrations`; POST `/students` tạo học viên và đăng ký khóa tùy chọn trong một transaction. Khóa đăng ký đang mở giữ giá tại lúc đăng ký. Gửi lại đăng ký còn hiệu lực trả bản ghi đã có.
+
+POST `/api/academic/scheduling/operations-sessions` và PUT cùng đường dẫn `/{id}` dùng chung bộ lưu lịch của Admin, kiểm quyền vận hành. Kiểm chuyên môn và lịch rảnh người dạy, phạm vi cơ sở, xung đột người/phòng, vai trò trợ giảng và buổi đã check-in/chốt công. Lặp tuần lưu nguyên khối, lỗi một ca rollback cả khối. Bù cá nhân lưu liên kết học viên/buổi gốc và người xếp, đơn nghỉ tùy chọn. Giáo vụ duyệt cá nhân tại POST `/api/academic/leave-requests/personal/{id}/decide`; GET `/personal` và `/class-overview` phục vụ danh sách. Duyệt cá nhân giữ trạng thái lớp, Giáo vụ cập nhật lịch đã thỏa thuận qua bộ lịch. Chỉ Admin xử lý nghỉ cả lớp và điều chỉnh công.
+
+GET/POST `/api/finance/tuition/invoices`, GET `/invoices/{id}`, POST `/invoices/{id}/publish` xử lý hóa đơn từ đăng ký trọn khóa. Tổng tiền lấy snapshot, phát hành lưu actor/giờ server và thông báo DB. API tạo và phát hành gọi lặp an toàn. POST `/invoices/{id}/receipts` chỉ Admin, yêu cầu mã chứng từ, kiểm số dư và chống lặp phiếu. Trang Giáo vụ xem kết quả thu. Cổng thanh toán ngoài, webhook và worker email tiếp tục theo tiến độ tích hợp chung.
+
+Chuông thông báo tại `/staff` lấy bản ghi của tài khoản hiện tại, đánh dấu đọc bằng API sở hữu. Hồ sơ phụ huynh mới vẫn được tìm thấy trước khi liên kết con/cấp tài khoản. Học viên và hóa đơn được giới hạn theo cơ sở phụ trách. Source tham chiếu giữ nguyên hash, sử dụng schema 005 hiện hành.
+
+Kiểm chứng local ngày 12/11/2026 đạt 374 kiểm tra HTTP/MySQL quản trị, 71 core, 81 API nền và 98 ca SQL, tổng 624. Nâng cấp 003/004→005 và khôi phục thử đạt. Trình duyệt đã mở cả 8 màn bằng tài khoản Giáo vụ trên DB `_test` riêng, thử tạo phụ huynh, tạo học viên kèm khóa, sửa hồ sơ, tạo/phát hành hóa đơn, đọc thông báo, lưu ca thường/bù và từ chối ca trùng. Lint 225 file PHP, cú pháp 35 file JavaScript frontend cùng portal/prototype và kiểm tra cấu trúc/hash đạt. Dữ liệu kiểm thử được giữ trong môi trường thử tạm rồi dọn sau kiểm chứng.
 
 <a id="tu-dien-du-lieu"></a>
 ## 13. Từ điển dữ liệu toàn bộ 43 bảng

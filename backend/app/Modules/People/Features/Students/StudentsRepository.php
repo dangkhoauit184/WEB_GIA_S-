@@ -6,6 +6,7 @@ use App\Shared\{Access, Store};
 final class StudentsRepository
 {
     private const SELECT = 'SELECT hv.*, cl.ten AS ten_cap_lop, kv.ten AS ten_khu_vuc,
+        (SELECT GROUP_CONCAT(k.ten SEPARATOR \', \') FROM dang_ky_khoa_hoc d JOIN khoa_hoc k ON k.id=d.khoa_hoc_id WHERE d.hoc_vien_id=hv.id AND d.trang_thai<>\'thoi_hoc\') AS ten_khoa,
         u.hoten AS ten_phu_huynh, u.sdt AS sdt_phu_huynh, u.email AS email_phu_huynh
         FROM hoc_vien hv JOIN users u ON u.user_id=hv.phu_huynh_user_id
         LEFT JOIN cap_lop cl ON cl.id=hv.cap_lop_id LEFT JOIN khu_vuc kv ON kv.id=hv.khu_vuc_id
@@ -18,6 +19,7 @@ final class StudentsRepository
     {
         $sql = self::SELECT; $params = [];
         if ($id !== null) { $sql .= ' AND hv.id=?'; $params[] = $id; }
+        if ($user['role'] === 'GIAO_VU' && $user['coSoId']) $sql .= \App\Modules\Academic\Features\Admissions\AdmissionsFilter::studentScope('hv.id', (int)$user['coSoId']);
         if (!Access::staff($user)) {
             if ($user['role'] === 'PHU_HUYNH') { $sql .= ' AND hv.phu_huynh_user_id=?'; $params[] = $user['userId']; }
             else {

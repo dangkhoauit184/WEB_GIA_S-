@@ -2,6 +2,8 @@
 'use strict';
 window.Admin = (() => {
   const screens = {};
+  const admissionsPortal = document.body.dataset.portal === 'admissions';
+  const defaultScreen = admissionsPortal ? 'staff-dash' : 'admin-dash';
   let token = null;
   let user = null;
   let renderVersion = 0;
@@ -34,9 +36,6 @@ window.Admin = (() => {
 
   async function api(path, method = 'GET', body) {
     let response;
-    const started = performance.now();
-    if ($('apiMethod')) $('apiMethod').textContent = method;
-    if ($('apiUri')) $('apiUri').textContent = path;
     try {
       response = await fetch(path, {
         method,
@@ -47,7 +46,6 @@ window.Admin = (() => {
       throw new Error('Không kết nối được máy chủ. Vui lòng kiểm tra kết nối rồi thử lại.');
     }
     const result = await response.json().catch(() => null);
-    if ($('apiStatus')) $('apiStatus').textContent = `${response.status} · ${Math.round(performance.now() - started)}ms · EduCenter ERP Core`;
     if (response.status === 401) {
       reset();
       $('login-error').textContent = 'Phiên đã hết hạn. Vui lòng đăng nhập lại.';
@@ -303,14 +301,14 @@ window.Admin = (() => {
   });
 
   function currentScreen() {
-    const name = location.hash.replace(/^#\/?/, '').split('/').pop() || 'admin-dash';
+    const name = location.hash.replace(/^#\/?/, '').split('/').pop() || defaultScreen;
     return { dashboard:'admin-dash', courses:'admin-courses', catalog:'admin-catalog', settings:'admin-catalog', permissions:'admin-perms', audit:'admin-audit' }[name] || name;
   }
   async function render() {
     if (!user) return;
     const name = currentScreen();
     const handler = screens[name];
-    if (!handler) { location.hash = '/admin/admin-dash'; return; }
+    if (!handler) { location.hash = `/${admissionsPortal ? 'staff' : 'admin'}/${defaultScreen}`; return; }
     const version = ++renderVersion;
     $('admin-content').innerHTML = '<div class="card admin-empty" role="status">Đang tải dữ liệu…</div>';
     document.querySelectorAll('[data-screen]').forEach(link => {
@@ -340,6 +338,9 @@ window.Admin = (() => {
     $('admin-login').hidden = true;
     $('admin-workspace').hidden = false;
     $('admin-name').textContent = account.hoTen;
+    const roleLabel = account.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo vụ / Điều phối';
+    $('sRole').textContent = roleLabel;
+    if ($('udRole')) $('udRole').textContent = roleLabel;
     if ($('udName')) $('udName').textContent = account.hoTen;
     if ($('admin-avatar')) $('admin-avatar').textContent = account.hoTen.trim().split(/\s+/).pop()[0].toUpperCase();
     if ($('topDateText')) {
@@ -348,7 +349,8 @@ window.Admin = (() => {
       $('topDateText').textContent = `${daysVi[now.getDay()]}, ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
     }
     render();
-    window.loadNotifications?.();
+    if (admissionsPortal) window.loadStaffNotifications?.();
+    else window.loadNotifications?.();
   }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -360,10 +362,11 @@ window.Admin = (() => {
       try {
         const result = await api('/api/auth/login', 'POST', Object.fromEntries(new FormData(event.target)));
         token = result.token;
-        if (result.user.role !== 'ADMIN') {
+        const accepted = admissionsPortal ? ['ADMIN', 'GIAO_VU'].includes(result.user.role) : result.user.role === 'ADMIN';
+        if (!accepted) {
           await api('/api/auth/logout', 'POST', {});
           token = null;
-          throw new Error('Cổng này dành cho tài khoản Admin.');
+          throw new Error(admissionsPortal ? 'Cổng này dành cho Admin hoặc Giáo vụ / Điều phối.' : 'Cổng này dành cho tài khoản Admin.');
         }
         event.target.reset();
         openWorkspace(result.user);
@@ -393,12 +396,14 @@ window.Admin = (() => {
 
 window.showS = id => {
   if (Admin.currentScreen() === id) Admin.render();
-  else location.hash = `/admin/${id}`;
+  else location.hash = `/${document.body.dataset.portal === 'admissions' ? 'staff' : 'admin'}/${id}`;
 };
 window.toast = (text, type) => Admin.notify(text, type === 'err');
 window.showPublicLanding = () => { location.href = '/'; };
-window.setPortal = role => {
-  if (role === 'admin') showS('admin-dash');
+window.setPortal = (role, focus, screen) => {
+  if (role === 'admin' && Admin.user?.role === 'ADMIN' && document.body.dataset.portal !== 'admissions') showS(screen || 'admin-dash');
+  else if (role === 'staff' && Admin.user?.role === 'ADMIN') showS('staff-intake');
+  else if (role === 'admin' && Admin.user?.role === 'ADMIN') location.href = `/admin#/admin/${screen || 'admin-dash'}`;
   else toast('Chọn cổng bằng tài khoản đúng vai trò khi đăng nhập. Các cổng khác do thành viên phụ trách triển khai.', 'info');
 };
 window.toggleUserDropdown = () => document.getElementById('userDropdown').classList.toggle('show');
@@ -434,14 +439,16 @@ window.markAllNotifsRead = () => {
   toast('Đã đánh dấu đọc tất cả thông báo.', 'ok');
 };
 window.loadNotifications = async () => {
+  if (document.body.dataset.portal === 'admissions') return window.loadStaffNotifications();
   const listEl = Admin.$('notifList');
   if (!listEl) return;
   try {
-    const [txs, regs, corrs, leaves] = await Promise.all([
+    const [txs, regs, corrs, leaves, admissions] = await Promise.all([
       Admin.api('/api/finance/tuition/transactions').catch(() => []),
       Admin.api('/api/academic/classes/registrations').catch(() => []),
       Admin.api('/api/finance/timekeeping/corrections').catch(() => []),
-      Admin.api('/api/academic/leave-requests/classes').catch(() => [])
+      Admin.api('/api/academic/leave-requests/classes').catch(() => []),
+      Admin.api('/api/academic/admissions/proposals?trangThai=san_sang&perPage=100').then(data => data.items).catch(() => [])
     ]);
     const items = [];
     const parseTs = (raw, fallbackDate) => {
@@ -491,6 +498,16 @@ window.loadNotifications = async () => {
         title: `${r.nguoiGui || 'Giáo viên'} xin nghỉ buổi học ${r.maLop || ''}`,
         desc: `Ngày ${r.ngay || ''} · Lý do: ${r.lyDo || 'Chờ Admin phê duyệt'}`,
         screen: 'admin-exceptions'
+      });
+    });
+    (admissions || []).filter(row => !row.maLop).forEach(row => {
+      const latest = [row.nhanSuPhanHoiLuc, row.phuHuynhPhanHoiLuc, row.createdAt].filter(Boolean).sort().pop();
+      items.push({
+        id: `proposal-${row.id}`,
+        ...parseTs(latest),
+        title: `Đề xuất DX-${row.id} đã được hai bên đồng ý`,
+        desc: `${row.maYc} · ${row.tenHocVien || row.hoTenLienHe || ''} · ${row.tenNguoiDay}. Chờ Admin xếp lớp.`,
+        screen: 'staff-intake'
       });
     });
     items.sort((a, b) => b.sortKey.localeCompare(a.sortKey));

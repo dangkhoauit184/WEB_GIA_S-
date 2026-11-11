@@ -19,12 +19,16 @@ final class StudentsService
     public static function create(array $data): array
     {
         StudentsFilter::check('add',true);
-        return self::detail(StudentsRepository::create(StudentsValidator::validate($data)));
+        $data=StudentsValidator::validate($data);
+        \App\Modules\People\Features\Parents\ParentsService::detail($data['phuHuynhUserId']);
+        return self::detail(StudentsRepository::create($data));
     }
     public static function update(int $id,array $data): array
     {
         StudentsFilter::check('edit',true); self::detail($id);
-        StudentsRepository::update($id,StudentsValidator::validate($data,false));
+        $data=StudentsValidator::validate($data,false);
+        if(isset($data['phuHuynhUserId'])) \App\Modules\People\Features\Parents\ParentsService::detail($data['phuHuynhUserId']);
+        StudentsRepository::update($id,$data);
         return self::detail($id);
     }
     public static function delete(int $id): array

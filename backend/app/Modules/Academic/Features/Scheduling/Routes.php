@@ -1,6 +1,8 @@
 <?php
 
 /** @var \CodeIgniter\Router\RouteCollection $routes */
+$routes->post('api/academic/scheduling/operations-sessions','\App\Modules\Academic\Features\Scheduling\SchedulingController::operationCreate');
+$routes->put('api/academic/scheduling/operations-sessions/(:num)','\App\Modules\Academic\Features\Scheduling\SchedulingController::operationUpdate/$1');
 $routes->post('api/academic/scheduling/admin-sessions','\App\Modules\Academic\Features\Scheduling\SchedulingController::adminCreate');
 $routes->put('api/academic/scheduling/admin-sessions/(:num)','\App\Modules\Academic\Features\Scheduling\SchedulingController::adminUpdate/$1');
 $routes->get('api/academic/scheduling/weekly', '\App\Modules\Academic\Features\Scheduling\SchedulingController::weekly');

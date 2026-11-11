@@ -14,6 +14,7 @@ final class StudentsModel extends \CodeIgniter\Model
             'truong'=>'truong',
             'capLopId'=>'cap_lop_id',
             'tenCapLop'=>'ten_cap_lop',
+            'tenKhoa'=>'ten_khoa',
             'diaChi'=>'dia_chi',
             'khuVucId'=>'khu_vuc_id',
             'tenKhuVuc'=>'ten_khu_vuc',

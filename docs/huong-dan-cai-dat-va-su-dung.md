@@ -241,11 +241,11 @@ Không dùng Reset như một lệnh khởi động hằng ngày. Mật khẩu M
 
 Bản web hiện có đăng nhập/đổi mật khẩu, tra cứu/tìm học viên, lớp và lịch qua Ajax; các API hồ sơ/quản trị nêu trong [tiến độ](thong-tin-do-an.md#tien-do). Các màn Figma chưa được code đầy đủ. Thanh toán, check-in, học bù, lương và thông báo chưa có đầy đủ API/màn hình dù DB đã hỗ trợ dữ liệu. Mailpit chỉ hứng thư thử, không tự gửi thông báo khi chưa có worker BE.
 
-Bản giao diện gốc dùng để tham khảo nằm tại [reference/Educenter.html](../reference/Educenter.html). Cổng quản trị đang chạy tại `/admin` dùng API PHP/MySQL.
+Bản giao diện gốc dùng để tham khảo nằm tại [docs/demo/index.html](demo/index.html). Cổng quản trị đang chạy tại `/admin` dùng API PHP/MySQL.
 
 ### 7.1. Kiểm tra cổng quản trị trước khi push
 
-Bản quản trị bổ sung ngày 11/11/2026 mở tại `http://localhost:5000/admin`, cũng có liên kết từ cổng đăng nhập chung. Đăng nhập bằng tài khoản Admin đã cấp trên DB của máy mình. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `reference/Educenter.html`. Dữ liệu ở `/admin` được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
+Bản quản trị bổ sung ngày 11/11/2026 mở tại `http://localhost:5000/admin`, cũng có liên kết từ cổng đăng nhập chung. Đăng nhập bằng tài khoản Admin đã cấp trên DB của máy mình. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `docs/demo/index.html`. Dữ liệu ở `/admin` được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
 
 Cập nhật bản giao diện tham chiếu rồi tạo lại template/style quản trị bằng lệnh sau tại thư mục gốc repo.
 
@@ -261,7 +261,28 @@ Danh mục phòng hiện lưu nhãn phòng trong `cau_hinh` với tiền tố `p
 
 Kiểm chứng local 11/11 đạt 460 kiểm tra gồm 71 core, 81 API nền, 210 API Admin và 98 ca SQL trên DB thử, cùng nâng cấp/khôi phục thử. Kiểm tra trình duyệt đủ 10 màn Admin, 5 nhóm quyền và form đọc dữ liệu thật đạt. Chi tiết kiểm chứng ở mục 12.1 của đặc tả.
 
-### 7.2. Trạng thái sau khi dọn dữ liệu thử
+### 7.2. Tuyển sinh / Điều phối
+
+Sau khi cập nhật code trên `develop`, mở Docker Desktop và chạy `pwsh -NoProfile -File backend/scripts/start.ps1` từ thư mục gốc. Mở `http://localhost:5000/staff` hoặc hai menu tuyển sinh mới trong `/admin`. Đăng nhập bằng Admin hoặc Giáo vụ có quyền tiếp nhận. Admin tạo tài khoản Giáo vụ và hồ sơ người dạy tại menu Nhân sự/Tài khoản, cập nhật chuyên môn, khu vực và lịch rảnh của người dạy để có ứng viên matching.
+
+Trong cổng tuyển sinh, xem Đăng ký khóa học hoặc mở Tuyển sinh & Ghép người dạy. Tiếp nhận yêu cầu, chọn hồ sơ học viên hoặc nhập liên hệ khách tư vấn, chọn môn/khối/hình thức/khu vực và tất cả khung giờ cần học. Khách tư vấn cần liên kết hồ sơ học viên/phụ huynh trước khi gửi đề xuất. Bấm Tìm người dạy, đối chiếu ứng viên, nhập học phí trọn khóa nếu đã tư vấn và gửi đề xuất. Bước 3 hiển thị phản hồi thật của từng bên, bước 4 chỉ hiện đề xuất đã được cả hai đồng ý. Admin tiếp tục xếp lớp qua màn Khóa học & Xếp lớp.
+
+Các màn gửi phản hồi của phụ huynh/người dạy thuộc phần tích hợp cổng của thành viên 2/3. Hợp đồng API và trạng thái ở mục 12.2 của đặc tả. Có thể kiểm tra đầy đủ API hai phía trên DB thử bằng suite `pwsh -File backend/scripts/test.ps1`. DB làm việc được đọc qua cấu hình riêng của từng máy; cập nhật này dùng schema 005 hiện có.
+
+#### Cổng Giáo vụ đầy đủ ngày 12/11/2026
+
+Mở `http://localhost:5000/staff`. Trang đầu là Tổng quan công việc. Sidebar có đủ 8 mục theo `docs/demo/index.html`, dùng chung giao diện và bộ lịch của Admin. Đăng nhập bằng tài khoản Giáo vụ do Admin cấp, có hồ sơ nhân viên đang làm và các quyền `TiepNhanYeuCau`, `QuanLyLopHoc`, `VanHanhBuoiHoc`, `HocPhiThanhToan` tương ứng thao tác được giao. Admin cũng đăng nhập được cổng này.
+
+1. Vào Hồ sơ Phụ huynh để thêm thông tin liên hệ. Mở chi tiết để xem các con hoặc thêm học viên gắn sẵn phụ huynh. Admin cấp tài khoản web tại màn Tài khoản.
+2. Vào Học viên & ĐK Khóa để tạo/sửa hồ sơ, chọn khóa đang mở hoặc đăng ký thêm khóa. Tra cứu đăng ký khóa để xem giá đã chốt và lớp Admin đã xếp.
+3. Vào Tuyển sinh & Ghép lớp để thực hiện luồng 4 bước ở trên. Admin xếp lớp tại cổng Admin theo đề xuất đã thống nhất.
+4. Vào Lớp & Sĩ số để xem danh sách lớp, người dạy, trợ giảng, lịch tuần và học viên. Mở Thời khóa biểu để xem tuần/tháng, lọc hoặc xếp ca, chọn người dạy, phòng và lặp hàng tuần. Người dạy phải khớp chuyên môn/lịch rảnh. Hệ thống kiểm tra trùng lịch và giữ ca đã check-in/chốt công.
+5. Vào Duyệt nghỉ cá nhân & Học bù để duyệt/từ chối đơn cá nhân. Việc đổi lịch được Giáo vụ cập nhật ca sau khi thống nhất. Để xếp bù, vào Thời khóa biểu → Xếp ca học mới → Loại buổi học → Buổi học bù, rồi chọn buổi gốc, học viên, ngày/giờ và người dạy. Sổ bù lấy dữ liệu đã lưu.
+6. Vào Hóa đơn trọn khóa & Thu phí, tạo nháp từ đăng ký, chọn Chi tiết rồi Phát hành để lưu thông báo cho phụ huynh. Có thể xem số dư, lịch sử phiếu thu và in/lưu PDF. Admin xác nhận thu tiền. Chuông thông báo đọc và đánh dấu đã đọc cho tài khoản đang đăng nhập.
+
+Các thao tác ở cổng này gọi API PHP và MySQL 005. Máy đã cài 005 chỉ cần chạy server hiện có. Nội dung mẫu trong index phục vụ đối chiếu giao diện. Dữ liệu hiển thị tại `/staff` lấy từ DB riêng của từng máy. Hợp đồng API và kiểm chứng nằm ở mục 12.3 của đặc tả.
+
+### 7.3. Trạng thái sau khi dọn dữ liệu thử
 
 Ngày 11/11/2026 đã dọn bộ DEMO-A1, các khóa mẫu MAU/CRUD và tài khoản Admin kiểm tra tạm trên DB local. Tài khoản quản trị chính dùng tên đăng nhập `admin`. Các file SQL chạy demo, bản xem thử riêng và script kiểm tra tạm đã được gỡ khỏi source.
 
