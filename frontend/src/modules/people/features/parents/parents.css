@@ -1,0 +1,329 @@
+/* ==========================================================================
+   EduCenter ERP - Parents Portal Layout & Styling (Full Features)
+   ========================================================================== */
+.portal-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.portal-sidebar {
+  width: 270px;
+  background-color: #fff;
+  border-right: 1px solid var(--g200);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-brand {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--g200);
+}
+.brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--pri), var(--sec));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.brand-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--g900);
+  margin: 0;
+}
+.brand-sub {
+  font-size: 11px;
+  color: var(--g500);
+  margin: 0;
+}
+
+/* Student Selector Box in Sidebar */
+.student-selector-box {
+  padding: 16px 20px;
+  background-color: var(--pri-ll);
+  border-bottom: 1px solid #ccfbf1;
+}
+.student-selector-box label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pri-d);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.student-select {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--g800);
+  background: #fff;
+  border: 1px solid var(--pri-l);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  padding: 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--g600);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.nav-item:hover {
+  background-color: var(--g100);
+  color: var(--g900);
+}
+.nav-item.active {
+  background-color: var(--pri);
+  color: #fff;
+}
+
+/* User footer in Sidebar */
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--g200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--g800);
+}
+.user-role {
+  font-size: 11px;
+  color: var(--g500);
+}
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--g300);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--err);
+  cursor: pointer;
+}
+.btn-logout:hover {
+  background: var(--err-bg);
+  border-color: var(--err);
+}
+
+/* Main Content Area */
+.portal-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--g50);
+  overflow-y: auto;
+}
+
+.portal-topbar {
+  background: #fff;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--g200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.page-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--g900);
+  margin: 0;
+}
+.current-student-badge {
+  font-size: 13px;
+  color: var(--pri-d);
+  background: var(--pri-ll);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-weight: 600;
+  border: 1px solid #ccfbf1;
+}
+
+.portal-content {
+  padding: 32px;
+}
+
+/* Tabs */
+.tab-pane {
+  display: none;
+}
+.tab-pane.active {
+  display: block;
+}
+
+/* Card */
+.card {
+  background: #fff;
+  border: 1px solid var(--g200);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--g100);
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--g900);
+  margin: 0;
+}
+
+/* Data Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+.data-table th {
+  background-color: var(--g50);
+  padding: 12px 16px;
+  font-weight: 600;
+  color: var(--g600);
+  border-bottom: 1px solid var(--g200);
+}
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--g100);
+  color: var(--g800);
+}
+.data-table tr:hover td {
+  background-color: var(--g50);
+}
+
+/* Chip filter con em */
+.kid-chips {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.chip {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: 1px solid var(--g300);
+  background: #fff;
+  color: var(--g700);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chip:hover {
+  border-color: var(--pri);
+  color: var(--pri-d);
+}
+.chip.active {
+  background: var(--pri-ll);
+  border-color: var(--pri-l);
+  color: var(--pri-d);
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+.modal-overlay.show {
+  display: flex;
+}
+.modal-box {
+  background: #fff;
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow-xl);
+  position: relative;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--g200);
+  padding-bottom: 12px;
+}
+.modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--g900);
+}
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--g400);
+}
+.modal-close:hover {
+  color: var(--g800);
+}
+
+.qr-box {
+  background: var(--pri-ll);
+  border: 1px dashed var(--pri-l);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  margin: 16px 0;
+}
+.qr-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pri-d);
+  margin-bottom: 6px;
+}
+.qr-account {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--g700);
+}

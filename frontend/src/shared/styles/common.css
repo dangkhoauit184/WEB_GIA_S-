@@ -1,0 +1,115 @@
+/* ==========================================================================
+   EduCenter ERP - Common Design System & Variables
+   ========================================================================== */
+:root {
+  --pri: #0d9488;        /* Teal chính */
+  --pri-d: #0f766e;      /* Teal đậm */
+  --pri-l: #14b8a6;      /* Teal sáng */
+  --pri-ll: #f0fdfa;     /* Nền xanh nhạt */
+  
+  --sec: #4f46e5;        /* Indigo */
+  --sec-l: #6366f1;
+  --sec-ll: #eef2ff;
+
+  --ok: #16a34a;         /* Xanh lá thành công */
+  --ok-bg: #f0fdf4;
+  --warn: #d97706;       /* Cam cảnh báo */
+  --warn-bg: #fffbeb;
+  --err: #e11d48;        /* Đỏ lỗi */
+  --err-bg: #fff1f2;
+
+  --g50: #f8fafc;
+  --g100: #f1f5f9;
+  --g200: #e2e8f0;
+  --g300: #cbd5e1;
+  --g400: #94a3b8;
+  --g500: #64748b;
+  --g600: #475569;
+  --g700: #334155;
+  --g800: #1e293b;
+  --g900: #0f172a;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  color: var(--g800);
+  background-color: var(--g50);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Các lớp tiện ích chung */
+.text-center { text-align: center; }
+.text-muted { color: var(--g500); }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: var(--pri);
+  color: #fff;
+}
+.btn-primary:hover {
+  background-color: var(--pri-d);
+}
+
+.btn-secondary {
+  background-color: #fff;
+  color: var(--g700);
+  border-color: var(--g300);
+}
+.btn-secondary:hover {
+  background-color: var(--g100);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+}
+.badge-teal {
+  background-color: var(--pri-ll);
+  color: var(--pri-d);
+}
+.badge-ok {
+  background-color: var(--ok-bg);
+  color: var(--ok);
+}
+.badge-warn {
+  background-color: var(--warn-bg);
+  color: var(--warn);
+}

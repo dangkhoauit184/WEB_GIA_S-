@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập hệ thống · EduCenter ERP</title>
+  <link rel="stylesheet" href="../../../../src/shared/styles/common.css">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">🎓</div>
+        <h1>EduCenter ERP</h1>
+        <p>Hệ thống Quản lý Trung tâm Gia sư & Đào tạo</p>
+      </div>
+
+      <!-- Quick Roles Helper for Dev / Testing -->
+      <div class="quick-roles">
+        <div class="quick-roles-title">
+          <span>Tài khoản thử nghiệm nhanh:</span>
+        </div>
+        <div class="quick-role-buttons">
+          <button type="button" class="quick-btn" data-user="phuhuynh1" data-role="PHU_HUYNH">Phụ huynh</button>
+          <button type="button" class="quick-btn" data-user="giaovu1" data-role="GIAO_VU">Giáo vụ</button>
+          <button type="button" class="quick-btn" data-user="giaovien1" data-role="GIAO_VIEN">Giáo viên</button>
+          <button type="button" class="quick-btn" data-user="giasu1" data-role="GIA_SU">Gia sư</button>
+          <button type="button" class="quick-btn" data-user="trogiang1" data-role="TRO_GIANG">Trợ giảng</button>
+          <button type="button" class="quick-btn" data-user="admin" data-role="ADMIN">Admin</button>
+        </div>
+      </div>
+
+      <div id="loginAlert" class="alert alert-danger" role="alert"></div>
+
+      <form id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label for="username">Tên đăng nhập / Email</label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              class="form-control" 
+              placeholder="Nhập tên đăng nhập..." 
+              required 
+              autofocus
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mật khẩu</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-control" 
+              placeholder="Nhập mật khẩu..." 
+              required
+            >
+            <button type="button" id="togglePassword" class="pwd-toggle" title="Hiện/ẩn mật khẩu">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn btn-primary login-btn-submit">
+          Đăng nhập vào Hệ thống
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <a href="../../../../../index.html">← Quay lại Trang chủ / Giới thiệu</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../../../../src/config/app.config.js"></script>
+  <script src="../../../../src/shared/permissions/access.js"></script>
+  <script src="../../../../src/shared/services/http.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>
