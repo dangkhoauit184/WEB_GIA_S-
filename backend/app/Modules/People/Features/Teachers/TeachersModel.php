@@ -38,6 +38,7 @@ final class TeachersModel extends \CodeIgniter\Model
         if ($out['kinhNghiemNam'] !== null) $out['kinhNghiemNam'] = (float)$out['kinhNghiemNam'];
         $out['hinhThucDay'] = $out['hinhThucDay'] ? explode(',', $out['hinhThucDay']) : [];
         if ($out['donGiaGioChuan'] !== null) $out['donGiaGioChuan'] = (float)$out['donGiaGioChuan'];
+        if(\App\Shared\Access::user()['role']!=='ADMIN') unset($out['donGiaGioChuan']);
         return array_merge($out, $extras);
     }
 }

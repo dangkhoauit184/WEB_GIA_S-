@@ -35,11 +35,14 @@ final class SchedulingService
     public static function assign(int $id,array $input): array
     {
         $user=SchedulingFilter::check('add',true); self::session($id,$user);
-        return SchedulingRepository::assignment($id,SchedulingValidator::assignment($input),(int)$user['userId']);
+        $rows=SchedulingRepository::assignment($id,SchedulingValidator::assignment($input),(int)$user['userId']);
+        if($user['role']!=='ADMIN') foreach($rows as &$row) unset($row['donGia']);
+        return $rows;
     }
     public static function update(int $id,array $input): array
     {
         $user=SchedulingFilter::check('edit',true); $existing=self::session($id,$user);
+        if(in_array($input['trangThai']??'', ['huy','doi'],true) && $user['role']!=='ADMIN') \App\Shared\Access::forbidden();
         $data=SchedulingValidator::session($input); SchedulingValidator::session(array_merge($existing,$data));
         SchedulingRepository::update($id,$data,(int)$user['userId']);
         return self::session($id,$user);

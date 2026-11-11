@@ -1,4 +1,8 @@
 <?php
 namespace App\Modules\Finance\Features\Tuition;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+final class TuitionController extends \App\Shared\ApiController
+{
+    public function transactions() { return $this->respond(fn()=>\App\Shared\ApiModel::map(TuitionService::transactions())); }
+    public function confirm($id) { return $this->respond(fn()=>\App\Shared\ApiModel::map(TuitionService::confirm((int)$id))); }
+}

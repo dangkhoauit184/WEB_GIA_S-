@@ -3,6 +3,10 @@ namespace App\Modules\Administration\Features\Permissions;
 
 final class PermissionsController extends \App\Shared\ApiController
 {
+    public function candidates() { return $this->respond(fn()=>PermissionsService::candidates($this->request->getGet())); }
+    public function createAccount() { return $this->respond(fn()=>PermissionsService::createAccount($this->input()),201); }
+    public function updateAccount($id) { return $this->respond(fn()=>PermissionsService::updateAccount((int)$id,$this->input())); }
+    public function resetPassword($id) { return $this->respond(fn()=>PermissionsService::resetPassword((int)$id,$this->input())); }
     public function groups() { return $this->respond(fn()=>PermissionsService::groups()); }
     public function functions() { return $this->respond(fn()=>PermissionsService::functions()); }
     public function matrix($id) { return $this->respond(fn()=>PermissionsService::matrix((int)$id)); }

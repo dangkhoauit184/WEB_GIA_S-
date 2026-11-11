@@ -1,4 +1,11 @@
 <?php
 namespace App\Modules\Reporting\Features\Dashboard;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+final class DashboardService
+{
+    public static function summary(array $query): array
+    {
+        DashboardFilter::read();
+        return DashboardRepository::summary(DashboardValidator::month($query));
+    }
+}

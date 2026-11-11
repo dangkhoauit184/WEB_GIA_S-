@@ -20,6 +20,7 @@ COPY backend/composer.json backend/composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts --no-autoloader
 COPY backend/ ./
 COPY shared/ /var/www/educenter/shared/
+COPY frontend/src/ /var/www/educenter/frontend/src/
 RUN composer dump-autoload --no-dev --optimize \
     && mkdir -p writable/cache writable/logs writable/session writable/uploads \
     && chown -R www-data:www-data writable

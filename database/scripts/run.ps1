@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet('init','preflight','migrate','seed-demo','seed-courses','check','test')][string]$Action,
+    [ValidateSet('init','preflight','migrate','seed-demo','check','test')][string]$Action,
     [string]$EnvFile = (Join-Path $PSScriptRoot '../.env'),
     [string]$Container = ''
 )
@@ -180,9 +180,6 @@ try {
                 (Read-Sql 'seeders/004_business_policy.sql') + "`n" + (Read-Sql 'seeders/005_operations_policy.sql') +
                 "`nUPDATE schema_migrations SET status='applied',applied_at=NOW() WHERE status='applying' AND version IN ('001_feature_based','002_routine_review','003_attribute_review','004_business_rules','005_operations_ready');"
             [void](Invoke-Sql $sql)
-        }
-        'seed-courses' {
-            [void](Invoke-Sql (Read-Sql 'seeders/003_courses_example.sql'))
         }
         'seed-demo' {
             # [LƯU Ý] Chỉ cho nạp dữ liệu mẫu vào database thử nghiệm đã init và chưa có người dùng.

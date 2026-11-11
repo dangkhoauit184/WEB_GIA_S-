@@ -36,13 +36,13 @@ final class ClassesService
     public static function enroll(int $id,array $input): array
     {
         $user=ClassesFilter::check('add',true); Access::classAllowed($id,$user);
-        ClassesRepository::enroll($id,ClassesValidator::enrollment($input));
+        ClassesRepository::enroll($id,ClassesValidator::enrollment($input),(int)$user['userId']);
         return self::enrollments($id);
     }
     public static function updateEnrollment(int $id,int $enrollmentId,array $input): array
     {
         $user=ClassesFilter::check('edit',true); Access::classAllowed($id,$user);
-        ClassesRepository::updateEnrollment($id,$enrollmentId,ClassesValidator::enrollment($input,false));
+        ClassesRepository::updateEnrollment($id,$enrollmentId,ClassesValidator::enrollment($input,false),(int)$user['userId']);
         return self::enrollments($id);
     }
 }

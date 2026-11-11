@@ -5,14 +5,16 @@ use App\Shared\Store;
 
 final class AuthRepository
 {
-    private const SELECT = 'SELECT a.account_id, a.user_id, a.group_id, a.username, a.password_hash, a.status,
+    private const SELECT = "SELECT a.account_id, a.user_id, a.group_id, a.username, a.password_hash, a.status,
         g.group_name, u.hoten, u.sdt, u.email, u.ngaysinh, u.diachi, u.nghe_nghiep, u.khu_vuc_id,
         nv.id AS nhan_vien_id, nv.ma_nv, nv.chuc_vu, nv.co_so_id,
-        ns.id AS nhan_su_id, ns.ma_ns, ns.phan_loai
+        ns.id AS nhan_su_id, ns.ma_ns, ns.phan_loai,
+        (SELECT COALESCE(MAX(al.id),0) FROM audit_log al WHERE al.bang='account' AND al.ban_ghi_id=a.account_id
+            AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action'))='account_status_changed') AS session_version
         FROM account a JOIN users u ON u.user_id=a.user_id JOIN role_group g ON g.group_id=a.group_id
         LEFT JOIN nhan_vien nv ON nv.user_id=a.user_id
         LEFT JOIN nhan_su_chuyen_mon ns ON ns.user_id=a.user_id AND ns.deleted_at IS NULL
-        WHERE a.is_deleted=0 AND u.is_deleted=0 AND g.is_deleted=0';
+        WHERE a.is_deleted=0 AND u.is_deleted=0 AND g.is_deleted=0";
 
     public static function username(string $username): ?array
     {

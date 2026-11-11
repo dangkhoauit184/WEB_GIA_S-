@@ -9,4 +9,4 @@ MySQL 8.4 / InnoDB / utf8mb4 / giờ+07:00 / READ COMMITTED. Phiên bản **005_
 - [Thiết kế/quan hệ DB](../docs/thong-tin-do-an.md#database), [luồng cài và xử lý SQL](../docs/thong-tin-do-an.md#sql-lifecycle).
 - [Toàn bộ cột/khóa/ràng buộc](../docs/thong-tin-do-an.md#tu-dien-du-lieu), [routine/trigger](../docs/thong-tin-do-an.md#routine-trigger).
 
-Thực thi qua scripts/run.ps1, dùng [install-order.json](install-order.json) làm thứ tự chuẩn. Không init/schema.sql lên DB cũ, không seed demo/test vào DB làm việc. SQL gốc ở [reference](../reference/database/schema-original.sql) có lệnh xóa DB, không nằm trong luồng cài đặt.
+Thực thi qua scripts/run.ps1, dùng [install-order.json](install-order.json) làm thứ tự chuẩn. Không init/schema.sql lên DB cũ, action seed-demo và suite SQL dùng DB `_test`. SQL gốc ở [reference](../reference/database/schema-original.sql) có lệnh xóa DB, không nằm trong luồng cài đặt.

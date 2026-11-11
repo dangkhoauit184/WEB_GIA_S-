@@ -149,13 +149,11 @@ Chỉ dành cho database rỗng:
 ```powershell
 pwsh -File database/scripts/run.ps1 -Action init -Container educenter-mysql -EnvFile config/server.env
 pwsh -File database/scripts/run.ps1 -Action check -Container educenter-mysql -EnvFile config/server.env
-# Tùy chọn: thêm 5 khóa mẫu, đang tắt đăng ký và dùng giá minh họa.
-pwsh -File database/scripts/run.ps1 -Action seed-courses -Container educenter-mysql -EnvFile config/server.env
 ```
 
 `init` tự thực hiện schema → routines/triggers theo manifest → reference/policy → lịch sử applied001–005. Không chạy lần lượt từng file SQL bằng tay. Không cần chạy thêm migration sau init005. `check` phải không có dòng VI_PHAM khác0; CAN_XAC_NHAN cần đối chiếu nếu có dữ liệu lịch sử.
 
-DB mới chưa có người dùng/học viên/lớp. Khóa mẫu không tạo đăng ký hoặc hóa đơn. Chưa có CRUD khóa học trên web; đây là dữ liệu chuẩn bị cho bước BE/FE.
+Sau khi cài DB mới, tạo Admin theo mục Tài khoản web. Admin đăng nhập `/admin` để tạo khóa học và nhập dữ liệu trung tâm.
 
 ### 5B. Nhận dữ liệu giống một đồng đội — lựa chọn thay cho5A
 
@@ -243,7 +241,31 @@ Không dùng Reset như một lệnh khởi động hằng ngày. Mật khẩu M
 
 Bản web hiện có đăng nhập/đổi mật khẩu, tra cứu/tìm học viên, lớp và lịch qua Ajax; các API hồ sơ/quản trị nêu trong [tiến độ](thong-tin-do-an.md#tien-do). Các màn Figma chưa được code đầy đủ. Thanh toán, check-in, học bù, lương và thông báo chưa có đầy đủ API/màn hình dù DB đã hỗ trợ dữ liệu. Mailpit chỉ hứng thư thử, không tự gửi thông báo khi chưa có worker BE.
 
-Demo HTML tại [docs/demo/index.html](demo/index.html) là bản minh họa dùng localStorage, có đăng nhập nhanh riêng, không gọi PHP/MySQL. Không dùng demo đó để kết luận hệ thống thật đã chạy một tính năng.
+Bản giao diện gốc dùng để tham khảo nằm tại [reference/Educenter.html](../reference/Educenter.html). Cổng quản trị đang chạy tại `/admin` dùng API PHP/MySQL.
+
+### 7.1. Kiểm tra cổng quản trị trước khi push
+
+Bản quản trị bổ sung ngày 11/11/2026 mở tại `http://localhost:5000/admin`, cũng có liên kết từ cổng đăng nhập chung. Đăng nhập bằng tài khoản Admin đã cấp trên DB của máy mình. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `reference/Educenter.html`. Dữ liệu ở `/admin` được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
+
+Cập nhật bản giao diện tham chiếu rồi tạo lại template/style quản trị bằng lệnh sau tại thư mục gốc repo.
+
+```powershell
+python backend/scripts/build-admin-assets.py
+```
+
+Kiểm tra lần lượt 10 menu Admin gồm tổng quan, khóa học/xếp lớp, đối soát thanh toán, công/đơn giá/lương, duyệt nghỉ/chỉnh công/mở khóa, nhân sự/hồ sơ, phân quyền, danh mục/cấu hình, kiểm toán và lịch toàn chuỗi. Mỗi màn có trạng thái dữ liệu rỗng khi DB chưa có bản ghi.
+
+Luồng thử nghiệp vụ trên DB thử là tạo người dạy → cập nhật chuyên môn/lịch rảnh/đơn giá → tạo khóa và lớp phù hợp → Admin xếp đăng ký vào lớp dù chưa đóng tiền → xem lịch và chỉnh buổi chưa dạy/xếp bù → duyệt nghỉ cả lớp hoặc chỉnh công → chốt/chi trả công → tra nhật ký. Đối soát chỉ nhận giao dịch `cho_xac_nhan` đã có nguồn sự kiện hợp lệ. Giao diện có thể in phiếu lương và lịch đang lọc qua hộp thoại In/Lưu PDF của trình duyệt.
+
+Danh mục phòng hiện lưu nhãn phòng trong `cau_hinh` với tiền tố `phong_hoc.` và đọc thêm nhãn đang dùng ở lớp/buổi học. Schema 005 giữ 43 bảng. Các giá trị check-in/out tuân theo chính sách đã chốt. Kỳ lương đã trả được bảo vệ khi mở khóa.
+
+Kiểm chứng local 11/11 đạt 460 kiểm tra gồm 71 core, 81 API nền, 210 API Admin và 98 ca SQL trên DB thử, cùng nâng cấp/khôi phục thử. Kiểm tra trình duyệt đủ 10 màn Admin, 5 nhóm quyền và form đọc dữ liệu thật đạt. Chi tiết kiểm chứng ở mục 12.1 của đặc tả.
+
+### 7.2. Trạng thái sau khi dọn dữ liệu thử
+
+Ngày 11/11/2026 đã dọn bộ DEMO-A1, các khóa mẫu MAU/CRUD và tài khoản Admin kiểm tra tạm trên DB local. Tài khoản quản trị chính dùng tên đăng nhập `admin`. Các file SQL chạy demo, bản xem thử riêng và script kiểm tra tạm đã được gỡ khỏi source.
+
+Backup trước khi dọn nằm trong `.cache/before-demo-removal`, được Git bỏ qua. Đã thử khôi phục bản sao, đối chiếu hash, thử dọn trên DB `_test`, sau đó dọn DB local và đối chiếu từng dòng dữ liệu còn lại. Kiểm tra toàn vẹn đạt với 57 trigger và 20 routine. Các suite kiểm thử tự động trong backend/tests và database/tests phục vụ CI theo mục Kiểm thử.
 
 <a id="hang-ngay"></a>
 ## 8. Chạy hằng ngày và cập nhật mã nguồn
