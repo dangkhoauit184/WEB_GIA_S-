@@ -20,6 +20,7 @@ final class StudentsModel extends \CodeIgniter\Model
             'tenKhuVuc'=>'ten_khu_vuc',
             'ghiChu'=>'ghi_chu',
             'trangThai'=>'trang_thai',
+            'trangThaiHocTap'=>'trang_thai_hoc_tap',
             'phuHuynhUserId'=>'phu_huynh_user_id',
             'tenPhuHuynh'=>'ten_phu_huynh',
             'sdtPhuHuynh'=>'sdt_phu_huynh',

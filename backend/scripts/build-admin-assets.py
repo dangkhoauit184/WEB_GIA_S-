@@ -127,6 +127,15 @@ modals = modals.replace('value="Đã trao đổi điện thoại với phụ huy
 modals = modals.replace('<label style="margin-top:0;color:var(--purple)">Phạm vi bù</label>', '<label style="margin-top:0;color:var(--purple)">Buổi gốc</label><select id="sfMakeupOrigin"></select><label style="margin-top:0;color:var(--purple)">Phạm vi bù</label>')
 modals = modals.replace('<div class="modal-act">\n        <button type="button" class="btn sm" onclick="closeModalStaffForm()">', '<div class="row"><div class="form-group" style="flex:1"><label>Tên đăng nhập</label><input id="sfStaffUsername" required maxlength="100"></div><div class="form-group" style="flex:1"><label>Mật khẩu ban đầu</label><input id="sfStaffPassword" type="password" required minlength="6" maxlength="72" autocomplete="new-password"></div></div><div class="modal-act">\n        <button type="button" class="btn sm" onclick="closeModalStaffForm()">')
 modals = prepare_live_template(modals)
+modals = modals.replace(
+    '<select id="sfTeacherSelect" onchange="checkSfConflicts()"></select>',
+    '<select id="sfTeacherSelect" onchange="checkSfConflicts()"></select>\n'
+    '          <small id="sfTeacherAvailability" style="display:block;color:var(--g500);margin-top:5px"></small>')
+modals = re.sub(
+    r'<select id="sfBranchSelect"[^>]*>[\s\S]*?</select>',
+    '<select id="sfBranchSelect" onchange="onSfBranchChanged()"></select>\n'
+    '            <small id="sfCampusEmpty" style="display:none;color:var(--g500);margin-top:5px">'
+    'Chưa có cơ sở hoạt động. Nhờ Admin thêm cơ sở trong Danh mục &amp; Cấu hình.</small>', modals)
 tail = tail.replace('<dialog id="admin-dialog"', modals + '<dialog id="admin-dialog"')
 html = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EduCenter ERP · Quản trị viên</title><link rel="stylesheet" href="/admin-assets/base.css"><link rel="stylesheet" href="/admin-assets/administration.css">' + scripts + '</head><body class="administration">' + login + shell + tail
 fonts = '\n'.join(re.findall(r'<link[^>]*(?:fonts.googleapis.com|fonts.gstatic.com)[^>]*>', source))

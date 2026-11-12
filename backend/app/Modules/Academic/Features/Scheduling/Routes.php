@@ -11,3 +11,4 @@ $routes->get('api/academic/scheduling/sessions', '\App\Modules\Academic\Features
 $routes->post('api/academic/scheduling/generate-sessions', '\App\Modules\Academic\Features\Scheduling\SchedulingController::generate');
 $routes->post('api/academic/scheduling/sessions/(:num)/assign', '\App\Modules\Academic\Features\Scheduling\SchedulingController::assign/$1');
 $routes->put('api/academic/scheduling/sessions/(:num)', '\App\Modules\Academic\Features\Scheduling\SchedulingController::update/$1');
+$routes->delete('api/academic/scheduling/sessions/(:num)', '\App\Modules\Academic\Features\Scheduling\SchedulingController::delete/$1');

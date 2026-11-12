@@ -1,10 +1,12 @@
 'use strict';
 (() => {
-  let students = [];
-  const states = { dang_hoc:'Đang học', tam_nghi:'Tạm nghỉ', hoan_thanh:'Hoàn thành', nghi_han:'Nghỉ hẳn' };
+  const states = { dang_hoc:'Hoạt động', tam_nghi:'Tạm nghỉ', hoan_thanh:'Hoàn thành', nghi_han:'Nghỉ hẳn' };
+  const learningStates = { ...states, dang_hoc:'Đang học', da_xep_lop:'Đã xếp lớp', cho_xep_lop:'Chờ xếp lớp', chua_xep_lop:'Chưa xếp lớp' };
   function render(rows) {
-    students = rows;
-    StaffUI.rows('stuBody', 7, rows.map(row => `<tr><td><b>${Admin.esc(row.maHv)}</b></td><td><b>${Admin.esc(row.hoTen)}</b></td><td>${Admin.esc(row.tenCapLop || '—')}<br><small>${Admin.esc(row.truong || '')}</small></td><td>${Admin.esc(row.tenPhuHuynh)}<br><small>${Admin.esc(row.sdtPhuHuynh || '')}</small></td><td>${Admin.esc(row.tenKhoa || 'Chưa đăng ký')}</td><td>${Admin.tag(states[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : 'w')}</td><td><div class="row">${Admin.button('Chi tiết / Sửa', 'edit-student', row.id)}${StaffUI.can('QuanLyLopHoc','add') ? Admin.button('Đăng ký khóa', 'register-course', row.id,'p') : ''}</div></td></tr>`));
+    StaffUI.rows('stuBody', 7, rows.map(row => {
+      const status = row.trangThaiHocTap;
+      return `<tr><td><b>${Admin.esc(row.maHv)}</b></td><td><b>${Admin.esc(row.hoTen)}</b></td><td>${Admin.esc(row.tenCapLop || '—')}<br><small>${Admin.esc(row.truong || '')}</small></td><td>${Admin.esc(row.tenPhuHuynh)}<br><small>${Admin.esc(row.sdtPhuHuynh || '')}</small></td><td>${Admin.esc(row.tenKhoa || 'Chưa đăng ký')}</td><td>${Admin.tag(learningStates[status] || 'Chưa xếp lớp', status === 'dang_hoc' ? 'ok' : 'w')}</td><td><div class="row">${Admin.button('Chi tiết / Sửa', 'edit-student', row.id)}${StaffUI.can('QuanLyLopHoc','add') ? Admin.button('Đăng ký khóa', 'register-course', row.id,'p') : ''}</div></td></tr>`;
+    }));
     Admin.$('stuBody').querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
       if (button.dataset.action === 'edit-student') openStudentForm(Number(button.dataset.id));
       else registerCourse(Number(button.dataset.id));
@@ -28,7 +30,7 @@
         StaffUI.select('khuVucId','Khu vực',lookups.regions),
         {name:'diaChi',label:'Địa chỉ',maxLength:255,nullable:true},
         {name:'ghiChu',label:'Ghi chú',type:'textarea',nullable:true},
-        {name:'trangThai',label:'Trạng thái',type:'select',value:'dang_hoc',options:Object.entries(states).map(([value,label])=>({value,label}))}
+        {name:'trangThai',label:'Trạng thái hồ sơ',type:'select',value:'dang_hoc',options:Object.entries(states).map(([value,label])=>({value,label}))}
       ];
       if (!student) fields.push(StaffUI.select('khoaHocId','Khóa đăng ký',lookups.courses));
       fields.forEach(field => { if (student) field.value=student[field.name]; else if(field.name==='phuHuynhUserId') field.value=parentId; });

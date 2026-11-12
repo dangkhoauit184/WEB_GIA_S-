@@ -101,7 +101,9 @@ window.Admin = (() => {
     const controls = fields.map(field => {
       const attrs = `name="${esc(field.name)}" ${field.required ? 'required' : ''} ${field.disabled ? 'disabled' : ''}`;
       let control;
-      if (field.type === 'select') {
+      if (field.type === 'summary') {
+        return `<p>${esc(field.label)}</p>`;
+      } else if (field.type === 'select') {
         control = `<select ${attrs}>${field.options.map(option => `<option value="${esc(option.value)}" ${String(option.value) === String(field.value ?? '') ? 'selected' : ''}>${esc(option.label)}</option>`).join('')}</select>`;
       } else if (field.type === 'textarea') {
         control = `<textarea ${attrs} rows="4" ${field.maxLength ? `maxlength="${field.maxLength}"` : ''}>${esc(field.value ?? '')}</textarea>`;
@@ -137,7 +139,7 @@ window.Admin = (() => {
   }
 
   function confirmDialog(title, message, work, fields = []) {
-    formDialog({ title, fields:[{ name:'summary', label:message, disabled:true }, ...fields], submit:'Xác nhận', onSubmit:work });
+    formDialog({ title, fields:[{ name:'summary', type:'summary', label:message, disabled:true }, ...fields], submit:'Xác nhận', onSubmit:work });
   }
 
   const EN_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];

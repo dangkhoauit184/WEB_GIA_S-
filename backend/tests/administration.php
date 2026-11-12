@@ -453,6 +453,12 @@ try {
     check(http($affairs.'/students','POST',array_replace($staffStudentBody,['khoaHocId'=>99999999]),$staffToken)[0]===400,'student and invalid course fail atomically');
     check((int)Store::one('SELECT COUNT(*) AS n FROM hoc_vien')['n']===$beforeStudents,'failed course registration leaves no partial student');
     $staffStudent=requestOk($affairs.'/students','POST',$staffStudentBody,$staffToken,201);
+    check($staffStudent['trangThaiHocTap']==='cho_xep_lop','new registration waits for placement regardless of active profile');
+    $unplacedBody=$staffStudentBody;
+    unset($unplacedBody['khoaHocId']);
+    $unplacedBody['maHv']='NO-CLASS-'.$suffix;
+    $unplaced=requestOk('/api/people/students','POST',$unplacedBody,$staffToken,201);
+    check($unplaced['trangThaiHocTap']==='chua_xep_lop','student without registration or enrollment is not displayed as studying');
     $staffRegistration=requestOk($affairs.'/students/'.$staffStudent['id'].'/registrations','POST',['khoaHocId'=>$activeCourse['id']],$staffToken,201);
     check((int)$staffRegistration['hocPhiSnapshot']===2300000,'registration uses current course snapshot');
     check((int)Store::one('SELECT COUNT(*) AS n FROM dang_ky_khoa_hoc WHERE hoc_vien_id=?',[$staffStudent['id']])['n']===1,'repeated active course registration is idempotent');
@@ -471,10 +477,18 @@ try {
     $staffClass=requestOk('/api/academic/classes','POST',['maLop'=>'STAFF-L-'.$suffix,'tenLop'=>'Lớp giáo vụ vận hành','monHocId'=>1,'capLopId'=>9,
         'nguoiDayChinhId'=>$intakeTeacher2['id'],'khoaHocId'=>$activeCourse['id'],'cachThuPhi'=>'theo_khoa','cachTinhLuong'=>'theo_gio','ngayBatDau'=>date('Y-m-d')],$token,201);
     requestOk('/api/academic/classes/registrations/'.$staffRegistration['id'].'/assign','POST',['lopId'=>$staffClass['id']],$token);
+    check(requestOk('/api/people/students/'.$staffStudent['id'],'GET',null,$staffToken)['trangThaiHocTap']==='da_xep_lop','placement in upcoming class is displayed as assigned');
+    Store::execute("UPDATE lop_hoc SET trang_thai='dang_hoc' WHERE id=?",[$staffClass['id']]);
+    check(requestOk('/api/people/students/'.$staffStudent['id'],'GET',null,$staffToken)['trangThaiHocTap']==='dang_hoc','active class determines studying state while tuition remains unpaid in full');
     $staffSessionDate=(new DateTimeImmutable('next Thursday'))->modify('+7 days')->format('Y-m-d');
     $staffSessionBody=['lopId'=>$staffClass['id'],'ngay'=>$staffSessionDate,'gioBatDau'=>'18:00','gioKetThuc'=>'20:00',
         'userId'=>$intakeTeacher2['userId'],'troGiangIds'=>[],'repeatCount'=>1];
     $staffSession=requestOk('/api/academic/scheduling/operations-sessions','POST',$staffSessionBody,$staffToken,201)['ids'][0];
+    [$earlyStatus,$earlyError]=http('/api/academic/scheduling/operations-sessions','POST',array_replace($staffSessionBody,['gioBatDau'=>'06:00','gioKetThuc'=>'08:00']),$staffToken);
+    check($earlyStatus===400&&str_contains($earlyError['message'],'lịch rảnh')&&str_contains($earlyError['message'],'Thứ 5'),'outside-availability rejection identifies the registered weekday');
+    $schedulePeople=requestOk($affairs.'/people','GET',null,$staffToken);
+    $scheduleTeacher=array_values(array_filter($schedulePeople,fn($row)=>(int)$row['userId']===$intakeTeacher2['userId']))[0];
+    check(!empty($scheduleTeacher['lichRanh'])&&!isset($scheduleTeacher['donGiaGioChuan']),'staff scheduling exposes availability without pay');
     check(http('/api/academic/scheduling/operations-sessions','POST',$staffSessionBody+['donGia'=>1],$staffToken)[0]===400,'staff cannot supply internal wage in schedule');
     requestOk('/api/academic/scheduling/operations-sessions/'.$staffSession,'PUT',array_replace($staffSessionBody,['gioBatDau'=>'18:30']),$staffToken);
     $staffLeave=Store::insert('don_xin_nghi',['buoi_hoc_id'=>$staffSession,'doi_tuong'=>'hoc_vien','hoc_vien_id'=>$staffStudent['id'],
@@ -496,6 +510,46 @@ try {
     [$staffHtmlStatus,,$staffHtml]=http('/staff');
     foreach(['staff-dash','staff-intake','staff-schedule','staff-classes','staff-students','staff-parents','staff-approve','staff-billing'] as $staffScreen) check(str_contains($staffHtml,'data-screen="'.$staffScreen.'"'),'staff menu includes '.$staffScreen);
     check($staffHtmlStatus===200&&str_contains($staffHtml,'id="modalSessionForm"')&&str_contains($staffHtml,'id="notifPanel"'),'staff uses shared calendar modals and notification panel');
+
+    // Deleting a mistaken, unstarted session is an operation distinct from class absence approval.
+    Store::execute('UPDATE lop_hoc SET co_so_id=? WHERE id=?',[$intakeCampusA['id'],$staffClass['id']]);
+    $deleteDate=(new DateTimeImmutable($staffSessionDate))->modify('+21 days')->format('Y-m-d');
+    $deleteBody=array_replace($staffSessionBody,['ngay'=>$deleteDate,'coSoId'=>$intakeCampusA['id'],'phongHoc'=>'DELETE-'.$suffix]);
+    $deletable=requestOk('/api/academic/scheduling/operations-sessions','POST',$deleteBody,$staffToken,201)['ids'][0];
+    check((int)Store::one('SELECT co_so_id FROM buoi_hoc WHERE id=?',[$deletable])['co_so_id']===$intakeCampusA['id'],'session stores chosen campus');
+    requestOk('/api/academic/scheduling/operations-sessions/'.$deletable,'PUT',array_replace($deleteBody,['coSoId'=>null]),$staffToken);
+    check(Store::one('SELECT co_so_id FROM buoi_hoc WHERE id=?',[$deletable])['co_so_id']===null,'explicit home location clears campus even when class belongs to a campus');
+    $listedDelete=array_values(array_filter(requestOk('/api/academic/scheduling/sessions?lopId='.$staffClass['id'],'GET',null,$staffToken),fn($row)=>$row['id']===$deletable))[0];
+    check($listedDelete['chuaBatDau']===true,'server exposes unstarted scheduling state');
+    check($listedDelete['lyDoKhongXoa']===null,'unused future lesson has no deletion blocker');
+    $blockedLesson=array_values(array_filter(requestOk('/api/academic/scheduling/sessions?lopId='.$staffClass['id'],'GET',null,$staffToken),fn($row)=>$row['id']===$staffSession))[0];
+    check(str_contains($blockedLesson['lyDoKhongXoa'],'đơn nghỉ'),'lesson detail exposes the actual leave dependency before deletion');
+    [$leaveDeleteStatus,$leaveDeleteError]=http('/api/academic/scheduling/sessions/'.$staffSession,'DELETE',null,$staffToken);
+    check($leaveDeleteStatus===409&&$leaveDeleteError['message']===$blockedLesson['lyDoKhongXoa'],'delete returns the same precise dependency as the calendar');
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$intakeParentToken)[0]===403,'parent cannot delete staff sessions');
+    Store::execute('UPDATE role_group_function SET edit=0 WHERE group_id=? AND function_id=?',[$groupIds['NhanVien'],$functionIds['VanHanhBuoiHoc']]);
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$staffToken)[0]===403,'revoked scheduling edit permission prevents mistaken-session removal');
+    Store::execute('UPDATE role_group_function SET edit=1 WHERE group_id=? AND function_id=?',[$groupIds['NhanVien'],$functionIds['VanHanhBuoiHoc']]);
+    Store::execute('UPDATE lop_hoc SET co_so_id=? WHERE id=?',[$intakeCampusB['id'],$staffClass['id']]);
+    Store::execute('UPDATE nhan_vien SET co_so_id=? WHERE user_id=?',[$intakeCampusA['id'],$staff]);
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$staffToken)[0]===404,'staff cannot delete another campus session');
+    Store::execute('UPDATE nhan_vien SET co_so_id=NULL WHERE user_id=?',[$staff]);
+    requestOk('/api/academic/scheduling/sessions/'.$deletable,'DELETE',null,$staffToken);
+    check(!Store::one('SELECT id FROM buoi_hoc WHERE id=?',[$deletable])&&!Store::one('SELECT id FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=?',[$deletable]),'delete removes unused session and its assignments');
+    check((int)Store::one("SELECT COUNT(*) AS n FROM audit_log WHERE bang='buoi_hoc' AND ban_ghi_id=? AND hanh_dong='xoa' AND user_id=?",[$deletable,$staff])['n']===1,'deletion keeps actor and original session in audit');
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$staffToken)[0]===404,'repeated deletion leaves the same absent state');
+    requestOk('/api/academic/scheduling/sessions/'.$staffMakeup,'DELETE',[],$staffToken);
+    check(!Store::one('SELECT id FROM hoc_bu_hoc_vien WHERE buoi_bu_id=?',[$staffMakeup]),'deleting an unused makeup removes only its student links');
+
+    $checkedId=requestOk('/api/academic/scheduling/operations-sessions','POST',$deleteBody,$staffToken,201)['ids'][0];
+    Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=? WHERE buoi_hoc_id=?',[$deleteDate.' 18:00:00',$checkedId]);
+    check(http('/api/academic/scheduling/sessions/'.$checkedId,'DELETE',[],$staffToken)[0]===409,'checked-in session cannot be deleted');
+    check(Store::one('SELECT id FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=?',[$checkedId])!==null,'failed deletion preserves attendance assignments');
+    $academicDate=(new DateTimeImmutable($deleteDate))->modify('+7 days')->format('Y-m-d');
+    $academicId=requestOk('/api/academic/scheduling/operations-sessions','POST',array_replace($deleteBody,['ngay'=>$academicDate]),$staffToken,201)['ids'][0];
+    Store::insert('bai_tap',['buoi_hoc_id'=>$academicId,'tieu_de'=>'Bài tập đã giao','nguoi_tao_id'=>$intakeTeacher2['userId']]);
+    check(http('/api/academic/scheduling/sessions/'.$academicId,'DELETE',[],$staffToken)[0]===409,'session with coursework cannot be deleted');
+    check(http('/api/academic/scheduling/sessions/'.$sessionId,'DELETE',[],$token)[0]===409,'completed lesson remains protected for Admin too');
 
     echo "PASS: $assertions administration HTTP/MySQL assertions.\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n");$failed=true; }

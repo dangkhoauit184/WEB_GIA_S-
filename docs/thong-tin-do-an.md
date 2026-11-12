@@ -626,6 +626,12 @@ Cổng `/staff` mở ở Tổng quan công việc, giữ 8 mục và bố cục 
 
 Theo điều chỉnh giao diện ngày 12/11/2026, tên bảng, mã BR/DB và các đoạn mô tả ràng buộc được lưu trong tài liệu. UI dùng nhãn thao tác và trạng thái ngắn gọn. Luồng xếp học bù nằm tại Thời khóa biểu → Xếp ca học mới → Loại buổi học → Buổi học bù. Các nút tạo học bù riêng đã được gỡ. Bộ tạo giao diện áp dụng cách trình bày này khi lấy mẫu index.
 
+Danh sách học viên hiển thị `trangThaiHocTap` được suy ra từ hồ sơ, đăng ký và ghi danh thực tế. Hồ sơ đang hoạt động có đăng ký chưa xếp lớp hiện `cho_xep_lop`, hồ sơ chưa đăng ký/chưa xếp hiện `chua_xep_lop`, lớp chưa bắt đầu hiện `da_xep_lop`, lớp đang học hiện `dang_hoc`. `trangThai` tiếp tục mô tả hồ sơ. Trạng thái thu tiền thuộc hóa đơn. Sĩ số chỉ tăng khi Admin ghi danh học viên vào lớp.
+
+DELETE `/api/academic/scheduling/sessions/{id}` dành cho Admin/Giáo vụ có `VanHanhBuoiHoc.edit` để xóa ca xếp nhầm. Server khóa lớp, ca và phân công, kiểm giờ bắt đầu trên DB. Ca phải đang dự kiến, chưa diễn ra, chưa có check-in/checkout/công/học vụ. Đơn nghỉ, ca bù nguồn, bài tập, chứng từ và đề nghị điều chỉnh công liên quan được kiểm trước khi xóa. Ca bù chưa dùng được gỡ liên kết học viên cùng phân công trong một transaction. Audit giữ actor và dữ liệu ca trước khi xóa. Nghỉ cả lớp vẫn do Admin duyệt. Khi lưu lịch, `coSoId=null` chỉ địa điểm tại nhà, bỏ trường này dùng cơ sở của lớp, ca online lưu cơ sở NULL.
+
+Danh sách ca trả `lyDoKhongXoa` từ cùng điều kiện kiểm tra mà thao tác DELETE sử dụng. Giao diện hiển thị nguyên nhân cụ thể khi ca bị chặn và chỉ hiện nút xóa cho ca đủ điều kiện tại thời điểm tải. Server kiểm tra lại trong transaction khi xóa để xử lý dữ liệu thay đổi sau khi mở lịch. Danh sách người dạy cho Giáo vụ có thêm `lichRanh` phục vụ xếp ca, giữ riêng các trường tiền lương/ngân hàng. Lỗi không khớp chuyên môn và lỗi ngoài lịch rảnh có thông báo riêng.
+
 | Màn | Thao tác đã nối API |
 | --- | --- |
 | Tổng quan công việc | Đếm yêu cầu mới/đang tìm người, đơn cá nhân chờ, ca bù và hóa đơn còn cần xử lý; danh sách việc chờ, lối tắt |
@@ -645,7 +651,7 @@ GET/POST `/api/finance/tuition/invoices`, GET `/invoices/{id}`, POST `/invoices/
 
 Chuông thông báo tại `/staff` lấy bản ghi của tài khoản hiện tại, đánh dấu đọc bằng API sở hữu. Hồ sơ phụ huynh mới vẫn được tìm thấy trước khi liên kết con/cấp tài khoản. Học viên và hóa đơn được giới hạn theo cơ sở phụ trách. Source tham chiếu giữ nguyên hash, sử dụng schema 005 hiện hành.
 
-Kiểm chứng local ngày 12/11/2026 đạt 374 kiểm tra HTTP/MySQL quản trị, 71 core, 81 API nền và 98 ca SQL, tổng 624. Nâng cấp 003/004→005 và khôi phục thử đạt. Trình duyệt đã mở cả 8 màn bằng tài khoản Giáo vụ trên DB `_test` riêng, thử tạo phụ huynh, tạo học viên kèm khóa, sửa hồ sơ, tạo/phát hành hóa đơn, đọc thông báo, lưu ca thường/bù và từ chối ca trùng. Lint 225 file PHP, cú pháp 35 file JavaScript frontend cùng portal/prototype và kiểm tra cấu trúc/hash đạt. Dữ liệu kiểm thử được giữ trong môi trường thử tạm rồi dọn sau kiểm chứng.
+Kiểm chứng local ngày 12/11/2026 đạt 409 kiểm tra HTTP/MySQL quản trị, 71 core, 81 API nền và 98 ca SQL, tổng 659. Nâng cấp 003/004→005 và khôi phục thử đạt. Trình duyệt đã mở cả 8 màn bằng tài khoản Giáo vụ trên DB `_test` riêng, thử tạo phụ huynh, tạo học viên kèm khóa, sửa hồ sơ, tạo/phát hành hóa đơn, đọc thông báo, lưu ca thường/bù và từ chối ca trùng. Lần kiểm tra bổ sung đã xác nhận trạng thái chờ xếp lớp, chọn cơ sở, lưu ca thứ ba trong ngày cho một người dạy và xóa ca chưa diễn ra bằng Giáo vụ. Kiểm tra giao diện tiếp theo xác nhận thông báo cơ sở trống, lịch rảnh của người dạy, nguyên nhân chặn xóa ca có đơn nghỉ và hộp xác nhận xóa chỉ có nội dung cùng nút xác nhận/hủy. Lint 225 file PHP, cú pháp 35 file JavaScript frontend cùng portal/prototype và kiểm tra cấu trúc/hash đạt. Dữ liệu kiểm thử được giữ trong môi trường thử tạm rồi dọn sau kiểm chứng.
 
 <a id="tu-dien-du-lieu"></a>
 ## 13. Từ điển dữ liệu toàn bộ 43 bảng

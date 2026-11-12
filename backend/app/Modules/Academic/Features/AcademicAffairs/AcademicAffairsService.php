@@ -73,7 +73,7 @@ final class AcademicAffairsService
         return Store::transaction(function () use ($body, $courseId) {
             $student = StudentsService::create($body);
             if ($courseId !== null) self::register((int)$student['id'], ['khoaHocId'=>$courseId]);
-            return $student;
+            return StudentsService::detail((int)$student['id']);
         });
     }
 

@@ -5,6 +5,31 @@ use App\Shared\{Access,ApiException,Store};
 
 final class SchedulingRepository
 {
+    private static function deletionBlockerSql(): string
+    {
+        return "CASE
+            WHEN b.trang_thai<>'du_kien' OR TIMESTAMP(b.ngay,b.gio_bat_dau)<=NOW()
+                THEN 'Chỉ xóa được ca chưa diễn ra.'
+            WHEN EXISTS (SELECT 1 FROM phan_cong_buoi_hoc p WHERE p.buoi_hoc_id=b.id
+                AND (p.checkin_luc IS NOT NULL OR p.checkout_luc IS NOT NULL OR p.bang_cong_id IS NOT NULL))
+                THEN 'Ca đã có check-in hoặc dữ liệu công.'
+            WHEN EXISTS (SELECT 1 FROM so_theo_doi_buoi_hoc s WHERE s.buoi_hoc_id=b.id)
+                THEN 'Ca đã có dữ liệu điểm danh hoặc theo dõi học tập.'
+            WHEN EXISTS (SELECT 1 FROM bai_tap t WHERE t.buoi_hoc_id=b.id)
+                THEN 'Ca đã có bài tập hoặc bài chấm.'
+            WHEN EXISTS (SELECT 1 FROM hoa_don_chi_tiet h WHERE h.buoi_hoc_id=b.id)
+                THEN 'Ca đã liên kết với chi tiết hóa đơn.'
+            WHEN EXISTS (SELECT 1 FROM don_xin_nghi d WHERE d.buoi_hoc_id=b.id OR d.buoi_bu_id=b.id)
+                THEN 'Ca đã có đơn nghỉ liên kết. Xem đơn trong Duyệt nghỉ cá nhân & Học bù.'
+            WHEN EXISTS (SELECT 1 FROM yeu_cau_nghi_lop y WHERE y.buoi_hoc_id=b.id)
+                THEN 'Ca đã có yêu cầu nghỉ cả lớp. Admin cần xử lý yêu cầu này.'
+            WHEN EXISTS (SELECT 1 FROM buoi_hoc g WHERE g.buoi_goc_id=b.id)
+                THEN 'Ca đang là buổi gốc của lịch học bù. Kiểm tra ca bù liên kết trong thời khóa biểu.'
+            WHEN EXISTS (SELECT 1 FROM dieu_chinh_cong d JOIN phan_cong_buoi_hoc p ON p.id=d.phan_cong_id WHERE p.buoi_hoc_id=b.id)
+                THEN 'Ca đã có yêu cầu điều chỉnh công.'
+            ELSE NULL END";
+    }
+
     public static function weekly(array $filters,array $user,?int $id=null): array
     {
         [$scope,$params]=Access::classScope($user);
@@ -22,7 +47,8 @@ final class SchedulingRepository
     public static function sessions(array $filters,array $user,?int $id=null): array
     {
         [$scope,$params]=Access::classScope($user);
-        $sql='SELECT b.*,l.ma_lop,l.ten_lop,pc.user_id AS day_chinh_user_id,u.hoten AS ten_nguoi_day_chinh,
+        $sql='SELECT b.*,l.ma_lop,l.ten_lop,'.self::deletionBlockerSql().' AS ly_do_khong_xoa,pc.user_id AS day_chinh_user_id,u.hoten AS ten_nguoi_day_chinh,
+            (b.trang_thai=\'du_kien\' AND TIMESTAMP(b.ngay,b.gio_bat_dau)>NOW()) AS chua_bat_dau,
             (SELECT GROUP_CONCAT(ta.user_id) FROM phan_cong_buoi_hoc ta WHERE ta.buoi_hoc_id=b.id AND ta.vai_tro=\'tro_giang\' AND ta.trang_thai<>\'da_go\') AS tro_giang_ids,
             (SELECT GROUP_CONCAT(hb.hoc_vien_id) FROM hoc_bu_hoc_vien hb WHERE hb.buoi_bu_id=b.id) AS hoc_bu_ids,
             (SELECT GROUP_CONCAT(tu.hoten SEPARATOR \', \') FROM phan_cong_buoi_hoc ta JOIN users tu ON tu.user_id=ta.user_id WHERE ta.buoi_hoc_id=b.id AND ta.vai_tro=\'tro_giang\' AND ta.trang_thai<>\'da_go\') AS ten_tro_giang
@@ -68,6 +94,25 @@ final class SchedulingRepository
             }
             Store::update('buoi_hoc','id',$id,$data,$map);
             Store::recordAudit($callerId,'sua','buoi_hoc',$id,$before,Store::one('SELECT * FROM buoi_hoc WHERE id=?',[$id]));
+        });
+    }
+
+    public static function deletePlanned(int $id,int $classId,array $actor): array
+    {
+        return Store::transaction(function() use($id,$classId,$actor) {
+            Store::one('SELECT id FROM lop_hoc WHERE id=? FOR UPDATE',[$classId]);
+            Access::classAllowed($classId,$actor);
+            $before=Store::one('SELECT *,TIMESTAMP(ngay,gio_bat_dau)>NOW() AS chua_bat_dau FROM buoi_hoc WHERE id=? FOR UPDATE',[$id]);
+            if(!$before) throw new ApiException(404,'Không tìm thấy ca học.');
+            $assignments=Store::rows('SELECT * FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=? ORDER BY user_id FOR UPDATE',[$id]);
+            $blocker=Store::one('SELECT '.self::deletionBlockerSql().' AS reason FROM buoi_hoc b WHERE b.id=?',[$id]);
+            if($blocker['reason']!==null) throw new ApiException(409,$blocker['reason']);
+            $makeups=Store::rows('SELECT * FROM hoc_bu_hoc_vien WHERE buoi_bu_id=? FOR UPDATE',[$id]);
+            Store::execute('DELETE FROM hoc_bu_hoc_vien WHERE buoi_bu_id=?',[$id]);
+            Store::execute('DELETE FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=?',[$id]);
+            Store::execute('DELETE FROM buoi_hoc WHERE id=?',[$id]);
+            Store::recordAudit((int)$actor['userId'],'xoa','buoi_hoc',$id,$before+['phanCong'=>$assignments,'hocBu'=>$makeups],null);
+            return ['deleted'=>true,'id'=>$id];
         });
     }
 }

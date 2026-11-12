@@ -8,7 +8,10 @@ final class AcademicAffairsRepository
     public static function people(): array
     {
         return Store::rows("SELECT ns.id AS nhan_su_id,ns.user_id,ns.phan_loai,u.hoten,
-            'active' AS status FROM nhan_su_chuyen_mon ns JOIN users u ON u.user_id=ns.user_id
+            'active' AS status,
+            (SELECT GROUP_CONCAT(CONCAT(IF(lr.thu=8,'CN',CONCAT('T',lr.thu)),' ',TIME_FORMAT(lr.gio_bat_dau,'%H:%i'),'–',TIME_FORMAT(lr.gio_ket_thuc,'%H:%i')) ORDER BY lr.thu,lr.gio_bat_dau SEPARATOR ', ')
+                FROM nhan_su_lich_ranh lr WHERE lr.nhan_su_id=ns.id) AS lich_ranh
+            FROM nhan_su_chuyen_mon ns JOIN users u ON u.user_id=ns.user_id
             WHERE ns.deleted_at IS NULL AND ns.trang_thai='hoat_dong' AND u.is_deleted=0 ORDER BY u.hoten");
     }
 

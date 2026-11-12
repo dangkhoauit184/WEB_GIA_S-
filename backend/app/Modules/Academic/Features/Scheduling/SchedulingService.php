@@ -47,4 +47,12 @@ final class SchedulingService
         SchedulingRepository::update($id,$data,(int)$user['userId']);
         return self::session($id,$user);
     }
+
+    public static function delete(int $id,array $input): array
+    {
+        if($input!==[]) \App\Shared\Input::fail('fields');
+        $actor=SchedulingFilter::check('edit',true);
+        $session=self::session($id,$actor);
+        return SchedulingRepository::deletePlanned($id,(int)$session['lopId'],$actor);
+    }
 }

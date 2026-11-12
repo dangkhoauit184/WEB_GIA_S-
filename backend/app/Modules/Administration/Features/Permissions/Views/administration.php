@@ -218,6 +218,7 @@
         <div style="flex:1">
           <label>Giáo viên chính <span style="color:var(--err)">*</span></label>
           <select id="sfTeacherSelect" onchange="checkSfConflicts()"></select>
+          <small id="sfTeacherAvailability" style="display:block;color:var(--g500);margin-top:5px"></small>
         </div>
         <div style="flex:1">
           <label>Trợ giảng</label>
@@ -251,7 +252,8 @@
         <div id="sfOfflineFields" class="row" style="gap:8px">
           <div style="flex:1">
             <label style="margin-top:0">Cơ sở</label>
-            <select id="sfBranchSelect" onchange="onSfBranchChanged()"><option value="Thủ Đức">Thủ Đức</option><option value="Quận 1">Quận 1</option><option value="Quận 3">Quận 3</option></select>
+            <select id="sfBranchSelect" onchange="onSfBranchChanged()"></select>
+            <small id="sfCampusEmpty" style="display:none;color:var(--g500);margin-top:5px">Chưa có cơ sở hoạt động. Nhờ Admin thêm cơ sở trong Danh mục &amp; Cấu hình.</small>
           </div>
           <div style="flex:1">
             <label style="margin-top:0">Phòng học</label>

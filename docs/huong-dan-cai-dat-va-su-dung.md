@@ -280,9 +280,17 @@ Mở `http://localhost:5000/staff`. Trang đầu là Tổng quan công việc. S
 5. Vào Duyệt nghỉ cá nhân & Học bù để duyệt/từ chối đơn cá nhân. Việc đổi lịch được Giáo vụ cập nhật ca sau khi thống nhất. Để xếp bù, vào Thời khóa biểu → Xếp ca học mới → Loại buổi học → Buổi học bù, rồi chọn buổi gốc, học viên, ngày/giờ và người dạy. Sổ bù lấy dữ liệu đã lưu.
 6. Vào Hóa đơn trọn khóa & Thu phí, tạo nháp từ đăng ký, chọn Chi tiết rồi Phát hành để lưu thông báo cho phụ huynh. Có thể xem số dư, lịch sử phiếu thu và in/lưu PDF. Admin xác nhận thu tiền. Chuông thông báo đọc và đánh dấu đã đọc cho tài khoản đang đăng nhập.
 
+Học viên mới có đăng ký khóa sẽ hiện “Chờ xếp lớp”. Admin vào Khóa học & Xếp lớp để xếp học viên vào lớp, sĩ số cập nhật theo ghi danh. Học phí được theo dõi riêng tại hóa đơn. Hồ sơ “Hoạt động” là trạng thái quản lý hồ sơ, nhãn học tập trên danh sách lấy từ lớp và đăng ký thực tế.
+
+Danh mục cơ sở cần được Admin tạo tại Danh mục & Cấu hình → Cơ sở, sau đó chọn cơ sở khi tạo lớp hoặc xếp ca. Để xóa ca xếp nhầm, bấm vào ca trên lịch → Xóa ca học → Xác nhận. Admin/Giáo vụ có quyền sửa lịch được xóa ca dự kiến chưa diễn ra và chưa có check-in/học vụ. Ca đang liên kết đơn nghỉ, lịch bù nguồn hoặc chứng từ cần xử lý các liên kết trước. Nghỉ cả lớp tiếp tục theo quy trình Admin duyệt.
+
+Khi chọn người dạy, biểu mẫu hiển thị lịch rảnh đã đăng ký. Nếu trình duyệt hiển thị giờ kiểu AM/PM, 06:00 AM là 6 giờ sáng, 06:00 PM là 18 giờ. Khi lưu ngoài lịch rảnh, thông báo ghi khung giờ đã đăng ký của đúng thứ đang chọn. Khi chưa có cơ sở hoạt động, biểu mẫu hướng dẫn Admin bổ sung danh mục. Chi tiết ca có dữ liệu liên quan sẽ hiển thị nguyên nhân chặn xóa ngay khi mở ca.
+
 Các thao tác ở cổng này gọi API PHP và MySQL 005. Máy đã cài 005 chỉ cần chạy server hiện có. Nội dung mẫu trong index phục vụ đối chiếu giao diện. Dữ liệu hiển thị tại `/staff` lấy từ DB riêng của từng máy. Hợp đồng API và kiểm chứng nằm ở mục 12.3 của đặc tả.
 
 ### 7.3. Trạng thái sau khi dọn dữ liệu thử
+
+File `database/seeders/demo-thu-cong.sql` dùng để nhập dữ liệu mẫu trong DataGrip. Phần 1 thêm dữ liệu cho các vai trò trên schema 005, cần có Admin đang hoạt động. Chạy phần 1 từ `USE` đến hết mục A8 trong cùng Query Console. Để dọn, chọn riêng phần 2 bên trong khối chú thích, từ `USE` đến `DROP PROCEDURE` cuối file. Tham số `DGTEST` chọn bộ Giáo vụ cũ, `SQLDEMO` chọn bộ mới, `CA_HAI` chọn cả hai. Thanh toán, hóa đơn, lịch sử và hồ sơ tham chiếu cần thiết được giữ. File chạy thủ công độc lập với init/migrate.
 
 Ngày 11/11/2026 đã dọn bộ DEMO-A1, các khóa mẫu MAU/CRUD và tài khoản Admin kiểm tra tạm trên DB local. Tài khoản quản trị chính dùng tên đăng nhập `admin`. Các file SQL chạy demo, bản xem thử riêng và script kiểm tra tạm đã được gỡ khỏi source.
 

@@ -32,11 +32,13 @@ final class AdminSchedule
         if($data['loai']==='thuong' && ($data['buoiGocId'] || $data['phamViBu']!=='ca_lop' || $data['hocVienIds'])) Input::fail('loai');
         if($data['phamViBu']==='ca_lop' && $data['hocVienIds']) Input::fail('hocVienIds');
         if(isset($data['ghiChuBu']) && mb_strlen($data['ghiChuBu'])>500) Input::fail('ghiChuBu');
-        return Store::transaction(function() use($id,$data,$actor) {
+        $campusProvided=array_key_exists('coSoId',$body);
+        return Store::transaction(function() use($id,$data,$actor,$campusProvided) {
             if($actor['role']==='ADMIN') PermissionsRepository::lockAdministrator($actor);
             \App\Shared\Access::classAllowed($data['lopId'],$actor);
             $class=Store::one('SELECT * FROM lop_hoc WHERE id=? AND deleted_at IS NULL FOR UPDATE',[$data['lopId']]);
             if(!$class) throw new ApiException(404,'Không tìm thấy lớp học.');
+            if(!$campusProvided && !$data['isOnline']) $data['coSoId']=$class['co_so_id'];
             if(!in_array($class['trang_thai'],['sap_bat_dau','dang_hoc','tam_dung'],true)) throw new ApiException(409,'Lớp đã kết thúc hoặc hủy.');
             if($actor['role']==='GIAO_VU' && $actor['coSoId'] && $data['coSoId'] && (int)$data['coSoId']!==(int)$actor['coSoId']) throw new ApiException(403,'Cơ sở nằm ngoài phạm vi phụ trách.');
             foreach([$data['userId'],...$data['troGiangIds']] as $index=>$userId) {
@@ -52,7 +54,14 @@ final class AdminSchedule
                 $weekday=(int)(new \DateTimeImmutable($data['ngay']))->format('N')+1;
                 $available=Store::one('SELECT lr.id FROM nhan_su_lich_ranh lr JOIN nhan_su_chuyen_mon ns ON ns.id=lr.nhan_su_id
                     WHERE ns.user_id=? AND lr.thu=? AND lr.gio_bat_dau<=? AND lr.gio_ket_thuc>=?',[$data['userId'],$weekday,$data['gioBatDau'],$data['gioKetThuc']]);
-                if(!$qualified || !$available) throw new ApiException(400,'Người dạy cần khớp chuyên môn và lịch rảnh đã đăng ký.');
+                if(!$qualified) throw new ApiException(400,'Người dạy chưa đăng ký chuyên môn phù hợp môn học và khối lớp này.');
+                if(!$available) {
+                    $slots=Store::one("SELECT GROUP_CONCAT(CONCAT(TIME_FORMAT(lr.gio_bat_dau,'%H:%i'),'–',TIME_FORMAT(lr.gio_ket_thuc,'%H:%i')) ORDER BY lr.gio_bat_dau SEPARATOR ', ') AS khung_gio
+                        FROM nhan_su_lich_ranh lr JOIN nhan_su_chuyen_mon ns ON ns.id=lr.nhan_su_id WHERE ns.user_id=? AND lr.thu=?",[$data['userId'],$weekday]);
+                    $dayLabel=$weekday===8?'Chủ nhật':'Thứ '.$weekday;
+                    $detail=$slots['khung_gio']?'Lịch rảnh '.$dayLabel.' là '.$slots['khung_gio'].'.':'Chưa đăng ký lịch rảnh '.$dayLabel.'.';
+                    throw new ApiException(400,'Khung giờ đã chọn nằm ngoài lịch rảnh của người dạy. '.$detail);
+                }
             }
             if($data['coSoId'] && !Store::one('SELECT id FROM co_so WHERE id=? AND is_active=1',[$data['coSoId']])) throw new ApiException(400,'Cơ sở không hoạt động.');
             $before=$id?Store::one('SELECT * FROM buoi_hoc WHERE id=? FOR UPDATE',[$id]):null;
@@ -63,7 +72,7 @@ final class AdminSchedule
             for($offset=0;$offset<$data['repeatCount'];$offset++) {
                 $date=(new \DateTimeImmutable($data['ngay']))->modify('+'.($offset*7).' days')->format('Y-m-d');
                 $values=['lop_id'=>$data['lopId'],'ngay'=>$date,'gio_bat_dau'=>$data['gioBatDau'],
-                    'gio_ket_thuc'=>$data['gioKetThuc'],'co_so_id'=>$data['isOnline']?null:($data['coSoId']??$class['co_so_id']),
+                    'gio_ket_thuc'=>$data['gioKetThuc'],'co_so_id'=>$data['isOnline']?null:$data['coSoId'],
                     'phong_hoc'=>$data['isOnline']?'Online':$data['phongHoc'],'chu_de_bai_hoc'=>$data['chuDeBaiHoc'],
                     'loai'=>$data['loai'],'buoi_goc_id'=>$data['buoiGocId'],'pham_vi_bu'=>$data['phamViBu']];
                 if($id) {
