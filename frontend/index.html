@@ -6,289 +6,120 @@
   <title>EduCenter · Hệ thống Gia sư & Đào tạo Chất lượng cao</title>
   <link rel="stylesheet" href="src/shared/styles/common.css">
   <style>
-    /* Public Landing Page Styling */
-    .landing-header {
-      background: #fff;
-      border-bottom: 1px solid var(--g200);
+    /* Public Navigation Sticky Header */
+    .pub-nav {
       position: sticky;
       top: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--g200);
       z-index: 100;
     }
-    .landing-nav {
-      max-width: 1200px;
+    .pub-nav-inner {
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 16px 24px;
+      padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .landing-logo {
+    .pub-brand {
       display: flex;
       align-items: center;
       gap: 10px;
       text-decoration: none;
     }
-    .landing-logo-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-md);
-      background: linear-gradient(135deg, var(--pri), var(--sec));
+    .pub-logo-ico {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--pri), var(--pri-d));
       color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
     }
-    .landing-logo-text {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--g900);
-    }
-    .nav-links {
+    .pub-nav-links {
       display: flex;
-      align-items: center;
       gap: 24px;
+      align-items: center;
     }
-    .nav-links a {
+    .pub-nav-links a {
+      color: var(--g700);
       text-decoration: none;
-      color: var(--g600);
+      font-size: 13.5px;
       font-weight: 600;
-      font-size: 14px;
     }
-    .nav-links a:hover {
+    .pub-nav-links a:hover {
       color: var(--pri);
     }
 
-    /* Hero Section */
-    .landing-hero {
-      padding: 80px 24px 60px;
+    /* Container for sections */
+    .pub-section {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+    .pub-sec-head {
       text-align: center;
-      background: radial-gradient(circle at 50% 20%, rgba(20, 184, 166, 0.14) 0%, transparent 60%);
-    }
-    .hero-badge {
-      display: inline-block;
-      padding: 6px 16px;
-      border-radius: 9999px;
-      background: var(--pri-ll);
-      color: var(--pri-d);
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 20px;
-      border: 1px solid #ccfbf1;
-    }
-    .hero-title {
-      font-size: 44px;
-      font-weight: 800;
-      color: var(--g900);
-      max-width: 820px;
-      margin: 0 auto 20px;
-      line-height: 1.25;
-      letter-spacing: -0.03em;
-    }
-    .hero-desc {
-      font-size: 17px;
-      color: var(--g600);
-      max-width: 650px;
-      margin: 0 auto 36px;
-    }
-    .hero-actions {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    }
-
-    /* Stats Bar */
-    .hero-stats {
-      max-width: 900px;
-      margin: 50px auto 0;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      padding: 24px;
-      background: #fff;
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--g200);
-      box-shadow: var(--shadow-sm);
-    }
-    .stat-item b {
-      display: block;
-      font-size: 26px;
-      font-weight: 800;
-      color: var(--pri-d);
-    }
-    .stat-item span {
-      font-size: 13px;
-      color: var(--g500);
-    }
-
-    /* Section Headings */
-    .section-title {
-      text-align: center;
-      margin: 70px 0 12px;
-      font-size: 28px;
-      font-weight: 800;
-      color: var(--g900);
-      letter-spacing: -0.02em;
-    }
-    .section-sub {
-      text-align: center;
-      color: var(--g500);
-      font-size: 15px;
       margin-bottom: 40px;
     }
-
-    /* Courses Section */
-    .courses-grid {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-    }
-    .course-card {
-      background: #fff;
-      border: 1px solid var(--g200);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.2s ease;
-    }
-    .course-card:hover {
-      box-shadow: var(--shadow-md);
-      border-color: var(--pri-l);
-      transform: translateY(-3px);
-    }
-    .course-title {
-      font-size: 19px;
-      font-weight: 700;
-      color: var(--g900);
-      margin: 12px 0 8px;
-    }
-    .course-price {
-      font-size: 22px;
+    .pub-sec-head h2 {
+      font-size: 26px;
       font-weight: 800;
-      color: var(--pri-d);
-      margin: 16px 0;
-    }
-    .course-price span {
-      font-size: 13px;
-      font-weight: normal;
-      color: var(--g500);
-    }
-
-    /* Teachers Section (Giới thiệu người dạy) */
-    .teachers-grid {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-      gap: 24px;
-    }
-    .teacher-card {
-      background: #fff;
-      border: 1px solid var(--g200);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      text-align: center;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.2s ease;
-    }
-    .teacher-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-md);
-      border-color: var(--pri-l);
-    }
-    .teacher-avatar {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: var(--pri-ll);
-      border: 2px solid var(--pri-l);
-      margin: 0 auto 16px;
-      display: flex;
-      align-items: center;
+      color: var(--g900);
+      margin-bottom: 8px;
       justify-content: center;
-      font-size: 32px;
     }
-    .teacher-name {
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--g900);
-      margin: 0 0 4px;
-    }
-    .teacher-role {
-      font-size: 13px;
-      color: var(--pri-d);
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-    .teacher-desc {
-      font-size: 13px;
-      color: var(--g600);
-      line-height: 1.5;
-    }
-
-    /* Consultation Form Section */
-    .consult-section {
-      max-width: 1200px;
-      margin: 80px auto;
-      padding: 48px 32px;
-      background: #fff;
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--g200);
-      box-shadow: var(--shadow-sm);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 48px;
-      align-items: center;
-    }
-    .consult-info h2 {
-      font-size: 28px;
-      font-weight: 800;
-      color: var(--g900);
-      margin: 0 0 16px;
-    }
-    .consult-info p {
+    .pub-sec-head p {
+      color: var(--g500);
       font-size: 14.5px;
-      color: var(--g600);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .feature-point {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 14px;
-      font-size: 14px;
-      color: var(--g700);
-    }
-    .feature-icon {
-      color: var(--pri);
-      font-weight: 800;
+      margin: 0;
     }
 
-    .form-group {
-      margin-bottom: 16px;
+    /* Grid for Courses */
+    .pub-courses-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
     }
-    .form-group label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--g700);
-      margin-bottom: 6px;
+    @media(max-width: 960px) {
+      .pub-courses-container { grid-template-columns: 1fr; }
     }
 
-    /* Modal Course Detail */
+    /* Grid for Tutors */
+    .pub-tutors-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    @media(max-width: 1024px) {
+      .pub-tutors-container { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media(max-width: 640px) {
+      .pub-tutors-container { grid-template-columns: 1fr; }
+    }
+
+    /* Contact Grid */
+    .pub-contact-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 36px;
+      background: var(--w);
+      border: 1px solid var(--g200);
+      border-radius: 18px;
+      padding: 40px;
+      box-shadow: var(--sh);
+    }
+    @media(max-width: 860px) {
+      .pub-contact-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Modal Overlay */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(15, 23, 42, 0.65);
       backdrop-filter: blur(4px);
       display: none;
       align-items: center;
@@ -296,37 +127,38 @@
       z-index: 999;
       padding: 20px;
     }
-    .modal-overlay.show {
-      display: flex;
-    }
+    .modal-overlay.show { display: flex; }
     .modal-box {
       background: #fff;
-      border-radius: var(--radius-xl);
-      padding: 32px;
+      border-radius: 18px;
+      padding: 30px;
       width: 100%;
-      max-width: 580px;
-      box-shadow: var(--shadow-xl);
+      max-width: 540px;
+      box-shadow: var(--sh-modal);
     }
   </style>
 </head>
 <body>
   <!-- Header -->
-  <header class="landing-header">
-    <div class="landing-nav">
-      <a href="index.html" class="landing-logo">
-        <div class="landing-logo-icon">🎓</div>
-        <span class="landing-logo-text">EduCenter</span>
+  <header class="pub-nav">
+    <div class="pub-nav-inner">
+      <a href="index.html" class="pub-brand">
+        <div class="pub-logo-ico">🎓</div>
+        <div>
+          <b style="font-size:16px; color:var(--g900); display:block; letter-spacing:-.02em;">EduCenter ERP</b>
+          <small style="font-size:11px; color:var(--g500); display:block;">Trung tâm Gia sư & Bồi dưỡng Văn hóa</small>
+        </div>
       </a>
 
-      <div class="nav-links">
-        <a href="#courses">Khóa học</a>
+      <nav class="pub-nav-links">
+        <a href="#courses">Khóa học & Học phí</a>
         <a href="#teachers">Đội ngũ Người dạy</a>
         <a href="#consultation">Tư vấn Lộ trình</a>
         <a href="#contact">Liên hệ</a>
-      </div>
+      </nav>
 
       <div id="authNavButtons">
-        <a href="src/modules/administration/features/auth/auth.html" class="btn btn-primary">
+        <a href="src/modules/administration/features/auth/auth.html" class="btn p">
           Đăng nhập Hệ thống
         </a>
       </div>
@@ -334,208 +166,237 @@
   </header>
 
   <!-- Hero Section -->
-  <section class="landing-hero">
-    <span class="hero-badge">✨ Trung tâm Gia sư & Bồi dưỡng Văn hóa Chất lượng cao</span>
-    <h1 class="hero-title">Đồng hành cùng sự tiến bộ vượt bậc của con em bạn</h1>
-    <p class="hero-desc">
-      Mô hình đào tạo cá nhân hóa: 1 kèm 1 và lớp nhóm nhỏ dưới 10 học sinh. Hệ thống sổ theo dõi buổi học điện tử minh bạch giúp phụ huynh cập nhật kết quả từng buổi học.
-    </p>
-    <div class="hero-actions">
-      <a href="src/modules/administration/features/auth/auth.html" class="btn btn-primary" style="padding: 13px 32px; font-size: 15px;">
-        Vào Cổng Học tập / Đăng nhập →
-      </a>
-      <a href="#consultation" class="btn btn-secondary" style="padding: 13px 24px; font-size: 15px;">
-        Đăng ký tư vấn miễn phí
-      </a>
-    </div>
+  <section class="pub-hero">
+    <div style="max-width:1280px; margin:0 auto; padding:0 24px;">
+      <div class="pub-hero-grid">
+        <div>
+          <span class="pub-badge">
+            <span style="color:#5eead4; font-size:14px;">✨</span> Hệ thống Gia sư & Đào tạo Chuẩn mực IS207
+          </span>
+          <h1>Đồng hành cùng sự tiến bộ vượt bậc của con em bạn</h1>
+          <p>
+            Mô hình kèm 1:1 và lớp nhóm nhỏ chuyên sâu. Minh bạch từng buổi học với sổ theo dõi điện tử, phụ huynh trực tiếp duyệt hồ sơ người dạy trước khi bắt đầu.
+          </p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <a href="src/modules/administration/features/auth/auth.html" class="btn p" style="padding:11px 24px; font-size:14px;">
+              Vào Cổng Học tập / Đăng nhập →
+            </a>
+            <a href="#consultation" class="btn dark" style="padding:11px 20px; font-size:14px;">
+              Đăng ký tư vấn miễn phí
+            </a>
+          </div>
 
-    <!-- Stats -->
-    <div class="hero-stats">
-      <div class="stat-item">
-        <b>98.5%</b>
-        <span>Phụ huynh hài lòng & tiến bộ</span>
-      </div>
-      <div class="stat-item">
-        <b>100%</b>
-        <span>Giáo viên & Gia sư có chứng chỉ chuyên môn</span>
-      </div>
-      <div class="stat-item">
-        <b>3 Cơ sở</b>
-        <span>Thủ Đức · Quận 1 · Quận 3 & Dạy Online</span>
+          <div class="pub-hero-stats">
+            <div><b>98.5%</b><span>Phụ huynh hài lòng</span></div>
+            <div><b>100%</b><span>Người dạy đạt kiểm định</span></div>
+            <div><b>3 Cơ sở</b><span>TP.HCM & Dạy Online</span></div>
+            <div><b>Trọn khóa</b><span>Minh bạch học phí</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="pub-hero-card">
+            <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:12px;">Vì sao chọn EduCenter?</h3>
+            <div style="display:flex; flex-direction:column; gap:12px; font-size:13px; color:#e2e8f0;">
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span style="color:#5eead4; font-weight:800;">✓</span>
+                <div><b>Duyệt hồ sơ Gia sư trực tuyến:</b> Phụ huynh xem trước bằng cấp, chuyên môn trước khi xếp lớp.</div>
+              </div>
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span style="color:#5eead4; font-weight:800;">✓</span>
+                <div><b>Học phí trọn từng khóa:</b> Không chi phí ẩn, độc lập hoàn toàn với tiến độ xếp lớp.</div>
+              </div>
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span style="color:#5eead4; font-weight:800;">✓</span>
+                <div><b>Sổ theo dõi buổi học tức thì:</b> Xem điểm bài tập, mức tiếp thu (1-5★) và nhận xét của thầy cô ngay sau ca dạy.</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Courses Section -->
-  <h2 id="courses" class="section-title">Danh mục Khóa học Trọng điểm</h2>
-  <p class="section-sub">Áp dụng thu trọn từng khóa theo quy ước đào tạo của EduCenter ERP</p>
+  <section id="courses" class="pub-section">
+    <div class="pub-sec-head">
+      <h2>Danh mục Khóa học Trọng điểm</h2>
+      <p>Áp dụng thu trọn từng khóa theo quy ước đào tạo của EduCenter ERP</p>
+    </div>
 
-  <div class="courses-grid" id="coursesGrid">
-    <div class="course-card">
-      <div>
-        <span class="badge badge-teal">Gia sư 1 kèm 1</span>
-        <h3 class="course-title">Gia sư Toán - Lý - Hóa cá nhân hóa</h3>
-        <p class="text-muted" style="font-size: 14px;">Giáo án thiết kế riêng bám sát lỗ hổng kiến thức. Phụ huynh duyệt hồ sơ người dạy trước khi xếp lớp.</p>
+    <div class="pub-courses-container">
+      <div class="pub-course-card">
+        <div style="margin-bottom:14px;">
+          <span class="tag ok" style="margin-bottom:8px;">Gia sư 1 kèm 1</span>
+          <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">Gia sư Toán - Lý - Hóa cá nhân hóa</h3>
+          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Giáo án thiết kế riêng bám sát năng lực học sinh. Phụ huynh duyệt hồ sơ người dạy trước khi bắt đầu.</p>
+        </div>
+        <div>
+          <div class="c-price">3,500,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
+          <div style="display:flex; gap:8px; margin-top:14px;">
+            <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-GS-1KEM1">Chi tiết</button>
+            <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('Gia sư 1 kèm 1')">Đăng ký</a>
+          </div>
+        </div>
       </div>
-      <div>
-        <div class="course-price">3,500,000 đ <span>/ trọn khóa</span></div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-secondary btn-detail" style="flex:1;" data-code="KHOA-GS-1KEM1">Chi tiết</button>
-          <a href="#consultation" class="btn btn-primary" style="flex:1;" onclick="selectCourse('Gia sư 1 kèm 1')">Đăng ký</a>
+
+      <div class="pub-course-card">
+        <div style="margin-bottom:14px;">
+          <span class="tag i" style="margin-bottom:8px;">Lớp nhóm tiêu chuẩn</span>
+          <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">Bồi dưỡng Văn hóa THCS & Ôn thi vào 10</h3>
+          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Quy mô lớp nhỏ dưới 10 học sinh, có trợ giảng theo sát kiểm tra bài tập và hỗ trợ từng buổi học.</p>
+        </div>
+        <div>
+          <div class="c-price">2,800,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
+          <div style="display:flex; gap:8px; margin-top:14px;">
+            <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-NHOM-THCS">Chi tiết</button>
+            <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('Bồi dưỡng Văn hóa THCS')">Đăng ký</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="pub-course-card">
+        <div style="margin-bottom:14px;">
+          <span class="tag purple" style="margin-bottom:8px;">Nâng cao & Ôn thi</span>
+          <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">Luyện thi Chuyên & Đánh giá Năng lực THPT</h3>
+          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Rèn luyện tư duy phản biện, giải đề thi thử chuẩn cấu trúc đề với đội ngũ giáo viên giàu kinh nghiệm.</p>
+        </div>
+        <div>
+          <div class="c-price">4,200,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
+          <div style="display:flex; gap:8px; margin-top:14px;">
+            <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-CHUYEN-THPT">Chi tiết</button>
+            <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('Luyện thi Chuyên & ĐGNL')">Đăng ký</a>
+          </div>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="course-card">
-      <div>
-        <span class="badge badge-teal">Lớp nhóm tiêu chuẩn</span>
-        <h3 class="course-title">Bồi dưỡng Văn hóa THCS & Luyện thi vào 10</h3>
-        <p class="text-muted" style="font-size: 14px;">Quy mô lớp dưới 10 học viên, có trợ giảng theo sát kiểm tra bài tập và hỗ trợ từng buổi học.</p>
-      </div>
-      <div>
-        <div class="course-price">2,800,000 đ <span>/ trọn khóa</span></div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-secondary btn-detail" style="flex:1;" data-code="KHOA-NHOM-THCS">Chi tiết</button>
-          <a href="#consultation" class="btn btn-primary" style="flex:1;" onclick="selectCourse('Bồi dưỡng Văn hóa THCS')">Đăng ký</a>
+  <!-- Teachers Section (Giới thiệu người dạy) -->
+  <section id="teachers" class="pub-section" style="background:var(--g50); border-top:1px solid var(--g200); border-bottom:1px solid var(--g200);">
+    <div class="pub-sec-head">
+      <h2>Đội ngũ Giáo viên & Gia sư Tiêu biểu</h2>
+      <p>Hồ sơ năng lực minh bạch – Phụ huynh duyệt hồ sơ trước khi bắt đầu khóa học</p>
+    </div>
+
+    <div class="pub-tutors-container">
+      <div class="pub-tutor-card">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
+          👨‍🏫
         </div>
+        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Thầy Nguyễn Văn A</h4>
+        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Giáo viên Toán Chuyên · 8 năm KN</div>
+        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">Thạc sĩ Toán ĐH Sư Phạm TP.HCM. Chuyên luyện thi vào lớp 10 Chuyên và HSG.</p>
       </div>
-    </div>
 
-    <div class="course-card">
-      <div>
-        <span class="badge badge-teal">Nâng cao & Ôn thi</span>
-        <h3 class="course-title">Luyện thi Chuyên & Đánh giá Năng lực THPT</h3>
-        <p class="text-muted" style="font-size: 14px;">Chuyên đề tư duy sâu, giải đề thi thử chuẩn cấu trúc đề Bộ GD&ĐT với giáo viên trường chuyên.</p>
-      </div>
-      <div>
-        <div class="course-price">4,200,000 đ <span>/ trọn khóa</span></div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-secondary btn-detail" style="flex:1;" data-code="KHOA-CHUYEN-THPT">Chi tiết</button>
-          <a href="#consultation" class="btn btn-primary" style="flex:1;" onclick="selectCourse('Luyện thi Chuyên & ĐGNL')">Đăng ký</a>
+      <div class="pub-tutor-card">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
+          👩‍🏫
         </div>
+        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Cô Trần Thị B</h4>
+        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Gia sư Vật Lý 1:1 · ĐH Bách Khoa</div>
+        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">Thủ khoa A1, giải Nhì Quốc gia môn Vật Lý. Phương pháp giảng dạy trực quan, dễ nhớ.</p>
+      </div>
+
+      <div class="pub-tutor-card">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
+          👨‍🎓
+        </div>
+        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Thầy Lê Hoàng C</h4>
+        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Gia sư Hóa học & KHTN · ĐH Y Dược</div>
+        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">Á khoa ĐH Y Dược. Giúp học sinh nắm vững bản chất phương trình và phản ứng hóa học.</p>
+      </div>
+
+      <div class="pub-tutor-card">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
+          👩‍🎓
+        </div>
+        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Cô Phạm Mai D</h4>
+        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Trợ giảng & Luyện thi Tiếng Anh</div>
+        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">IELTS 8.0, Cử nhân ĐH Ngoại Thương. Nhiệt tình kiểm tra bài tập và kèm phát âm.</p>
       </div>
     </div>
-  </div>
-
-  <!-- Teachers Section (Giới thiệu người dạy theo yêu cầu) -->
-  <h2 id="teachers" class="section-title">Đội ngũ Giáo viên & Gia sư Tiêu biểu</h2>
-  <p class="section-sub">Hồ sơ chuyên môn minh bạch – Phụ huynh duyệt hồ sơ trước khi bắt đầu khóa học</p>
-
-  <div class="teachers-grid">
-    <div class="teacher-card">
-      <div class="teacher-avatar">👨‍🏫</div>
-      <h4 class="teacher-name">Thầy Nguyễn Văn A</h4>
-      <div class="teacher-role">Giáo viên Toán Chuyên · 8 năm KN</div>
-      <p class="teacher-desc">Thạc sĩ Sư phạm Toán ĐH Sư Phạm TP.HCM. Chuyên luyện thi vào lớp 10 Chuyên và bồi dưỡng học sinh giỏi.</p>
-    </div>
-
-    <div class="teacher-card">
-      <div class="teacher-avatar">👩‍🏫</div>
-      <h4 class="teacher-name">Cô Trần Thị B</h4>
-      <div class="teacher-role">Gia sư Vật Lý 1:1 · ĐH Bách Khoa</div>
-      <p class="teacher-desc">Thủ khoa đầu vào khối A1, giải Nhì HSG Quốc gia môn Vật Lý. Phương pháp giảng dạy trực quan, dễ hiểu.</p>
-    </div>
-
-    <div class="teacher-card">
-      <div class="teacher-avatar">👨‍🎓</div>
-      <h4 class="teacher-name">Thầy Lê Hoàng C</h4>
-      <div class="teacher-role">Gia sư Hóa học & KHTN · ĐH Y Dược</div>
-      <p class="teacher-desc">Á khoa ĐH Y Dược TP.HCM. 4 năm kinh nghiệm kèm 1-1, giúp học sinh lấy lại căn bản môn Hóa trong 12 buổi.</p>
-    </div>
-
-    <div class="teacher-card">
-      <div class="teacher-avatar">👩‍🎓</div>
-      <h4 class="teacher-name">Cô Phạm Mai D</h4>
-      <div class="teacher-role">Trợ giảng & Luyện thi Tiếng Anh</div>
-      <p class="teacher-desc">IELTS 8.0, Cử nhân ĐH Ngoại Thương. Nhiệt tình, theo sát bài tập về nhà và kiểm tra từ vựng từng buổi.</p>
-    </div>
-  </div>
+  </section>
 
   <!-- Consultation Form Section -->
-  <section id="consultation" class="consult-section">
-    <div class="consult-info">
-      <span class="badge badge-ok" style="margin-bottom:12px;">Hỗ trợ Tư vấn Học vụ 24/7</span>
-      <h2>Đăng ký Tư vấn Lộ trình & Tìm Gia sư Miễn phí</h2>
-      <p>
-        Điền thông tin nhu cầu học tập của con. Bộ phận <strong>Giáo vụ EduCenter</strong> sẽ tiếp nhận yêu cầu trực tiếp trên hệ thống, phân tích năng lực và liên hệ tư vấn trong vòng 30 phút!
-      </p>
-      <div class="feature-point">
-        <span class="feature-icon">✓</span>
-        <div><strong>Duyệt hồ sơ Gia sư trực tuyến:</strong> Phụ huynh xem trước chuyên môn, kinh nghiệm trước khi bắt đầu buổi học đầu tiên.</div>
-      </div>
-      <div class="feature-point">
-        <span class="feature-icon">✓</span>
-        <div><strong>Học phí trọn khóa minh bạch:</strong> Không phát sinh chi phí phụ, hoàn toàn độc lập với việc xếp lớp.</div>
-      </div>
-      <div class="feature-point">
-        <span class="feature-icon">✓</span>
-        <div><strong>Sổ theo dõi buổi học điện tử:</strong> Nhận xét và điểm số được cập nhật tức thì trên Cổng Phụ Huynh.</div>
-      </div>
-    </div>
+  <section id="consultation" class="pub-section">
+    <div class="pub-contact-grid">
+      <div>
+        <span class="tag ok" style="margin-bottom:12px;">Hỗ trợ Tư vấn Học vụ 24/7</span>
+        <h2 style="font-size:22px; font-weight:800; color:var(--g900); margin:0 0 12px;">Đăng ký Tư vấn Lộ trình & Tìm Gia sư Miễn phí</h2>
+        <p style="font-size:13.5px; color:var(--g600); line-height:1.6; margin-bottom:20px;">
+          Điền thông tin nhu cầu học tập của con. Bộ phận <b>Giáo vụ EduCenter</b> sẽ tiếp nhận yêu cầu trên hệ thống, lọc người dạy phù hợp và liên hệ tư vấn trong 30 phút!
+        </p>
 
-    <div style="background:var(--g50); padding:32px; border-radius:var(--radius-lg); border:1px solid var(--g200);">
-      <h3 style="margin:0 0 16px; font-size:18px; color:var(--g900);">Phiếu tiếp nhận nhu cầu học</h3>
-      <form id="consultForm">
-        <div class="form-group">
-          <label for="parentName">Họ và tên Phụ huynh</label>
-          <input type="text" id="parentName" class="form-control" placeholder="Nguyễn Văn A" required>
+        <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--g700);">
+          <div><b>✓ Cơ sở 1:</b> Khu Công nghệ cao, TP. Thủ Đức, TP.HCM</div>
+          <div><b>✓ Cơ sở 2:</b> Quận 1 · <b>Cơ sở 3:</b> Quận 3</div>
+          <div><b>✓ Hotline:</b> 1900 6868 · <b>Email:</b> contact@educenter.edu.vn</div>
         </div>
-        <div class="form-group">
-          <label for="parentPhone">Số điện thoại liên hệ</label>
-          <input type="tel" id="parentPhone" class="form-control" placeholder="0901234567" required>
-        </div>
-        <div class="form-group">
-          <label for="courseSelect">Khóa học / Lớp cần tư vấn</label>
-          <select id="courseSelect" class="form-control" required>
-            <option value="Gia sư 1 kèm 1">Gia sư 1 kèm 1 Toán - Lý - Hóa</option>
-            <option value="Bồi dưỡng Văn hóa THCS">Bồi dưỡng Văn hóa THCS & Luyện thi vào 10</option>
-            <option value="Luyện thi Chuyên & ĐGNL">Luyện thi Chuyên & Đánh giá Năng lực</option>
-            <option value="Khác">Khác (Cần tư vấn riêng)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="parentNote">Yêu cầu cụ thể (Mục tiêu, hình thức học online/offline...)</label>
-          <textarea id="parentNote" class="form-control" rows="3" placeholder="Ví dụ: Cần gia sư kèm môn Toán lớp 9 tại nhà khu vực Thủ Đức..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; font-size:15px;">
-          Gửi Yêu Cầu Cho Giáo Vụ
-        </button>
-      </form>
+      </div>
+
+      <div style="background:var(--g50); padding:26px; border-radius:14px; border:1px solid var(--g200);">
+        <h3 style="margin:0 0 14px; font-size:16px; font-weight:700; color:var(--g900);">Phiếu tiếp nhận nhu cầu học</h3>
+        <form id="consultForm">
+          <div style="margin-bottom:12px;">
+            <label for="parentName">Họ và tên Phụ huynh</label>
+            <input type="text" id="parentName" placeholder="Nguyễn Văn A" required>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label for="parentPhone">Số điện thoại liên hệ</label>
+            <input type="tel" id="parentPhone" placeholder="0901234567" required>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label for="courseSelect">Khóa học / Lớp cần tư vấn</label>
+            <select id="courseSelect" required>
+              <option value="Gia sư 1 kèm 1">Gia sư 1 kèm 1 Toán - Lý - Hóa</option>
+              <option value="Bồi dưỡng Văn hóa THCS">Bồi dưỡng Văn hóa THCS & Ôn thi vào 10</option>
+              <option value="Luyện thi Chuyên & ĐGNL">Luyện thi Chuyên & Đánh giá Năng lực</option>
+              <option value="Khác">Khác (Cần tư vấn riêng)</option>
+            </select>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label for="parentNote">Yêu cầu cụ thể (Hình thức học online/offline...)</label>
+            <textarea id="parentNote" rows="2" placeholder="Ví dụ: Cần gia sư kèm môn Toán lớp 9 tại nhà..."></textarea>
+          </div>
+          <button type="submit" class="btn p" style="width:100%; padding:10px; justify-content:center; font-size:13.5px;">
+            Gửi Yêu Cầu Cho Giáo Vụ
+          </button>
+        </form>
+      </div>
     </div>
   </section>
 
   <!-- Modal Course Detail -->
   <div id="modalCourseDetail" class="modal-overlay">
     <div class="modal-box">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3 id="modalCourseTitle" style="margin:0; font-size:18px; color:var(--g900);">Chi tiết Khóa học</h3>
-        <button type="button" id="closeDetailModal" style="border:0; background:0; font-size:18px; cursor:pointer;">✕</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--g200); padding-bottom:10px;">
+        <h3 id="modalCourseTitle" style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">Chi tiết Khóa học</h3>
+        <button type="button" id="closeDetailModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400);">✕</button>
       </div>
-      <div id="modalCourseContent" style="font-size:14px; color:var(--g700); line-height:1.6;">
-        <!-- Dynamic detail -->
-      </div>
-      <div style="margin-top:24px; text-align:right;">
-        <a href="#consultation" id="btnModalEnroll" class="btn btn-primary" style="padding:10px 20px;">Đăng ký khóa học này</a>
+      <div id="modalCourseContent" style="font-size:13.5px; color:var(--g700); line-height:1.6;"></div>
+      <div style="margin-top:20px; text-align:right;">
+        <a href="#consultation" id="btnModalEnroll" class="btn p sm">Đăng ký khóa học này</a>
       </div>
     </div>
   </div>
 
-  <footer id="contact" style="background:#0f172a; color:#94a3b8; padding:48px 24px 32px; font-size:13px; text-align:center;">
-    <div style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; text-align:left; margin-bottom:30px;">
+  <footer id="contact" style="background:#090d16; color:#94a3b8; padding:44px 24px 30px; font-size:13px; text-align:center; border-top:1px solid rgba(255,255,255,.08);">
+    <div style="max-width:1280px; margin:0 auto; display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; text-align:left; margin-bottom:24px;">
       <div>
-        <strong style="color:#fff; font-size:16px;">🎓 EduCenter ERP</strong>
-        <p style="margin-top:8px;">Hệ thống Quản lý Trung tâm Gia sư & Bồi dưỡng Văn hóa chuẩn mực.</p>
+        <b style="color:#fff; font-size:15px;">🎓 EduCenter ERP</b>
+        <p style="margin-top:6px; color:#64748b;">Hệ thống Quản lý Trung tâm Gia sư & Bồi dưỡng Văn hóa.</p>
       </div>
       <div>
-        <strong style="color:#fff;">Cơ sở đào tạo:</strong>
-        <p style="margin-top:8px;">Cơ sở 1: Khu Công nghệ cao, TP. Thủ Đức, TP.HCM<br>Cơ sở 2: Quận 1 · Cơ sở 3: Quận 3</p>
+        <b style="color:#fff;">Cơ sở đào tạo:</b>
+        <p style="margin-top:6px; color:#64748b;">Khu Công nghệ cao, TP. Thủ Đức · Quận 1 · Quận 3</p>
       </div>
       <div>
-        <strong style="color:#fff;">Hỗ trợ kỹ thuật:</strong>
-        <p style="margin-top:8px;">Đồ án Phát triển ứng dụng Web IS207<br>Hotline: 1900 6868 · Email: contact@educenter.edu.vn</p>
+        <b style="color:#fff;">Hỗ trợ đồ án IS207:</b>
+        <p style="margin-top:6px; color:#64748b;">Hotline: 1900 6868 · Email: contact@educenter.edu.vn</p>
       </div>
     </div>
-    <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+    <div style="border-top:1px solid rgba(255,255,255,.06); padding-top:16px; color:#64748b; font-size:12px;">
       © 2026 EduCenter ERP. All rights reserved.
     </div>
   </footer>
@@ -547,11 +408,11 @@
     const COURSE_DETAILS = {
       'KHOA-GS-1KEM1': {
         title: 'Gia sư 1 kèm 1 Toán - Lý - Hóa',
-        desc: 'Chương trình gia sư riêng biệt 1 thầy 1 trò. Học viên được làm bài kiểm tra đầu vào để xác định chính xác năng lực, từ đó giáo viên biên soạn giáo án riêng.',
+        desc: 'Chương trình gia sư riêng biệt 1 kèm 1. Học viên được làm bài kiểm tra đầu vào để xác định chính xác năng lực, từ đó giáo viên biên soạn giáo án riêng.',
         highlights: ['Thời gian linh hoạt theo lịch rảnh của gia đình', 'Học viên chủ động chọn học tại nhà hoặc online qua Google Meet', 'Báo cáo chi tiết sau mỗi buổi học qua Cổng Phụ Huynh']
       },
       'KHOA-NHOM-THCS': {
-        title: 'Bồi dưỡng Văn hóa THCS & Luyện thi vào 10',
+        title: 'Bồi dưỡng Văn hóa THCS & Ôn thi vào 10',
         desc: 'Khóa học theo nhóm nhỏ tối đa 8-10 học sinh. Rèn luyện kỹ năng giải bài tập nâng cao bám sát cấu trúc đề thi tuyển sinh vào lớp 10 các trường công lập.',
         highlights: ['Sĩ số lớp nhỏ đảm bảo tương tác tối đa', 'Định kỳ thi thử và xếp hạng hàng tháng', 'Có trợ giảng kèm cặp riêng cho học sinh còn yếu']
       },
@@ -568,20 +429,18 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Đổi nút Header nếu đã đăng nhập
       if (AccessService.isAuthenticated()) {
         const user = AccessService.getCurrentUser();
         const navContainer = document.getElementById('authNavButtons');
         if (user && navContainer) {
           navContainer.innerHTML = `
-            <button class="btn btn-primary" onclick="AccessService.redirectByRole()">
+            <button class="btn p" onclick="AccessService.redirectByRole()">
               Chào ${user.hoTen || user.username} (Vào Cổng →)
             </button>
           `;
         }
       }
 
-      // Xử lý Modal Chi tiết khóa học
       const modal = document.getElementById('modalCourseDetail');
       const modalTitle = document.getElementById('modalCourseTitle');
       const modalBody = document.getElementById('modalCourseContent');
@@ -596,11 +455,11 @@
 
           modalTitle.textContent = info.title;
           modalBody.innerHTML = `
-            <p>${info.desc}</p>
-            <div style="background:var(--pri-ll); padding:16px; border-radius:var(--radius-md); border:1px solid #ccfbf1; margin-top:14px;">
-              <strong style="color:var(--pri-d);">Điểm nổi bật của khóa:</strong>
-              <ul style="margin:8px 0 0 18px; padding:0;">
-                ${info.highlights.map(h => `<li>${h}</li>`).join('')}
+            <p style="margin-bottom:12px;">${info.desc}</p>
+            <div style="background:var(--pri-ll); padding:14px; border-radius:8px; border:1px solid var(--pri-l);">
+              <b style="color:var(--pri-d); display:block; margin-bottom:6px;">Điểm nổi bật của khóa:</b>
+              <ul style="margin:0 0 0 16px; padding:0; font-size:12.5px;">
+                ${info.highlights.map(h => `<li style="margin-bottom:4px;">${h}</li>`).join('')}
               </ul>
             </div>
           `;
@@ -611,7 +470,6 @@
       closeBtn.addEventListener('click', () => modal.classList.remove('show'));
       btnEnroll.addEventListener('click', () => modal.classList.remove('show'));
 
-      // Xử lý Form tư vấn
       const consultForm = document.getElementById('consultForm');
       consultForm.addEventListener('submit', (e) => {
         e.preventDefault();

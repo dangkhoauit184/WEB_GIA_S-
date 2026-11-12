@@ -1,6 +1,5 @@
 /**
  * EduCenter ERP - Auth Feature Logic
- * Xử lý form đăng nhập, gọi API backend PHP (/api/auth/login), lưu phiên và điều hướng.
  */
 document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
@@ -9,12 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const togglePasswordBtn = document.getElementById('togglePassword');
   const loginAlert = document.getElementById('loginAlert');
   const btnSubmit = document.getElementById('btnSubmit');
-
-  // Nếu người dùng đã đăng nhập từ trước, tự động chuyển vào Portal tương ứng
-  if (AccessService.isAuthenticated()) {
-    const user = AccessService.getCurrentUser();
-    console.log('[Auth] Người dùng đã đăng nhập:', user);
-  }
 
   // Toggle ẩn/hiện mật khẩu
   if (togglePasswordBtn) {
@@ -25,27 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Quick login buttons (để hỗ trợ dev/test nhanh các vai trò)
-  document.querySelectorAll('.quick-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      usernameInput.value = btn.dataset.user || '';
-      passwordInput.value = 'password123'; // Mật khẩu mẫu mặc định
-      usernameInput.focus();
-    });
-  });
-
-  // Hiển thị thông báo lỗi
-  function showAlert(message, type = 'danger') {
-    loginAlert.className = `alert alert-${type} show`;
+  function showAlert(message, type = 'error') {
+    loginAlert.className = `alert-box ${type} show`;
     loginAlert.textContent = message;
   }
 
   function hideAlert() {
-    loginAlert.className = 'alert';
+    loginAlert.className = 'alert-box';
     loginAlert.textContent = '';
   }
 
-  // Xử lý submit đăng nhập
+  // Submit login
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert();
@@ -62,20 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSubmit.textContent = 'Đang đăng nhập...';
 
     try {
-      // 1. Thử gọi API Backend thực tế (nếu có server PHP chạy qua Docker hoặc Apache)
       let authResult = null;
       try {
         const response = await HttpService.post('/auth/login', { username, password });
         authResult = response.data || response;
       } catch (networkOrApiError) {
-        // Nếu lỗi 401/403 do sai mật khẩu thì báo lỗi thật từ backend
         if (networkOrApiError.status === 401 || networkOrApiError.status === 403) {
           throw networkOrApiError;
         }
 
-        // Nếu máy chưa bật Docker (không kết nối được backend PHP), kích hoạt Mock Session để sinh viên có thể code & test UI ngay
-        console.warn('[Auth] Không kết nối được PHP server. Kích hoạt Mock Session để hỗ trợ phát triển Frontend.');
-        
+        console.warn('[Auth] Máy chưa bật PHP server. Khởi động Mock Session.');
         let mockRole = 'PHU_HUYNH';
         let mockName = 'Nguyễn Văn Phụ Huynh';
         if (username.includes('admin')) { mockRole = 'ADMIN'; mockName = 'Quản trị viên Admin'; }
@@ -97,12 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
       }
 
-      // Lưu JWT Token và User Info vào AccessService
       AccessService.setSession(authResult.token, authResult.user);
-
       showAlert(`Đăng nhập thành công! Đang chuyển hướng...`, 'success');
 
-      // Kiểm tra tham số ?redirect= trên URL nếu có
       const urlParams = new URLSearchParams(window.location.search);
       const redirectUrl = urlParams.get('redirect');
 
@@ -112,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           AccessService.redirectByRole();
         }
-      }, 700);
+      }, 600);
 
     } catch (err) {
       console.error('[Auth Error]', err);
@@ -122,4 +98,49 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSubmit.textContent = 'Đăng nhập vào Hệ thống';
     }
   });
+
+  // Modal Quên Mật Khẩu
+  const modalForgot = document.getElementById('modalForgotPassword');
+  const btnForgot = document.getElementById('btnForgotPwd');
+  const closeForgot = document.getElementById('closeForgotModal');
+  const cancelForgot = document.getElementById('btnCancelForgot');
+  const forgotForm = document.getElementById('forgotPwdForm');
+
+  if (btnForgot) btnForgot.addEventListener('click', () => modalForgot.classList.add('show'));
+  const hideForgot = () => { modalForgot.classList.remove('show'); forgotForm.reset(); };
+  if (closeForgot) closeForgot.addEventListener('click', hideForgot);
+  if (cancelForgot) cancelForgot.addEventListener('click', hideForgot);
+
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('forgotEmail').value;
+      alert(`Hệ thống đã gửi liên kết khôi phục mật khẩu tới: ${email}. Vui lòng kiểm tra hòm thư!`);
+      hideForgot();
+    });
+  }
+
+  // Modal Đăng Ký Tài Khoản Phụ Huynh Mới
+  const modalReg = document.getElementById('modalRegister');
+  const btnOpenReg = document.getElementById('btnOpenRegister');
+  const closeReg = document.getElementById('closeRegisterModal');
+  const cancelReg = document.getElementById('btnCancelRegister');
+  const regForm = document.getElementById('registerForm');
+
+  if (btnOpenReg) btnOpenReg.addEventListener('click', () => modalReg.classList.add('show'));
+  const hideReg = () => { modalReg.classList.remove('show'); regForm.reset(); };
+  if (closeReg) closeReg.addEventListener('click', hideReg);
+  if (cancelReg) cancelReg.addEventListener('click', hideReg);
+
+  if (regForm) {
+    regForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fullname = document.getElementById('regFullname').value;
+      const username = document.getElementById('regUsername').value;
+      alert(`Đăng ký tài khoản thành công cho Phụ huynh [${fullname}]! Bạn có thể dùng tên đăng nhập '${username}' để đăng nhập ngay.`);
+      hideReg();
+      usernameInput.value = username;
+      passwordInput.focus();
+    });
+  }
 });
