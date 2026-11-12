@@ -23,4 +23,24 @@ final class TuitionRepository
         return Store::one(self::SELECT.' WHERE gd.id=?',[$id])
             ?? throw new ApiException(404,'Không tìm thấy giao dịch.','PAYMENT_NOT_FOUND');
     }
+
+    public static function invoices(array $actor, ?int $id = null): array
+    {
+        $sql="SELECT h.*,hv.id AS hoc_vien_id,hv.ho_ten AS ten_hoc_vien,hv.ma_hv,ph.hoten AS ten_phu_huynh,
+            ph.sdt AS sdt_phu_huynh,k.ten AS ten_khoa,dk.hoc_phi_snapshot
+            FROM hoa_don h LEFT JOIN dang_ky_khoa_hoc dk ON dk.id=h.dang_ky_khoa_hoc_id
+            LEFT JOIN khoa_hoc k ON k.id=dk.khoa_hoc_id LEFT JOIN lop_hoc_vien x ON x.id=h.lop_hoc_vien_id
+            JOIN hoc_vien hv ON hv.id=COALESCE(dk.hoc_vien_id,x.hoc_vien_id) JOIN users ph ON ph.user_id=hv.phu_huynh_user_id
+            WHERE hv.deleted_at IS NULL AND ph.is_deleted=0";
+        $params=[];
+        if ($actor['role']==='GIAO_VU' && $actor['coSoId']) $sql.=\App\Modules\Academic\Features\Admissions\AdmissionsFilter::studentScope('hv.id',(int)$actor['coSoId']);
+        if ($id!==null) { $sql.=' AND h.id=?'; $params[]=$id; }
+        return Store::rows($sql.' ORDER BY h.id DESC', $params);
+    }
+
+    public static function receipts(int $id): array
+    {
+        return Store::rows('SELECT t.*,u.hoten AS ten_nguoi_thu FROM thanh_toan t JOIN users u ON u.user_id=t.nguoi_thu_id
+            WHERE t.hoa_don_id=? ORDER BY t.id DESC', [$id]);
+    }
 }

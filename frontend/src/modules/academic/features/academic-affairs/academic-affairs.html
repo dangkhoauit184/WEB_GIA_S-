@@ -1,0 +1,150 @@
+<template id="view-staff-dash"><section class="screen active" id="staff-dash">
+  <div class="pg-head"><div><h1>Tổng quan công việc Giáo vụ / Điều phối</h1></div></div>
+  <div class="stats">
+    <div class="st w"><div class="n" id="stNewReqCount">—</div><span>Yêu cầu học cần ghép</span></div>
+    <div class="st i"><div class="n" id="stPendingLeaveCount">—</div><span>Đơn nghỉ cá nhân / Đổi lịch</span></div>
+    <div class="st p"><div class="n" id="stMakeupCount">—</div><span>Lịch học bù đã xếp</span></div>
+    <div class="st r"><div class="n" id="stInvoiceCount">—</div><span>Hóa đơn khóa học cần thu</span></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <h2>Việc cần Giáo vụ xử lý hôm nay</h2>
+      <div id="staffTaskList"></div>
+    </div>
+    <div class="card">
+      <h2>Lối tắt công việc</h2>
+      <div class="btn-group" style="flex-direction:column;gap:8px">
+        <button class="btn p" onclick="showS('staff-schedule')">Thời khóa biểu &amp; Xếp ca học</button>
+        <button class="btn" onclick="showS('staff-intake')">Tuyển sinh &amp; Ghép người dạy (4 bước)</button>
+        <button class="btn" onclick="showS('staff-parents')">Quản lý Hồ sơ Phụ huynh &amp; Liên kết Con</button>
+        <button class="btn" onclick="showS('staff-billing')">Phát hành Hóa đơn Trọn khóa &amp; Theo dõi Thu tiền</button>
+      </div>
+    </div>
+  </div>
+</section></template>
+<template id="view-staff-schedule"><section class="screen active" id="staff-schedule">
+  <div class="pg-head">
+    <div>
+      <h1>Thời khóa biểu</h1>
+
+    </div>
+    <div class="row">
+      <button class="btn p sm" onclick="openSessionForm()">+ Xếp ca học mới</button>
+    </div>
+  </div>
+  <div id="staffCalContainer"></div>
+</section></template>
+<template id="view-staff-classes"><section class="screen active" id="staff-classes">
+  <div class="pg-head">
+    <div><h1>Danh sách Lớp học, Khóa học &amp; Sĩ số</h1></div>
+    <div class="row">
+      <button class="btn sm" onclick="setPortal('admin', true, 'admin-courses')">Chuyển sang Admin để Xếp lớp</button>
+      <button class="btn p sm" onclick="openSessionForm()">Xếp ca học cho lớp</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mã lớp</th><th>Tên lớp · Khóa học</th><th>Lịch học · Phòng</th><th>Người dạy chính</th><th>Trợ giảng</th><th>Sĩ số</th><th>Thao tác</th></tr></thead>
+      <tbody id="classBody"></tbody>
+    </table></div>
+  </div>
+</section></template>
+<template id="view-staff-students"><section class="screen active" id="staff-students">
+  <div class="pg-head">
+    <div><h1>Quản lý Hồ sơ Học viên &amp; Đăng ký Khóa học</h1></div>
+    <div class="row">
+      <button class="btn sm" onclick="showS('staff-registrations')">Tra cứu đăng ký khóa</button><button class="btn sm" onclick="showS('staff-parents')">Danh sách Phụ huynh</button>
+      <button class="btn p" onclick="openStudentForm()">+ Thêm học viên &amp; Đăng ký khóa</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mã HV</th><th>Họ tên học viên</th><th>Khối lớp · Trường</th><th>Phụ huynh</th><th>Khóa đăng ký</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody id="stuBody"></tbody>
+    </table></div>
+  </div>
+</section></template>
+<template id="view-staff-parents"><section class="screen active" id="staff-parents">
+  <div class="pg-head">
+    <div>
+      <h1>Quản lý Hồ sơ Phụ huynh &amp; Liên kết Con</h1>
+
+    </div>
+    <button class="btn p" onclick="openParentFormModal()">+ Thêm hồ sơ Phụ huynh</button>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mã PH</th><th>Họ tên Phụ huynh</th><th>Số điện thoại · Email</th><th>Khu vực · Địa chỉ</th><th>Danh sách Con đang học</th><th>Tài khoản Web</th><th>Thao tác</th></tr></thead>
+      <tbody id="parentsTableBody"></tbody>
+    </table></div>
+  </div>
+</section></template>
+<template id="view-staff-approve"><section class="screen active" id="staff-approve">
+  <div class="pg-head">
+    <div>
+      <h1>Duyệt đơn nghỉ &amp; Đổi lịch</h1>
+
+    </div>
+  </div>
+  <div class="card" style="padding:12px 16px;margin-bottom:12px">
+    <div class="row" style="gap:6px">
+      <span style="font-size:12px;font-weight:600;color:var(--g600)">Lọc loại đơn:</span>
+      <div class="chips" id="staffApproveFilterChips">
+        <span class="chip on" onclick="filterStaffApprove('all')">Tất cả đơn</span>
+        <span class="chip" onclick="filterStaffApprove('nghi_hoc')">Nghỉ cá nhân HV </span>
+        <span class="chip" onclick="filterStaffApprove('doi_lich')">Đổi lịch dạy </span>
+        <span class="chip" onclick="filterStaffApprove('nghi_day')">Nghỉ cả lớp </span>
+        <span class="chip" onclick="filterStaffApprove('dieu_chinh_cong')">Điều chỉnh công </span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Danh sách đơn</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Mã đơn</th><th>Loại đơn</th><th>Người gửi</th><th>Lớp / Buổi liên quan</th><th>Lý do &amp; Ghi chú</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody id="staffApproveBody"></tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="row-b" style="margin-bottom:10px">
+      <h2 style="margin:0">Lịch học bù đã xếp</h2>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Mã bù</th><th>Học viên học bù</th><th>Buổi học bù</th><th>Đơn nghỉ liên kết (Tùy chọn)</th><th>Người xếp lịch</th><th>Ghi chú</th></tr></thead>
+      <tbody id="makeupStudentsBody"></tbody>
+    </table></div>
+  </div>
+</section></template>
+<template id="view-staff-billing"><section class="screen active" id="staff-billing">
+  <div class="pg-head">
+    <div>
+      <h1>Quản lý Học phí &amp; Hóa đơn Trọn khóa</h1>
+
+    </div>
+    <button class="btn p" onclick="createCourseInvoicePrompt()">+ Tạo &amp; Phát hành Hóa đơn Khóa học</button>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <h2>Danh sách hóa đơn</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Mã HĐ</th><th>Học viên · Khóa học</th><th>Trọn khóa</th><th>Đã thu</th><th>Còn phải thu</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="invBody"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Chi tiết Hóa đơn, Phát hành &amp; Lập phiếu thu</h2>
+      <div class="hint" id="invBanner"><span>Chọn một hóa đơn bên trái để phát hành, in hóa đơn hoặc lập phiếu thu</span></div>
+      <label>Nghiệp vụ thu tiền</label>
+      <select id="payTypeSel"><option value="thu">Lập phiếu thu học phí</option></select>
+      <label>Số tiền thu (VNĐ)</label><input type="number" id="payAmt" value="" step="1" min="1">
+      <label>Phương thức thanh toán</label><select id="payMethodSel"><option value="chuyen_khoan">Chuyển khoản</option><option value="tien_mat">Tiền mặt tại quầy</option></select>
+      <label>Ghi chú chứng từ</label><input id="payNote" placeholder="VD: Thu học phí trọn khóa Toán 9...">
+      <div class="btn-group" style="margin-top:14px">
+        <button class="btn p" onclick="doPayment()">💾 Ghi nhận Phiếu thu</button>
+        <button class="btn" onclick="publishSelectedInvoice()">Phát hành &amp; Gửi TB Phụ huynh</button>
+        <button class="btn sm" onclick="printSelectedInvoice()"> In Hóa đơn / Phiếu thu</button>
+      </div>
+    </div>
+  </div>
+</section></template>

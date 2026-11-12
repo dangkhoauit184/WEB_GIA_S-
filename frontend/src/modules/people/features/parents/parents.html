@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cổng thông tin Phụ huynh · EduCenter ERP</title>
+  <link rel="stylesheet" href="../../../../src/shared/styles/common.css">
+  <link rel="stylesheet" href="parents.css">
+</head>
+<body>
+  <div class="portal-layout">
+    <!-- Sidebar -->
+    <aside class="portal-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🎓</div>
+        <div>
+          <h2 class="brand-name">EduCenter</h2>
+          <p class="brand-sub">Cổng Phụ Huynh</p>
+        </div>
+      </div>
+
+      <!-- Chọn con: Nghiệp vụ quy định 1 Phụ huynh có thể có nhiều con -->
+      <div class="student-selector-box">
+        <label for="studentSelector">Chọn học sinh (Con):</label>
+        <select id="studentSelector" class="student-select">
+          <!-- Sẽ tự động nạp danh sách con từ backend/mock -->
+        </select>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="schedule">
+          📅 <span>Thời khóa biểu</span>
+        </button>
+        <button class="nav-item" data-tab="learning">
+          📝 <span>Sổ theo dõi & Điểm số</span>
+        </button>
+        <button class="nav-item" data-tab="leave">
+          📩 <span>Đơn xin nghỉ phép</span>
+        </button>
+        <button class="nav-item" data-tab="tuition">
+          💳 <span>Học phí & Hóa đơn</span>
+        </button>
+        <button class="nav-item" data-tab="history">
+          📑 <span>Lịch sử giao dịch</span>
+        </button>
+        <button class="nav-item" data-tab="notifications">
+          🔔 <span>Thông báo hệ thống</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <span id="currentUserName" class="user-name">Phụ huynh</span>
+          <span class="user-role">PHU_HUYNH</span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button id="btnOpenChangePwd" class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" title="Đổi mật khẩu">🔑</button>
+          <button id="btnLogout" class="btn-logout" title="Đăng xuất">Thoát</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="portal-main">
+      <header class="portal-topbar">
+        <h1 id="tabHeading" class="page-title">Thời khóa biểu học tập</h1>
+        <div class="current-student-badge">
+          Đang xem: <strong id="selectedStudentName">...</strong>
+        </div>
+      </header>
+
+      <div class="portal-content">
+        <!-- Quick Child Chips Bar -->
+        <div class="kid-chips" id="kidChipsContainer"></div>
+
+        <!-- Tab 1: Thời khóa biểu -->
+        <section id="tab-schedule" class="tab-pane active">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Lịch học chi tiết của học sinh</h3>
+              <span class="text-muted" style="font-size: 13px;">Theo giờ máy chủ hệ thống</span>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ngày học</th>
+                  <th>Khung giờ</th>
+                  <th>Môn / Khóa học</th>
+                  <th>Hình thức & Địa điểm</th>
+                  <th>Người dạy</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleTableBody">
+                <!-- Dynamic Content -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Tab 2: Sổ theo dõi & Điểm số -->
+        <section id="tab-learning" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Nhật ký từng buổi học & Nhận xét của giáo viên</h3>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Khóa học</th>
+                  <th>Chuyên cần</th>
+                  <th>Điểm bài tập</th>
+                  <th>Tiếp thu (1-5★)</th>
+                  <th>Nhận xét của giáo viên</th>
+                </tr>
+              </thead>
+              <tbody id="learningTableBody">
+                <!-- Dynamic Content -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Tab 3: Đơn xin nghỉ phép -->
+        <section id="tab-leave" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Gửi đơn xin nghỉ phép cá nhân</h3>
+            </div>
+            <p style="font-size: 13.5px; color: var(--g600); margin-bottom: 20px;">
+              * Quy ước nghiệp vụ đồ án: Đơn nghỉ cá nhân của học sinh sẽ do <strong>Giáo vụ</strong> tiếp nhận và duyệt. Lịch học bù (nếu có) sẽ được giáo vụ và phụ huynh trao đổi thống nhất ngoài hệ thống.
+            </p>
+            <form id="leaveRequestForm" style="max-width: 600px;">
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Chọn buổi học sắp tới cần xin nghỉ</label>
+                <select id="leaveSessionSelect" class="form-control" required>
+                  <option value="">-- Chọn buổi học --</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Lý do xin nghỉ</label>
+                <textarea id="leaveReason" class="form-control" rows="3" placeholder="Nhập lý do nghỉ học cụ thể (ví dụ: bị ốm, bận việc gia đình...)" required></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Gửi đơn xin nghỉ tới Giáo vụ</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Lịch sử các đơn xin nghỉ phép đã gửi</h3>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Buổi học</th>
+                  <th>Lý do</th>
+                  <th>Ngày gửi</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="leaveHistoryTableBody">
+                <!-- Dynamic Content -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Tab 4: Học phí & Hóa đơn -->
+        <section id="tab-tuition" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Hóa đơn học phí trọn khóa</h3>
+            </div>
+            <p style="font-size: 13.5px; color: var(--g600); margin-bottom: 16px;">
+              * Quy ước nghiệp vụ: Thu trọn từng khóa học. Sau khi phụ huynh thanh toán, <strong>Admin</strong> sẽ thực hiện đối soát và cập nhật xác nhận đã thu.
+            </p>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã HĐ</th>
+                  <th>Khóa học</th>
+                  <th>Phải thu</th>
+                  <th>Đã đóng</th>
+                  <th>Còn lại</th>
+                  <th>Hạn thanh toán</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="invoiceTableBody">
+                <!-- Dynamic Content -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Tab 5: Lịch sử giao dịch thanh toán -->
+        <section id="tab-history" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Lịch sử các giao dịch thanh toán trên Web</h3>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã GD</th>
+                  <th>Mã Hóa Đơn</th>
+                  <th>Phương thức</th>
+                  <th>Số tiền</th>
+                  <th>Mã tham chiếu / Nội dung</th>
+                  <th>Thời gian</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="transactionHistoryTableBody">
+                <!-- Dynamic Content -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Tab 6: Thông báo hệ thống (Yêu cầu Người 2) -->
+        <section id="tab-notifications" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Thông báo từ Trung tâm & Giáo vụ</h3>
+              <button class="btn btn-secondary" style="font-size:12px; padding:5px 10px;" id="btnMarkAllRead">Đánh dấu tất cả đã đọc</button>
+            </div>
+            <div id="notificationsListContainer" style="display:flex; flex-direction:column; gap:12px;">
+              <!-- Dynamic Notifications List -->
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Thanh toán trực tuyến Web -->
+  <div id="modalParentPay" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">💳 Khởi tạo Thanh toán Học phí Trực tuyến</h3>
+        <button type="button" class="modal-close" id="btnClosePayModal">✕</button>
+      </div>
+      <form id="onlinePayForm">
+        <div id="ppInvoiceInfo" style="background:var(--pri-ll); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--pri-l); margin-bottom:14px; font-size:13px;">
+          <!-- Thông tin hóa đơn được render tự động -->
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Cổng / Kênh thanh toán</label>
+          <select id="ppProviderSelect" class="form-control">
+            <option value="VIETQR_NAPAS">Chuyển khoản QR Ngân hàng (VietQR / Napas 247)</option>
+            <option value="VNPAY_GATEWAY">Cổng thanh toán VNPAY QR</option>
+            <option value="MOMO_BUSINESS">Ví điện tử MoMo</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Số tiền thanh toán (VNĐ)</label>
+          <input type="number" id="ppAmountInput" class="form-control" required>
+        </div>
+
+        <div class="qr-box">
+          <div class="qr-title">Quét mã VietQR Trung tâm EduCenter</div>
+          <div class="qr-account">Ngân hàng: Vietcombank · STK: 1029384756<br>Chủ TK: TRUNG TAM GIA SU EDUCENTER</div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelPay">Hủy bỏ</button>
+          <button type="submit" class="btn btn-primary">📤 Tôi đã chuyển khoản (Gửi đối soát)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Đổi Mật Khẩu (Khớp yêu cầu đổi mật khẩu Người 2) -->
+  <div id="modalChangePassword" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">🔑 Đổi Mật Khẩu Tài Khoản</h3>
+        <button type="button" class="modal-close" id="btnCloseChangePwdModal">✕</button>
+      </div>
+      <form id="changePasswordForm">
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mật khẩu hiện tại</label>
+          <input type="password" id="currentPassword" class="form-control" placeholder="Nhập mật khẩu cũ..." required>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+          <input type="password" id="newPassword" class="form-control" minlength="6" placeholder="Nhập mật khẩu mới..." required>
+        </div>
+
+        <div class="form-group" style="margin-bottom:18px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Xác nhận mật khẩu mới</label>
+          <input type="password" id="confirmNewPassword" class="form-control" minlength="6" placeholder="Nhập lại mật khẩu mới..." required>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelChangePwd">Hủy bỏ</button>
+          <button type="submit" class="btn btn-primary">Cập nhật mật khẩu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../../../../src/config/app.config.js"></script>
+  <script src="../../../../src/shared/permissions/access.js"></script>
+  <script src="../../../../src/shared/services/http.js"></script>
+  <script src="parents.js"></script>
+</body>
+</html>

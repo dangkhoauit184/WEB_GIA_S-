@@ -258,15 +258,17 @@ function calendarOptions(key) {
   return `<option value="">${labels[key]}</option>`+values.map(value=>`<option value="${Admin.esc(value)}" ${calFilters[key]===value?'selected':''}>${Admin.esc(value)}</option>`).join('');
 }
 async function loadAdminCalendar() {
+  const staffScope=Admin.currentScreen().startsWith('staff-');
+  currentPortal=staffScope?'staff':'admin';
   const version=++calendarRequestVersion;
   const start=formatYMD(getMonday(new Date(calCurrentDate.getFullYear(),calCurrentDate.getMonth(),1)));
   const end=formatYMD(addDays(new Date(calCurrentDate.getFullYear(),calCurrentDate.getMonth()+1,1),7));
   const [sessions,classes,staff,campuses,rooms]=await Promise.all([
     Admin.api('/api/academic/scheduling/sessions?'+Admin.query({tuNgay:start,denNgay:end})),
-    Admin.api('/api/academic/classes'),Admin.api('/api/administration/staff'),
-    Admin.api('/api/administration/catalog/campuses'),Admin.api('/api/administration/catalog/rooms')
+    Admin.api('/api/academic/classes'),Admin.api(staffScope?'/api/academic/academic-affairs/people':'/api/administration/staff'),
+    Admin.api('/api/administration/catalog/campuses'),Admin.api(staffScope?'/api/academic/academic-affairs/rooms':'/api/administration/catalog/rooms')
   ]);
-  if(version!==calendarRequestVersion || Admin.currentScreen()!=='admin-schedule')return false;
+  if(version!==calendarRequestVersion || !['admin-schedule','staff-schedule','staff-classes','staff-approve','staff-dash'].includes(Admin.currentScreen()))return false;
   calendarStaff=staff;calendarCampuses=campuses;calendarRooms=rooms;
   CLASSES=classes.map(row=>({...row,code:row.maLop,name:row.tenLop,subject:row.tenMonHoc,studentIds:[]}));
   SESSIONS=sessions.map(row=>{
@@ -274,7 +276,7 @@ async function loadAdminCalendar() {
     const online=row.phongHoc==='Online'||row.phongHoc==='Google Meet'||cls.hinhThuc==='online';
     return {...row,id:'SES-'+row.id,_id:row.id,classCode:row.maLop,className:row.tenLop,subject:cls.tenMonHoc||'',date:row.ngay,
       startTime:row.gioBatDau.slice(0,5),endTime:row.gioKetThuc.slice(0,5),mainTeacher:row.tenNguoiDayChinh||'',ta:row.tenTroGiang||'',
-      isOnline:online,branch:online?'Online':(campuses.find(item=>item.id===(row.coSoId??cls.coSoId))?.tenCoSo||'Tại nhà học viên'),room:row.phongHoc||'',
+      isOnline:online,branch:online?'Online':(campuses.find(item=>item.id===row.coSoId)?.tenCoSo||'Tại nhà học viên'),room:row.phongHoc||'',
       onlineLink:cls.linkHoc||'',topic:row.chuDeBaiHoc||'',_assistantIds:(row.troGiangIds||'').split(',').filter(Boolean).map(Number),
       status:['huy','doi'].includes(row.trangThai)?'cancelled':row.loai==='bu'?'makeup':row.trangThai==='da_day'?'completed':'upcoming'};
   });
@@ -288,6 +290,8 @@ async function refreshActiveCalendars() {
   try {
     const loaded=await loadAdminCalendar();
     if(loaded&&document.getElementById('adminCalContainer'))renderSharedCalendar('adminCalContainer','admin');
+    if(loaded&&document.getElementById('staffCalContainer'))renderSharedCalendar('staffCalContainer','staff');
+    if(loaded&&Admin.currentScreen()==='staff-approve')Admin.render();
   } catch(error){toast(error.message,'err');}
 }
 function openSessionDetail(id) {
@@ -295,24 +299,31 @@ function openSessionDetail(id) {
   if(!session)return;
   selectedSessionId=id;
   document.getElementById('dtModalTitle').textContent=session.classCode+' · '+session.date;
-  document.getElementById('dtModalContent').innerHTML=`<div class="item"><span>Lớp</span><b>${Admin.esc(session.className)}</b></div><div class="item"><span>Thời gian</span><b>${session.startTime} – ${session.endTime}</b></div><div class="item"><span>Người dạy</span><b>${Admin.esc(session.mainTeacher||'Chưa phân công')}</b></div><div class="item"><span>Trợ giảng</span><b>${Admin.esc(session.ta||'—')}</b></div><div class="item"><span>Địa điểm</span><span>${Admin.esc(session.branch+' · '+session.room)}</span></div><p>${Admin.esc(session.topic)}</p>${session.isOnline&&/^https?:\/\//i.test(session.onlineLink)?`<p><a target="_blank" rel="noopener noreferrer" href="${Admin.esc(session.onlineLink)}">Mở phòng học trực tuyến</a></p>`:''}<div class="modal-act">${session.status==='upcoming'||session.status==='makeup'?`<button class="btn sm" onclick="rescheduleSessionDetail()">Chỉnh sửa / Dời lịch</button><button class="btn sm danger" onclick="cancelSessionDetail()">Admin hủy buổi</button>`:''}${session.status==='cancelled'?'<button class="btn p sm" onclick="makeupSessionDetail()">Xếp lịch bù cả lớp</button>':''}</div>`;
+  document.getElementById('dtModalContent').innerHTML=`<div class="item"><span>Lớp</span><b>${Admin.esc(session.className)}</b></div><div class="item"><span>Thời gian</span><b>${session.startTime} – ${session.endTime}</b></div><div class="item"><span>Người dạy</span><b>${Admin.esc(session.mainTeacher||'Chưa phân công')}</b></div><div class="item"><span>Trợ giảng</span><b>${Admin.esc(session.ta||'—')}</b></div><div class="item"><span>Địa điểm</span><span>${Admin.esc(session.branch+' · '+session.room)}</span></div><p>${Admin.esc(session.topic)}</p>${session.isOnline&&/^https?:\/\//i.test(session.onlineLink)?`<p><a target="_blank" rel="noopener noreferrer" href="${Admin.esc(session.onlineLink)}">Mở phòng học trực tuyến</a></p>`:''}<div class="modal-act">${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','edit')?`<button class="btn sm" onclick="rescheduleSessionDetail()">Chỉnh sửa / Dời lịch</button>${session.chuaBatDau&&!session.lyDoKhongXoa?'<button class="btn sm danger" onclick="deleteSessionDetail()">Xóa ca học</button>':''}${Admin.user.role==='ADMIN'?'<button class="btn sm danger" onclick="cancelSessionDetail()">Admin hủy buổi</button>':''}`:''}</div>`;
+  if(StaffUI.can('VanHanhBuoiHoc','edit') && session.chuaBatDau && session.lyDoKhongXoa) {
+    document.getElementById('dtModalContent').insertAdjacentHTML('beforeend',`<p class="form-error">${Admin.esc(session.lyDoKhongXoa)}</p>`);
+  }
   document.getElementById('modalSessionDetail').classList.add('show');
 }
 function closeModalSessionDetail(){document.getElementById('modalSessionDetail').classList.remove('show');}
 function rescheduleSessionDetail(){const id=selectedSessionId;closeModalSessionDetail();openSessionForm(id);}
+function deleteSessionDetail(){
+  const row=SESSIONS.find(item=>item.id===selectedSessionId);
+  if(!row)return;
+  if(row.lyDoKhongXoa){toast(row.lyDoKhongXoa,'err');return;}
+  Admin.confirmDialog('Xóa ca học',`${row.classCode} · ${row.date} · ${row.startTime}–${row.endTime}`,async()=>{
+    await Admin.api(`/api/academic/scheduling/sessions/${row._id}`,'DELETE',{});
+    closeModalSessionDetail();
+    toast('Đã xóa ca học.','ok');
+    await refreshActiveCalendars();
+  });
+}
 function cancelSessionDetail(){
   const row=SESSIONS.find(item=>item.id===selectedSessionId);
   Admin.formDialog({title:'Admin xác nhận hủy buổi cả lớp',fields:[{name:'lyDo',label:'Lý do',required:true,maxLength:255}],onSubmit:async body=>{
     await Admin.api(`/api/academic/scheduling/sessions/${row._id}`,'PUT',{trangThai:'huy',huyBoi:'trung_tam',lyDoHuyDoi:body.lyDo});
     closeModalSessionDetail();toast('Đã hủy buổi và ghi dấu vết Admin.','ok');await refreshActiveCalendars();
   }});
-}
-function makeupSessionDetail(){
-  const row=SESSIONS.find(item=>item.id===selectedSessionId);
-  closeModalSessionDetail();openSessionForm();makeupOriginId=row._id;
-  document.getElementById('sfClassSelect').value=String(row.lopId);onSfClassChanged();
-  document.getElementById('sfSessionType').value='makeup';document.getElementById('sfMakeupScope').value='ca_lop';onSfTypeChanged();
-  document.getElementById('sfDate').value=formatYMD(addDays(new Date(row.date+'T00:00:00'),7));
 }
 function openSessionForm(id){
   const row=SESSIONS.find(item=>item.id===id);
@@ -326,8 +337,9 @@ function openSessionForm(id){
   document.getElementById('sfTaSelect').innerHTML='<option value="">Không phân công</option>'+calendarStaff.filter(item=>item.nhanSuId&&item.status==='active'&&item.phanLoai.includes('tro_giang')).map(item=>`<option value="${item.userId}">${Admin.esc(item.hoTen)}</option>`).join('');
   document.getElementById('sfBranchSelect').innerHTML='<option value="">Tại nhà học viên</option>'+calendarCampuses.filter(item=>item.isActive).map(item=>`<option value="${item.id}">${Admin.esc(item.tenCoSo)}</option>`).join('');
   document.getElementById('sfRoomSelect').innerHTML='<option value="">Chưa chọn phòng</option>'+calendarRooms.map(item=>`<option value="${Admin.esc(item.ten)}">${Admin.esc(item.ten)}</option>`).join('');
+  document.getElementById('sfCampusEmpty').style.display=calendarCampuses.some(item=>item.isActive)?'none':'block';
   onSfClassChanged();
-  document.getElementById('sfDate').value=row?.date||formatYMD(calCurrentDate);
+  document.getElementById('sfDate').value=row?.date||(/^\d{4}-\d{2}-\d{2}$/.test(id||'')?id:formatYMD(calCurrentDate));
   document.getElementById('sfStartTime').value=row?.startTime||'18:00';
   document.getElementById('sfEndTime').value=row?.endTime||'20:00';
   document.getElementById('sfTopic').value=row?.topic||'';
@@ -346,6 +358,7 @@ function openSessionForm(id){
     document.getElementById('sfOnlineLink').value=row.onlineLink;
     setSfOnlineMode(row.isOnline);
   }
+  checkSfConflicts();
   document.getElementById('modalSessionForm').classList.add('show');
 }
 function closeModalSessionForm(){document.getElementById('modalSessionForm').classList.remove('show');}
@@ -358,6 +371,7 @@ async function onSfClassChanged(){
   document.getElementById('sfRoomSelect').value=cls.phongHoc||'';
   document.getElementById('sfOnlineLink').value=cls.linkHoc||'';
   setSfOnlineMode(cls.hinhThuc==='online');
+  checkSfConflicts();
   try {
     const [origin,students]=await Promise.all([Admin.api('/api/academic/scheduling/sessions?lopId='+cls.id),Admin.api(`/api/academic/classes/${cls.id}/enrollments`)]);
     if(Number(document.getElementById('sfClassSelect').value)!==cls.id)return;
@@ -388,7 +402,8 @@ async function handleSessionFormSubmit(event){
   body.hocVienIds=body.loai==='bu'&&body.phamViBu==='ca_nhan'?(studentId===oldStudents[0]?oldStudents:(studentId?[studentId]:[])):[];
   body.ghiChuBu=document.getElementById('sfMakeupNote').value||null;
   await Admin.busy(event.target.querySelector('button[type=submit]'),async()=>{
-    await Admin.api('/api/academic/scheduling/admin-sessions'+(editingSessionId?'/'+editingSessionId:''),editingSessionId?'PUT':'POST',body);
+    const endpoint=Admin.currentScreen().startsWith('staff-')?'operations-sessions':'admin-sessions';
+    await Admin.api('/api/academic/scheduling/'+endpoint+(editingSessionId?'/'+editingSessionId:''),editingSessionId?'PUT':'POST',body);
     closeModalSessionForm();toast('Đã lưu lịch học và phân công.','ok');await refreshActiveCalendars();
   });
 }
@@ -405,6 +420,8 @@ function onSfTypeChanged(){
 }
 function onSfBranchChanged(){checkSfConflicts();}
 function checkSfConflicts(){
+  const person=calendarStaff.find(item=>Number(item.userId)===Number(document.getElementById('sfTeacherSelect').value));
+  document.getElementById('sfTeacherAvailability').textContent=person?(person.lichRanh?'Lịch rảnh đã đăng ký · '+person.lichRanh:'Người dạy chưa đăng ký lịch rảnh.'):'';
   const date=document.getElementById('sfDate').value;
   const start=document.getElementById('sfStartTime').value, end=document.getElementById('sfEndTime').value;
   const userId=Number(document.getElementById('sfTeacherSelect').value);

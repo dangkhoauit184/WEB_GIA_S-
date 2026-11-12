@@ -5,6 +5,8 @@ final class ParentsFilter
 {
     public static function check(string $action = 'view', bool $staffOnly = false): array
     {
-        return \App\Shared\Access::guard('TiepNhanYeuCau', $action, $staffOnly);
+        $actor = \App\Shared\Access::guard('TiepNhanYeuCau', $action, $staffOnly);
+        if ($actor['role'] === 'GIAO_VU') return \App\Modules\Academic\Features\AcademicAffairs\AcademicAffairsFilter::check('TiepNhanYeuCau', $action);
+        return $actor;
     }
 }

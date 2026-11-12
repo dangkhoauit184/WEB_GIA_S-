@@ -5,6 +5,8 @@ final class SchedulingFilter
 {
     public static function check(string $action = 'view', bool $staffOnly = false): array
     {
-        return \App\Shared\Access::guard('VanHanhBuoiHoc', $action, $staffOnly);
+        $actor = \App\Shared\Access::guard('VanHanhBuoiHoc', $action, $staffOnly);
+        if ($actor['role'] === 'GIAO_VU') return \App\Modules\Academic\Features\AcademicAffairs\AcademicAffairsFilter::check('VanHanhBuoiHoc', $action);
+        return $actor;
     }
 }

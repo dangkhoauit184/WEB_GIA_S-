@@ -1,4 +1,10 @@
 <?php
 namespace App\Modules\Academic\Features\AcademicAffairs;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+final class AcademicAffairsModel extends \CodeIgniter\Model
+{
+    public static function map(array $row): array
+    {
+        return \App\Shared\ApiModel::map($row);
+    }
+}
