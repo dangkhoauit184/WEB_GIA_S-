@@ -12,7 +12,7 @@
       {name:'ma',label:'Mã khóa',required:true,maxLength:40},
       {name:'ten',label:'Tên khóa học',required:true,maxLength:150},
       {name:'moTa',label:'Mô tả chương trình',type:'textarea',nullable:true},
-      {name:'hocPhi',label:'Học phí trọn khóa (VND)',type:'number',min:0,max:999999999999,required:true,help:'Giữ giá snapshot của các đăng ký cũ.'},
+      {name:'hocPhi',label:'Học phí trọn khóa (VND)',type:'number',min:0,max:999999999999,required:true},
       {name:'isActive',label:'Trạng thái nhận đăng ký',type:'select',value:1,options:activeOptions}
     ].map(field => ({...field,value:item ? (field.name === 'isActive' ? Number(item.isActive) : item[field.name]) : field.value}));
     Admin.formDialog({title:item ? 'Chi tiết & Cấu hình khóa học' : 'Thêm khóa học',fields,onSubmit:async body => {

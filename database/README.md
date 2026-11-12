@@ -6,6 +6,7 @@ MySQL 8.4 / InnoDB / utf8mb4 / giờ+07:00 / READ COMMITTED. Phiên bản **005_
 - [Nâng DB đang có dữ liệu](../docs/huong-dan-cai-dat-va-su-dung.md#db-cu).
 - [Chia sẻ, backup và restore](../docs/huong-dan-cai-dat-va-su-dung.md#chia-se).
 - [Kiểm thử](../docs/huong-dan-cai-dat-va-su-dung.md#kiem-thu).
+- [SQL thêm/xóa dữ liệu demo thủ công](seeders/demo-thu-cong.sql), gồm hai phần THÊM và XÓA để chạy riêng trong DataGrip.
 - [Thiết kế/quan hệ DB](../docs/thong-tin-do-an.md#database), [luồng cài và xử lý SQL](../docs/thong-tin-do-an.md#sql-lifecycle).
 - [Toàn bộ cột/khóa/ràng buộc](../docs/thong-tin-do-an.md#tu-dien-du-lieu), [routine/trigger](../docs/thong-tin-do-an.md#routine-trigger).
 

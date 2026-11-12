@@ -5,11 +5,16 @@ use App\Shared\{Access,ApiException,Store};
 
 final class ClassesRepository
 {
-    private const SELECT='SELECT l.*,m.ten AS ten_mon_hoc,cl.ten AS ten_cap_lop,cs.ten_co_so,u.hoten AS ten_nguoi_day_chinh,
+    private const SELECT='SELECT l.*,k.ten AS ten_khoa,m.ten AS ten_mon_hoc,cl.ten AS ten_cap_lop,cs.ten_co_so,u.hoten AS ten_nguoi_day_chinh,
+        (SELECT GROUP_CONCAT(CONCAT(IF(lh.thu=8,\'CN\',CONCAT(\'T\',lh.thu)),\' \',TIME_FORMAT(lh.gio_bat_dau,\'%H:%i\'),\'–\',TIME_FORMAT(lh.gio_ket_thuc,\'%H:%i\')) ORDER BY lh.thu,lh.gio_bat_dau SEPARATOR \', \')
+            FROM lich_hoc lh WHERE lh.lop_id=l.id AND lh.is_active=1 AND (lh.hieu_luc_den IS NULL OR lh.hieu_luc_den>=CURDATE())) AS lich_tuan,
+        (SELECT GROUP_CONCAT(DISTINCT tu.hoten ORDER BY tu.hoten SEPARATOR \', \') FROM buoi_hoc tb
+            JOIN phan_cong_buoi_hoc tp ON tp.buoi_hoc_id=tb.id JOIN users tu ON tu.user_id=tp.user_id
+            WHERE tb.lop_id=l.id AND tb.ngay>=CURDATE() AND tb.trang_thai NOT IN (\'huy\',\'doi\') AND tp.vai_tro=\'tro_giang\' AND tp.trang_thai<>\'da_go\') AS ten_tro_giang,
         (SELECT COUNT(*) FROM lop_hoc_vien lhv WHERE lhv.lop_id=l.id AND lhv.trang_thai IN (\'dang_hoc\',\'hoc_thu\')) AS si_so_hien_tai
         FROM lop_hoc l JOIN mon_hoc m ON m.id=l.mon_hoc_id JOIN cap_lop cl ON cl.id=l.cap_lop_id
         JOIN nhan_su_chuyen_mon ns ON ns.id=l.nguoi_day_chinh_id JOIN users u ON u.user_id=ns.user_id
-        LEFT JOIN co_so cs ON cs.id=l.co_so_id WHERE l.deleted_at IS NULL';
+        LEFT JOIN co_so cs ON cs.id=l.co_so_id LEFT JOIN khoa_hoc k ON k.id=l.khoa_hoc_id WHERE l.deleted_at IS NULL';
     private const FIELDS=['maLop'=>'ma_lop','tenLop'=>'ten_lop','loaiLop'=>'loai_lop','deXuatId'=>'de_xuat_id','khoaHocId'=>'khoa_hoc_id',
         'monHocId'=>'mon_hoc_id','capLopId'=>'cap_lop_id','nguoiDayChinhId'=>'nguoi_day_chinh_id','coSoId'=>'co_so_id',
         'phongHoc'=>'phong_hoc','hinhThuc'=>'hinh_thuc','diaDiem'=>'dia_diem','linkHoc'=>'link_hoc','khuVucId'=>'khu_vuc_id',

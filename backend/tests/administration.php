@@ -299,6 +299,258 @@ try {
     check(Store::one('SELECT COUNT(*) AS n FROM thanh_toan WHERE hoa_don_id=?',[$invoiceId])['n']===1,'repeated reconciliation creates one receipt');
     check((int)Store::one('SELECT da_thu FROM hoa_don WHERE id=?',[$invoiceId])['da_thu']===1950000,'reconciliation updates the invoice balance');
 
+    // Admissions uses the existing feature files and an isolated database only.
+    $admissions='/api/academic/admissions';
+    check(http($admissions.'/requests')[0]===401,'intake requires authentication');
+    check(http($admissions.'/requests','GET',null,$parentToken)[0]===403,'parents cannot enumerate intake requests');
+    check(http($admissions.'/registrations','GET',null,$operatorToken)[0]===403,'teachers cannot enumerate course registrations');
+    check(http($admissions.'/lookups','GET',null,$parentToken)[0]===403,'parent cannot search unrelated intake students');
+    $intakeParent=requestOk('/api/people/parents','POST',['hoTen'=>'Phụ huynh tuyển sinh','email'=>"intake.parent.$suffix@example.test",
+        'username'=>'intake_parent_'.$suffix,'password'=>'Parent@123'],$token,201);
+    $intakeParentToken=requestOk('/api/auth/login','POST',['username'=>'intake_parent_'.$suffix,'password'=>'Parent@123'])['token'];
+    $intakeStudent=requestOk('/api/people/students','POST',['maHv'=>'INT-'.$suffix,'hoTen'=>'Học viên tuyển sinh',
+        'phuHuynhUserId'=>$intakeParent['userId'],'capLopId'=>9,'khuVucId'=>1],$token,201);
+    $intakeTeacherInput=['maNs'=>'INT-NS-'.$suffix,'hoTen'=>'Người dạy tuyển sinh','email'=>"intake.teacher.$suffix@example.test",
+        'username'=>'intake_teacher_'.$suffix,'password'=>'Teacher@123','phanLoai'=>['giao_vien','gia_su'],'hinhThucDay'=>['online','offline'],
+        'donGiaGioChuan'=>333333,'kinhNghiemNam'=>3,'nganHang'=>'PRIVATE_BANK',
+        'monDays'=>[['monHocId'=>1,'capLopTu'=>6,'capLopDen'=>9,'hocPhiBuoiDeXuat'=>180000]],'khuVucIds'=>[1],
+        'lichRanhs'=>[['thu'=>3,'gioBatDau'=>'17:00','gioKetThuc'=>'21:00'],['thu'=>5,'gioBatDau'=>'17:00','gioKetThuc'=>'21:00']]];
+    $intakeTeacher=requestOk('/api/people/teachers','POST',$intakeTeacherInput,$token,201);
+    $intakeTeacher2=requestOk('/api/people/teachers','POST',array_replace($intakeTeacherInput,['maNs'=>'INT-ALT-'.$suffix,
+        'email'=>"intake.alt.$suffix@example.test",'username'=>'intake_alt_'.$suffix,'hoTen'=>'Người dạy thay thế']),$token,201);
+    $intakeTeacherToken=requestOk('/api/auth/login','POST',['username'=>'intake_teacher_'.$suffix,'password'=>'Teacher@123'])['token'];
+    $intakeTeacher2Token=requestOk('/api/auth/login','POST',['username'=>'intake_alt_'.$suffix,'password'=>'Teacher@123'])['token'];
+    $intakeBody=['hocVienId'=>$intakeStudent['id'],'monHocId'=>1,'capLopId'=>9,'khuVucId'=>1,
+        'nganSachMin'=>1000000,'nganSachMax'=>2000000,'donViNganSach'=>'theo_khoa',
+        'lichYeuCau'=>[['thu'=>3,'gioBatDau'=>'18:00','gioKetThuc'=>'20:00'],['thu'=>5,'gioBatDau'=>'18:00','gioKetThuc'=>'20:00']]];
+    $intakeRequest=requestOk($admissions.'/requests','POST',$intakeBody,$staffToken,201);
+    $intakeId=$intakeRequest['id'];
+    check($intakeRequest['trangThai']==='moi' && count($intakeRequest['lichYeuCau'])===2,'intake starts new and saves all weekly requirements');
+    check((int)$intakeRequest['nguoiGuiId']===$staff,'intake author comes from authenticated account');
+    check(http($admissions.'/requests','POST',$intakeBody+['nhanVienId'=>999],$staffToken)[0]===400,'client cannot forge intake operator');
+    check(http($admissions.'/requests','POST',array_replace($intakeBody,['nganSachMin'=>3000000]),$staffToken)[0]===400,'inverted budget rejected');
+    check(http($admissions.'/requests','POST',array_replace($intakeBody,['donViNganSach'=>null]),$staffToken)[0]===400,'budget requires explicit unit');
+    check(http($admissions.'/requests','POST',array_replace($intakeBody,['lichYeuCau'=>[]]),$staffToken)[0]===400,'intake requires a matching schedule');
+    check(http($admissions.'/requests','POST',array_replace($intakeBody,['lichYeuCau'=>[
+        ['thu'=>3,'gioBatDau'=>'18:00','gioKetThuc'=>'20:00'],['thu'=>3,'gioBatDau'=>'19:00','gioKetThuc'=>'21:00']]]),$staffToken)[0]===400,'overlapping requested slots rejected');
+    $intakeMatches=requestOk($admissions.'/requests/'.$intakeId.'/candidates','GET',null,$staffToken);
+    check(in_array($intakeTeacher['id'],array_column($intakeMatches,'id'),true),'matching covers all slots, subject, grade and region');
+    check($intakeMatches[0]['nganSachCanThoaThuan']===true,'course budget is never equated to per-session profile price');
+    $intakeSerialized=json_encode($intakeMatches);
+    check(!str_contains($intakeSerialized,'donGia') && !str_contains($intakeSerialized,'nganHang') && !str_contains($intakeSerialized,'PRIVATE_BANK'),'matching response contains no internal pay or bank fields');
+    Store::execute('DELETE FROM nhan_su_lich_ranh WHERE nhan_su_id=? AND thu=5',[$intakeTeacher['id']]);
+    check(!in_array($intakeTeacher['id'],array_column(requestOk($admissions.'/requests/'.$intakeId.'/candidates','GET',null,$staffToken),'id'),true),'candidate missing one requested slot excluded');
+    Store::insert('nhan_su_lich_ranh',['nhan_su_id'=>$intakeTeacher['id'],'thu'=>5,'gio_bat_dau'=>'17:00','gio_ket_thuc'=>'21:00']);
+    $intakeClass=requestOk('/api/academic/classes','POST',['maLop'=>'INT-CL-'.$suffix,'tenLop'=>'Lịch trùng tuyển sinh',
+        'monHocId'=>1,'capLopId'=>9,'nguoiDayChinhId'=>$intakeTeacher['id'],'ngayBatDau'=>date('Y-m-d'),
+        'cachThuPhi'=>'theo_khoa','cachTinhLuong'=>'theo_gio'],$token,201);
+    $intakeWeekly=Store::insert('lich_hoc',['lop_id'=>$intakeClass['id'],'thu'=>3,'gio_bat_dau'=>'19:00','gio_ket_thuc'=>'21:00','hieu_luc_tu'=>date('Y-m-d')]);
+    check(!in_array($intakeTeacher['id'],array_column(requestOk($admissions.'/requests/'.$intakeId.'/candidates','GET',null,$staffToken),'id'),true),'future weekly conflicts excluded before sessions are generated');
+    check(http($admissions.'/requests/'.$intakeId.'/proposals','POST',['nhanSuId'=>$intakeTeacher['id']],$staffToken)[0]===409,'proposal rechecks candidate availability');
+    Store::execute('UPDATE lich_hoc SET is_active=0 WHERE id=?',[$intakeWeekly]);
+    $intakeReceived=requestOk($admissions.'/requests/'.$intakeId.'/receive','POST',[],$staffToken);
+    check($intakeReceived['trangThai']==='dang_tim','receive moves new intake to matching');
+    $intakeProposal=requestOk($admissions.'/requests/'.$intakeId.'/proposals','POST',['nhanSuId'=>$intakeTeacher['id'],'hocPhiDeXuat'=>1500000],$staffToken,201);
+    $intakeProposal2=requestOk($admissions.'/requests/'.$intakeId.'/proposals','POST',['nhanSuId'=>$intakeTeacher2['id']],$staffToken,201);
+    check($intakeProposal['ttNhanSu']==='cho' && $intakeProposal['ttPhuHuynh']==='cho' && $intakeProposal['cachThuPhiDeXuat']==='theo_khoa','proposal waits for two independent responses');
+    check(http($admissions.'/requests/'.$intakeId.'/proposals','POST',['nhanSuId'=>$intakeTeacher['id']],$staffToken)[0]===409,'duplicate proposal prevented');
+    check(http($admissions.'/requests/'.$intakeId,'PUT',$intakeBody,$staffToken)[0]===409,'published proposal criteria cannot be silently changed');
+    check(http($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$staffToken)[0]===403,'staff cannot impersonate either response');
+    check(http($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$token)[0]===403,'admin cannot impersonate participant response');
+    check(http($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$parentToken)[0]===404,'unrelated parent cannot respond');
+    check(http($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$intakeTeacher2Token)[0]===404,'unrelated teacher cannot respond');
+    check(http($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y','phuHuynhPhanHoiBoi'=>1],$intakeParentToken)[0]===400,'response actor cannot be forged');
+    $intakeOwn=requestOk($admissions.'/proposals','GET',null,$intakeParentToken);
+    check(count($intakeOwn['items'])===2 && array_unique(array_column($intakeOwn['items'],'yeuCauId'))===[$intakeId],'parent only lists own proposals');
+    check(requestOk($admissions.'/proposals?trangThai=san_sang','GET',null,$staffToken)['total']===0,'no handoff before two acceptances');
+    $intakeTeacherReply=requestOk($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$intakeTeacherToken);
+    check($intakeTeacherReply['nhanSuPhanHoiLuc']!==null && $intakeTeacherReply['ttPhuHuynh']==='cho','teacher consent does not supply parent consent');
+    $intakeReply=requestOk($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$intakeParentToken);
+    check((int)$intakeReply['phuHuynhPhanHoiBoi']===(int)$intakeParent['userId'] && $intakeReply['phuHuynhPhanHoiLuc']!==null,'parent actor and server timestamp recorded');
+    $intakeAuditCount=(int)Store::one("SELECT COUNT(*) AS n FROM audit_log WHERE bang='de_xuat_nhan_su' AND ban_ghi_id=?",[$intakeProposal['id']])['n'];
+    requestOk($admissions.'/proposals/'.$intakeProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$intakeParentToken);
+    check((int)Store::one("SELECT COUNT(*) AS n FROM audit_log WHERE bang='de_xuat_nhan_su' AND ban_ghi_id=?",[$intakeProposal['id']])['n']===$intakeAuditCount,'retry response creates no duplicate audit');
+    check(requestOk($admissions.'/proposals?trangThai=san_sang','GET',null,$staffToken)['total']===1,'two acceptances appear in handoff list');
+    check(requestOk($admissions.'/requests/'.$intakeId,'GET',null,$staffToken)['trangThai']==='da_chot','accepted request marked agreed without creating class');
+    check(!Store::one('SELECT id FROM lop_hoc WHERE de_xuat_id=?',[$intakeProposal['id']]),'handoff never auto creates a class');
+    check(http($admissions.'/proposals/'.$intakeProposal2['id'].'/respond','POST',['trangThai'=>'dong_y'],$intakeTeacher2Token)[0]===409,'closed request cannot acquire another accepted winner');
+    check(http($admissions.'/requests/'.$intakeId.'/receive','POST',[],$staffToken)[0]===409,'closed intake cannot reopen implicitly');
+    $intakeRejectedRequest=requestOk($admissions.'/requests','POST',$intakeBody,$staffToken,201);
+    $intakeRejectedProposal=requestOk($admissions.'/requests/'.$intakeRejectedRequest['id'].'/proposals','POST',['nhanSuId'=>$intakeTeacher['id']],$staffToken,201);
+    check(http($admissions.'/proposals/'.$intakeRejectedProposal['id'].'/respond','POST',['trangThai'=>'tu_choi'],$intakeParentToken)[0]===400,'decline requires explanation');
+    requestOk($admissions.'/proposals/'.$intakeRejectedProposal['id'].'/respond','POST',['trangThai'=>'tu_choi','lyDo'=>'Chưa phù hợp nhu cầu'],$intakeParentToken);
+    $intakeRejected=Store::one('SELECT * FROM de_xuat_nhan_su WHERE id=?',[$intakeRejectedProposal['id']]);
+    check($intakeRejected['ly_do_tu_choi_phu_huynh']==='Chưa phù hợp nhu cầu' && $intakeRejected['ly_do_tu_choi_nhan_su']===null,'rejection reasons kept on the correct side');
+    check(http($admissions.'/proposals/'.$intakeRejectedProposal['id'].'/respond','POST',['trangThai'=>'dong_y'],$intakeParentToken)[0]===409,'response history cannot be overwritten');
+    $intakeList=requestOk($admissions.'/requests?q='.urlencode($intakeRequest['maYc']).'&perPage=1','GET',null,$staffToken);
+    check($intakeList['total']===1 && count($intakeList['items'])===1,'intake search and pagination');
+    check(http($admissions.'/requests?page=0','GET',null,$staffToken)[0]===400,'invalid page rejected');
+    check(requestOk($admissions.'/registrations','GET',null,$staffToken)['total']>=1,'staff can read registrations without admin placement permission');
+    check(count(requestOk($admissions.'/lookups?q='.urlencode('INT-'.$suffix),'GET',null,$staffToken)['students'])===1,'intake searches real student profiles');
+    $intakeGuest=requestOk($admissions.'/requests','POST',array_replace($intakeBody,['hocVienId'=>null,'hoTenLienHe'=>'Khách tư vấn','sdtLienHe'=>'0900111222']),$staffToken,201);
+    check(http($admissions.'/requests/'.$intakeGuest['id'].'/proposals','POST',['nhanSuId'=>$intakeTeacher['id']],$staffToken)[0]===409,'guest intake waits for a parent identity before sending actionable proposal');
+    requestOk($admissions.'/requests/'.$intakeGuest['id'],'PUT',$intakeBody,$staffToken);
+    requestOk($admissions.'/requests/'.$intakeGuest['id'].'/proposals','POST',['nhanSuId'=>$intakeTeacher['id']],$staffToken,201);
+    check((int)Store::one('SELECT COUNT(*) AS n FROM thong_bao WHERE doi_tuong_loai=? AND doi_tuong_id=?',['de_xuat_nhan_su',$intakeProposal['id']])['n']>=4,'proposal and response notifications persisted');
+    [$intakePageStatus,,$intakePage]=http('/staff');
+    check($intakePageStatus===200 && str_contains($intakePage,'data-portal="admissions"') && !str_contains($intakePage,'data-screen="admin-payroll"'),'staff uses shared shell with correct menu');
+    check(http('/admin-assets/admissions.html')[0]===200,'approved intake template available');
+
+    $intakeBudgetRequest=requestOk($admissions.'/requests','POST',array_replace($intakeBody,
+        ['nganSachMin'=>100000,'nganSachMax'=>170000,'donViNganSach'=>'theo_buoi']),$staffToken,201);
+    check(!in_array($intakeTeacher['id'],array_column(requestOk($admissions.'/requests/'.$intakeBudgetRequest['id'].'/candidates','GET',null,$staffToken),'id'),true),'per-session budget compared with per-session quote');
+    check(http($admissions.'/requests/'.$intakeBudgetRequest['id'].'/proposals','POST',['nhanSuId'=>$intakeTeacher['id']],$staffToken)[0]===409,'cannot bypass budget filtering with a direct proposal');
+    requestOk($admissions.'/requests/'.$intakeBudgetRequest['id'],'PUT',array_replace($intakeBody,
+        ['nganSachMin'=>100000,'nganSachMax'=>200000,'donViNganSach'=>'theo_buoi']),$staffToken);
+    check(in_array($intakeTeacher['id'],array_column(requestOk($admissions.'/requests/'.$intakeBudgetRequest['id'].'/candidates','GET',null,$staffToken),'id'),true),'matching budget includes candidate');
+    Store::execute("UPDATE nhan_su_chuyen_mon SET hinh_thuc_day='online' WHERE id=?",[$intakeTeacher['id']]);
+    check(!in_array($intakeTeacher['id'],array_column(requestOk($admissions.'/requests/'.$intakeBudgetRequest['id'].'/candidates','GET',null,$staffToken),'id'),true),'offline requirement excludes online-only profile');
+    Store::execute("UPDATE nhan_su_chuyen_mon SET hinh_thuc_day='online,offline' WHERE id=?",[$intakeTeacher['id']]);
+    $intakeNext=(new DateTimeImmutable('next Tuesday'))->format('Y-m-d');
+    requestOk('/api/academic/scheduling/admin-sessions','POST',['lopId'=>$intakeClass['id'],'ngay'=>$intakeNext,
+        'gioBatDau'=>'19:00','gioKetThuc'=>'21:00','userId'=>$intakeTeacher['userId'],'troGiangIds'=>[],
+        'repeatCount'=>1],$token,201);
+    check(!in_array($intakeTeacher['id'],array_column(requestOk($admissions.'/requests/'.$intakeBudgetRequest['id'].'/candidates','GET',null,$staffToken),'id'),true),'actual future assignment excludes candidate even with weekly schedule inactive');
+    $intakeCampusA=requestOk($catalog.'/campuses','POST',['maCoSo'=>'INT-A-'.$suffix,'tenCoSo'=>'Tuyển sinh A','diaChi'=>'A'],$token,201);
+    $intakeCampusB=requestOk($catalog.'/campuses','POST',['maCoSo'=>'INT-B-'.$suffix,'tenCoSo'=>'Tuyển sinh B','diaChi'=>'B'],$token,201);
+    Store::execute('UPDATE nhan_vien SET co_so_id=? WHERE user_id=?',[$intakeCampusA['id'],$staff]);
+    $intakeRemote=requestOk($admissions.'/requests','POST',array_replace($intakeBody,['coSoMongMuonId'=>$intakeCampusB['id']]),$token,201);
+    check(http($admissions.'/requests/'.$intakeRemote['id'],'GET',null,$staffToken)[0]===404,'staff cannot read another campus intake');
+    check(http($admissions.'/requests/'.$intakeRemote['id'].'/receive','POST',[],$staffToken)[0]===404,'staff cannot claim another campus intake');
+    check(http($admissions.'/requests','POST',array_replace($intakeBody,['coSoMongMuonId'=>$intakeCampusB['id']]),$staffToken)[0]===403,'staff cannot create intake for another campus');
+    check(!in_array($intakeCampusB['id'],array_column(requestOk($admissions.'/lookups','GET',null,$staffToken)['campuses'],'id'),true),'campus picker respects scope');
+    Store::execute('UPDATE lop_hoc SET co_so_id=? WHERE id=?',[$intakeCampusB['id'],$intakeClass['id']]);
+    requestOk('/api/academic/classes/'.$intakeClass['id'].'/enrollments','POST',['hocVienId'=>$intakeStudent['id']],$token,201);
+    check(!in_array($intakeStudent['id'],array_column(requestOk($admissions.'/lookups','GET',null,$staffToken)['students'],'id'),true),'student lookup excludes students assigned exclusively to another campus');
+    check(http($admissions.'/requests/'.$intakeId,'GET',null,$staffToken)[0]===404,'unassigned-campus request cannot bypass student campus scope');
+    check(http($admissions.'/requests','POST',$intakeBody,$staffToken)[0]===400,'student id cannot bypass campus scope in write payload');
+    Store::execute('UPDATE nhan_vien SET co_so_id=NULL WHERE user_id=?',[$staff]);
+    Store::execute('UPDATE role_group_function SET `view`=0 WHERE group_id=? AND function_id=?',[$groupIds['NhanVien'],$functionIds['TiepNhanYeuCau']]);
+    check(http($admissions.'/requests','GET',null,$staffToken)[0]===403,'revoked intake permission takes effect on existing JWT');
+    Store::execute('UPDATE role_group_function SET `view`=1 WHERE group_id=? AND function_id=?',[$groupIds['NhanVien'],$functionIds['TiepNhanYeuCau']]);
+    Store::execute("UPDATE nhan_vien SET trang_thai='nghi_viec' WHERE user_id=?",[$staff]);
+    check(http($admissions.'/requests','GET',null,$staffToken)[0]===403,'inactive employee cannot operate admissions');
+    foreach (['/api/people/students','/api/people/parents','/api/academic/scheduling/sessions'] as $staffPath) {
+        check(http($staffPath,'GET',null,$staffToken)[0]===403,'inactive employee cannot use staff people/calendar APIs');
+    }
+    Store::execute("UPDATE nhan_vien SET trang_thai='dang_lam' WHERE user_id=?",[$staff]);
+
+    // Complete staff portal uses existing people, scheduling, leave and tuition features.
+    $affairs='/api/academic/academic-affairs';
+    check(http($affairs.'/dashboard','GET',null,$intakeParentToken)[0]===403,'parent cannot read staff dashboard');
+    requestOk($affairs.'/dashboard','GET',null,$staffToken);
+    $operatingPeople=requestOk($affairs.'/people','GET',null,$staffToken);
+    check(!str_contains(json_encode($operatingPeople),'donGia')&&!str_contains(json_encode($operatingPeople),'nganHang'),'staff scheduling options never expose salary or banking');
+    requestOk($affairs.'/rooms','GET',null,$staffToken);
+    requestOk($affairs.'/courses','GET',null,$staffToken);
+    $staffParent=requestOk('/api/people/parents','POST',['hoTen'=>'Phụ huynh do giáo vụ nhập','email'=>"staff.parent.$suffix@example.test",'sdt'=>'0900111333'],$staffToken,201);
+    check($staffParent['username']===null,'staff creates contact profile without provisioning credentials');
+    check(in_array($staffParent['userId'],array_column(requestOk('/api/people/parents','GET',null,$staffToken),'userId'),true),'parent profile visible before child/account creation');
+    check(http('/api/people/parents/'.$admin['userId'],'PUT',['hoTen'=>'Sai quyền'],$staffToken)[0]===404,'parent editor cannot mutate an administrator profile');
+    check(http('/api/people/parents','POST',['hoTen'=>'Không được cấp tài khoản','email'=>"forbidden.parent.$suffix@example.test",'username'=>'bad_parent_'.$suffix,'password'=>'Password@123'],$staffToken)[0]===403,'staff profile form cannot provision accounts');
+    $staffStudentBody=['phuHuynhUserId'=>$staffParent['userId'],'maHv'=>'STAFF-HV-'.$suffix,'hoTen'=>'Học viên do giáo vụ nhập','capLopId'=>9,'khoaHocId'=>$activeCourse['id']];
+    $beforeStudents=(int)Store::one('SELECT COUNT(*) AS n FROM hoc_vien')['n'];
+    check(http($affairs.'/students','POST',array_replace($staffStudentBody,['khoaHocId'=>99999999]),$staffToken)[0]===400,'student and invalid course fail atomically');
+    check((int)Store::one('SELECT COUNT(*) AS n FROM hoc_vien')['n']===$beforeStudents,'failed course registration leaves no partial student');
+    $staffStudent=requestOk($affairs.'/students','POST',$staffStudentBody,$staffToken,201);
+    check($staffStudent['trangThaiHocTap']==='cho_xep_lop','new registration waits for placement regardless of active profile');
+    $unplacedBody=$staffStudentBody;
+    unset($unplacedBody['khoaHocId']);
+    $unplacedBody['maHv']='NO-CLASS-'.$suffix;
+    $unplaced=requestOk('/api/people/students','POST',$unplacedBody,$staffToken,201);
+    check($unplaced['trangThaiHocTap']==='chua_xep_lop','student without registration or enrollment is not displayed as studying');
+    $staffRegistration=requestOk($affairs.'/students/'.$staffStudent['id'].'/registrations','POST',['khoaHocId'=>$activeCourse['id']],$staffToken,201);
+    check((int)$staffRegistration['hocPhiSnapshot']===2300000,'registration uses current course snapshot');
+    check((int)Store::one('SELECT COUNT(*) AS n FROM dang_ky_khoa_hoc WHERE hoc_vien_id=?',[$staffStudent['id']])['n']===1,'repeated active course registration is idempotent');
+    $staffInvoice=requestOk('/api/finance/tuition/invoices','POST',['dangKyKhoaHocId'=>$staffRegistration['id']],$staffToken,201);
+    check($staffInvoice['trangThai']==='nhap'&&(int)$staffInvoice['tongTien']===2300000,'staff creates draft full-course invoice');
+    check(requestOk('/api/finance/tuition/invoices','POST',['dangKyKhoaHocId'=>$staffRegistration['id']],$staffToken,201)['id']===$staffInvoice['id'],'duplicate invoice creation returns existing invoice');
+    requestOk('/api/finance/tuition/invoices/'.$staffInvoice['id'].'/publish','POST',[],$staffToken);
+    $publishedInvoice=requestOk('/api/finance/tuition/invoices/'.$staffInvoice['id'].'/publish','POST',[],$staffToken);
+    check($publishedInvoice['phatHanhLuc']!==null&&(int)$publishedInvoice['phatHanhBoi']===$staff,'invoice publication records staff identity and server time');
+    $receiptBody=['soTien'=>500000,'phuongThuc'=>'tien_mat','maGiaoDich'=>'STAFF-CASH-'.$suffix];
+    check(http('/api/finance/tuition/invoices/'.$staffInvoice['id'].'/receipts','POST',$receiptBody,$staffToken)[0]===403,'only Admin confirms received money');
+    requestOk('/api/finance/tuition/invoices/'.$staffInvoice['id'].'/receipts','POST',$receiptBody,$token);
+    $receivedInvoice=requestOk('/api/finance/tuition/invoices/'.$staffInvoice['id'].'/receipts','POST',$receiptBody,$token);
+    check((int)$receivedInvoice['daThu']===500000&&count($receivedInvoice['receipts'])===1,'repeated receipt creates exactly one payment');
+    check(http('/api/finance/tuition/invoices/'.$staffInvoice['id'].'/receipts','POST',array_replace($receiptBody,['soTien'=>2300000,'maGiaoDich'=>'OVER-'.$suffix]),$token)[0]===409,'manual receipt cannot exceed remaining balance');
+    $staffClass=requestOk('/api/academic/classes','POST',['maLop'=>'STAFF-L-'.$suffix,'tenLop'=>'Lớp giáo vụ vận hành','monHocId'=>1,'capLopId'=>9,
+        'nguoiDayChinhId'=>$intakeTeacher2['id'],'khoaHocId'=>$activeCourse['id'],'cachThuPhi'=>'theo_khoa','cachTinhLuong'=>'theo_gio','ngayBatDau'=>date('Y-m-d')],$token,201);
+    requestOk('/api/academic/classes/registrations/'.$staffRegistration['id'].'/assign','POST',['lopId'=>$staffClass['id']],$token);
+    check(requestOk('/api/people/students/'.$staffStudent['id'],'GET',null,$staffToken)['trangThaiHocTap']==='da_xep_lop','placement in upcoming class is displayed as assigned');
+    Store::execute("UPDATE lop_hoc SET trang_thai='dang_hoc' WHERE id=?",[$staffClass['id']]);
+    check(requestOk('/api/people/students/'.$staffStudent['id'],'GET',null,$staffToken)['trangThaiHocTap']==='dang_hoc','active class determines studying state while tuition remains unpaid in full');
+    $staffSessionDate=(new DateTimeImmutable('next Thursday'))->modify('+7 days')->format('Y-m-d');
+    $staffSessionBody=['lopId'=>$staffClass['id'],'ngay'=>$staffSessionDate,'gioBatDau'=>'18:00','gioKetThuc'=>'20:00',
+        'userId'=>$intakeTeacher2['userId'],'troGiangIds'=>[],'repeatCount'=>1];
+    $staffSession=requestOk('/api/academic/scheduling/operations-sessions','POST',$staffSessionBody,$staffToken,201)['ids'][0];
+    [$earlyStatus,$earlyError]=http('/api/academic/scheduling/operations-sessions','POST',array_replace($staffSessionBody,['gioBatDau'=>'06:00','gioKetThuc'=>'08:00']),$staffToken);
+    check($earlyStatus===400&&str_contains($earlyError['message'],'lịch rảnh')&&str_contains($earlyError['message'],'Thứ 5'),'outside-availability rejection identifies the registered weekday');
+    $schedulePeople=requestOk($affairs.'/people','GET',null,$staffToken);
+    $scheduleTeacher=array_values(array_filter($schedulePeople,fn($row)=>(int)$row['userId']===$intakeTeacher2['userId']))[0];
+    check(!empty($scheduleTeacher['lichRanh'])&&!isset($scheduleTeacher['donGiaGioChuan']),'staff scheduling exposes availability without pay');
+    check(http('/api/academic/scheduling/operations-sessions','POST',$staffSessionBody+['donGia'=>1],$staffToken)[0]===400,'staff cannot supply internal wage in schedule');
+    requestOk('/api/academic/scheduling/operations-sessions/'.$staffSession,'PUT',array_replace($staffSessionBody,['gioBatDau'=>'18:30']),$staffToken);
+    $staffLeave=Store::insert('don_xin_nghi',['buoi_hoc_id'=>$staffSession,'doi_tuong'=>'hoc_vien','hoc_vien_id'=>$staffStudent['id'],
+        'nguoi_gui_id'=>$staffParent['userId'],'ly_do'=>'Gia đình đã liên hệ xin nghỉ']);
+    check(http('/api/academic/leave-requests/personal/'.$staffLeave.'/decide','POST',['trangThai'=>'da_duyet'],$intakeParentToken)[0]===403,'parent cannot approve leave');
+    requestOk('/api/academic/leave-requests/personal/'.$staffLeave.'/decide','POST',['trangThai'=>'da_duyet'],$staffToken);
+    requestOk('/api/academic/leave-requests/personal/'.$staffLeave.'/decide','POST',['trangThai'=>'da_duyet'],$staffToken);
+    check(Store::one('SELECT trang_thai FROM buoi_hoc WHERE id=?',[$staffSession])['trang_thai']!=='huy','individual absence never cancels the whole class');
+    $staffMakeup=requestOk('/api/academic/scheduling/operations-sessions','POST',array_replace($staffSessionBody,[
+        'ngay'=>(new DateTimeImmutable($staffSessionDate))->modify('+7 days')->format('Y-m-d'), 'loai'=>'bu','phamViBu'=>'ca_nhan','buoiGocId'=>$staffSession,
+        'hocVienIds'=>[$staffStudent['id']],'ghiChuBu'=>'Phụ huynh đã thỏa thuận trực tiếp']),$staffToken,201)['ids'][0];
+    check(Store::one('SELECT xep_boi,don_xin_nghi_id FROM hoc_bu_hoc_vien WHERE buoi_bu_id=?',[$staffMakeup])['don_xin_nghi_id']===null,'makeup may be scheduled without a leave request or fee');
+    requestOk($affairs.'/makeups','GET',null,$staffToken);
+    requestOk('/api/academic/leave-requests/class-overview','GET',null,$staffToken);
+    $staffNotifications=requestOk($affairs.'/notifications','GET',null,$staffToken);
+    check(count($staffNotifications)>0,'staff notification menu reads persisted notifications');
+    requestOk($affairs.'/notifications/'.$staffNotifications[0]['id'].'/read','POST',[],$staffToken);
+    check(http($affairs.'/notifications/'.$staffNotifications[0]['id'].'/read','POST',[],$token)[0]===404,'another account cannot mark staff notification read');
+    [$staffHtmlStatus,,$staffHtml]=http('/staff');
+    foreach(['staff-dash','staff-intake','staff-schedule','staff-classes','staff-students','staff-parents','staff-approve','staff-billing'] as $staffScreen) check(str_contains($staffHtml,'data-screen="'.$staffScreen.'"'),'staff menu includes '.$staffScreen);
+    check($staffHtmlStatus===200&&str_contains($staffHtml,'id="modalSessionForm"')&&str_contains($staffHtml,'id="notifPanel"'),'staff uses shared calendar modals and notification panel');
+
+    // Deleting a mistaken, unstarted session is an operation distinct from class absence approval.
+    Store::execute('UPDATE lop_hoc SET co_so_id=? WHERE id=?',[$intakeCampusA['id'],$staffClass['id']]);
+    $deleteDate=(new DateTimeImmutable($staffSessionDate))->modify('+21 days')->format('Y-m-d');
+    $deleteBody=array_replace($staffSessionBody,['ngay'=>$deleteDate,'coSoId'=>$intakeCampusA['id'],'phongHoc'=>'DELETE-'.$suffix]);
+    $deletable=requestOk('/api/academic/scheduling/operations-sessions','POST',$deleteBody,$staffToken,201)['ids'][0];
+    check((int)Store::one('SELECT co_so_id FROM buoi_hoc WHERE id=?',[$deletable])['co_so_id']===$intakeCampusA['id'],'session stores chosen campus');
+    requestOk('/api/academic/scheduling/operations-sessions/'.$deletable,'PUT',array_replace($deleteBody,['coSoId'=>null]),$staffToken);
+    check(Store::one('SELECT co_so_id FROM buoi_hoc WHERE id=?',[$deletable])['co_so_id']===null,'explicit home location clears campus even when class belongs to a campus');
+    $listedDelete=array_values(array_filter(requestOk('/api/academic/scheduling/sessions?lopId='.$staffClass['id'],'GET',null,$staffToken),fn($row)=>$row['id']===$deletable))[0];
+    check($listedDelete['chuaBatDau']===true,'server exposes unstarted scheduling state');
+    check($listedDelete['lyDoKhongXoa']===null,'unused future lesson has no deletion blocker');
+    $blockedLesson=array_values(array_filter(requestOk('/api/academic/scheduling/sessions?lopId='.$staffClass['id'],'GET',null,$staffToken),fn($row)=>$row['id']===$staffSession))[0];
+    check(str_contains($blockedLesson['lyDoKhongXoa'],'đơn nghỉ'),'lesson detail exposes the actual leave dependency before deletion');
+    [$leaveDeleteStatus,$leaveDeleteError]=http('/api/academic/scheduling/sessions/'.$staffSession,'DELETE',null,$staffToken);
+    check($leaveDeleteStatus===409&&$leaveDeleteError['message']===$blockedLesson['lyDoKhongXoa'],'delete returns the same precise dependency as the calendar');
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$intakeParentToken)[0]===403,'parent cannot delete staff sessions');
+    Store::execute('UPDATE role_group_function SET edit=0 WHERE group_id=? AND function_id=?',[$groupIds['NhanVien'],$functionIds['VanHanhBuoiHoc']]);
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$staffToken)[0]===403,'revoked scheduling edit permission prevents mistaken-session removal');
+    Store::execute('UPDATE role_group_function SET edit=1 WHERE group_id=? AND function_id=?',[$groupIds['NhanVien'],$functionIds['VanHanhBuoiHoc']]);
+    Store::execute('UPDATE lop_hoc SET co_so_id=? WHERE id=?',[$intakeCampusB['id'],$staffClass['id']]);
+    Store::execute('UPDATE nhan_vien SET co_so_id=? WHERE user_id=?',[$intakeCampusA['id'],$staff]);
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$staffToken)[0]===404,'staff cannot delete another campus session');
+    Store::execute('UPDATE nhan_vien SET co_so_id=NULL WHERE user_id=?',[$staff]);
+    requestOk('/api/academic/scheduling/sessions/'.$deletable,'DELETE',null,$staffToken);
+    check(!Store::one('SELECT id FROM buoi_hoc WHERE id=?',[$deletable])&&!Store::one('SELECT id FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=?',[$deletable]),'delete removes unused session and its assignments');
+    check((int)Store::one("SELECT COUNT(*) AS n FROM audit_log WHERE bang='buoi_hoc' AND ban_ghi_id=? AND hanh_dong='xoa' AND user_id=?",[$deletable,$staff])['n']===1,'deletion keeps actor and original session in audit');
+    check(http('/api/academic/scheduling/sessions/'.$deletable,'DELETE',[],$staffToken)[0]===404,'repeated deletion leaves the same absent state');
+    requestOk('/api/academic/scheduling/sessions/'.$staffMakeup,'DELETE',[],$staffToken);
+    check(!Store::one('SELECT id FROM hoc_bu_hoc_vien WHERE buoi_bu_id=?',[$staffMakeup]),'deleting an unused makeup removes only its student links');
+
+    $checkedId=requestOk('/api/academic/scheduling/operations-sessions','POST',$deleteBody,$staffToken,201)['ids'][0];
+    Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=? WHERE buoi_hoc_id=?',[$deleteDate.' 18:00:00',$checkedId]);
+    check(http('/api/academic/scheduling/sessions/'.$checkedId,'DELETE',[],$staffToken)[0]===409,'checked-in session cannot be deleted');
+    check(Store::one('SELECT id FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=?',[$checkedId])!==null,'failed deletion preserves attendance assignments');
+    $academicDate=(new DateTimeImmutable($deleteDate))->modify('+7 days')->format('Y-m-d');
+    $academicId=requestOk('/api/academic/scheduling/operations-sessions','POST',array_replace($deleteBody,['ngay'=>$academicDate]),$staffToken,201)['ids'][0];
+    Store::insert('bai_tap',['buoi_hoc_id'=>$academicId,'tieu_de'=>'Bài tập đã giao','nguoi_tao_id'=>$intakeTeacher2['userId']]);
+    check(http('/api/academic/scheduling/sessions/'.$academicId,'DELETE',[],$staffToken)[0]===409,'session with coursework cannot be deleted');
+    check(http('/api/academic/scheduling/sessions/'.$sessionId,'DELETE',[],$token)[0]===409,'completed lesson remains protected for Admin too');
+
     echo "PASS: $assertions administration HTTP/MySQL assertions.\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n");$failed=true; }
 finally { if(is_resource($server)) { proc_terminate($server);proc_close($server); } }

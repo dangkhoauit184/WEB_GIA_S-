@@ -6,6 +6,21 @@ use App\Shared\{Access, Store};
 final class StudentsRepository
 {
     private const SELECT = 'SELECT hv.*, cl.ten AS ten_cap_lop, kv.ten AS ten_khu_vuc,
+        CASE WHEN hv.trang_thai<>\'dang_hoc\' THEN hv.trang_thai
+            WHEN EXISTS (SELECT 1 FROM lop_hoc_vien x JOIN lop_hoc l ON l.id=x.lop_id
+                WHERE x.hoc_vien_id=hv.id AND x.trang_thai IN (\'dang_hoc\',\'hoc_thu\')
+                AND x.ngay_vao<=CURDATE() AND (x.ngay_roi IS NULL OR x.ngay_roi>=CURDATE())
+                AND l.deleted_at IS NULL AND l.trang_thai=\'dang_hoc\' AND l.ngay_bat_dau<=CURDATE()
+                AND (l.ngay_ket_thuc IS NULL OR l.ngay_ket_thuc>=CURDATE())) THEN \'dang_hoc\'
+            WHEN EXISTS (SELECT 1 FROM lop_hoc_vien x JOIN lop_hoc l ON l.id=x.lop_id
+                WHERE x.hoc_vien_id=hv.id AND x.trang_thai IN (\'dang_hoc\',\'hoc_thu\')
+                AND (x.ngay_roi IS NULL OR x.ngay_roi>=CURDATE()) AND l.deleted_at IS NULL
+                AND l.trang_thai IN (\'sap_bat_dau\',\'dang_hoc\')
+                AND (l.ngay_ket_thuc IS NULL OR l.ngay_ket_thuc>=CURDATE())) THEN \'da_xep_lop\'
+            WHEN EXISTS (SELECT 1 FROM dang_ky_khoa_hoc d WHERE d.hoc_vien_id=hv.id
+                AND d.trang_thai IN (\'cho_xep_lop\',\'dang_hoc\')) THEN \'cho_xep_lop\'
+            ELSE \'chua_xep_lop\' END AS trang_thai_hoc_tap,
+        (SELECT GROUP_CONCAT(k.ten SEPARATOR \', \') FROM dang_ky_khoa_hoc d JOIN khoa_hoc k ON k.id=d.khoa_hoc_id WHERE d.hoc_vien_id=hv.id AND d.trang_thai<>\'thoi_hoc\') AS ten_khoa,
         u.hoten AS ten_phu_huynh, u.sdt AS sdt_phu_huynh, u.email AS email_phu_huynh
         FROM hoc_vien hv JOIN users u ON u.user_id=hv.phu_huynh_user_id
         LEFT JOIN cap_lop cl ON cl.id=hv.cap_lop_id LEFT JOIN khu_vuc kv ON kv.id=hv.khu_vuc_id
@@ -18,6 +33,7 @@ final class StudentsRepository
     {
         $sql = self::SELECT; $params = [];
         if ($id !== null) { $sql .= ' AND hv.id=?'; $params[] = $id; }
+        if ($user['role'] === 'GIAO_VU' && $user['coSoId']) $sql .= \App\Modules\Academic\Features\Admissions\AdmissionsFilter::studentScope('hv.id', (int)$user['coSoId']);
         if (!Access::staff($user)) {
             if ($user['role'] === 'PHU_HUYNH') { $sql .= ' AND hv.phu_huynh_user_id=?'; $params[] = $user['userId']; }
             else {

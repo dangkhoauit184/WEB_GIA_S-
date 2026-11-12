@@ -19,12 +19,13 @@ final class ParentsService
     {
         $row=ParentsRepository::all([],self::reader(),$id)[0]??null;
         if (!$row) throw new ApiException(404,'Không tìm thấy phụ huynh.','PARENT_NOT_FOUND');
-        return ParentsModel::map($row,['hocViens'=>ParentsRepository::children($id)]);
+        return ParentsModel::map($row,['hocViens'=>ParentsRepository::children($id,self::reader())]);
     }
     public static function create(array $data): array
     {
-        ParentsFilter::check('add',true);
-        return self::detail(ParentsRepository::create(ParentsValidator::validate($data)));
+        $actor=ParentsFilter::check('add',true);
+        if ($actor['role']!=='ADMIN' && (isset($data['username']) || isset($data['password']))) Access::forbidden();
+        return self::detail(ParentsRepository::create(ParentsValidator::validate($data),(int)$actor['userId']));
     }
     public static function update(int $id,array $data): array
     {

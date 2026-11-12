@@ -88,7 +88,10 @@ final class Access
 
     public static function classScope(array $user, string $alias = 'l'): array
     {
-        if (self::staff($user)) return ['', []];
+        if (self::staff($user)) {
+            if ($user['role'] === 'GIAO_VU' && $user['coSoId']) return [" AND ($alias.co_so_id=? OR $alias.co_so_id IS NULL)", [$user['coSoId']]];
+            return ['', []];
+        }
         if ($user['role'] === 'PHU_HUYNH') {
             return [" AND EXISTS (SELECT 1 FROM lop_hoc_vien sc JOIN hoc_vien sh ON sh.id=sc.hoc_vien_id
                 WHERE sc.lop_id=$alias.id AND sh.phu_huynh_user_id=? AND sh.deleted_at IS NULL

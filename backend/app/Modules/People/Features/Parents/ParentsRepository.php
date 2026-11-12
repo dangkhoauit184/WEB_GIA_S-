@@ -15,8 +15,14 @@ final class ParentsRepository
     public static function all(array $filters,array $user,?int $id=null): array
     {
         $sql=self::SELECT; $params=[];
-        if ($id === null) $sql.=" AND (g.group_name='PhuHuynh' OR EXISTS (SELECT 1 FROM hoc_vien h WHERE h.phu_huynh_user_id=u.user_id AND h.deleted_at IS NULL))";
-        else { $sql.=' AND u.user_id=?'; $params[]=$id; }
+        $sql.=" AND (g.group_name='PhuHuynh' OR EXISTS (SELECT 1 FROM hoc_vien h WHERE h.phu_huynh_user_id=u.user_id AND h.deleted_at IS NULL)
+            OR EXISTS (SELECT 1 FROM audit_log al WHERE al.bang='users' AND al.ban_ghi_id=u.user_id AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action'))='parent_profile_created'))";
+        if ($id !== null) { $sql.=' AND u.user_id=?'; $params[]=$id; }
+        if ($user['role'] === 'GIAO_VU' && $user['coSoId']) {
+            $childScope=\App\Modules\Academic\Features\Admissions\AdmissionsFilter::studentScope('h.id', (int)$user['coSoId']);
+            $sql.=" AND (NOT EXISTS (SELECT 1 FROM hoc_vien h WHERE h.phu_huynh_user_id=u.user_id AND h.deleted_at IS NULL)
+                OR EXISTS (SELECT 1 FROM hoc_vien h WHERE h.phu_huynh_user_id=u.user_id AND h.deleted_at IS NULL $childScope))";
+        }
         if (!Access::staff($user)) { $sql.=' AND u.user_id=?'; $params[]=$user['userId']; }
         if (!empty($filters['q'])) {
             $sql.=' AND (u.hoten LIKE ? OR u.sdt LIKE ? OR u.email LIKE ?)';
@@ -26,20 +32,22 @@ final class ParentsRepository
         return Store::rows($sql.' ORDER BY u.user_id DESC',$params);
     }
 
-    public static function children(int $id): array
+    public static function children(int $id, array $user): array
     {
+        $scope=$user['role']==='GIAO_VU' && $user['coSoId'] ? \App\Modules\Academic\Features\Admissions\AdmissionsFilter::studentScope('hv.id', (int)$user['coSoId']) : '';
         return Store::rows('SELECT hv.id,hv.ma_hv AS maHv,hv.ho_ten AS hoTen,hv.ngay_sinh AS ngaySinh,
             hv.gioi_tinh AS gioiTinh,hv.truong,hv.cap_lop_id AS capLopId,cl.ten AS tenCapLop,hv.trang_thai AS trangThai
             FROM hoc_vien hv LEFT JOIN cap_lop cl ON cl.id=hv.cap_lop_id
-            WHERE hv.phu_huynh_user_id=? AND hv.deleted_at IS NULL ORDER BY hv.id',[$id]);
+            WHERE hv.phu_huynh_user_id=? AND hv.deleted_at IS NULL'.$scope.' ORDER BY hv.id',[$id]);
     }
 
-    public static function create(array $data): int
+    public static function create(array $data, int $actor): int
     {
-        return Store::transaction(function() use($data) {
+        return Store::transaction(function() use($data,$actor) {
             $values=[];
             foreach(self::FIELDS as $key=>$column) $values[$column]=$data[$key];
             $id=Store::insert('users',$values);
+            Store::recordAudit($actor,'them','users',$id,null,['action'=>'parent_profile_created','hoTen'=>$data['hoTen']]);
             if ($data['username'] !== null) {
                 $group=Store::one("SELECT group_id FROM role_group WHERE group_name='PhuHuynh' AND is_deleted=0");
                 Store::insert('account',['user_id'=>$id,'group_id'=>$group['group_id'],'username'=>$data['username'],

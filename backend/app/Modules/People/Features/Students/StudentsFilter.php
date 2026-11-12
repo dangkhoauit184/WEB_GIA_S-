@@ -5,6 +5,8 @@ final class StudentsFilter
 {
     public static function check(string $action = 'view', bool $staffOnly = false): array
     {
-        return \App\Shared\Access::guard('QuanLyLopHoc', $action, $staffOnly);
+        $actor = \App\Shared\Access::guard('QuanLyLopHoc', $action, $staffOnly);
+        if ($actor['role'] === 'GIAO_VU') return \App\Modules\Academic\Features\AcademicAffairs\AcademicAffairsFilter::check('QuanLyLopHoc', $action);
+        return $actor;
     }
 }
