@@ -83,7 +83,7 @@ Nếu đã clone thì không clone đè: vào đúng thư mục, kiểm tra `git
 | --- | --- | --- |
 | MySQL root | Cài schema, cấp quyền, backup/restore local | Container MySQL; máy tạo mới có config/mysql.env riêng |
 | User DB `educenter_api` | PHP kết nối DB với quyền DML/EXECUTE | config/server.env riêng |
-| Tài khoản web | Đăng nhập tại localhost:5000/login | account/users trong DB, mật khẩu chỉ lưu hash |
+| Tài khoản web | Đăng nhập tại localhost:5000 | account/users trong DB, mật khẩu chỉ lưu hash |
 | JWT_SECRET | Ký phiên đăng nhập PHP, không phải mật khẩu người dùng | config/server.env riêng |
 | SMTP/merchant | Kết nối dịch vụ gửi mail/thanh toán thật về sau | Cấu hình riêng trên môi trường tương ứng |
 
@@ -213,9 +213,7 @@ Start bật lại DB, nối mạng, build PHP/Apache, composer install từ lock
 
 | Địa chỉ | Dùng để làm gì |
 | --- | --- |
-| http://localhost:5000/ | Trang giới thiệu trung tâm |
-| http://localhost:5000/login | Đăng nhập và điều hướng theo vai trò |
-| http://localhost:5000/parent | Cổng phụ huynh: hồ sơ con và lịch học đã kết nối API |
+| http://localhost:5000/ | Web PHP hiện có |
 | http://localhost:5000/api/health | Kiểm tra PHP kết nối MySQL |
 | http://localhost:5000/api | Manifest API/module |
 | http://localhost:8025/ | Hộp thư SMTP thử Mailpit |
@@ -241,13 +239,13 @@ pwsh -NoProfile -File backend/scripts/bootstrap-admin.ps1 -Username admin -Reset
 
 Không dùng Reset như một lệnh khởi động hằng ngày. Mật khẩu MySQL/root không phải mật khẩu ở màn đăng nhập web. Không nhập thông tin DB vào form login.
 
-Bản web có trang giới thiệu `/`, đăng nhập `/login` dùng API PHP, cổng Admin `/admin`, Giáo vụ `/staff`, và cổng phụ huynh `/parent` để chọn con và xem lịch. Các API học vụ, nghỉ, học phí, giao dịch và thông báo của phụ huynh vẫn chưa hoàn tất; trang giới thiệu chưa lưu form tư vấn. Các màn Figma chưa được code đầy đủ. Thanh toán, check-in, học bù, lương và thông báo chưa có đầy đủ API/màn hình dù DB đã hỗ trợ dữ liệu. Mailpit chỉ hứng thư thử, không tự gửi thông báo khi chưa có worker BE.
+Bản web hiện có đăng nhập/đổi mật khẩu, tra cứu/tìm học viên, lớp và lịch qua Ajax; các API hồ sơ/quản trị nêu trong [tiến độ](thong-tin-do-an.md#tien-do). Các màn Figma chưa được code đầy đủ. Thanh toán, check-in, học bù, lương và thông báo chưa có đầy đủ API/màn hình dù DB đã hỗ trợ dữ liệu. Mailpit chỉ hứng thư thử, không tự gửi thông báo khi chưa có worker BE.
 
-Bản giao diện gốc dùng để tham khảo nằm tại [docs/demo/index.html](demo/index.html); cổng Admin `/admin` và Giáo vụ `/staff` dùng phiên đăng nhập chung cùng API PHP/MySQL.
+Bản giao diện gốc dùng để tham khảo nằm tại [docs/demo/index.html](demo/index.html). Cổng quản trị đang chạy tại `/admin` dùng API PHP/MySQL.
 
 ### 7.1. Kiểm tra cổng quản trị trước khi push
 
-Bản quản trị bổ sung ngày 11/11/2026 mở tại `http://localhost:5000/admin`. Đăng nhập tại `/login` sẽ chuyển tài khoản Admin vào cổng này; có thể mở trực tiếp để kiểm tra phiên. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `docs/demo/index.html`. Dữ liệu ở `/admin` được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
+Bản quản trị bổ sung ngày 11/11/2026 mở tại `http://localhost:5000/admin`, cũng có liên kết từ cổng đăng nhập chung. Đăng nhập bằng tài khoản Admin đã cấp trên DB của máy mình. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `docs/demo/index.html`. Dữ liệu ở `/admin` được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
 
 Cập nhật bản giao diện tham chiếu rồi tạo lại template/style quản trị bằng lệnh sau tại thư mục gốc repo.
 
@@ -269,7 +267,7 @@ Sau khi cập nhật code trên `develop`, mở Docker Desktop và chạy `pwsh 
 
 Trong cổng tuyển sinh, xem Đăng ký khóa học hoặc mở Tuyển sinh & Ghép người dạy. Tiếp nhận yêu cầu, chọn hồ sơ học viên hoặc nhập liên hệ khách tư vấn, chọn môn/khối/hình thức/khu vực và tất cả khung giờ cần học. Khách tư vấn cần liên kết hồ sơ học viên/phụ huynh trước khi gửi đề xuất. Bấm Tìm người dạy, đối chiếu ứng viên, nhập học phí trọn khóa nếu đã tư vấn và gửi đề xuất. Bước 3 hiển thị phản hồi thật của từng bên, bước 4 chỉ hiện đề xuất đã được cả hai đồng ý. Admin tiếp tục xếp lớp qua màn Khóa học & Xếp lớp.
 
-Cổng phụ huynh hiện đã tải hồ sơ, danh sách con và lịch theo con; đăng ký/phản hồi đề xuất, học vụ, xin nghỉ, học phí và thông báo vẫn thuộc phần tích hợp tiếp theo. Hợp đồng API và trạng thái ở mục 12.2 của đặc tả. Có thể kiểm tra đầy đủ API hai phía trên DB thử bằng suite `pwsh -File backend/scripts/test.ps1`. DB làm việc được đọc qua cấu hình riêng của từng máy; cập nhật này dùng schema 005 hiện có.
+Các màn gửi phản hồi của phụ huynh/người dạy thuộc phần tích hợp cổng của thành viên 2/3. Hợp đồng API và trạng thái ở mục 12.2 của đặc tả. Có thể kiểm tra đầy đủ API hai phía trên DB thử bằng suite `pwsh -File backend/scripts/test.ps1`. DB làm việc được đọc qua cấu hình riêng của từng máy; cập nhật này dùng schema 005 hiện có.
 
 #### Cổng Giáo vụ đầy đủ ngày 12/11/2026
 

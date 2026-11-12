@@ -19,8 +19,7 @@ final class ParentsService
     {
         $row=ParentsRepository::all([],self::reader(),$id)[0]??null;
         if (!$row) throw new ApiException(404,'Không tìm thấy phụ huynh.','PARENT_NOT_FOUND');
-        $children=ParentsRepository::children($id,self::reader());
-        return ParentsModel::map($row,['hocViens'=>array_map([ParentsModel::class,'child'],$children)]);
+        return ParentsModel::map($row,['hocViens'=>ParentsRepository::children($id,self::reader())]);
     }
     public static function create(array $data): array
     {

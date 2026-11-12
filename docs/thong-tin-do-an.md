@@ -368,12 +368,12 @@ Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí;
 | Học vụ/nghỉ/bù | Admin giám sát và duyệt nghỉ cả lớp; Giáo vụ xem lịch/lớp/sĩ số, xếp/sửa ca, duyệt nghỉ cá nhân và lưu bù theo thỏa thuận | Cổng người dạy/phụ huynh và học vụ từng buổi |
 | Tài chính/công | Giáo vụ tạo/phát hành hóa đơn trọn khóa, tra công nợ và phiếu thu; Admin xác nhận tiền, duyệt điều chỉnh công, đơn giá, chốt/trả/mở khóa, in phiếu | Checkout/gateway/webhook thật, check-in/out người dạy |
 | Thông báo | Dữ liệu, trigger học phí, SMTP thử, tổng việc chờ Admin | API thông báo đầy đủ, worker/retry/template/mail thật |
-| FE | Trang giới thiệu và đăng nhập dùng PHP cùng origin; cổng Admin/Giáo vụ dùng API; cổng phụ huynh chọn con và xem lịch theo hồ sơ thật | Form tư vấn, đăng ký/phản hồi, học vụ, xin nghỉ, hóa đơn, giao dịch, thông báo phụ huynh; các cổng người dạy; kiểm thử responsive/liên thông |
+| FE | Cổng Admin và 8 màn Giáo vụ dùng API PHP/MySQL; giao diện gốc ở docs/demo/index.html | Các cổng còn lại theo phân công nhóm, kiểm thử responsive/liên thông |
 | Báo cáo/nộp bài | Dashboard Admin, in phiếu công/lương và lịch đang lọc | Báo cáo khác, xuất dữ liệu, báo cáo môn học, kịch bản trình diễn |
 
 Phạm vi local ngày 11/11/2026 theo mục 12.1. Phần Admin đã nối API thật gồm xếp lớp, đối soát tiền, công/lương và lịch. Các feature có nhiều cổng tiếp tục giữ `planned` cho luồng còn thiếu trong manifest. Các số liệu trên dashboard lấy DB của máy đang chạy.
 
-Các việc tiếp theo đi theo phân công nhóm gồm lưu form tư vấn, cổng phụ huynh đăng ký/phản hồi/nhận thông báo, thanh toán và webhook xác minh, học vụ từng buổi, cổng check-in và gửi yêu cầu của người dạy, báo cáo/mail và kiểm thử liên thông trước triển khai public. Tiến độ Giáo vụ ngày 12/11 nằm tại mục 12.3. Chỉ triển khai tiếp trong phạm vi được giao.
+Các việc tiếp theo đi theo phân công nhóm gồm cổng phụ huynh đăng ký/phản hồi/nhận thông báo, thanh toán và webhook xác minh, học vụ từng buổi, cổng check-in và gửi yêu cầu của người dạy, báo cáo/mail và kiểm thử liên thông trước triển khai public. Tiến độ Giáo vụ ngày 12/11 nằm tại mục 12.3. Chỉ triển khai tiếp trong phạm vi được giao.
 
 Kết quả đã ghi nhận08/11/2026 trên nền005:
 

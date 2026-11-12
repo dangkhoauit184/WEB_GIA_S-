@@ -36,10 +36,7 @@ final class ParentsRepository
     {
         $scope=$user['role']==='GIAO_VU' && $user['coSoId'] ? \App\Modules\Academic\Features\Admissions\AdmissionsFilter::studentScope('hv.id', (int)$user['coSoId']) : '';
         return Store::rows('SELECT hv.id,hv.ma_hv AS maHv,hv.ho_ten AS hoTen,hv.ngay_sinh AS ngaySinh,
-            hv.gioi_tinh AS gioiTinh,hv.truong,hv.cap_lop_id AS capLopId,cl.ten AS tenCapLop,hv.trang_thai AS trangThai,
-            (SELECT GROUP_CONCAT(DISTINCT lhv.lop_id ORDER BY lhv.lop_id)
-                FROM lop_hoc_vien lhv WHERE lhv.hoc_vien_id=hv.id
-                AND lhv.trang_thai IN (\'dang_hoc\',\'hoc_thu\')) AS lopIds
+            hv.gioi_tinh AS gioiTinh,hv.truong,hv.cap_lop_id AS capLopId,cl.ten AS tenCapLop,hv.trang_thai AS trangThai
             FROM hoc_vien hv LEFT JOIN cap_lop cl ON cl.id=hv.cap_lop_id
             WHERE hv.phu_huynh_user_id=? AND hv.deleted_at IS NULL'.$scope.' ORDER BY hv.id',[$id]);
     }

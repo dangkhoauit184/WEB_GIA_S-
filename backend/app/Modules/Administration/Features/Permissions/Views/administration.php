@@ -1,7 +1,7 @@
 <?php $isAdmissions = ($portal ?? 'admin') === 'admissions'; $portalTitle = $isAdmissions ? 'Giáo vụ / Điều phối' : 'Quản trị viên'; ?>
 <!doctype html><html lang="vi"><head><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EduCenter ERP · <?= $portalTitle ?></title><link rel="stylesheet" href="/admin-assets/base.css"><link rel="stylesheet" href="/admin-assets/administration.css"><script src="/src/config/app.config.js" defer></script><script src="/src/shared/permissions/access.js" defer></script><script src="/admin-assets/administration.js" defer></script><script src="/admin-assets/academic-affairs.js" defer></script><link rel="stylesheet" href="/admin-assets/academic-affairs.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EduCenter ERP · <?= $portalTitle ?></title><link rel="stylesheet" href="/admin-assets/base.css"><link rel="stylesheet" href="/admin-assets/administration.css"><script src="/admin-assets/administration.js" defer></script><script src="/admin-assets/academic-affairs.js" defer></script><link rel="stylesheet" href="/admin-assets/academic-affairs.css">
 <?php if (!$isAdmissions): ?><script src="/admin-assets/views.js" defer></script>
 <script src="/admin-assets/catalog.js" defer></script>
 <script src="/admin-assets/permissions.js" defer></script>
@@ -12,7 +12,12 @@
 <script src="/admin-assets/leave-requests.js" defer></script>
 <script src="/admin-assets/timekeeping.js" defer></script>
 <script src="/admin-assets/staff.js" defer></script>
-<?php endif; ?><script src="/admin-assets/schedule.js" defer></script><script src="/admin-assets/admissions.js" defer></script><script src="/admin-assets/students.js" defer></script><script src="/admin-assets/parents.js" defer></script><script src="/admin-assets/classes.js" defer></script><link rel="stylesheet" href="/admin-assets/admissions.css"><?php if ($isAdmissions): ?><script src="/admin-assets/leave-requests.js" defer></script><script src="/admin-assets/tuition.js" defer></script><?php endif; ?></head><body class="administration" data-portal="<?= $isAdmissions ? 'admissions' : 'admin' ?>"><section id="admin-login" class="login-wrap" hidden><p id="login-error" class="form-error" role="alert"></p></section><div class="app" id="admin-workspace" hidden>
+<?php endif; ?><script src="/admin-assets/schedule.js" defer></script><script src="/admin-assets/admissions.js" defer></script><script src="/admin-assets/students.js" defer></script><script src="/admin-assets/parents.js" defer></script><script src="/admin-assets/classes.js" defer></script><link rel="stylesheet" href="/admin-assets/admissions.css"><?php if ($isAdmissions): ?><script src="/admin-assets/leave-requests.js" defer></script><script src="/admin-assets/tuition.js" defer></script><?php endif; ?></head><body class="administration" data-portal="<?= $isAdmissions ? 'admissions' : 'admin' ?>"><section id="admin-login" class="login-wrap"><form id="admin-login-form" class="card login-card">
+<div class="brand-icon">E</div><h1>EduCenter ERP</h1><p class="sub">Đăng nhập cổng <?= $portalTitle ?></p>
+<label>Tên đăng nhập<input name="username" autocomplete="username" required></label>
+<label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
+<p id="login-error" class="form-error" role="alert"></p><button class="btn p" type="submit">Đăng nhập hệ thống</button><p><a href="/">Website Trung tâm</a></p>
+</form></section><div class="app" id="admin-workspace" hidden>
 
 <!-- ═══════════════════════════════════════
      SIDEBAR

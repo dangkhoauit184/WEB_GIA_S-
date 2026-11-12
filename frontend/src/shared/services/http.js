@@ -44,7 +44,7 @@ const HttpService = {
       if (response.status === 401) {
         AccessService.clearSession();
         // Nếu không phải đang ở trang đăng nhập thì chuyển về đăng nhập
-        if (window.location.pathname !== AppConfig.AUTH_PAGE && !window.location.pathname.includes('/auth/')) {
+        if (!window.location.pathname.includes('/auth/')) {
           window.location.href = AppConfig.AUTH_PAGE;
         }
       }

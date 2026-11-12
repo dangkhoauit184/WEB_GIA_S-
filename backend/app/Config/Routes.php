@@ -2,23 +2,15 @@
 /** @var \CodeIgniter\Router\RouteCollection $routes */
 $routes->setAutoRoute(false);
 $routes->get('/', '\App\Controllers\Portal::index');
-$routes->get('login', '\App\Controllers\Portal::login');
-$routes->get('parent', '\App\Controllers\Portal::parent');
-$routes->get('portal-pending', '\App\Controllers\Portal::pendingPortal');
 $routes->get('admin', '\App\Controllers\Portal::administration');
 $routes->get('staff', '\App\Controllers\Portal::admissions');
 $routes->get('admin-assets/(:segment)', '\App\Controllers\Portal::administrationAsset/$1');
-$routes->get('src/(:segment)', '\App\Controllers\Portal::frontendAsset/$1');
-$routes->get('src/(:segment)/(:segment)', '\App\Controllers\Portal::frontendAsset/$1/$2');
-$routes->get('src/(:segment)/(:segment)/(:segment)', '\App\Controllers\Portal::frontendAsset/$1/$2/$3');
-$routes->get('src/(:segment)/(:segment)/(:segment)/(:segment)', '\App\Controllers\Portal::frontendAsset/$1/$2/$3/$4');
-$routes->get('src/(:segment)/(:segment)/(:segment)/(:segment)/(:segment)', '\App\Controllers\Portal::frontendAsset/$1/$2/$3/$4/$5');
 $routes->get('api/health', '\App\Controllers\Health::index');
 $routes->get('health', '\App\Controllers\Health::index');
 $routes->get('api', '\App\Controllers\Health::manifest');
 $routes->options('(:any)', static fn()=>service('response')->setStatusCode(204));
 $modules=json_decode(file_get_contents(ROOTPATH.'../shared/modules.json'),true,512,JSON_THROW_ON_ERROR);
-$ready=['auth','students','teachers','tutors','classes','scheduling','catalog','permissions','audit','admissions','academic-affairs'];
+$ready=['auth','parents','students','teachers','tutors','classes','scheduling','catalog','permissions','audit','admissions','academic-affairs'];
 $pascal=static fn($name)=>str_replace(' ','',ucwords(str_replace('-',' ',$name)));
 foreach($modules as $module=>$features) {
     foreach($features as $feature) {

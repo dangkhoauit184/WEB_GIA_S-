@@ -8,14 +8,12 @@ const AccessService = {
    * @param {string} token - Chuỗi JWT token từ backend
    * @param {object} user - Thông tin tài khoản người dùng
    */
-  setSession(token, user, remember = false) {
-    this.clearSession();
-    const storage = remember ? localStorage : sessionStorage;
+  setSession(token, user) {
     if (token) {
-      storage.setItem(AppConfig.STORAGE_KEYS.TOKEN, token);
+      localStorage.setItem(AppConfig.STORAGE_KEYS.TOKEN, token);
     }
     if (user) {
-      storage.setItem(AppConfig.STORAGE_KEYS.USER, JSON.stringify(user));
+      localStorage.setItem(AppConfig.STORAGE_KEYS.USER, JSON.stringify(user));
     }
   },
 
@@ -24,7 +22,7 @@ const AccessService = {
    * @returns {string|null}
    */
   getToken() {
-    return sessionStorage.getItem(AppConfig.STORAGE_KEYS.TOKEN) || localStorage.getItem(AppConfig.STORAGE_KEYS.TOKEN);
+    return localStorage.getItem(AppConfig.STORAGE_KEYS.TOKEN);
   },
 
   /**
@@ -32,7 +30,7 @@ const AccessService = {
    * @returns {object|null}
    */
   getCurrentUser() {
-    const raw = sessionStorage.getItem(AppConfig.STORAGE_KEYS.USER) || localStorage.getItem(AppConfig.STORAGE_KEYS.USER);
+    const raw = localStorage.getItem(AppConfig.STORAGE_KEYS.USER);
     if (!raw) return null;
     try {
       return JSON.parse(raw);
@@ -65,9 +63,6 @@ const AccessService = {
     localStorage.removeItem(AppConfig.STORAGE_KEYS.TOKEN);
     localStorage.removeItem(AppConfig.STORAGE_KEYS.USER);
     localStorage.removeItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID);
-    sessionStorage.removeItem(AppConfig.STORAGE_KEYS.TOKEN);
-    sessionStorage.removeItem(AppConfig.STORAGE_KEYS.USER);
-    sessionStorage.removeItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID);
   },
 
   /**

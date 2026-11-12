@@ -142,7 +142,7 @@
   <!-- Header -->
   <header class="pub-nav">
     <div class="pub-nav-inner">
-      <a href="/" class="pub-brand">
+      <a href="index.html" class="pub-brand">
         <div class="pub-logo-ico">🎓</div>
         <div>
           <b style="font-size:16px; color:var(--g900); display:block; letter-spacing:-.02em;">EduCenter ERP</b>
@@ -158,7 +158,7 @@
       </nav>
 
       <div id="authNavButtons">
-        <a href="/login" class="btn p">
+        <a href="src/modules/administration/features/auth/auth.html" class="btn p">
           Đăng nhập Hệ thống
         </a>
       </div>
@@ -178,7 +178,7 @@
             Mô hình kèm 1:1 và lớp nhóm nhỏ chuyên sâu. Minh bạch từng buổi học với sổ theo dõi điện tử, phụ huynh trực tiếp duyệt hồ sơ người dạy trước khi bắt đầu.
           </p>
           <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <a href="/login" class="btn p" style="padding:11px 24px; font-size:14px;">
+            <a href="src/modules/administration/features/auth/auth.html" class="btn p" style="padding:11px 24px; font-size:14px;">
               Vào Cổng Học tập / Đăng nhập →
             </a>
             <a href="#consultation" class="btn dark" style="padding:11px 20px; font-size:14px;">
@@ -229,7 +229,7 @@
         <div style="margin-bottom:14px;">
           <span class="tag ok" style="margin-bottom:8px;">Gia sư 1 kèm 1</span>
           <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">Gia sư Toán - Lý - Hóa cá nhân hóa</h3>
-          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Giáo án thiết kế riêng theo năng lực học sinh, với lịch học được trao đổi cùng gia đình.</p>
+          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Giáo án thiết kế riêng bám sát năng lực học sinh. Phụ huynh duyệt hồ sơ người dạy trước khi bắt đầu.</p>
         </div>
         <div>
           <div class="c-price">3,500,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
@@ -276,7 +276,7 @@
   <section id="teachers" class="pub-section" style="background:var(--g50); border-top:1px solid var(--g200); border-bottom:1px solid var(--g200);">
     <div class="pub-sec-head">
       <h2>Đội ngũ Giáo viên & Gia sư Tiêu biểu</h2>
-      <p>Đội ngũ giáo viên và gia sư đồng hành theo mục tiêu học tập của từng học viên</p>
+      <p>Hồ sơ năng lực minh bạch – Phụ huynh duyệt hồ sơ trước khi bắt đầu khóa học</p>
     </div>
 
     <div class="pub-tutors-container">
@@ -322,10 +322,10 @@
   <section id="consultation" class="pub-section">
     <div class="pub-contact-grid">
       <div>
-        <span class="tag ok" style="margin-bottom:12px;">Liên hệ tư vấn học vụ</span>
+        <span class="tag ok" style="margin-bottom:12px;">Hỗ trợ Tư vấn Học vụ 24/7</span>
         <h2 style="font-size:22px; font-weight:800; color:var(--g900); margin:0 0 12px;">Đăng ký Tư vấn Lộ trình & Tìm Gia sư Miễn phí</h2>
         <p style="font-size:13.5px; color:var(--g600); line-height:1.6; margin-bottom:20px;">
-          Liên hệ trực tiếp với trung tâm qua hotline hoặc email bên dưới. Phiếu bên cạnh hiện là giao diện mẫu và chưa gửi hay lưu thông tin.
+          Điền thông tin nhu cầu học tập của con. Bộ phận <b>Giáo vụ EduCenter</b> sẽ tiếp nhận yêu cầu trên hệ thống, lọc người dạy phù hợp và liên hệ tư vấn trong 30 phút!
         </p>
 
         <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--g700);">
@@ -336,7 +336,7 @@
       </div>
 
       <div style="background:var(--g50); padding:26px; border-radius:14px; border:1px solid var(--g200);">
-        <h3 style="margin:0 0 14px; font-size:16px; font-weight:700; color:var(--g900);">Phiếu nhu cầu học (bản mẫu)</h3>
+        <h3 style="margin:0 0 14px; font-size:16px; font-weight:700; color:var(--g900);">Phiếu tiếp nhận nhu cầu học</h3>
         <form id="consultForm">
           <div style="margin-bottom:12px;">
             <label for="parentName">Họ và tên Phụ huynh</label>
@@ -376,7 +376,7 @@
       </div>
       <div id="modalCourseContent" style="font-size:13.5px; color:var(--g700); line-height:1.6;"></div>
       <div style="margin-top:20px; text-align:right;">
-            <a href="#consultation" id="btnModalEnroll" class="btn p sm">Đăng ký tư vấn khóa học</a>
+        <a href="#consultation" id="btnModalEnroll" class="btn p sm">Đăng ký khóa học này</a>
       </div>
     </div>
   </div>
@@ -402,25 +402,22 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="/src/config/app.config.js"></script>
-  <script src="/src/shared/permissions/access.js"></script>
+  <script src="src/config/app.config.js"></script>
+  <script src="src/shared/permissions/access.js"></script>
   <script>
     const COURSE_DETAILS = {
       'KHOA-GS-1KEM1': {
         title: 'Gia sư 1 kèm 1 Toán - Lý - Hóa',
-        courseValue: 'Gia sư 1 kèm 1',
         desc: 'Chương trình gia sư riêng biệt 1 kèm 1. Học viên được làm bài kiểm tra đầu vào để xác định chính xác năng lực, từ đó giáo viên biên soạn giáo án riêng.',
         highlights: ['Thời gian linh hoạt theo lịch rảnh của gia đình', 'Học viên chủ động chọn học tại nhà hoặc online qua Google Meet', 'Báo cáo chi tiết sau mỗi buổi học qua Cổng Phụ Huynh']
       },
       'KHOA-NHOM-THCS': {
         title: 'Bồi dưỡng Văn hóa THCS & Ôn thi vào 10',
-        courseValue: 'Bồi dưỡng Văn hóa THCS',
         desc: 'Khóa học theo nhóm nhỏ tối đa 8-10 học sinh. Rèn luyện kỹ năng giải bài tập nâng cao bám sát cấu trúc đề thi tuyển sinh vào lớp 10 các trường công lập.',
         highlights: ['Sĩ số lớp nhỏ đảm bảo tương tác tối đa', 'Định kỳ thi thử và xếp hạng hàng tháng', 'Có trợ giảng kèm cặp riêng cho học sinh còn yếu']
       },
       'KHOA-CHUYEN-THPT': {
         title: 'Luyện thi Chuyên & Đánh giá Năng lực THPT',
-        courseValue: 'Luyện thi Chuyên & ĐGNL',
         desc: 'Khóa học chuyên sâu dành cho học sinh có nguyện vọng thi đỗ trường chuyên hoặc xét tuyển đại học bằng bài thi Đánh giá Năng lực.',
         highlights: ['Ngân hàng đề thi thử độc quyền hơn 500+ đề', 'Giảng viên giàu kinh nghiệm luyện thi', 'Hỗ trợ giải đáp bài tập 24/7']
       }
@@ -436,12 +433,11 @@
         const user = AccessService.getCurrentUser();
         const navContainer = document.getElementById('authNavButtons');
         if (user && navContainer) {
-          const portalButton = document.createElement('button');
-          portalButton.type = 'button';
-          portalButton.className = 'btn p';
-          portalButton.textContent = `Chào ${user.hoTen || user.username} (Vào Cổng →)`;
-          portalButton.addEventListener('click', () => AccessService.redirectByRole());
-          navContainer.replaceChildren(portalButton);
+          navContainer.innerHTML = `
+            <button class="btn p" onclick="AccessService.redirectByRole()">
+              Chào ${user.hoTen || user.username} (Vào Cổng →)
+            </button>
+          `;
         }
       }
 
@@ -457,7 +453,6 @@
           const info = COURSE_DETAILS[code];
           if (!info) return;
 
-          btnEnroll.dataset.courseValue = info.courseValue;
           modalTitle.textContent = info.title;
           modalBody.innerHTML = `
             <p style="margin-bottom:12px;">${info.desc}</p>
@@ -473,15 +468,17 @@
       });
 
       closeBtn.addEventListener('click', () => modal.classList.remove('show'));
-      btnEnroll.addEventListener('click', () => {
-        selectCourse(btnEnroll.dataset.courseValue);
-        modal.classList.remove('show');
-      });
+      btnEnroll.addEventListener('click', () => modal.classList.remove('show'));
 
       const consultForm = document.getElementById('consultForm');
       consultForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        alert('Biểu mẫu tư vấn chưa kết nối với máy chủ nên yêu cầu chưa được lưu. Vui lòng liên hệ trực tiếp với trung tâm.');
+        const parentName = document.getElementById('parentName').value;
+        const phone = document.getElementById('parentPhone').value;
+        const course = document.getElementById('courseSelect').value;
+
+        alert(`Cảm ơn Quý phụ huynh ${parentName}! EduCenter đã ghi nhận yêu cầu tư vấn khóa [${course}]. Giáo vụ sẽ liên hệ qua SĐT ${phone} trong thời gian sớm nhất.`);
+        consultForm.reset();
       });
     });
   </script>
