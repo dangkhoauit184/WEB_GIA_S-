@@ -31,7 +31,54 @@ final class Portal extends \CodeIgniter\Controller
 
     public function index(): string
     {
-        return view('App\Modules\Administration\Features\Auth\Views\login');
+        return $this->frontendPage('index.html');
+    }
+
+    public function login(): string
+    {
+        return $this->frontendPage('src/modules/administration/features/auth/auth.html');
+    }
+
+    public function parent(): string
+    {
+        return $this->frontendPage('src/modules/people/features/parents/parents.html');
+    }
+
+    public function pendingPortal()
+    {
+        $labels = ['GIAO_VIEN'=>'Giáo viên', 'GIAO_SU'=>'Gia sư', 'TRO_GIANG'=>'Trợ giảng'];
+        $role = (string)$this->request->getGet('role');
+        if (!isset($labels[$role])) return redirect()->to('/');
+        $label = $labels[$role];
+        return '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cổng đang triển khai · EduCenter</title><link rel="stylesheet" href="/src/shared/styles/common.css"></head><body><main style="max-width:640px;margin:12vh auto;padding:24px"><section class="card"><h1>Cổng '.$label.' đang được tích hợp</h1><p>Màn hình nghiệp vụ của cổng này chưa được hoàn thiện. Vui lòng đăng nhập bằng tài khoản tương ứng khi cổng sẵn sàng.</p><p><a href="/">Về trang giới thiệu</a> · <a href="/login">Đăng nhập</a></p></section></main></body></html>';
+    }
+
+    private function frontendPage(string $relative): string
+    {
+        $path = ROOTPATH.'../frontend/'.$relative;
+        if (!is_file($path)) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound($relative);
+        return file_get_contents($path) ?: '';
+    }
+
+    public function frontendAsset(string ...$segments)
+    {
+        $relative = implode('/', $segments);
+        if ($relative === '' || str_contains($relative, '..') || !preg_match('/\A[a-zA-Z0-9._\/-]+\z/', $relative)) {
+            return $this->response->setStatusCode(404);
+        }
+        $base = realpath(ROOTPATH.'../frontend/src');
+        $path = $base === false ? false : realpath($base.DIRECTORY_SEPARATOR.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relative));
+        if ($base === false || $path === false || !str_starts_with($path, $base.DIRECTORY_SEPARATOR) || !is_file($path)) {
+            return $this->response->setStatusCode(404);
+        }
+        $type = match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'css' => 'text/css', 'js' => 'application/javascript', 'html' => 'text/html',
+            'svg' => 'image/svg+xml', 'png' => 'image/png', 'jpg', 'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp', 'woff' => 'font/woff', 'woff2' => 'font/woff2',
+            default => null,
+        };
+        if ($type === null) return $this->response->setStatusCode(404);
+        return $this->response->setContentType($type, 'UTF-8')->setBody(file_get_contents($path));
     }
 
     public function administration(): string

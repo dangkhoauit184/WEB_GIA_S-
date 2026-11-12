@@ -2,31 +2,26 @@
  * EduCenter ERP - Frontend Application Configuration
  */
 const AppConfig = {
-  // API Backend Base URL (Khi có Docker chạy ở cổng 8080)
-  API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8080/api'
-    : '/api',
+  // Frontend and CodeIgniter are served from one origin.
+  API_BASE_URL: '/api',
 
-  // Khóa lưu trữ trong localStorage / sessionStorage
   STORAGE_KEYS: {
     TOKEN: 'educenter_token',
     USER: 'educenter_user',
     CURRENT_STUDENT_ID: 'educenter_selected_student_id',
   },
 
-  // Cổng giao diện tương ứng theo vai trò (Role-based Routing)
   PORTAL_ROUTES: {
-    ADMIN: '/src/modules/reporting/features/dashboard/dashboard.html',
-    GIAO_VU: '/src/modules/academic/features/classes/classes.html',
-    GIAO_VIEN: '/src/modules/academic/features/attendance/attendance.html',
-    GIA_SU: '/src/modules/academic/features/attendance/attendance.html',
-    TRO_GIANG: '/src/modules/academic/features/attendance/attendance.html',
-    PHU_HUYNH: '/src/modules/people/features/parents/parents.html',
+    ADMIN: '/admin',
+    GIAO_VU: '/staff',
+    GIAO_VIEN: '/portal-pending?role=GIAO_VIEN',
+    GIAO_SU: '/portal-pending?role=GIAO_SU',
+    TRO_GIANG: '/portal-pending?role=TRO_GIANG',
+    PHU_HUYNH: '/parent',
   },
 
-  // Trang đăng nhập và trang công khai
-  AUTH_PAGE: '/src/modules/administration/features/auth/auth.html',
-  LANDING_PAGE: '/index.html',
+  AUTH_PAGE: '/login',
+  LANDING_PAGE: '/',
 };
 
 if (typeof window !== 'undefined') {

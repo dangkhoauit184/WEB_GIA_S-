@@ -28,7 +28,7 @@ window.Admin = (() => {
     user = null;
     renderVersion++;
     $('admin-workspace').hidden = true;
-    $('admin-login').hidden = false;
+    $('admin-login').hidden = true;
     $('admin-content').replaceChildren();
     document.querySelectorAll('.modal-ov.show').forEach(modal => modal.classList.remove('show'));
     if ($('admin-dialog').open) $('admin-dialog').close();
@@ -48,7 +48,9 @@ window.Admin = (() => {
     const result = await response.json().catch(() => null);
     if (response.status === 401) {
       reset();
+      AccessService.clearSession();
       $('login-error').textContent = 'Phiên đã hết hạn. Vui lòng đăng nhập lại.';
+      window.location.replace(`${AppConfig.AUTH_PAGE}?redirect=${encodeURIComponent(window.location.pathname)}`);
     }
     if (!response.ok || !result?.success) {
       const error = new Error(result?.message || 'Không xử lý được yêu cầu.');
@@ -355,29 +357,37 @@ window.Admin = (() => {
     else window.loadNotifications?.();
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    $('admin-login-form').addEventListener('submit', async event => {
-      event.preventDefault();
-      const button = event.target.querySelector('button');
-      button.disabled = true;
-      $('login-error').textContent = '';
-      try {
-        const result = await api('/api/auth/login', 'POST', Object.fromEntries(new FormData(event.target)));
-        token = result.token;
-        const accepted = admissionsPortal ? ['ADMIN', 'GIAO_VU'].includes(result.user.role) : result.user.role === 'ADMIN';
-        if (!accepted) {
-          await api('/api/auth/logout', 'POST', {});
-          token = null;
-          throw new Error(admissionsPortal ? 'Cổng này dành cho Admin hoặc Giáo vụ / Điều phối.' : 'Cổng này dành cho tài khoản Admin.');
-        }
-        event.target.reset();
-        openWorkspace(result.user);
-      } catch (error) { $('login-error').textContent = error.message; }
-      finally { button.disabled = false; }
-    });
+  window.addEventListener('DOMContentLoaded', async () => {
+    const loginUrl = `${AppConfig.AUTH_PAGE}?redirect=${encodeURIComponent(window.location.pathname)}`;
+    const storedToken = AccessService.getToken();
+    const storedUser = AccessService.getCurrentUser();
+    if (!storedToken || !storedUser) {
+      window.location.replace(loginUrl);
+      return;
+    }
+
+    token = storedToken;
+    try {
+      const result = await api('/api/auth/me');
+      const account = result.user || storedUser;
+      const accepted = admissionsPortal ? ['ADMIN', 'GIAO_VU'].includes(account.role) : account.role === 'ADMIN';
+      if (!accepted) {
+        AccessService.redirectByRole();
+        return;
+      }
+      openWorkspace(account);
+    } catch (_) {
+      AccessService.clearSession();
+      window.location.replace(loginUrl);
+      return;
+    }
+
     $('admin-logout').addEventListener('click', event => busy(event.currentTarget, async () => {
-      await api('/api/auth/logout', 'POST', {});
-      reset();
+      try { await api('/api/auth/logout', 'POST', {}); }
+      finally {
+        AccessService.clearSession();
+        window.location.assign(AppConfig.AUTH_PAGE);
+      }
     }));
     $('admin-refresh')?.addEventListener('click', render);
     $('admin-menu').addEventListener('click', () => {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Đăng nhập hệ thống · EduCenter ERP</title>
-  <link rel="stylesheet" href="../../../../src/shared/styles/common.css">
+  <link rel="stylesheet" href="/src/shared/styles/common.css">
   <style>
     /* Nền Gradient SaaS tối màu & Card nổi bật */
     .auth-bg {
@@ -162,12 +162,12 @@
 
       <form id="loginForm" autocomplete="on">
         <div style="margin-bottom: 14px;">
-          <label for="username">Tên đăng nhập / Email</label>
+          <label for="username">Tên đăng nhập</label>
           <input 
             type="text" 
             id="username" 
             name="username" 
-            placeholder="Nhập tên đăng nhập hoặc email..." 
+            placeholder="Nhập tên đăng nhập..." 
             required 
             autofocus
           >
@@ -191,7 +191,7 @@
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; font-weight:normal; font-size:12.5px;">
             <input type="checkbox" id="rememberMe"> Ghi nhớ đăng nhập
           </label>
-          <a id="btnForgotPwd">Quên mật khẩu?</a>
+          <span>Quên mật khẩu? Liên hệ trung tâm để được hỗ trợ.</span>
         </div>
 
         <button type="submit" id="btnSubmit" class="btn p" style="width: 100%; padding: 11px; font-size: 14px; justify-content: center;">
@@ -199,81 +199,22 @@
         </button>
       </form>
 
-      <div class="auth-divider"><span>HOẶC</span></div>
-
-      <div style="text-align: center;">
-        <button type="button" id="btnOpenRegister" class="btn dark" style="width: 100%; padding: 10px; font-size: 13.5px; justify-content: center;">
-          Tạo tài khoản Phụ huynh mới
-        </button>
-      </div>
+      <p style="margin:16px 0 0; text-align:center; font-size:12.8px; color:var(--g600);">
+        Tài khoản phụ huynh được trung tâm cấp sau khi xác minh hồ sơ.
+      </p>
 
       <div style="margin-top: 22px; text-align: center; font-size: 12.8px;">
-        <a href="../../../../../index.html" style="color: var(--pri-d); font-weight: 600; text-decoration: none;">
+        <a href="/" style="color: var(--pri-d); font-weight: 600; text-decoration: none;">
           ← Quay lại Trang chủ / Giới thiệu
         </a>
       </div>
     </div>
   </div>
 
-  <!-- Modal Quên Mật Khẩu -->
-  <div id="modalForgotPassword" class="modal-overlay">
-    <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--g200); padding-bottom:10px;">
-        <h3 style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">🔑 Quên Mật Khẩu</h3>
-        <button type="button" id="closeForgotModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400);">✕</button>
-      </div>
-      <p style="font-size:13px; color:var(--g600); line-height:1.5; margin-bottom:16px;">
-        Nhập địa chỉ Email hoặc Tên đăng nhập đã đăng ký. Hệ thống sẽ gửi hướng dẫn khôi phục mật khẩu cho bạn qua Email.
-      </p>
-      <form id="forgotPwdForm">
-        <div style="margin-bottom:16px;">
-          <label for="forgotEmail">Email / Tên đăng nhập</label>
-          <input type="text" id="forgotEmail" placeholder="ví dụ: phuhuynh@gmail.com" required>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px;">
-          <button type="button" id="btnCancelForgot" class="btn sm">Hủy</button>
-          <button type="submit" class="btn p sm">Gửi liên kết khôi phục</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Tạo Tài Khoản Phụ Huynh Mới -->
-  <div id="modalRegister" class="modal-overlay">
-    <div class="modal-card" style="max-width: 480px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--g200); padding-bottom:10px;">
-        <h3 style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">📝 Đăng Ký Tài Khoản Phụ Huynh</h3>
-        <button type="button" id="closeRegisterModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400);">✕</button>
-      </div>
-      <form id="registerForm">
-        <div style="margin-bottom:12px;">
-          <label for="regFullname">Họ và tên Phụ huynh</label>
-          <input type="text" id="regFullname" placeholder="Nguyễn Văn A" required>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label for="regPhone">Số điện thoại liên hệ</label>
-          <input type="tel" id="regPhone" placeholder="0901234567" required>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label for="regUsername">Tên đăng nhập mong muốn</label>
-          <input type="text" id="regUsername" placeholder="ví dụ: phuhuynh_an" required>
-        </div>
-        <div style="margin-bottom:18px;">
-          <label for="regPassword">Mật khẩu (tối thiểu 6 ký tự)</label>
-          <input type="password" id="regPassword" minlength="6" placeholder="Nhập mật khẩu..." required>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px;">
-          <button type="button" id="btnCancelRegister" class="btn sm">Hủy</button>
-          <button type="submit" class="btn p sm">Xác nhận tạo tài khoản</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Scripts -->
-  <script src="../../../../src/config/app.config.js"></script>
-  <script src="../../../../src/shared/permissions/access.js"></script>
-  <script src="../../../../src/shared/services/http.js"></script>
-  <script src="auth.js"></script>
+  <script src="/src/config/app.config.js"></script>
+  <script src="/src/shared/permissions/access.js"></script>
+  <script src="/src/shared/services/http.js"></script>
+  <script src="/src/modules/administration/features/auth/auth.js"></script>
 </body>
 </html>
