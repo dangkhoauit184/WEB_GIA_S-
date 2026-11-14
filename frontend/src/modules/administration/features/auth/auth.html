@@ -228,7 +228,7 @@
 
         <div class="auth-options">
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; font-weight:normal; font-size:12.5px;">
-            <input type="checkbox" id="rememberMe"> Ghi nhớ đăng nhập
+            <input type="checkbox" id="rememberMe" style="width:auto; display:inline-block;"> Ghi nhớ đăng nhập
           </label>
           <a id="btnForgotPwd">Quên mật khẩu?</a>
         </div>
@@ -256,22 +256,38 @@
 
   <!-- Modal Quên Mật Khẩu -->
   <div id="modalForgotPassword" class="modal-overlay">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width: 480px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--g200, #e2e8f0); padding-bottom:10px;">
         <h3 style="margin:0; font-size:17px; font-weight:700; color:var(--g900, #0f172a);">🔑 Quên Mật Khẩu</h3>
         <button type="button" id="closeForgotModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400, #94a3b8);">✕</button>
       </div>
-      <p style="font-size:13px; color:var(--g600, #475569); line-height:1.5; margin-bottom:16px;">
-        Nhập địa chỉ Email hoặc Tên đăng nhập đã đăng ký. Hệ thống sẽ gửi hướng dẫn khôi phục mật khẩu cho bạn qua Email.
+      <p style="font-size:13px; color:var(--g600, #475569); line-height:1.5; margin-bottom:14px;">
+        Nhập Email hoặc Tên đăng nhập đã đăng ký để nhận mã xác nhận OTP và đặt lại mật khẩu mới.
       </p>
+      <div id="forgotAlert" class="alert-box" role="alert"></div>
       <form id="forgotPwdForm">
         <div class="form-group">
           <label for="forgotEmail">Email / Tên đăng nhập</label>
-          <input type="text" id="forgotEmail" placeholder="ví dụ: phuhuynh@gmail.com" required>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="forgotEmail" placeholder="ví dụ: phuhuynh@gmail.com" required style="flex:1;">
+            <button type="button" id="btnSendOtp" class="btn p sm" style="white-space:nowrap; padding:0 14px;">Lấy mã OTP</button>
+          </div>
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+        <div class="form-group">
+          <label for="forgotOtp">Mã xác nhận OTP</label>
+          <input type="text" id="forgotOtp" placeholder="Nhập mã OTP 6 chữ số..." maxlength="6" required>
+        </div>
+        <div class="form-group">
+          <label for="forgotNewPwd">Đặt lại mật khẩu mới (tối thiểu 6 ký tự)</label>
+          <input type="password" id="forgotNewPwd" minlength="6" placeholder="Nhập mật khẩu mới..." required>
+        </div>
+        <div class="form-group" style="margin-bottom:18px;">
+          <label for="forgotConfirmPwd">Xác nhận mật khẩu mới</label>
+          <input type="password" id="forgotConfirmPwd" minlength="6" placeholder="Nhập lại mật khẩu mới..." required>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
           <button type="button" id="btnCancelForgot" class="btn sm">Hủy</button>
-          <button type="submit" class="btn p sm">Gửi liên kết khôi phục</button>
+          <button type="submit" id="btnSubmitForgot" class="btn p sm">Đặt lại mật khẩu</button>
         </div>
       </form>
     </div>
@@ -284,6 +300,7 @@
         <h3 style="margin:0; font-size:17px; font-weight:700; color:var(--g900, #0f172a);">📝 Đăng Ký Tài Khoản Phụ Huynh</h3>
         <button type="button" id="closeRegisterModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400, #94a3b8);">✕</button>
       </div>
+      <div id="registerAlert" class="alert-box" role="alert"></div>
       <form id="registerForm">
         <div class="form-group">
           <label for="regFullname">Họ và tên Phụ huynh</label>
@@ -301,9 +318,13 @@
           <label for="regPassword">Mật khẩu (tối thiểu 6 ký tự)</label>
           <input type="password" id="regPassword" minlength="6" placeholder="Nhập mật khẩu..." required>
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+        <div class="form-group" style="margin-bottom:18px;">
+          <label for="regConfirmPassword">Xác nhận mật khẩu</label>
+          <input type="password" id="regConfirmPassword" minlength="6" placeholder="Nhập lại mật khẩu..." required>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
           <button type="button" id="btnCancelRegister" class="btn sm">Hủy</button>
-          <button type="submit" class="btn p sm">Xác nhận tạo tài khoản</button>
+          <button type="submit" id="btnSubmitRegister" class="btn p sm">Xác nhận tạo tài khoản</button>
         </div>
       </form>
     </div>

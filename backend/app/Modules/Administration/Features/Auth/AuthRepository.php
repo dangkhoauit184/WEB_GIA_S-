@@ -18,12 +18,23 @@ final class AuthRepository
 
     public static function username(string $username): ?array
     {
-        return Store::one(self::SELECT . ' AND a.username=? LIMIT 1', [$username]);
+        return Store::one(self::SELECT . ' AND (a.username=? OR u.email=?) LIMIT 1', [$username, $username]);
     }
 
     public static function account(int $id): ?array
     {
         return Store::one(self::SELECT . ' AND a.account_id=? LIMIT 1', [$id]);
+    }
+
+    public static function latestOtp(int $accountId): ?array
+    {
+        $row = Store::one("SELECT id, du_lieu_moi, created_at FROM audit_log
+            WHERE bang='account' AND ban_ghi_id=? AND hanh_dong='khac'
+            AND JSON_UNQUOTE(JSON_EXTRACT(du_lieu_moi, '$.action'))='forgot_password_otp'
+            ORDER BY id DESC LIMIT 1", [$accountId]);
+        if (!$row || empty($row['du_lieu_moi'])) return null;
+        $payload = json_decode((string)$row['du_lieu_moi'], true);
+        return is_array($payload) ? ($payload + ['auditId' => (int)$row['id']]) : null;
     }
 
     public static function permissions(int $groupId): array

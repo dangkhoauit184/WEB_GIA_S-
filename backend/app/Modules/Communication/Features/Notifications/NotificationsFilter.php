@@ -1,4 +1,10 @@
 <?php
 namespace App\Modules\Communication\Features\Notifications;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+final class NotificationsFilter
+{
+    public static function user(): array
+    {
+        return \App\Shared\Access::user();
+    }
+}

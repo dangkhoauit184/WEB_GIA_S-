@@ -136,6 +136,20 @@
       max-width: 540px;
       box-shadow: var(--sh-modal);
     }
+    .pub-hero-stats .pub-hstat b {
+      display: block;
+      font-size: 26px;
+      font-weight: 800;
+      color: #5eead4;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .pub-hero-stats .pub-hstat span {
+      display: block;
+      font-size: 11.5px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
@@ -187,10 +201,10 @@
           </div>
 
           <div class="pub-hero-stats">
-            <div><b>98.5%</b><span>Phụ huynh hài lòng</span></div>
-            <div><b>100%</b><span>Người dạy đạt kiểm định</span></div>
-            <div><b>3 Cơ sở</b><span>TP.HCM & Dạy Online</span></div>
-            <div><b>Trọn khóa</b><span>Minh bạch học phí</span></div>
+            <div class="pub-hstat"><b>98.5%</b><span>Phụ huynh hài lòng</span></div>
+            <div class="pub-hstat"><b>100%</b><span>Người dạy đạt kiểm định</span></div>
+            <div class="pub-hstat"><b>3 Cơ sở</b><span>TP.HCM & Dạy Online</span></div>
+            <div class="pub-hstat"><b>Trọn khóa</b><span>Minh bạch học phí</span></div>
           </div>
         </div>
 
@@ -224,7 +238,7 @@
       <p>Áp dụng thu trọn từng khóa theo quy ước đào tạo của EduCenter ERP</p>
     </div>
 
-    <div class="pub-courses-container">
+    <div id="coursesListContainer" class="pub-courses-container">
       <div class="pub-course-card">
         <div style="margin-bottom:14px;">
           <span class="tag ok" style="margin-bottom:8px;">Gia sư 1 kèm 1</span>
@@ -279,7 +293,7 @@
       <p>Hồ sơ năng lực minh bạch – Phụ huynh duyệt hồ sơ trước khi bắt đầu khóa học</p>
     </div>
 
-    <div class="pub-tutors-container">
+    <div id="tutorsListContainer" class="pub-tutors-container">
       <div class="pub-tutor-card">
         <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
           👨‍🏫
@@ -337,6 +351,7 @@
 
       <div style="background:var(--g50); padding:26px; border-radius:14px; border:1px solid var(--g200);">
         <h3 style="margin:0 0 14px; font-size:16px; font-weight:700; color:var(--g900);">Phiếu tiếp nhận nhu cầu học</h3>
+        <div id="consultAlert" style="display:none; margin-bottom:12px; padding:10px 12px; border-radius:8px; font-size:13px; font-weight:500;"></div>
         <form id="consultForm">
           <div style="margin-bottom:12px;">
             <label for="parentName">Họ và tên Phụ huynh</label>
@@ -359,7 +374,7 @@
             <label for="parentNote">Yêu cầu cụ thể (Hình thức học online/offline...)</label>
             <textarea id="parentNote" rows="2" placeholder="Ví dụ: Cần gia sư kèm môn Toán lớp 9 tại nhà..."></textarea>
           </div>
-          <button type="submit" class="btn p" style="width:100%; padding:10px; justify-content:center; font-size:13.5px;">
+          <button type="submit" id="btnSubmitConsult" class="btn p" style="width:100%; padding:10px; justify-content:center; font-size:13.5px;">
             Gửi Yêu Cầu Cho Giáo Vụ
           </button>
         </form>
@@ -403,6 +418,7 @@
 
   <!-- Scripts -->
   <script src="src/config/app.config.js"></script>
+  <script src="src/shared/services/http.js"></script>
   <script src="src/shared/permissions/access.js"></script>
   <script>
     const COURSE_DETAILS = {
@@ -425,7 +441,142 @@
 
     function selectCourse(courseName) {
       const sel = document.getElementById('courseSelect');
-      if (sel) sel.value = courseName;
+      if (!sel) return;
+      const hasOption = Array.from(sel.options).some(opt => opt.value === courseName);
+      if (!hasOption && courseName) {
+        const opt = document.createElement('option');
+        opt.value = courseName;
+        opt.textContent = courseName;
+        sel.insertBefore(opt, sel.lastElementChild);
+      }
+      sel.value = courseName;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '').replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function bindDetailButtons() {
+      const modal = document.getElementById('modalCourseDetail');
+      const modalTitle = document.getElementById('modalCourseTitle');
+      const modalBody = document.getElementById('modalCourseContent');
+      const btnEnroll = document.getElementById('btnModalEnroll');
+
+      document.querySelectorAll('.btn-detail').forEach(btn => {
+        btn.onclick = () => {
+          const code = btn.dataset.code;
+          const info = COURSE_DETAILS[code];
+          if (!info) return;
+
+          modalTitle.textContent = info.title;
+          modalBody.innerHTML = `
+            <p style="margin-bottom:12px;">${escapeHtml(info.desc)}</p>
+            <div style="background:var(--pri-ll); padding:14px; border-radius:8px; border:1px solid var(--pri-l);">
+              <b style="color:var(--pri-d); display:block; margin-bottom:6px;">Điểm nổi bật của khóa:</b>
+              <ul style="margin:0 0 0 16px; padding:0; font-size:12.5px;">
+                ${(info.highlights || []).map(h => `<li style="margin-bottom:4px;">${escapeHtml(h)}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+          if (btnEnroll) {
+            btnEnroll.onclick = () => {
+              selectCourse(info.title);
+              modal.classList.remove('show');
+            };
+          }
+          modal.classList.add('show');
+        };
+      });
+    }
+
+    async function loadPublicLandingData() {
+      if (typeof HttpService === 'undefined') return;
+      try {
+        const res = await HttpService.get('/people/parents/public/landing');
+        const data = res && res.data ? res.data : null;
+        if (!data) return;
+
+        // 1. Render danh mục khóa học từ Backend nếu có dữ liệu
+        if (Array.isArray(data.courses) && data.courses.length > 0) {
+          const coursesEl = document.getElementById('coursesListContainer');
+          const selectEl = document.getElementById('courseSelect');
+          const tagStyles = ['ok', 'i', 'purple', 'warn'];
+
+          coursesEl.innerHTML = data.courses.map((c, idx) => {
+            const code = c.ma || `KHOA-${c.id}`;
+            const priceFormatted = Number(c.hocPhi || 0).toLocaleString('vi-VN') + ' đ';
+            const tagClass = tagStyles[idx % tagStyles.length];
+            const tagLabel = c.tenMonHoc ? `${c.tenMonHoc}` : 'Khóa đào tạo trọn gói';
+            COURSE_DETAILS[code] = {
+              title: c.ten,
+              desc: c.moTa || 'Khóa đào tạo tiêu chuẩn thu trọn từng khóa theo quy ước của EduCenter ERP.',
+              highlights: [
+                `Mã khóa học: ${code}`,
+                `Học phí trọn khóa niêm yết: ${priceFormatted}`,
+                'Duyệt hồ sơ người dạy và theo dõi tiến độ từng buổi trên Cổng Phụ Huynh'
+              ]
+            };
+            return `
+              <div class="pub-course-card">
+                <div style="margin-bottom:14px;">
+                  <span class="tag ${tagClass}" style="margin-bottom:8px;">${escapeHtml(tagLabel)}</span>
+                  <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">${escapeHtml(c.ten)}</h3>
+                  <p style="font-size:13px; color:var(--g600); line-height:1.5;">${escapeHtml(c.moTa || 'Giáo án thiết kế bám sát năng lực học viên, cam kết chất lượng đầu ra.')}</p>
+                </div>
+                <div>
+                  <div class="c-price">${priceFormatted} <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
+                  <div style="display:flex; gap:8px; margin-top:14px;">
+                    <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="${escapeHtml(code)}">Chi tiết</button>
+                    <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('${escapeHtml(c.ten).replace(/'/g, "\\'")}')">Đăng ký</a>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          if (selectEl) {
+            selectEl.innerHTML = data.courses.map(c =>
+              `<option value="${escapeHtml(c.ten)}">${escapeHtml(c.ten)} (${Number(c.hocPhi || 0).toLocaleString('vi-VN')} đ)</option>`
+            ).join('') + '<option value="Khác">Khác (Cần tư vấn lộ trình riêng)</option>';
+          }
+
+          bindDetailButtons();
+        }
+
+        // 2. Render đội ngũ Giáo viên & Gia sư từ Backend nếu có dữ liệu
+        if (Array.isArray(data.teachers) && data.teachers.length > 0) {
+          const tutorsEl = document.getElementById('tutorsListContainer');
+          const avatars = ['👨‍🏫', '👩‍🏫', '👨‍🎓', '👩‍🎓'];
+          tutorsEl.innerHTML = data.teachers.map((t, idx) => {
+            const roleMap = {
+              giao_vien: 'Giáo viên',
+              gia_su: 'Gia sư',
+              tro_giang: 'Trợ giảng'
+            };
+            const rawRole = String(t.phanLoai || 'gia_su').split(',')[0];
+            const roleLabel = roleMap[rawRole] || 'Giáo viên / Gia sư';
+            const expText = Number(t.kinhNghiemNam || 0) > 0 ? ` · ${t.kinhNghiemNam} năm KN` : '';
+            const subTitle = t.chuyenMon
+              ? `${roleLabel} ${t.chuyenMon}${expText}`
+              : `${roleLabel}${t.donViCongTac ? ' · ' + t.donViCongTac : expText}`;
+            const desc = t.gioiThieu || (t.donViCongTac ? `Đơn vị công tác: ${t.donViCongTac}. Phương pháp giảng dạy tận tâm, bám sát học lực học sinh.` : 'Hồ sơ năng lực đã kiểm định bởi Hội đồng Học vụ EduCenter.');
+            return `
+              <div class="pub-tutor-card">
+                <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
+                  ${avatars[idx % avatars.length]}
+                </div>
+                <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">${escapeHtml(t.hoTen)}</h4>
+                <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">${escapeHtml(subTitle)}</div>
+                <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">${escapeHtml(desc)}</p>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.warn('[Landing] Sử dụng dữ liệu giới thiệu mặc định khi chưa kết nối API:', err.message);
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -435,50 +586,63 @@
         if (user && navContainer) {
           navContainer.innerHTML = `
             <button class="btn p" onclick="AccessService.redirectByRole()">
-              Chào ${user.hoTen || user.username} (Vào Cổng →)
+              Chào ${escapeHtml(user.hoTen || user.username)} (Vào Cổng →)
             </button>
           `;
         }
       }
 
       const modal = document.getElementById('modalCourseDetail');
-      const modalTitle = document.getElementById('modalCourseTitle');
-      const modalBody = document.getElementById('modalCourseContent');
       const closeBtn = document.getElementById('closeDetailModal');
       const btnEnroll = document.getElementById('btnModalEnroll');
 
-      document.querySelectorAll('.btn-detail').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const code = btn.dataset.code;
-          const info = COURSE_DETAILS[code];
-          if (!info) return;
-
-          modalTitle.textContent = info.title;
-          modalBody.innerHTML = `
-            <p style="margin-bottom:12px;">${info.desc}</p>
-            <div style="background:var(--pri-ll); padding:14px; border-radius:8px; border:1px solid var(--pri-l);">
-              <b style="color:var(--pri-d); display:block; margin-bottom:6px;">Điểm nổi bật của khóa:</b>
-              <ul style="margin:0 0 0 16px; padding:0; font-size:12.5px;">
-                ${info.highlights.map(h => `<li style="margin-bottom:4px;">${h}</li>`).join('')}
-              </ul>
-            </div>
-          `;
-          modal.classList.add('show');
-        });
-      });
-
+      bindDetailButtons();
       closeBtn.addEventListener('click', () => modal.classList.remove('show'));
       btnEnroll.addEventListener('click', () => modal.classList.remove('show'));
 
-      const consultForm = document.getElementById('consultForm');
-      consultForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const parentName = document.getElementById('parentName').value;
-        const phone = document.getElementById('parentPhone').value;
-        const course = document.getElementById('courseSelect').value;
+      // Nạp dữ liệu khóa học & giáo viên thật từ Backend
+      loadPublicLandingData();
 
-        alert(`Cảm ơn Quý phụ huynh ${parentName}! EduCenter đã ghi nhận yêu cầu tư vấn khóa [${course}]. Giáo vụ sẽ liên hệ qua SĐT ${phone} trong thời gian sớm nhất.`);
-        consultForm.reset();
+      // Xử lý gửi Phiếu tiếp nhận nhu cầu học qua Backend API
+      const consultForm = document.getElementById('consultForm');
+      const consultAlert = document.getElementById('consultAlert');
+      const btnSubmitConsult = document.getElementById('btnSubmitConsult');
+
+      consultForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const parentName = document.getElementById('parentName').value.trim();
+        const phone = document.getElementById('parentPhone').value.trim();
+        const course = document.getElementById('courseSelect').value;
+        const note = document.getElementById('parentNote').value.trim();
+
+        btnSubmitConsult.disabled = true;
+        btnSubmitConsult.textContent = 'Đang gửi yêu cầu lên hệ thống...';
+        consultAlert.style.display = 'none';
+
+        try {
+          const response = await HttpService.post('/people/parents/public/consultations', {
+            hoTenLienHe: parentName,
+            sdtLienHe: phone,
+            khoaHocQuanTam: course,
+            ghiChu: note
+          });
+          const maYc = response?.data?.maYc ? ` (Mã phiếu: ${response.data.maYc})` : '';
+          consultAlert.style.display = 'block';
+          consultAlert.style.background = '#ecfdf5';
+          consultAlert.style.border = '1px solid #a7f3d0';
+          consultAlert.style.color = '#065f46';
+          consultAlert.textContent = `✓ Đã gửi yêu cầu tư vấn khóa [${course}] thành công${maYc}! Bộ phận Giáo vụ sẽ liên hệ SĐT ${phone} trong 30 phút.`;
+          consultForm.reset();
+        } catch (err) {
+          consultAlert.style.display = 'block';
+          consultAlert.style.background = '#fef2f2';
+          consultAlert.style.border = '1px solid #fecaca';
+          consultAlert.style.color = '#b91c1c';
+          consultAlert.textContent = err.message || 'Không thể kết nối máy chủ. Vui lòng kiểm tra lại thông tin hoặc thử lại.';
+        } finally {
+          btnSubmitConsult.disabled = false;
+          btnSubmitConsult.textContent = 'Gửi Yêu Cầu Cho Giáo Vụ';
+        }
       });
     });
   </script>
