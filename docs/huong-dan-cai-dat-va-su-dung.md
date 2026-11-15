@@ -1,6 +1,6 @@
 # Hướng dẫn cài đặt và sử dụng EduCenter ERP cho thành viên nhóm
 
-Cập nhật 11/11/2026 (bổ sung quy tắc phối hợp nhóm), áp dụng schema `005_operations_ready`. Đây là tài liệu thao tác duy nhất cho máy mới, máy đang dùng, chia sẻ dữ liệu, kiểm thử và triển khai. Đặc tả và thiết kế nằm trong [Thông tin đồ án](thong-tin-do-an.md).
+Cập nhật 15/11/2026 (cài đặt, đăng nhập chung và quy trình pull/push), áp dụng schema `005_operations_ready`. Đây là tài liệu thao tác duy nhất cho máy mới, máy đang dùng, chia sẻ dữ liệu, kiểm thử và triển khai. Đặc tả và thiết kế nằm trong [Thông tin đồ án](thong-tin-do-an.md).
 
 Đọc theo thứ tự: **cài công cụ → lấy repo → tạo cấu hình riêng → bật MySQL → cài DB mới hoặc phục hồi DB → cấp user API → bật PHP → tạo tài khoản web → kiểm tra**. Máy đã có dữ liệu đi thẳng đến [chạy hằng ngày](#hang-ngay) hoặc [nâng cấp DB](#db-cu).
 
@@ -14,6 +14,7 @@ Cập nhật 11/11/2026 (bổ sung quy tắc phối hợp nhóm), áp dụng sch
 6. [Cấp tài khoản DB và chạy PHP](#chay-web)
 7. [Đăng nhập và sử dụng bản hiện có](#tai-khoan)
 8. [Bật/tắt, cập nhật và nâng cấp DB](#hang-ngay)
+   - [Pull, commit và push code](#pull-push-code)
    - [Lưu ý phối hợp 3 người và bàn giao PR](#phoi-hop-nhom)
 9. [Backup, restore và chia sẻ](#chia-se)
 10. [Kiểm thử và cách chạy PHP trực tiếp](#kiem-thu)
@@ -71,10 +72,10 @@ Repo riêng tư cần được chủ repo mời làm collaborator và đăng nh�
 git clone https://github.com/dangkhoauit184/WEB_GIA_S-.git D:\WEB
 cd D:\WEB
 git switch develop
-git pull --ff-only origin develop
+git pull origin develop
 ```
 
-Nếu đã clone thì không clone đè: vào đúng thư mục, kiểm tra `git status`, xử lý/lưu thay đổi cá nhân rồi mới pull. Có thể dùng đường dẫn khác; mọi lệnh trong tài liệu chạy từ **thư mục gốc repo**, nơi có compose.yaml. Mở terminal PowerShell 7 tại đó.
+Nếu đã clone thì vào đúng thư mục, kiểm tra `git status`, xử lý/lưu thay đổi cá nhân rồi mới pull. Có thể dùng đường dẫn khác; mọi lệnh trong tài liệu chạy từ **thư mục gốc repo**, nơi có compose.yaml, trừ phần ghi rõ chuyển thư mục. Mở terminal PowerShell 7 tại đó. Chạy từng lệnh theo thứ tự và xem kết quả trước khi chạy lệnh tiếp theo.
 
 <a id="cau-hinh"></a>
 ## 3. Tạo cấu hình riêng và hiểu các loại mật khẩu
@@ -96,10 +97,10 @@ if (!(Test-Path config/server.env)) { Copy-Item config/server.env.example config
 notepad config/server.env
 ```
 
-Điền DB_USER=educenter_api, DB_NAME=trung_tam_gia_su. Đặt **DB_PASSWORD riêng** và **JWT_SECRET ngẫu nhiên tối thiểu32 ký tự**. Có thể tự sinh mỗi chuỗi bằng lệnh sau rồi dán vào đúng trường:
+Điền DB_USER=educenter_api, DB_NAME=trung_tam_gia_su. Đặt **DB_PASSWORD riêng** và **JWT_SECRET ngẫu nhiên tối thiểu32 ký tự**. Có thể chạy lệnh sau hai lần để tạo hai chuỗi riêng rồi dán vào từng trường:
 
 ```powershell
-[Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
+[Guid]::NewGuid().ToString('N')
 ```
 
 Giữ các giá trị local còn lại theo mẫu:
@@ -123,7 +124,7 @@ File env dùng `KEY=value`, không thêm `export` hoặc comment cuối dòng; c
 ## 4. Bật hoặc tạo MySQL local
 
 ```powershell
-pwsh -NoProfile -File database/scripts/start-local.ps1
+pwsh -File database/scripts/start-local.ps1
 ```
 
 Hành vi script:
@@ -153,7 +154,7 @@ pwsh -File database/scripts/run.ps1 -Action check -Container educenter-mysql -En
 
 `init` tự thực hiện schema → routines/triggers theo manifest → reference/policy → lịch sử applied001–005. Không chạy lần lượt từng file SQL bằng tay. Không cần chạy thêm migration sau init005. `check` phải không có dòng VI_PHAM khác0; CAN_XAC_NHAN cần đối chiếu nếu có dữ liệu lịch sử.
 
-Sau khi cài DB mới, tạo Admin theo mục Tài khoản web. Admin đăng nhập `/admin` để tạo khóa học và nhập dữ liệu trung tâm.
+Sau khi cài DB mới, làm tiếp bước 6 để bật PHP, rồi bước 7 để tạo Admin. Mở `/login`, đăng nhập Admin và tạo khóa học, nhập dữ liệu trung tâm trong `/app`.
 
 ### 5B. Nhận dữ liệu giống một đồng đội — lựa chọn thay cho5A
 
@@ -194,7 +195,13 @@ Nếu backup đang ở005, chạy check. Nếu ở001–004, thực hiện [quy 
 <a id="chay-web"></a>
 ## 6. Cấp user API rồi chạy PHP
 
-Vào MySQL root như5B. Thay mật khẩu minh họa dưới đây bằng **đúng DB_PASSWORD của config/server.env trên máy bạn**:
+Mở MySQL bằng lệnh sau và nhập mật khẩu root của máy mình khi được hỏi.
+
+```powershell
+docker exec -it educenter-mysql mysql -u root -p
+```
+
+Tại dấu nhắc `mysql>`, thay mật khẩu minh họa dưới đây bằng **đúng DB_PASSWORD trong config/server.env trên máy bạn**, rồi chạy SQL.
 
 ```sql
 CREATE USER 'educenter_api'@'%' IDENTIFIED BY 'THAY_BANG_MAT_KHAU_DB_API_RIENG';
@@ -205,15 +212,17 @@ EXIT;
 Nếu user đã có, dùng lại thông tin đúng; không đặt lại mật khẩu tùy tiện. Host% cho phép PHP container gọi MySQL trong mạng Docker, trong khi cổng DB trên Windows vẫn chỉ bind loopback. Không cấp user API quyền CREATE/ALTER/DROP/GRANT.
 
 ```powershell
-pwsh -NoProfile -File backend/scripts/start.ps1
-pwsh -NoProfile -File backend/scripts/doctor.ps1
+pwsh -File backend/scripts/start.ps1
+pwsh -File backend/scripts/doctor.ps1
 ```
 
 Start bật lại DB, nối mạng, build PHP/Apache, composer install từ lock và bật backend/Mailpit. Lần đầu cần Internet, có thể mất vài phút. Script không xóa volume, init lại DB hoặc nạp demo vào DB làm việc.
 
 | Địa chỉ | Dùng để làm gì |
 | --- | --- |
-| http://localhost:5000/ | Web PHP hiện có |
+| http://localhost:5000/ | Trang giới thiệu Trung tâm |
+| http://localhost:5000/login | Trang đăng nhập chung của các vai trò |
+| http://localhost:5000/app | Không gian làm việc theo tài khoản đã đăng nhập |
 | http://localhost:5000/api/health | Kiểm tra PHP kết nối MySQL |
 | http://localhost:5000/api | Manifest API/module |
 | http://localhost:8025/ | Hộp thư SMTP thử Mailpit |
@@ -226,30 +235,35 @@ Health mong đợi success=true, timeZone=+07:00, isolationLevel=READ-COMMITTED.
 Máy cài DB mới chạy:
 
 ```powershell
-pwsh -NoProfile -File backend/scripts/bootstrap-admin.ps1
+pwsh -File backend/scripts/bootstrap-admin.ps1
 ```
 
-Script hỏi mật khẩu riêng bằng SecureString; username mặc định **admin**. Sau đó mở web và đăng nhập bằng mật khẩu vừa đặt. Không có mật khẩu Admin dùng chung được công bố trong repo.
+Script hỏi mật khẩu riêng bằng SecureString; username mặc định **admin**. Sau đó mở `http://localhost:5000/login` và đăng nhập bằng mật khẩu vừa đặt. Mỗi máy dùng mật khẩu Admin do người quản lý máy đó cấp.
 
 Nếu DB khôi phục đã có admin, dùng mật khẩu web được chủ dữ liệu cấp. Chỉ khi chủ động đổi/kích hoạt tài khoản **trong bản local của bạn**, chạy:
 
 ```powershell
-pwsh -NoProfile -File backend/scripts/bootstrap-admin.ps1 -Username admin -Reset
+pwsh -File backend/scripts/bootstrap-admin.ps1 -Username admin -Reset
 ```
 
 Không dùng Reset như một lệnh khởi động hằng ngày. Mật khẩu MySQL/root không phải mật khẩu ở màn đăng nhập web. Không nhập thông tin DB vào form login.
 
-Bản web hiện có đăng nhập/đổi mật khẩu, tra cứu/tìm học viên, lớp và lịch qua Ajax; các API hồ sơ/quản trị nêu trong [tiến độ](thong-tin-do-an.md#tien-do). Các màn Figma chưa được code đầy đủ. Thanh toán, check-in, học bù, lương và thông báo chưa có đầy đủ API/màn hình dù DB đã hỗ trợ dữ liệu. Mailpit chỉ hứng thư thử, không tự gửi thông báo khi chưa có worker BE.
+Mọi vai trò đăng nhập tại **http://localhost:5000/login**. Sau khi đăng nhập, **http://localhost:5000/app** hiển thị giao diện theo quyền hiện hành của tài khoản trong DB.
 
-Bản giao diện gốc dùng để tham khảo nằm tại [docs/demo/index.html](demo/index.html). Cổng quản trị đang chạy tại `/admin` dùng API PHP/MySQL.
+- Admin dùng cổng quản trị.
+- Giáo vụ dùng cổng tuyển sinh/điều phối.
+- Phụ huynh dùng cổng quản lý thông tin các con.
+- Giáo viên, Gia sư và Trợ giảng đăng nhập được, giao diện nghiệp vụ đang triển khai.
 
-Mọi vai trò dùng chung trang đăng nhập gốc tại `http://localhost:5000/login`. Sau đăng nhập, cùng địa chỉ `/app` hiển thị giao diện theo vai trò do PHP xác thực từ DB. Admin thấy quản trị, Giáo vụ thấy điều phối, Phụ huynh thấy cổng phụ huynh. Giáo viên/Gia sư/Trợ giảng đăng nhập được và thấy trạng thái giao diện đang triển khai. PHP phục vụ frontend cùng cổng 5000, không cần bật Python để dùng web. Đăng xuất quay về `/login`; F5 ở `/app` kiểm tra lại phiên, phiên hết hạn/thu hồi quay về đăng nhập. Cookie phiên có HttpOnly/SameSite=Lax và Secure khi chạy HTTPS; API tiếp tục xác thực Bearer JWT. Các đường dẫn `/admin`, `/staff` cũ chuyển về ứng dụng chung. Link frontend cổng 8769 chuyển sang trang đăng nhập chung để tránh chia phiên theo cổng.
+Đăng xuất quay về trang đăng nhập. F5 tại `/app` kiểm tra lại phiên. Phiên hết hạn hoặc đã thu hồi sẽ chuyển về `/login`. PHP phục vụ giao diện và API cùng cổng 5000. Các liên kết cũ `/admin`, `/staff` chuyển về `/app`; giao diện được chọn theo vai trò của tài khoản. Cookie phiên có HttpOnly, SameSite=Lax và Secure khi chạy HTTPS. API nghiệp vụ dùng Bearer JWT và kiểm tra quyền ở backend.
+
+Giao diện tham chiếu nằm tại [docs/demo/index.html](demo/index.html). Xem các phần đã triển khai và còn thiếu tại [tiến độ đồ án](thong-tin-do-an.md#tien-do). Khi vừa cập nhật code, nhấn **Ctrl+F5** trên trình duyệt để tải giao diện mới.
 
 ### 7.1. Kiểm tra cổng quản trị trước khi push
 
-Bản quản trị bổ sung ngày 11/11/2026 mở tại `http://localhost:5000/admin`, cũng có liên kết từ cổng đăng nhập chung. Đăng nhập bằng tài khoản Admin đã cấp trên DB của máy mình. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `docs/demo/index.html`. Dữ liệu ở `/admin` được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
+Mở `http://localhost:5000/login` và đăng nhập tài khoản Admin đã cấp trên DB của máy mình. Hệ thống mở cổng quản trị tại `/app`. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `docs/demo/index.html`. Dữ liệu quản trị được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
 
-Cập nhật bản giao diện tham chiếu rồi tạo lại template/style quản trị bằng lệnh sau tại thư mục gốc repo.
+Khi cần đồng bộ template/style quản trị từ bản giao diện tham chiếu, chạy lệnh sau tại thư mục gốc repo. Chỉ thực hiện khi đang sửa phần giao diện Admin.
 
 ```powershell
 python backend/scripts/build-admin-assets.py
@@ -265,15 +279,15 @@ Kiểm chứng local 11/11 đạt 460 kiểm tra gồm 71 core, 81 API nền, 21
 
 ### 7.2. Tuyển sinh / Điều phối
 
-Sau khi cập nhật code trên `develop`, mở Docker Desktop và chạy `pwsh -NoProfile -File backend/scripts/start.ps1` từ thư mục gốc. Mở `http://localhost:5000/staff` hoặc hai menu tuyển sinh mới trong `/admin`. Đăng nhập bằng Admin hoặc Giáo vụ có quyền tiếp nhận. Admin tạo tài khoản Giáo vụ và hồ sơ người dạy tại menu Nhân sự/Tài khoản, cập nhật chuyên môn, khu vực và lịch rảnh của người dạy để có ứng viên matching.
+Sau khi cập nhật code trên `develop`, mở Docker Desktop và chạy `pwsh -File backend/scripts/start.ps1` từ thư mục gốc. Mở `http://localhost:5000/login` và đăng nhập tài khoản Giáo vụ có quyền tiếp nhận. Admin thao tác các menu tuyển sinh được cấp trong cổng quản trị của mình. Admin tạo tài khoản Giáo vụ và hồ sơ người dạy tại menu Nhân sự/Tài khoản, cập nhật chuyên môn, khu vực và lịch rảnh của người dạy để có ứng viên matching.
 
 Trong cổng tuyển sinh, xem Đăng ký khóa học hoặc mở Tuyển sinh & Ghép người dạy. Tiếp nhận yêu cầu, chọn hồ sơ học viên hoặc nhập liên hệ khách tư vấn, chọn môn/khối/hình thức/khu vực và tất cả khung giờ cần học. Khách tư vấn cần liên kết hồ sơ học viên/phụ huynh trước khi gửi đề xuất. Bấm Tìm người dạy, đối chiếu ứng viên, nhập học phí trọn khóa nếu đã tư vấn và gửi đề xuất. Bước 3 hiển thị phản hồi thật của từng bên, bước 4 chỉ hiện đề xuất đã được cả hai đồng ý. Admin tiếp tục xếp lớp qua màn Khóa học & Xếp lớp.
 
-Các màn gửi phản hồi của phụ huynh/người dạy thuộc phần tích hợp cổng của thành viên 2/3. Hợp đồng API và trạng thái ở mục 12.2 của đặc tả. Có thể kiểm tra đầy đủ API hai phía trên DB thử bằng suite `pwsh -File backend/scripts/test.ps1`. DB làm việc được đọc qua cấu hình riêng của từng máy; cập nhật này dùng schema 005 hiện có.
+Phụ huynh phản hồi đề xuất tại cổng Phụ huynh. Cổng phản hồi của người dạy thuộc phần triển khai của thành viên 3. Hợp đồng API và trạng thái ở mục 12.2 của đặc tả. Có thể kiểm tra đầy đủ API hai phía trên DB thử bằng suite `pwsh -File backend/scripts/test.ps1`. DB làm việc được đọc qua cấu hình riêng của từng máy; cập nhật này dùng schema 005 hiện có.
 
 #### Cổng Giáo vụ đầy đủ ngày 12/11/2026
 
-Mở `http://localhost:5000/staff`. Trang đầu là Tổng quan công việc. Sidebar có đủ 8 mục theo `docs/demo/index.html`, dùng chung giao diện và bộ lịch của Admin. Đăng nhập bằng tài khoản Giáo vụ do Admin cấp, có hồ sơ nhân viên đang làm và các quyền `TiepNhanYeuCau`, `QuanLyLopHoc`, `VanHanhBuoiHoc`, `HocPhiThanhToan` tương ứng thao tác được giao. Admin cũng đăng nhập được cổng này.
+Đăng nhập tài khoản Giáo vụ tại `/login` để mở `/app`. Trang đầu là Tổng quan công việc. Sidebar có đủ 8 mục theo `docs/demo/index.html`, dùng chung giao diện và bộ lịch của Admin. Tài khoản Giáo vụ do Admin cấp, có hồ sơ nhân viên đang làm và các quyền `TiepNhanYeuCau`, `QuanLyLopHoc`, `VanHanhBuoiHoc`, `HocPhiThanhToan` tương ứng thao tác được giao. Admin dùng các chức năng quản trị tương ứng trong cổng Admin.
 
 1. Vào Hồ sơ Phụ huynh để thêm thông tin liên hệ. Mở chi tiết để xem các con hoặc thêm học viên gắn sẵn phụ huynh. Admin cấp tài khoản web tại màn Tài khoản.
 2. Vào Học viên & ĐK Khóa để tạo/sửa hồ sơ, chọn khóa đang mở hoặc đăng ký thêm khóa. Tra cứu đăng ký khóa để xem giá đã chốt và lớp Admin đã xếp.
@@ -288,15 +302,11 @@ Danh mục cơ sở cần được Admin tạo tại Danh mục & Cấu hình �
 
 Khi chọn người dạy, biểu mẫu hiển thị lịch rảnh đã đăng ký. Nếu trình duyệt hiển thị giờ kiểu AM/PM, 06:00 AM là 6 giờ sáng, 06:00 PM là 18 giờ. Khi lưu ngoài lịch rảnh, thông báo ghi khung giờ đã đăng ký của đúng thứ đang chọn. Khi chưa có cơ sở hoạt động, biểu mẫu hướng dẫn Admin bổ sung danh mục. Chi tiết ca có dữ liệu liên quan sẽ hiển thị nguyên nhân chặn xóa ngay khi mở ca.
 
-Các thao tác ở cổng này gọi API PHP và MySQL 005. Máy đã cài 005 chỉ cần chạy server hiện có. Nội dung mẫu trong index phục vụ đối chiếu giao diện. Dữ liệu hiển thị tại `/staff` lấy từ DB riêng của từng máy. Hợp đồng API và kiểm chứng nằm ở mục 12.3 của đặc tả.
+Các thao tác ở cổng này gọi API PHP và MySQL 005. Máy đã cài 005 chỉ cần chạy server hiện có. Nội dung mẫu trong index phục vụ đối chiếu giao diện. Dữ liệu cổng Giáo vụ lấy từ DB riêng của từng máy. Hợp đồng API và kiểm chứng nằm ở mục 12.3 của đặc tả.
 
-### 7.3. Trạng thái sau khi dọn dữ liệu thử
+### 7.3. Dữ liệu demo trong DataGrip
 
 File `database/seeders/demo-thu-cong.sql` dùng để nhập dữ liệu mẫu trong DataGrip. Phần 1 thêm dữ liệu cho các vai trò trên schema 005, cần có Admin đang hoạt động. Chạy phần 1 từ `USE` đến hết mục A8 trong cùng Query Console. Để dọn, chọn riêng phần 2 bên trong khối chú thích, từ `USE` đến `DROP PROCEDURE` cuối file. Tham số `DGTEST` chọn bộ Giáo vụ cũ, `SQLDEMO` chọn bộ mới, `CA_HAI` chọn cả hai. Thanh toán, hóa đơn, lịch sử và hồ sơ tham chiếu cần thiết được giữ. File chạy thủ công độc lập với init/migrate.
-
-Ngày 11/11/2026 đã dọn bộ DEMO-A1, các khóa mẫu MAU/CRUD và tài khoản Admin kiểm tra tạm trên DB local. Tài khoản quản trị chính dùng tên đăng nhập `admin`. Các file SQL chạy demo, bản xem thử riêng và script kiểm tra tạm đã được gỡ khỏi source.
-
-Backup trước khi dọn nằm trong `.cache/before-demo-removal`, được Git bỏ qua. Đã thử khôi phục bản sao, đối chiếu hash, thử dọn trên DB `_test`, sau đó dọn DB local và đối chiếu từng dòng dữ liệu còn lại. Kiểm tra toàn vẹn đạt với 57 trigger và 20 routine. Các suite kiểm thử tự động trong backend/tests và database/tests phục vụ CI theo mục Kiểm thử.
 
 ### 7.4. Sử dụng cổng Phụ huynh
 
@@ -319,7 +329,13 @@ Khi chạy local bằng bộ server của dự án, mở **http://localhost:8025
 <a id="hang-ngay"></a>
 ## 8. Chạy hằng ngày và cập nhật mã nguồn
 
-Mở Docker Desktop, đợi Engine running rồi chạy start.ps1. Nếu container/image/dependency không thay đổi, có thể bật nhanh:
+Mở Docker Desktop, đợi **Engine running**, vào thư mục gốc dự án rồi chạy lệnh sau.
+
+```powershell
+pwsh -File backend/scripts/start.ps1
+```
+
+Mở **http://localhost:5000/login**. Giữ Docker Desktop chạy trong lúc sử dụng web. Nếu source, image, dependency và cấu hình vẫn như lần chạy trước, có thể bật nhanh bằng các lệnh sau.
 
 ```powershell
 docker start educenter-mysql
@@ -340,25 +356,81 @@ docker compose --profile tools ps
 docker compose logs --tail 50 backend
 ```
 
-Repo chỉ giữ hai nhánh trên GitHub: **develop** để thành viên cùng phát triển và **main** để giữ bản ổn định. Thành viên làm việc/push vào develop; khi kiểm thử và demo đạt, người 1 review PR **develop → main** rồi mới merge. Không push thẳng main hoặc force-push develop/main.
+<a id="pull-push-code"></a>
+### Pull, commit và push code trên develop
 
-Trước khi bắt đầu làm, kiểm tra git status và lưu thay đổi cá nhân rồi cập nhật:
+Cả nhóm làm việc và push code vào **`develop`**. Trưởng nhóm kiểm thử, duyệt demo và tạo PR **`develop` → `main`** để đưa bản đã duyệt vào nhánh ổn định.
+
+**Trước khi bắt đầu làm**, mở Terminal tại thư mục dự án, kiểm tra và lưu phần việc đang có rồi cập nhật.
 
 ```powershell
+git status
 git switch develop
-git pull --ff-only origin develop
+git pull origin develop
 ```
 
-Sau khi sửa, chọn đúng file để stage và commit; không stage env/secret/backup. Khi working tree đã sạch và đã có commit của mình, đồng bộ lần nữa trước khi push:
+Nếu đang có file sửa chưa commit, lưu file và commit phần việc đó trước khi chuyển nhánh hoặc pull. Nếu vừa pull bản có thay đổi thư viện, Dockerfile hoặc cấu hình server, chạy lại lệnh sau.
 
 ```powershell
-git pull --rebase origin develop
+pwsh -File backend/scripts/start.ps1
+```
+
+Nếu bản mới có migration, thực hiện [nâng cấp DB](#db-cu) trước khi bật ứng dụng. Pull cập nhật mã nguồn; dữ liệu MySQL của máy mình nằm trong volume Docker. Đọc thay đổi migration trước khi chạy các lệnh DB.
+
+**Sau khi code và kiểm thử xong**, xem các file đã thay đổi rồi commit.
+
+```powershell
+git status
+git add .
+git commit -m "Hoàn thiện chức năng vừa làm"
+```
+
+Thay nội dung commit bằng mô tả phần mình thực hiện. Kiểm tra danh sách file để tránh đưa mật khẩu, env riêng hoặc backup vào commit. Tiếp tục lấy code mới của nhóm.
+
+```powershell
+git pull origin develop
+```
+
+Kiểm thử lại các phần được gộp rồi push.
+
+```powershell
 git push origin develop
 ```
 
-Nếu rebase có xung đột, xử lý từng file, kiểm thử lại và hoàn tất rebase trước khi push; không dùng force-push để bỏ qua thay đổi của đồng đội. Nếu chưa biết xử lý, giữ nguyên trạng thái và nhờ người 1 hỗ trợ. CI chạy khi push develop/main và khi mở PR vào hai nhánh này; kiểm tra kết quả của đúng commit mới nhất trước khi duyệt.
+Nếu `git status` báo đang ở nhánh khác `develop`, kiểm tra và chuyển về `develop` trước khi thực hiện quy trình này. Nếu commit báo `nothing to commit`, xem lại `git status` để xác nhận các thay đổi đã được lưu và commit trước đó.
 
-Sau khi merge develop → main, đồng bộ develop với main trước đợt làm tiếp; người 1 ưu tiên merge commit khi duyệt PR để giữ lịch sử chung. Không reset/force-push khi hai nhánh khác nhau. Đọc thay đổi migration trước khi chạy. Thay code/dependency/Dockerfile/env thì chạy lại start.ps1. Không đưa vendor, writable, .cache, env, backup vào Git.
+**Khi push báo `rejected`, `fetch first` hoặc `non-fast-forward`**, lấy code mới của nhóm.
+
+```powershell
+git pull origin develop
+```
+
+Nếu gộp thành công, kiểm thử lại rồi chạy lệnh push.
+
+```powershell
+git push origin develop
+```
+
+**Khi pull báo `CONFLICT`**, mở các file xung đột trong VS Code, đối chiếu và gộp nội dung cần giữ của cả hai bên. Xóa các dấu `<<<<<<<`, `=======`, `>>>>>>>`, lưu file và kiểm thử lại rồi chạy các lệnh sau.
+
+```powershell
+git add .
+git commit -m "Giải quyết xung đột code"
+git push origin develop
+```
+
+Nếu Git mở trình soạn thảo để nhập lời nhắn merge, giữ hoặc sửa lời nhắn rồi lưu và đóng. Với Vim, nhấn `Esc`, gõ `:wq` rồi Enter. Khi xem diff bị dừng tại `(END)`, nhấn `q` để quay về Terminal.
+
+Quy trình trên dùng merge khi pull. Nếu máy đã cấu hình pull bằng rebase hoặc chỉ cho fast-forward, đặt lại **một lần trong repo này** để các lệnh `git pull origin develop` hoạt động theo hướng dẫn.
+
+```powershell
+git config pull.rebase false
+git config pull.ff true
+```
+
+Nếu `git status` đang báo `rebase in progress` từ lần thao tác trước, cần xử lý hết xung đột rồi chạy `git add .` và `git rebase --continue` cho đến khi hoàn tất. Có thể dùng `git rebase --abort` để quay về trước lần rebase đó rồi thực hiện lại quy trình pull bên trên.
+
+Sau khi push, xem kết quả **GitHub Actions của đúng commit vừa gửi**. Thành viên tự kiểm thử phần mình. Trưởng nhóm kiểm thử luồng xuyên suốt trước khi merge PR `develop` → `main`. Giữ quyền push `main` và thao tác duyệt bản ổn định cho trưởng nhóm; giữ lịch sử chung khi gộp code, tránh force-push hai nhánh.
 
 ### 8.1. Đổi cổng HTTP local
 
@@ -455,12 +527,15 @@ Init vẫn chỉ DB rỗng; DB cũ dùng preflight/migrate/check. MYSQL_BIN có 
 
 ### 10.3. PHP cài trực tiếp — tùy chọn
 
-Cần PHP>=8.2, khuyên8.4, Composer và intl/mbstring/mysqli/zip. Env DB_HOST/PORT phải gọi được MySQL từ máy chạy PHP, SMTP cũng phải đổi host/port phù hợp; hostname mailpit chỉ hoạt động trong mạng Docker. Từ backend/:
+Cần PHP>=8.2, khuyên8.4, Composer và intl/mbstring/mysqli/zip. Env DB_HOST/PORT phải gọi được MySQL từ máy chạy PHP, SMTP cũng phải đổi host/port phù hợp; hostname mailpit chỉ hoạt động trong mạng Docker. Từ thư mục gốc repo, chạy các lệnh sau.
 
 ```powershell
+cd backend
 composer install
 php spark serve --host 127.0.0.1 --port 5000
 ```
+
+Mở một Terminal khác để chạy lệnh tiếp theo. Khi muốn trở lại thư mục gốc trong Terminal này, dừng server bằng Ctrl+C rồi chạy `cd ..`.
 
 Đây là development server, không dùng public. Frontend là HTML/CSS/JS; backend PHP không chạy npm/Node server.
 
@@ -503,7 +578,9 @@ SMTP thật dùng MAIL_HOST/PORT/USERNAME/PASSWORD/ENCRYPTION/FROM_EMAIL/FROM_NA
 | Init từ chối DB không rỗng | Dùng nâng cấp8.2, không DROP/schema.sql để vượt lỗi |
 | Migration còn applying/VI_PHAM | Giữ backup và ứng dụng dừng; đối chiếu DDL/dữ liệu, không xóa marker/chạy --force |
 | Login sai hoặc account locked | Dùng mật khẩu web; demo bị khóa. Chỉ Reset khi chủ động quản lý bản local |
-| Doctor lỗi SMTP | Bật profile tools/mailpit hoặc sửa SMTP thật; không in password để debug |
+| Doctor lỗi SMTP | Chạy `pwsh -File backend/scripts/start.ps1` để bật Mailpit hoặc kiểm tra cấu hình SMTP thật |
+| Trang trắng hoặc giao diện cũ sau pull | Chạy lại `pwsh -File backend/scripts/start.ps1`, mở `/login` và nhấn Ctrl+F5 |
+| Push bị rejected hoặc pull có conflict | Làm theo mục [Pull, commit và push code](#pull-push-code) |
 | SQL báo thiếu snapshot/dấu vết lịch sử | Đối chiếu chứng từ gốc; không lấy giá hiện tại điền ngược quá khứ |
 | Chưa thấy nút/tính năng Figma | Đối chiếu tiến độ; hình Figma và demo không phải FE đã nối API |
 
