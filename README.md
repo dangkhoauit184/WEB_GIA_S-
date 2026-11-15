@@ -19,3 +19,5 @@ Schema hiện hành **005_operations_ready**. Nền DB/server và một số API
 | config / shared | Mẫu cấu hình / manifest6 module21 feature |
 
 Giữ4 README làm chỉ dẫn ngắn và 1 mẫu PR. Không commit secret, env riêng, vendor, writable hoặc backup. Không viết Node backend song song.
+
+Hướng dẫn pull, commit, push và xử lý xung đột nằm trong [tài liệu cài đặt và sử dụng](docs/huong-dan-cai-dat-va-su-dung.md#pull-push-code).
