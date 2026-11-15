@@ -190,7 +190,7 @@ try {
     check(count($summary['revenue'])===4 && isset($summary['counts']['debt']),'dashboard returns four months and debt');
     check(http('/api/reporting/dashboard','GET',null,$staffToken)[0]===403,'admin dashboard blocked for staff');
     check(http('/api/reporting/dashboard?month=2026-99','GET',null,$token)[0]===400,'invalid dashboard month');
-    check(http('/admin')[0]===200,'administration entry loads');
+    check(http('/admin')[0]===303,'administration alias redirects to shared application');
     check(http('/admin-assets/administration.js')[0]===200,'administration assets served');
     check(http('/admin-assets/server.env')[0]===404,'asset whitelist blocks private paths');
 
@@ -392,7 +392,7 @@ try {
     requestOk($admissions.'/requests/'.$intakeGuest['id'],'PUT',$intakeBody,$staffToken);
     requestOk($admissions.'/requests/'.$intakeGuest['id'].'/proposals','POST',['nhanSuId'=>$intakeTeacher['id']],$staffToken,201);
     check((int)Store::one('SELECT COUNT(*) AS n FROM thong_bao WHERE doi_tuong_loai=? AND doi_tuong_id=?',['de_xuat_nhan_su',$intakeProposal['id']])['n']>=4,'proposal and response notifications persisted');
-    [$intakePageStatus,,$intakePage]=http('/staff');
+    [$intakePageStatus,,$intakePage]=http('/app','GET',null,null,null,['Cookie: educenter_session='.$staffToken]);
     check($intakePageStatus===200 && str_contains($intakePage,'data-portal="admissions"') && !str_contains($intakePage,'data-screen="admin-payroll"'),'staff uses shared shell with correct menu');
     check(http('/admin-assets/admissions.html')[0]===200,'approved intake template available');
 
@@ -507,7 +507,7 @@ try {
     check(count($staffNotifications)>0,'staff notification menu reads persisted notifications');
     requestOk($affairs.'/notifications/'.$staffNotifications[0]['id'].'/read','POST',[],$staffToken);
     check(http($affairs.'/notifications/'.$staffNotifications[0]['id'].'/read','POST',[],$token)[0]===404,'another account cannot mark staff notification read');
-    [$staffHtmlStatus,,$staffHtml]=http('/staff');
+    [$staffHtmlStatus,,$staffHtml]=http('/app','GET',null,null,null,['Cookie: educenter_session='.$staffToken]);
     foreach(['staff-dash','staff-intake','staff-schedule','staff-classes','staff-students','staff-parents','staff-approve','staff-billing'] as $staffScreen) check(str_contains($staffHtml,'data-screen="'.$staffScreen.'"'),'staff menu includes '.$staffScreen);
     check($staffHtmlStatus===200&&str_contains($staffHtml,'id="modalSessionForm"')&&str_contains($staffHtml,'id="notifPanel"'),'staff uses shared calendar modals and notification panel');
 

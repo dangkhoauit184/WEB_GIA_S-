@@ -33,4 +33,44 @@ final class ParentsService
         ParentsRepository::update($id,ParentsValidator::validate($data,false));
         return self::detail($id);
     }
+
+    public static function publicLanding(): array
+    {
+        return ParentsRepository::publicLanding();
+    }
+
+    public static function createPublicConsultation(array $body): array
+    {
+        $data = ParentsValidator::consultation($body);
+        return ParentsRepository::createPublicConsultation($data);
+    }
+
+    private static function parentUser(): array
+    {
+        $user = Access::user();
+        if (!in_array($user['role'] ?? '', ['PHU_HUYNH', 'ADMIN'], true)) {
+            Access::forbidden();
+        }
+        return $user;
+    }
+
+    public static function portal(): array
+    {
+        $user = self::parentUser();
+        return ParentsRepository::portalData((int)$user['userId']);
+    }
+
+    public static function createLeaveRequest(array $body): array
+    {
+        $user = self::parentUser();
+        $data = ParentsValidator::leaveRequest($body);
+        return ParentsRepository::createLeaveRequest((int)$user['userId'], $data);
+    }
+
+    public static function createOnlinePayment(array $body): array
+    {
+        $user = self::parentUser();
+        $data = ParentsValidator::onlinePayment($body);
+        return ParentsRepository::createOnlinePayment((int)$user['userId'], $data);
+    }
 }

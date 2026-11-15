@@ -243,6 +243,8 @@ Bản web hiện có đăng nhập/đổi mật khẩu, tra cứu/tìm học vi�
 
 Bản giao diện gốc dùng để tham khảo nằm tại [docs/demo/index.html](demo/index.html). Cổng quản trị đang chạy tại `/admin` dùng API PHP/MySQL.
 
+Mọi vai trò dùng chung trang đăng nhập gốc tại `http://localhost:5000/login`. Sau đăng nhập, cùng địa chỉ `/app` hiển thị giao diện theo vai trò do PHP xác thực từ DB. Admin thấy quản trị, Giáo vụ thấy điều phối, Phụ huynh thấy cổng phụ huynh. Giáo viên/Gia sư/Trợ giảng đăng nhập được và thấy trạng thái giao diện đang triển khai. PHP phục vụ frontend cùng cổng 5000, không cần bật Python để dùng web. Đăng xuất quay về `/login`; F5 ở `/app` kiểm tra lại phiên, phiên hết hạn/thu hồi quay về đăng nhập. Cookie phiên có HttpOnly/SameSite=Lax và Secure khi chạy HTTPS; API tiếp tục xác thực Bearer JWT. Các đường dẫn `/admin`, `/staff` cũ chuyển về ứng dụng chung. Link frontend cổng 8769 chuyển sang trang đăng nhập chung để tránh chia phiên theo cổng.
+
 ### 7.1. Kiểm tra cổng quản trị trước khi push
 
 Bản quản trị bổ sung ngày 11/11/2026 mở tại `http://localhost:5000/admin`, cũng có liên kết từ cổng đăng nhập chung. Đăng nhập bằng tài khoản Admin đã cấp trên DB của máy mình. Giao diện lấy trực tiếp bố cục, CSS, 10 màn và các form Admin đã chốt trong `docs/demo/index.html`. Dữ liệu ở `/admin` được đọc/ghi qua API PHP/MySQL. Danh sách màn và hợp đồng API ở [mục 12.1 của đặc tả](thong-tin-do-an.md#quan-tri-admin).
@@ -295,6 +297,24 @@ File `database/seeders/demo-thu-cong.sql` dùng để nhập dữ liệu mẫu t
 Ngày 11/11/2026 đã dọn bộ DEMO-A1, các khóa mẫu MAU/CRUD và tài khoản Admin kiểm tra tạm trên DB local. Tài khoản quản trị chính dùng tên đăng nhập `admin`. Các file SQL chạy demo, bản xem thử riêng và script kiểm tra tạm đã được gỡ khỏi source.
 
 Backup trước khi dọn nằm trong `.cache/before-demo-removal`, được Git bỏ qua. Đã thử khôi phục bản sao, đối chiếu hash, thử dọn trên DB `_test`, sau đó dọn DB local và đối chiếu từng dòng dữ liệu còn lại. Kiểm tra toàn vẹn đạt với 57 trigger và 20 routine. Các suite kiểm thử tự động trong backend/tests và database/tests phục vụ CI theo mục Kiểm thử.
+
+### 7.4. Sử dụng cổng Phụ huynh
+
+Mở `http://localhost:5000/login` và đăng nhập tài khoản Phụ huynh được liên kết với hồ sơ con trên DB của máy mình. `/app` mở giao diện có cùng sidebar/header với Admin và Giáo vụ. Sau khi cập nhật source, nhấn Ctrl+F5 để nhận bản HTML/CSS/JS mới.
+
+1. Chọn con bằng danh sách hoặc nút tên học sinh. Tổng quan, lịch, bài tập, hóa đơn và đơn nghỉ đổi theo con đang chọn.
+2. Mở Lịch học để xem tuần/tháng/danh sách. Bấm một buổi để xem chi tiết và gửi đơn nghỉ nếu buổi đó sắp diễn ra. Lịch bù hiển thị ngay trong lịch với nhãn Học bù.
+3. Mở Bài tập & Kết quả để xem điểm và nhận xét. Tải PDF dùng URL tệp đề bài đã lưu trong DB.
+4. Mở Học phí & Thanh toán để xem/in hóa đơn, gửi thông báo sau khi chuyển khoản và theo dõi giao dịch chờ đối soát. Đối chiếu tiền thực nhận và xác nhận thu thuộc Admin.
+5. Ở Tổng quan, đồng ý hoặc từ chối đề xuất người dạy. Nút chuông mở thông báo, avatar mở đổi mật khẩu, Đăng xuất quay về trang đăng nhập chung.
+
+Tài khoản chưa liên kết con hiển thị trạng thái trống. Cấu hình ngân hàng/gateway thật và việc cung cấp URL PDF thực tế được thực hiện ở phần tích hợp tương ứng. Chi tiết API và phạm vi nằm ở mục 12.4 của tài liệu đặc tả.
+
+### 7.5. Khôi phục mật khẩu qua email
+
+Tại trang đăng nhập chung, chọn **Quên mật khẩu**, nhập tên đăng nhập hoặc email rồi lấy OTP. Mã được gửi đến email đã lưu trong tài khoản, có hiệu lực 10 phút và dùng một lần. Không có mã hiển thị sẵn hoặc tự điền trên trang web. Chờ 60 giây giữa hai lần gửi mã. Nhập sai 5 lần phải lấy mã mới.
+
+Khi chạy local bằng bộ server của dự án, mở **http://localhost:8025/** để đọc thư trong Mailpit và lấy OTP. Mailpit chỉ dùng thử, không chuyển email ra hộp thư thật. Nếu SMTP không chạy, hệ thống báo chưa gửi được mã và không cấp OTP mới. Khi triển khai, cấu hình SMTP thật bằng các biến `MAIL_*` trong `config/server.env` riêng, sau đó khởi động lại backend. Đặt lại mật khẩu thành công sẽ thu hồi các phiên đăng nhập cũ.
 
 <a id="hang-ngay"></a>
 ## 8. Chạy hằng ngày và cập nhật mã nguồn

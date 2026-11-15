@@ -359,6 +359,8 @@ Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí;
 <a id="tien-do"></a>
 ## 10. Tiến độ, kiểm chứng và phần tiếp theo
 
+Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Giáo viên/Gia sư/Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ tiếp tục ở trạng thái đang triển khai. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
+
 | Phần | Đã có | Còn phải làm |
 | --- | --- | --- |
 | DB/server | Schema005, migration/seed/check, Docker PHP/MySQL, SMTP local, backup/restore, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
@@ -652,6 +654,23 @@ GET/POST `/api/finance/tuition/invoices`, GET `/invoices/{id}`, POST `/invoices/
 Chuông thông báo tại `/staff` lấy bản ghi của tài khoản hiện tại, đánh dấu đọc bằng API sở hữu. Hồ sơ phụ huynh mới vẫn được tìm thấy trước khi liên kết con/cấp tài khoản. Học viên và hóa đơn được giới hạn theo cơ sở phụ trách. Source tham chiếu giữ nguyên hash, sử dụng schema 005 hiện hành.
 
 Kiểm chứng local ngày 12/11/2026 đạt 409 kiểm tra HTTP/MySQL quản trị, 71 core, 81 API nền và 98 ca SQL, tổng 659. Nâng cấp 003/004→005 và khôi phục thử đạt. Trình duyệt đã mở cả 8 màn bằng tài khoản Giáo vụ trên DB `_test` riêng, thử tạo phụ huynh, tạo học viên kèm khóa, sửa hồ sơ, tạo/phát hành hóa đơn, đọc thông báo, lưu ca thường/bù và từ chối ca trùng. Lần kiểm tra bổ sung đã xác nhận trạng thái chờ xếp lớp, chọn cơ sở, lưu ca thứ ba trong ngày cho một người dạy và xóa ca chưa diễn ra bằng Giáo vụ. Kiểm tra giao diện tiếp theo xác nhận thông báo cơ sở trống, lịch rảnh của người dạy, nguyên nhân chặn xóa ca có đơn nghỉ và hộp xác nhận xóa chỉ có nội dung cùng nút xác nhận/hủy. Lint 225 file PHP, cú pháp 35 file JavaScript frontend cùng portal/prototype và kiểm tra cấu trúc/hash đạt. Dữ liệu kiểm thử được giữ trong môi trường thử tạm rồi dọn sau kiểm chứng.
+
+### 12.4. Cổng Phụ huynh đồng bộ giao diện ngày 15/11/2026
+
+Cổng Phụ huynh dùng cùng `/login` và `/app`, lấy bố cục từ năm màn `parent-*` trong `docs/demo/index.html`. Source nằm trong ba file hiện có tại `frontend/src/modules/people/features/parents/`. Sidebar, header, màu sắc, bảng, nút, hộp thoại và lịch dùng kiểu giao diện chung với Admin/Giáo vụ.
+
+- Tổng quan theo con hiển thị buổi học gần nhất, bài tập, lịch sắp tới và tổng học phí đã phát hành. Chọn con cập nhật toàn bộ dữ liệu các màn.
+- Lịch có chế độ tuần, tháng và danh sách. Buổi bù được đánh dấu trong lịch. Chi tiết buổi học hiển thị nội dung, người dạy theo phân công, cơ sở/phòng và chuyên cần. Đơn nghỉ chỉ chọn buổi sắp diễn ra của học viên đó.
+- Bài tập và kết quả đọc sổ theo dõi, điểm, nhận xét và URL đề bài đã lưu. Liên kết tải PDF xuất hiện khi có tệp. Chưa có tệp hiển thị trạng thái chưa giao/cập nhật.
+- Học phí hiển thị hóa đơn và lịch sử giao dịch theo con, có xem/in hóa đơn và gửi thông báo chuyển khoản. Số tiền đã thu cập nhật sau khi Admin xác nhận. Gửi lại dùng yêu cầu đang chờ của hóa đơn. Thông tin chuyển khoản được Trung tâm cung cấp trong thông báo học phí.
+- Đơn nghỉ hiển thị lịch sử và lý do từ chối của Giáo vụ. Backend giữ phạm vi học viên/phụ huynh, lịch bù cá nhân và khóa học viên khi nhận yêu cầu để ngăn tạo đơn trùng đồng thời.
+- Đề xuất người dạy có hộp xác nhận đồng ý/từ chối và nhập lý do. Chuông thông báo có bảng xem nhanh, đánh dấu đã đọc và trang xem tất cả. Đổi mật khẩu, đăng xuất tiếp tục dùng API xác thực chung.
+
+Các thao tác gọi API hiện có, lỗi kết nối hiển thị thông báo để thử lại. Dữ liệu mẫu và nhánh ghi giả cục bộ của cổng Phụ huynh đã được gỡ. Payment API ở bước thông báo/chờ đối soát, tích hợp gateway thật tiếp tục là phần việc riêng.
+
+### 12.5. Khôi phục tài khoản qua email
+
+Luồng quên mật khẩu gửi OTP trực tiếp qua SMTP đến email đã đăng ký. API không trả mã, giao diện không tự điền mã. OTP lưu dạng HMAC, hết hạn sau 10 phút, chỉ dùng một lần, giới hạn gửi lại 60 giây và tối đa 5 lần nhập sai. Khóa hàng tài khoản bảo vệ thao tác gửi/tiêu thụ mã đồng thời. SMTP lỗi không ghi nhận mã mới. Mã cũ phát hành theo cơ chế thử nghiệm phải được gửi lại. Đổi mật khẩu thu hồi các phiên cũ. Mailpit dùng kiểm thử local; SMTP thật cần cấu hình riêng. Worker email thông báo nghiệp vụ vẫn chưa triển khai.
 
 <a id="tu-dien-du-lieu"></a>
 ## 13. Từ điển dữ liệu toàn bộ 43 bảng

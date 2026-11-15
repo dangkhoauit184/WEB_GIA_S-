@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mở cổng Giáo vụ · EduCenter ERP</title>
+</head>
+<body>
+  <p role="status">Đang mở cổng Giáo vụ…</p>
+  <p><a href="../../../administration/features/auth/auth.html">Quay lại đăng nhập</a></p>
+  <script src="../../../../config/app.config.js?v=20261114-3"></script>
+  <script src="../../../../shared/permissions/access.js?v=20261114-3"></script>
+  <script>
+    if (AccessService.requireAuth()) AccessService.redirectByRole();
+  </script>
+</body>
+</html>

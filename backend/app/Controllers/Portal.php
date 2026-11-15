@@ -31,17 +31,82 @@ final class Portal extends \CodeIgniter\Controller
 
     public function index(): string
     {
-        return view('App\Modules\Administration\Features\Auth\Views\login');
+        return $this->frontendPage('index.html');
     }
 
-    public function administration(): string
+    public function login(): string
     {
-        return view('App\Modules\Administration\Features\Permissions\Views\administration');
+        return $this->frontendPage('src/modules/administration/features/auth/auth.html');
     }
 
-    public function admissions(): string
+    public function administration()
     {
-        return view('App\Modules\Administration\Features\Permissions\Views\administration', ['portal'=>'admissions']);
+        return redirect()->to('/app', 303);
+    }
+
+    public function admissions()
+    {
+        return redirect()->to('/app', 303);
+    }
+
+    public function application()
+    {
+        try {
+            $token = $this->request->getCookie('educenter_session');
+            if (!is_string($token) || $token === '' || strlen($token) > 16384) {
+                throw new \App\Shared\ApiException(401, 'Vui lòng đăng nhập lại.', 'UNAUTHORIZED');
+            }
+            $this->request->setHeader('Authorization', 'Bearer '.$token);
+            $user = \App\Shared\Access::user();
+            if (in_array($user['role'], ['ADMIN', 'GIAO_VU'], true)) {
+                $html = view('App\Modules\Administration\Features\Permissions\Views\administration', [
+                    'portal'=>$user['role'] === 'ADMIN' ? 'admin' : 'admissions',
+                ]);
+                $scripts = '<script src="/frontend/src/config/app.config.js"></script>'
+                    .'<script src="/frontend/src/shared/permissions/access.js"></script>';
+                $html = str_replace('</head>', $scripts.'</head>', $html);
+            } elseif ($user['role'] === 'PHU_HUYNH') {
+                $html = $this->frontendPage('src/modules/people/features/parents/parents.html');
+            } else {
+                $html = $this->frontendPage('src/modules/academic/features/attendance/attendance.html');
+            }
+            $session = json_encode(['token'=>$token, 'user'=>$user], JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_THROW_ON_ERROR);
+            $script = '<script type="application/json" id="portal-session">'.$session.'</script>';
+            return str_replace('<head>', '<head>'.$script, $html);
+        } catch (\App\Shared\ApiException) {
+            return redirect()->to('/login', 303)->deleteCookie('educenter_session');
+        }
+    }
+
+    private function frontendPage(string $relative): string
+    {
+        $html = file_get_contents(ROOTPATH.'../frontend/'.$relative);
+        $base = '/frontend/'.(dirname($relative) === '.' ? '' : dirname($relative).'/');
+        return preg_replace_callback('/\b(src|href)="(?![a-z][a-z0-9+.-]*:|\/|#)([^"]+)"/i',
+            static function (array $match) use ($base): string {
+                $path = \CodeIgniter\HTTP\URI::removeDotSegments($base.$match[2]);
+                $path = match ($path) {
+                    '/frontend/index.html'=>'/',
+                    '/frontend/src/modules/administration/features/auth/auth.html'=>'/login',
+                    default=>$path,
+                };
+                return $match[1].'="'.$path.'"';
+            }, $html);
+    }
+
+    public function frontendAsset(string ...$segments)
+    {
+        $relative = implode('/', $segments);
+        $root = realpath(ROOTPATH.'../frontend');
+        $path = realpath($root.'/'.$relative);
+        $types = ['html'=>'text/html', 'js'=>'application/javascript', 'css'=>'text/css',
+            'png'=>'image/png', 'jpg'=>'image/jpeg', 'jpeg'=>'image/jpeg', 'webp'=>'image/webp',
+            'svg'=>'image/svg+xml', 'ico'=>'image/x-icon', 'woff'=>'font/woff', 'woff2'=>'font/woff2'];
+        $extension = strtolower(pathinfo($path ?: '', PATHINFO_EXTENSION));
+        if ($path === false || !str_starts_with($path, $root.DIRECTORY_SEPARATOR) || !is_file($path) || !isset($types[$extension])) {
+            return $this->response->setStatusCode(404);
+        }
+        return $this->response->setContentType($types[$extension])->setBody(file_get_contents($path));
     }
 
     public function administrationAsset(string $name)

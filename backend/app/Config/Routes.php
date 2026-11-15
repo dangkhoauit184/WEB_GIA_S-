@@ -2,8 +2,13 @@
 /** @var \CodeIgniter\Router\RouteCollection $routes */
 $routes->setAutoRoute(false);
 $routes->get('/', '\App\Controllers\Portal::index');
+$routes->get('login', '\App\Controllers\Portal::login');
+$routes->get('app', '\App\Controllers\Portal::application');
+$routes->get('frontend/(:any)', '\App\Controllers\Portal::frontendAsset/$1');
 $routes->get('admin', '\App\Controllers\Portal::administration');
 $routes->get('staff', '\App\Controllers\Portal::admissions');
+$routes->post('admin', '\App\Controllers\Portal::administration');
+$routes->post('staff', '\App\Controllers\Portal::admissions');
 $routes->get('admin-assets/(:segment)', '\App\Controllers\Portal::administrationAsset/$1');
 $routes->get('api/health', '\App\Controllers\Health::index');
 $routes->get('health', '\App\Controllers\Health::index');

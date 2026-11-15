@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Không gian người dạy · EduCenter ERP</title>
+  <link rel="stylesheet" href="../../../../shared/styles/common.css">
+</head>
+<body>
+  <main class="login-wrap">
+    <section class="card login-card">
+      <h1 id="portalTitle">Không gian người dạy</h1>
+      <p id="accountName"></p>
+      <p>Giao diện nghiệp vụ của vai trò này đang được triển khai.</p>
+      <p id="logoutError" role="alert"></p>
+      <button id="logout" class="btn p" type="button">Đăng xuất</button>
+    </section>
+  </main>
+  <script src="../../../../config/app.config.js"></script>
+  <script src="../../../../shared/permissions/access.js"></script>
+  <script src="../../../../shared/services/http.js"></script>
+  <script>
+    if (AccessService.requireAuth(['GIAO_VIEN', 'GIA_SU', 'TRO_GIANG'])) {
+      const account = AccessService.getCurrentUser();
+      const labels = {GIAO_VIEN:'Giáo viên', GIA_SU:'Gia sư', TRO_GIANG:'Trợ giảng'};
+      document.getElementById('portalTitle').textContent = labels[account.role];
+      document.getElementById('accountName').textContent = account.hoTen || account.username;
+      document.getElementById('logout').addEventListener('click', async event => {
+        event.currentTarget.disabled = true;
+        try {
+          await HttpService.post('/auth/logout', {});
+          AccessService.clearSession();
+          window.location.replace(AppConfig.AUTH_PAGE);
+        } catch (error) {
+          document.getElementById('logoutError').textContent = error.message;
+          document.getElementById('logout').disabled = false;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

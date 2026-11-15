@@ -1,473 +1,926 @@
-'use strict';
+"use strict";
 
-// Cổng Phụ huynh khởi tạo trên trang có bộ chọn học sinh.
+// Parent workspace. The staff management screen remains below in its own scope.
 (() => {
-  if (!document.getElementById('studentSelector')) return;
-
-  /**
-   * EduCenter ERP - Parents Portal Logic
-   * Quản lý Cổng Phụ huynh:
-   * 1. Chọn con (1 phụ huynh nhiều con) và lọc toàn bộ dữ liệu theo con đó.
-   * 2. Thời khóa biểu học tập.
-   * 3. Sổ theo dõi buổi học (điểm bài tập, mức tiếp thu, nhận xét).
-   * 4. Gửi đơn xin nghỉ phép cá nhân (do Giáo vụ duyệt).
-   * 5. Xem hóa đơn trọn khóa & Khởi tạo thanh toán trực tuyến (chờ Admin đối soát).
-   * 6. Thông báo hệ thống & Đánh dấu đã đọc.
-   * 7. Đổi mật khẩu tài khoản (PUT /api/auth/change-password).
-   */
-
-  const MOCK_DATA = {
-    students: [
-      { id: 'HV-0019', name: 'Nguyễn Văn An', grade: 'Lớp 10A1', avatar: '👦' },
-      { id: 'HV-0031', name: 'Nguyễn Mai Linh', grade: 'Lớp 8B', avatar: '👧' }
-    ],
-    schedules: {
-      'HV-0019': [
-        { date: 'Thứ Tư, 12/11/2026', time: '18:00 - 20:00', course: 'Toán Nâng cao 10', room: 'Offline - Phòng 201', teacher: 'Thầy Nguyễn Văn A', status: 'Sắp diễn ra' },
-        { date: 'Thứ Bảy, 15/11/2026', time: '14:00 - 16:00', course: 'Vật Lý 10 Cơ bản', room: 'Online (Google Meet)', teacher: 'Cô Trần Thị B', status: 'Sắp diễn ra' },
-        { date: 'Thứ Hai, 17/11/2026', time: '18:00 - 20:00', course: 'Toán Nâng cao 10', room: 'Offline - Phòng 201', teacher: 'Thầy Nguyễn Văn A', status: 'Sắp diễn ra' },
-      ],
-      'HV-0031': [
-        { date: 'Thứ Năm, 13/11/2026', time: '17:30 - 19:30', course: 'Tiếng Anh THCS Nâng cao', room: 'Offline - Phòng 102', teacher: 'Cô Lê Hoàng C', status: 'Sắp diễn ra' },
-        { date: 'Chủ Nhật, 16/11/2026', time: '09:00 - 11:00', course: 'Gia sư Toán 1 kèm 1', room: 'Dạy tại nhà học viên', teacher: 'Thầy Phạm D', status: 'Sắp diễn ra' },
-      ]
-    },
-    learningNotes: {
-      'HV-0019': [
-        { date: '08/11/2026', course: 'Toán Nâng cao 10', attend: 'Có mặt', score: '9.0 / 10', star: '5 / 5 ⭐', comment: 'Nắm chắc kiến thức hệ phương trình, bài tập về nhà làm cẩn thận.' },
-        { date: '05/11/2026', course: 'Toán Nâng cao 10', attend: 'Có mặt', score: '8.5 / 10', star: '4 / 5 ⭐', comment: 'Cần chú ý hơn ở các bước biến đổi rút gọn cuối bài.' },
-        { date: '01/11/2026', course: 'Vật Lý 10 Cơ bản', attend: 'Có mặt', score: '8.0 / 10', star: '4 / 5 ⭐', comment: 'Tiếp thu bài tốt, hăng hái phát biểu xây dựng bài trên lớp.' }
-      ],
-      'HV-0031': [
-        { date: '06/11/2026', course: 'Tiếng Anh THCS Nâng cao', attend: 'Có mặt', score: '9.5 / 10', star: '5 / 5 ⭐', comment: 'Kỹ năng phát âm và từ vựng rất tốt, tự tin giao tiếp.' },
-        { date: '02/11/2026', course: 'Gia sư Toán 1 kèm 1', attend: 'Có mặt', score: '8.0 / 10', star: '4 / 5 ⭐', comment: 'Đã hiểu cách giải bài toán hình học không gian cơ bản.' }
-      ]
-    },
-    invoices: {
-      'HV-0019': [
-        { code: 'HD-2026-0012', course: 'Toán Nâng cao 10 (Trọn khóa)', must: 3500000, paid: 3500000, deadline: '01/11/2026', status: 'da_thanh_toan' },
-        { code: 'HD-2026-0045', course: 'Vật Lý 10 Cơ bản (Trọn khóa)', must: 2800000, paid: 0, deadline: '25/11/2026', status: 'chua_thanh_toan' }
-      ],
-      'HV-0031': [
-        { code: 'HD-2026-0078', course: 'Gia sư Toán 1 kèm 1 (Trọn khóa)', must: 4200000, paid: 4200000, deadline: '05/11/2026', status: 'da_thanh_toan' },
-        { code: 'HD-2026-0092', course: 'Tiếng Anh THCS Nâng cao (Trọn khóa)', must: 2500000, paid: 1000000, deadline: '28/11/2026', status: 'mot_phan' }
-      ]
-    },
-    leaveRequests: [
-      { code: 'NP-2026-01', studentId: 'HV-0019', session: '08/11/2026 · Toán 10', reason: 'Em bị cảm sốt, gia đình xin nghỉ 1 buổi', date: '07/11/2026', status: 'Đã duyệt' }
-    ],
-    transactions: [
-      { code: 'GD-WEB-901', invCode: 'HD-2026-0012', channel: 'VietQR / Napas 247', amount: 3500000, ref: 'FT263001849 EDU HD-2026-0012', time: '01/11/2026 14:22', status: 'da_xac_nhan' }
-    ],
-    notifications: [
-      { id: 1, title: 'Hóa đơn học phí mới đã phát hành', content: 'Giáo vụ đã phát hành hóa đơn học phí trọn khóa Vật Lý 10 cho học sinh Nguyễn Văn An.', time: '10/11/2026 09:30', read: false },
-      { id: 2, title: 'Đơn xin nghỉ học đã được duyệt', content: 'Đơn xin nghỉ ngày 08/11 của học sinh Nguyễn Văn An đã được Giáo vụ phê duyệt thành công.', time: '07/11/2026 15:45', read: true },
-      { id: 3, title: 'Nhắc lịch học sắp tới', content: 'Học sinh Nguyễn Văn An có buổi học Toán Nâng cao lúc 18:00 ngày mai tại Phòng 201.', time: '06/11/2026 18:00', read: true }
-    ]
-  };
-
-  document.addEventListener('DOMContentLoaded', () => {
-    // 1. Kiểm tra quyền truy cập: Cho phép PHU_HUYNH hoặc ADMIN
-    if (!AccessService.requireAuth(['PHU_HUYNH', 'ADMIN'])) {
-      return;
-    }
-
-    const currentUser = AccessService.getCurrentUser();
-    if (currentUser) {
-      document.getElementById('currentUserName').textContent = currentUser.hoTen || currentUser.username;
-    }
-
-    // 2. Xử lý Đăng xuất
-    document.getElementById('btnLogout').addEventListener('click', () => {
-      if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-        AccessService.clearSession();
-        window.location.href = AppConfig.AUTH_PAGE;
-      }
-    });
-
-    // 3. Quản lý trạng thái con đang chọn
-    let currentStudentId = localStorage.getItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID) || MOCK_DATA.students[0].id;
-
-    const studentSelector = document.getElementById('studentSelector');
-    const selectedStudentName = document.getElementById('selectedStudentName');
-    const kidChipsContainer = document.getElementById('kidChipsContainer');
-
-    function initStudentSelector() {
-      studentSelector.innerHTML = MOCK_DATA.students.map(s => `
-        <option value="${s.id}" ${s.id === currentStudentId ? 'selected' : ''}>
-          ${s.name} (${s.grade})
-        </option>
-      `).join('');
-
-      renderKidChips();
-      renderAllViewsForCurrentStudent();
-    }
-
-    function renderKidChips() {
-      kidChipsContainer.innerHTML = MOCK_DATA.students.map(s => `
-        <button type="button" class="chip ${s.id === currentStudentId ? 'active' : ''}" data-id="${s.id}">
-          ${s.avatar} ${s.name} (${s.grade})
-        </button>
-      `).join('');
-
-      kidChipsContainer.querySelectorAll('.chip').forEach(btn => {
-        btn.addEventListener('click', () => {
-          changeStudent(btn.dataset.id);
-        });
-      });
-    }
-
-    studentSelector.addEventListener('change', (e) => {
-      changeStudent(e.target.value);
-    });
-
-    function changeStudent(id) {
-      currentStudentId = id;
-      studentSelector.value = id;
-      localStorage.setItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID, id);
-      renderKidChips();
-      renderAllViewsForCurrentStudent();
-    }
-
-    // 4. Render các View theo con đang chọn
-    function renderAllViewsForCurrentStudent() {
-      const student = MOCK_DATA.students.find(s => s.id === currentStudentId) || MOCK_DATA.students[0];
-      selectedStudentName.textContent = `${student.name} (${student.grade})`;
-
-      renderSchedule();
-      renderLearningNotes();
-      renderInvoices();
-      renderLeaveHistory();
-      renderTransactions();
-      renderNotifications();
-      populateLeaveSessionDropdown();
-    }
-
-    // 4.1 Thời khóa biểu
-    function renderSchedule() {
-      const tbody = document.getElementById('scheduleTableBody');
-      const items = MOCK_DATA.schedules[currentStudentId] || [];
-
-      if (items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Chưa có lịch học nào.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = items.map(s => `
-        <tr>
-          <td><strong>${s.date}</strong></td>
-          <td>${s.time}</td>
-          <td><strong>${s.course}</strong></td>
-          <td>${s.room}</td>
-          <td>${s.teacher}</td>
-          <td><span class="badge badge-teal">${s.status}</span></td>
-        </tr>
-      `).join('');
-    }
-
-    // 4.2 Sổ theo dõi buổi học
-    function renderLearningNotes() {
-      const tbody = document.getElementById('learningTableBody');
-      const notes = MOCK_DATA.learningNotes[currentStudentId] || [];
-
-      if (notes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Chưa có dữ liệu theo dõi buổi học.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = notes.map(n => `
-        <tr>
-          <td>${n.date}</td>
-          <td><strong>${n.course}</strong></td>
-          <td><span class="badge badge-ok">${n.attend}</span></td>
-          <td><strong style="color:var(--pri-d);">${n.score}</strong></td>
-          <td>${n.star}</td>
-          <td>${n.comment}</td>
-        </tr>
-      `).join('');
-    }
-
-    // 4.3 Hóa đơn học phí
-    function renderInvoices() {
-      const tbody = document.getElementById('invoiceTableBody');
-      const invs = MOCK_DATA.invoices[currentStudentId] || [];
-
-      if (invs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted" style="padding:24px;">Không có hóa đơn học phí.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = invs.map(i => {
-        const remaining = i.must - i.paid;
-        const statusBadge = i.status === 'da_thanh_toan'
-          ? `<span class="badge badge-ok">Đã thanh toán</span>`
-          : (i.status === 'mot_phan' ? `<span class="badge badge-warn">Một phần</span>` : `<span class="badge badge-warn">Chưa thanh toán</span>`);
-
-        const actionBtn = remaining > 0
-          ? `<button class="btn btn-primary btn-pay-modal" style="padding:6px 12px; font-size:12px;" data-code="${i.code}">💳 Thanh toán Web</button>`
-          : `<span class="text-muted" style="font-size:12px;">Đã hoàn tất</span>`;
-
-        return `
-          <tr>
-            <td><strong style="font-family:monospace;">${i.code}</strong></td>
-            <td><strong>${i.course}</strong></td>
-            <td>${i.must.toLocaleString('vi-VN')} đ</td>
-            <td>${i.paid.toLocaleString('vi-VN')} đ</td>
-            <td style="color:${remaining > 0 ? 'var(--err)' : 'var(--ok)'}; font-weight:700;">
-              ${remaining.toLocaleString('vi-VN')} đ
-            </td>
-            <td>${i.deadline}</td>
-            <td>${statusBadge}</td>
-            <td>${actionBtn}</td>
-          </tr>
-        `;
-      }).join('');
-
-      tbody.querySelectorAll('.btn-pay-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-          openPaymentModal(btn.dataset.code);
-        });
-      });
-    }
-
-    // 4.4 Đơn xin nghỉ phép
-    function populateLeaveSessionDropdown() {
-      const sel = document.getElementById('leaveSessionSelect');
-      const items = MOCK_DATA.schedules[currentStudentId] || [];
-      sel.innerHTML = '<option value="">-- Chọn buổi học sắp tới --</option>' +
-        items.map((s, idx) => `<option value="${idx + 1}">${s.date} (${s.time}) · ${s.course}</option>`).join('');
-    }
-
-    function renderLeaveHistory() {
-      const tbody = document.getElementById('leaveHistoryTableBody');
-      const list = MOCK_DATA.leaveRequests.filter(r => r.studentId === currentStudentId);
-
-      if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted" style="padding:16px;">Chưa có đơn xin nghỉ nào.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = list.map(r => `
-        <tr>
-          <td><strong>${r.code}</strong></td>
-          <td>${r.session}</td>
-          <td>${r.reason}</td>
-          <td>${r.date}</td>
-          <td><span class="badge badge-ok">${r.status}</span></td>
-        </tr>
-      `).join('');
-    }
-
-    // 4.5 Giao dịch trực tuyến
-    function renderTransactions() {
-      const tbody = document.getElementById('transactionHistoryTableBody');
-      tbody.innerHTML = MOCK_DATA.transactions.map(t => `
-        <tr>
-          <td><strong style="font-family:monospace;">${t.code}</strong></td>
-          <td><strong>${t.invCode}</strong></td>
-          <td>${t.channel}</td>
-          <td><strong style="color:var(--pri-d);">${t.amount.toLocaleString('vi-VN')} đ</strong></td>
-          <td style="font-family:monospace; font-size:12px;">${t.ref}</td>
-          <td>${t.time}</td>
-          <td><span class="badge ${t.status === 'da_xac_nhan' ? 'badge-ok' : 'badge-warn'}">${t.status === 'da_xac_nhan' ? 'Admin đã xác nhận' : 'Chờ Admin đối soát'}</span></td>
-        </tr>
-      `).join('');
-    }
-
-    // 4.6 Thông báo hệ thống
-    function renderNotifications() {
-      const container = document.getElementById('notificationsListContainer');
-      if (!container) return;
-
-      container.innerHTML = MOCK_DATA.notifications.map(n => `
-        <div style="background:${n.read ? 'var(--g50)' : 'var(--pri-ll)'}; border:1px solid ${n.read ? 'var(--g200)' : '#ccfbf1'}; border-radius:var(--radius-md); padding:16px; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <strong style="font-size:14px; color:var(--g900);">${n.title}</strong>
-              ${!n.read ? `<span class="badge badge-teal" style="font-size:10px;">Mới</span>` : ''}
-            </div>
-            <p style="margin:0; font-size:13px; color:var(--g600);">${n.content}</p>
-            <span style="font-size:11px; color:var(--g400); margin-top:4px; display:block;">${n.time}</span>
-          </div>
-          ${!n.read ? `<button class="btn btn-secondary btn-mark-read" style="font-size:11.5px; padding:4px 8px;" data-id="${n.id}">Đã đọc</button>` : ''}
-        </div>
-      `).join('');
-
-      container.querySelectorAll('.btn-mark-read').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = parseInt(btn.dataset.id, 10);
-          const item = MOCK_DATA.notifications.find(x => x.id === id);
-          if (item) {
-            item.read = true;
-            renderNotifications();
-          }
-        });
-      });
-    }
-
-    const btnMarkAll = document.getElementById('btnMarkAllRead');
-    if (btnMarkAll) {
-      btnMarkAll.addEventListener('click', () => {
-        MOCK_DATA.notifications.forEach(n => n.read = true);
-        renderNotifications();
-        alert('Đã đánh dấu tất cả thông báo là đã đọc!');
-      });
-    }
-
-    // 5. Chuyển đổi các Tab
-    const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-    const tabHeading = document.getElementById('tabHeading');
-
-    const tabTitles = {
-      schedule: 'Thời khóa biểu học tập',
-      learning: 'Sổ theo dõi & Điểm số buổi học',
-      leave: 'Đơn xin nghỉ phép của học sinh',
-      tuition: 'Hóa đơn học phí trọn khóa',
-      history: 'Lịch sử giao dịch thanh toán Web',
-      notifications: 'Thông báo hệ thống',
+  if (!document.getElementById("parent-workspace")) return;
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!AccessService.requireAuth(["PHU_HUYNH"])) return;
+    const $ = (id) => document.getElementById(id);
+    const esc = (value) =>
+      String(value ?? "").replace(
+        /[&<>"']/g,
+        (char) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          })[char],
+      );
+    const money = (value) =>
+      new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      }).format(Number(value || 0));
+    const tag = (label, tone = "i") =>
+      `<span class="tag ${tone}">${esc(label)}</span>`;
+    const empty = (text) => `<div class="parent-empty">${esc(text)}</div>`;
+    const emptyRow = (columns, text) =>
+      `<tr><td colspan="${columns}">${empty(text)}</td></tr>`;
+    const button = (label, action, id = "", style = "") =>
+      `<button class="btn sm ${style}" type="button" data-action="${action}" data-id="${esc(id)}" ${label === "✕" ? 'aria-label="Đóng hộp thoại"' : ""}>${esc(label)}</button>`;
+    const item = (label, value) =>
+      `<div class="item"><span>${esc(label)}</span><span>${value}</span></div>`;
+    const account = AccessService.getCurrentUser();
+    const dialog = $("parent-dialog");
+    let data = {
+      students: [],
+      schedules: {},
+      learningNotes: {},
+      invoices: {},
+      leaveRequests: [],
+      transactions: [],
     };
+    let notifications = [];
+    let proposals = [];
+    let childId =
+      localStorage.getItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID) || "";
+    let loaded = false;
+    let loading = false;
+    let calendarView = "week";
+    let serverNow = new Date();
+    let calendarDay = dayKey(serverNow);
+    let activeScreen = "dash";
+    let toastTimer;
 
-    navItems.forEach(item => {
-      item.addEventListener('click', () => {
-        navItems.forEach(n => n.classList.remove('active'));
-        tabPanes.forEach(p => p.classList.remove('active'));
-
-        item.classList.add('active');
-        const tabKey = item.dataset.tab;
-        const targetPane = document.getElementById(`tab-${tabKey}`);
-        if (targetPane) targetPane.classList.add('active');
-        if (tabTitles[tabKey]) tabHeading.textContent = tabTitles[tabKey];
-      });
-    });
-
-    // 6. Form gửi Đơn xin nghỉ phép
-    const leaveForm = document.getElementById('leaveRequestForm');
-    leaveForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const sessionText = document.getElementById('leaveSessionSelect').selectedOptions[0].text;
-      const reason = document.getElementById('leaveReason').value.trim();
-
-      if (!reason) return;
-
-      const newCode = 'NP-2026-0' + (MOCK_DATA.leaveRequests.length + 1);
-      MOCK_DATA.leaveRequests.unshift({
-        code: newCode,
-        studentId: currentStudentId,
-        session: sessionText,
-        reason: reason,
-        date: new Date().toLocaleDateString('vi-VN'),
-        status: 'Chờ giáo vụ duyệt'
-      });
-
-      renderLeaveHistory();
-      alert(`Đã gửi đơn xin nghỉ (${newCode}) thành công! Giáo vụ sẽ sớm xem xét và duyệt đơn cho con.`);
-      leaveForm.reset();
-    });
-
-    // 7. Modal Thanh toán trực tuyến
-    const modalPay = document.getElementById('modalParentPay');
-    const btnClosePay = document.getElementById('btnClosePayModal');
-    const btnCancelPay = document.getElementById('btnCancelPay');
-    const onlinePayForm = document.getElementById('onlinePayForm');
-    let payingInvoice = null;
-
-    function openPaymentModal(invCode) {
-      const invs = MOCK_DATA.invoices[currentStudentId] || [];
-      payingInvoice = invs.find(i => i.code === invCode);
-      if (!payingInvoice) return;
-
-      const remaining = payingInvoice.must - payingInvoice.paid;
-      document.getElementById('ppInvoiceInfo').innerHTML = `
-        <div><strong>Hóa đơn:</strong> ${payingInvoice.code} · ${payingInvoice.course}</div>
-        <div style="margin-top:4px;"><strong>Số tiền cần đóng:</strong> <span style="color:var(--err); font-weight:700;">${remaining.toLocaleString('vi-VN')} đ</span></div>
-      `;
-      document.getElementById('ppAmountInput').value = remaining;
-      modalPay.classList.add('show');
+    function dayKey(date) {
+      return new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }).format(date);
     }
-
-    function closePaymentModal() {
-      modalPay.classList.remove('show');
-      payingInvoice = null;
+    function dateKey(value) {
+      if (!value) return "";
+      if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+      const match = String(value).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      return match ? `${match[3]}-${match[2]}-${match[1]}` : "";
     }
-
-    btnClosePay.addEventListener('click', closePaymentModal);
-    btnCancelPay.addEventListener('click', closePaymentModal);
-
-    onlinePayForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!payingInvoice) return;
-
-      const amount = parseInt(document.getElementById('ppAmountInput').value, 10);
-      const provider = document.getElementById('ppProviderSelect').selectedOptions[0].text;
-      const newTxCode = 'GD-WEB-' + (900 + MOCK_DATA.transactions.length + 1);
-
-      MOCK_DATA.transactions.unshift({
-        code: newTxCode,
-        invCode: payingInvoice.code,
-        channel: provider,
-        amount: amount,
-        ref: `FT26300${Math.floor(1000 + Math.random() * 9000)} EDU ${payingInvoice.code}`,
-        time: new Date().toLocaleString('vi-VN'),
-        status: 'cho_xac_nhan'
-      });
-
-      closePaymentModal();
-      renderTransactions();
-      alert(`Đã khởi tạo lệnh thanh toán ${newTxCode} (${amount.toLocaleString('vi-VN')} đ) thành công! Hệ thống đã gửi yêu cầu đối soát tới Admin.`);
-    });
-
-    // 8. Modal Đổi Mật Khẩu (PUT /api/auth/change-password)
-    const modalChangePwd = document.getElementById('modalChangePassword');
-    const btnOpenChangePwd = document.getElementById('btnOpenChangePwd');
-    const btnCloseChangePwd = document.getElementById('btnCloseChangePwdModal');
-    const btnCancelChangePwd = document.getElementById('btnCancelChangePwd');
-    const changePasswordForm = document.getElementById('changePasswordForm');
-
-    if (btnOpenChangePwd) {
-      btnOpenChangePwd.addEventListener('click', () => {
-        modalChangePwd.classList.add('show');
-      });
+    function shiftDay(value, days) {
+      const date = new Date(`${value}T12:00:00Z`);
+      date.setUTCDate(date.getUTCDate() + days);
+      return date.toISOString().slice(0, 10);
     }
-
-    function closeChangePwd() {
-      modalChangePwd.classList.remove('show');
-      changePasswordForm.reset();
+    function displayDate(value) {
+      const key = dateKey(value);
+      return key ? key.split("-").reverse().join("/") : value || "—";
     }
-
-    if (btnCloseChangePwd) btnCloseChangePwd.addEventListener('click', closeChangePwd);
-    if (btnCancelChangePwd) btnCancelChangePwd.addEventListener('click', closeChangePwd);
-
-    if (changePasswordForm) {
-      changePasswordForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const currentPassword = document.getElementById('currentPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-
-        if (newPassword !== confirmNewPassword) {
-          alert('Mật khẩu mới và mật khẩu xác nhận không khớp nhau!');
-          return;
+    function displayTime(value) {
+      if (!value) return "—";
+      const date = new Date(String(value).replace(" ", "T") + "+07:00");
+      return Number.isNaN(date.getTime())
+        ? value
+        : new Intl.DateTimeFormat("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Asia/Ho_Chi_Minh",
+          }).format(date);
+    }
+    function sessionStart(session) {
+      const date = dateKey(session.ngay || session.date);
+      const time =
+        session.gioBatDau || String(session.time || "").split(" - ")[0];
+      return date && time
+        ? new Date(`${date}T${time.slice(0, 5)}:00+07:00`).getTime()
+        : 0;
+    }
+    function student() {
+      return data.students.find((row) => String(row.id) === childId);
+    }
+    function sessions() {
+      return [...(data.schedules[childId] || [])].sort(
+        (left, right) => sessionStart(left) - sessionStart(right),
+      );
+    }
+    function notes() {
+      return data.learningNotes[childId] || [];
+    }
+    function invoices() {
+      return data.invoices[childId] || [];
+    }
+    function pendingPayment(invoice) {
+      return data.transactions.find(
+        (row) =>
+          row.invCode === invoice.code &&
+          ["khoi_tao", "cho_xac_nhan"].includes(row.status),
+      );
+    }
+    function notify(message, error = false) {
+      clearTimeout(toastTimer);
+      $("parent-toast").textContent = message;
+      $("parent-toast").classList.toggle("error", error);
+      $("parent-toast").hidden = false;
+      toastTimer = setTimeout(() => {
+        $("parent-toast").hidden = true;
+      }, 5000);
+    }
+    async function busy(control, work) {
+      if (control.disabled) return;
+      control.disabled = true;
+      try {
+        await work();
+      } catch (error) {
+        notify(error.message || "Không thể xử lý yêu cầu.", true);
+      } finally {
+        if (control.isConnected) {
+          control.disabled =
+            control.dataset.action === "read-all" &&
+            !notifications.some((row) => !row.daDoc);
         }
+      }
+    }
+    function documentLink(url) {
+      if (!url) return '<span class="parent-muted">Chưa có đề bài</span>';
+      try {
+        const parsed = new URL(url, window.location.origin);
+        if (!["http:", "https:"].includes(parsed.protocol))
+          return '<span class="parent-muted">Tệp chưa khả dụng</span>';
+        return `<a class="btn sm" href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer" download>Tải PDF</a>`;
+      } catch {
+        return '<span class="parent-muted">Tệp chưa khả dụng</span>';
+      }
+    }
 
+    $("currentUserName").textContent = account.hoTen || account.username;
+    $("accountMenuName").textContent = account.hoTen || account.username;
+    $("parentAvatar").textContent = (account.hoTen || account.username)
+      .trim()
+      .split(/\s+/)
+      .pop()[0]
+      .toUpperCase();
+
+    async function loadData() {
+      if (loading) return;
+      loading = true;
+      $("parent-refresh").disabled = true;
+      const results = await Promise.allSettled([
+        HttpService.get("/people/parents/portal"),
+        HttpService.get("/communication/notifications"),
+        HttpService.get("/academic/admissions/proposals"),
+      ]);
+      const failures = [];
+      if (results[0].status === "fulfilled") {
+        data = results[0].value.data;
+        loaded = true;
+        serverNow = data.serverTime ? new Date(data.serverTime) : new Date();
+        if (!data.students.some((row) => String(row.id) === childId))
+          childId = String(data.students[0]?.id || "");
+        localStorage.setItem(
+          AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID,
+          childId,
+        );
+      } else {
+        loaded = false;
+        failures.push(
+          results[0].reason.message || "Không tải được dữ liệu học sinh.",
+        );
+      }
+      notifications =
+        results[1].status === "fulfilled" ? results[1].value.data : [];
+      proposals =
+        results[2].status === "fulfilled" ? results[2].value.data.items : [];
+      if (results[1].status === "rejected")
+        failures.push("Không tải được thông báo.");
+      if (results[2].status === "rejected")
+        failures.push("Không tải được đề xuất người dạy.");
+      $("parentLoadError").hidden = failures.length === 0;
+      $("parentErrorText").textContent = failures.join(" ");
+      $("parentDate").textContent = new Intl.DateTimeFormat("vi-VN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "Asia/Ho_Chi_Minh",
+      }).format(serverNow);
+      render();
+      loading = false;
+      $("parent-refresh").disabled = false;
+    }
+
+    function renderChildren() {
+      $("studentSelector").innerHTML = data.students.length
+        ? data.students
+            .map(
+              (row) =>
+                `<option value="${esc(row.id)}" ${String(row.id) === childId ? "selected" : ""}>${esc(row.hoTen)} · ${esc(row.tenCapLop || row.truong || "Học viên")}</option>`,
+            )
+            .join("")
+        : '<option value="">Chưa liên kết học sinh</option>';
+      $("studentSelector").disabled = !loaded || !data.students.length;
+      $("parentNoChildren").hidden = !loaded || data.students.length > 0;
+      $("kidChipsContainer").innerHTML = data.students
+        .map(
+          (row) =>
+            `<button class="chip ${String(row.id) === childId ? "on" : ""}" type="button" data-action="child" data-id="${esc(row.id)}" aria-pressed="${String(row.id) === childId}">${esc(row.hoTen)}<small>${esc(row.tenCapLop || "")}</small></button>`,
+        )
+        .join("");
+      document.querySelectorAll("[data-student-name]").forEach((element) => {
+        element.textContent = student()?.hoTen || "con";
+      });
+      document.querySelectorAll("[data-needs-child]").forEach((element) => {
+        element.disabled = !loaded || !student();
+      });
+    }
+    function renderProposals() {
+      const rows = proposals
+        .filter((row) => !row.hocVienId || String(row.hocVienId) === childId)
+        .filter((row) => row.ttPhuHuynh === "cho");
+      $("parentProposalBanner").innerHTML = rows
+        .map(
+          (row) =>
+            `<div class="card parent-proposal"><div class="row-b"><div><h2>Đề xuất người dạy chờ xác nhận</h2><p><strong>${esc(row.tenNguoiDay)}</strong> · ${esc(row.tenHocVien || row.hoTenLienHe || "")}</p>${row.ghiChu ? `<p>${esc(row.ghiChu)}</p>` : ""}</div><div class="row">${button("Đồng ý", "proposal-accept", row.id, "p")}${button("Từ chối", "proposal-reject", row.id, "danger")}</div></div></div>`,
+        )
+        .join("");
+    }
+    function renderDashboard() {
+      const past = sessions()
+        .filter(
+          (row) =>
+            sessionStart(row) <= serverNow.getTime() &&
+            !["huy", "doi"].includes(row.trangThai),
+        )
+        .reverse();
+      const lesson = past[0];
+      const note = notes().find((row) => row.buoiHocId === lesson?.buoiHocId);
+      $("parentLessonSummary").innerHTML = lesson
+        ? item("Buổi học", esc(`${lesson.course} · ${lesson.date}`)) +
+          item("Chủ đề", esc(lesson.chuDe || "Chưa cập nhật")) +
+          item(
+            "Nội dung",
+            `<span class="parent-body-copy">${esc(lesson.noiDung || "Chưa cập nhật nội dung buổi học.")}</span>`,
+          ) +
+          item(
+            "Chuyên cần",
+            note ? tag(note.attend, "ok") : esc("Chưa điểm danh"),
+          )
+        : empty("Chưa có buổi học đã diễn ra.");
+      const homework =
+        notes().find((row) => row.baiTap || row.fileUrl) || lesson;
+      $("parentHomeworkSummary").innerHTML =
+        homework && (homework.baiTap || homework.fileUrl)
+          ? item("Bài tập", esc(homework.baiTap || "Phiếu bài tập")) +
+            item("Hạn nộp", esc(homework.hanNop || "Chưa cập nhật")) +
+            `<div class="parent-card-actions">${documentLink(homework.fileUrl)}</div>`
+          : empty("Chưa có bài tập được giao.");
+      const upcoming = sessions()
+        .filter(
+          (row) =>
+            sessionStart(row) >= serverNow.getTime() &&
+            !["huy", "doi"].includes(row.trangThai),
+        )
+        .slice(0, 2);
+      $("parentUpcoming").innerHTML =
+        upcoming
+          .map(
+            (row) =>
+              `<div class="parent-next-session"><div><strong>${esc(row.course)}</strong><p>${esc(row.date)} · ${esc(row.time)}</p><p>${esc(row.teacher)} · ${esc(row.room)}</p></div>${button("Chi tiết", "session", row.buoiHocId)}</div>`,
+          )
+          .join("") || empty("Chưa có lịch học sắp tới.");
+      const total = invoices().reduce((sum, row) => sum + Number(row.must), 0);
+      const paid = invoices().reduce((sum, row) => sum + Number(row.paid), 0);
+      $("parentFeeSummary").innerHTML =
+        item("Học phí trọn khóa", `<strong>${money(total)}</strong>`) +
+        item("Đã xác nhận thu", money(paid)) +
+        item(
+          "Còn phải đóng",
+          `<strong class="parent-due">${money(Math.max(0, total - paid))}</strong>`,
+        );
+    }
+    function sessionState(row) {
+      if (row.loai === "bu") return "makeup";
+      if (row.trangThai === "da_day") return "completed";
+      if (["huy", "doi"].includes(row.trangThai)) return "cancelled";
+      return "";
+    }
+    function renderCalendar() {
+      const periodLabel = calendarView === "month" ? "Tháng" : "Tuần";
+      document
+        .querySelector('[data-action="previous-week"]')
+        .setAttribute("aria-label", `${periodLabel} trước`);
+      document
+        .querySelector('[data-action="next-week"]')
+        .setAttribute("aria-label", `${periodLabel} sau`);
+      const date = new Date(`${calendarDay}T12:00:00Z`);
+      const monday = shiftDay(calendarDay, -((date.getUTCDay() + 6) % 7));
+      const sunday = shiftDay(monday, 6);
+      $("parentCalendarRange").textContent =
+        `${displayDate(monday)} – ${displayDate(sunday)}`;
+      document.querySelectorAll("[data-calendar-view]").forEach((element) => {
+        element.classList.toggle(
+          "on",
+          element.dataset.calendarView === calendarView,
+        );
+        element.setAttribute(
+          "aria-pressed",
+          String(element.dataset.calendarView === calendarView),
+        );
+      });
+      if (calendarView === "month") {
+        renderMonth();
+        return;
+      }
+      const rows = sessions().filter(
+        (row) =>
+          dateKey(row.ngay || row.date) >= monday &&
+          dateKey(row.ngay || row.date) <= sunday,
+      );
+      if (calendarView === "list") {
+        $("parentCalendar").innerHTML =
+          `<div class="parent-calendar-list"><div class="tw"><table><thead><tr><th>Ngày</th><th>Khung giờ</th><th>Khóa học</th><th>Người dạy · Địa điểm</th><th>Loại buổi</th><th>Thao tác</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${esc(row.date)}</td><td>${esc(row.time)}</td><td><strong>${esc(row.course)}</strong></td><td>${esc(row.teacher)}<span class="parent-cell-sub">${esc(row.room)}</span></td><td>${tag(row.loai === "bu" ? "Học bù" : "Buổi học thường", row.loai === "bu" ? "purple" : "i")}</td><td>${button("Chi tiết", "session", row.buoiHocId)}</td></tr>`).join("") || emptyRow(6, "Không có lịch học trong tuần này.")}</tbody></table></div></div>`;
+        return;
+      }
+      $("parentCalendar").innerHTML = `<div class="cal-week-grid">${Array.from(
+        { length: 7 },
+        (_, index) => {
+          const key = shiftDay(monday, index);
+          const today = key === dayKey(serverNow);
+          const days = [
+            "Thứ Hai",
+            "Thứ Ba",
+            "Thứ Tư",
+            "Thứ Năm",
+            "Thứ Sáu",
+            "Thứ Bảy",
+            "Chủ Nhật",
+          ];
+          const events = rows.filter(
+            (row) => dateKey(row.ngay || row.date) === key,
+          );
+          return `<div class="cal-day-col ${today ? "is-today" : ""}"><div class="cal-col-head ${today ? "is-today" : ""}"><span class="d-name">${days[index]}</span><span class="d-num">${displayDate(key).slice(0, 5)}</span></div><div class="cal-col-body">${events.map((row) => `<button type="button" class="ses-card ${sessionState(row)}" data-action="session" data-id="${esc(row.buoiHocId)}"><div class="sc-code">${esc(row.maLop || row.course)}</div><div class="sc-subj">${esc(row.course)}</div><span class="sc-time">${esc(row.time)}</span><div class="sc-loc">${esc(row.teacher)}</div><div class="sc-loc">${esc(row.room)}</div>${tag(row.loai === "bu" ? "Học bù" : row.status, row.loai === "bu" ? "purple" : "i")}</button>`).join("") || '<div class="cal-col-empty">—</div>'}</div></div>`;
+        },
+      ).join("")}</div>`;
+    }
+    function changeCalendarPeriod(direction) {
+      if (calendarView === "month") {
+        const date = new Date(`${calendarDay.slice(0, 7)}-01T12:00:00Z`);
+        date.setUTCMonth(date.getUTCMonth() + direction);
+        calendarDay = date.toISOString().slice(0, 10);
+      } else {
+        calendarDay = shiftDay(calendarDay, direction * 7);
+      }
+      renderCalendar();
+    }
+    function renderMonth() {
+      const first = `${calendarDay.slice(0, 7)}-01`;
+      const date = new Date(`${first}T12:00:00Z`);
+      const leadingDays = (date.getUTCDay() + 6) % 7;
+      const start = shiftDay(first, -leadingDays);
+      const daysInMonth = new Date(
+        Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
+      ).getUTCDate();
+      const cells = Math.ceil((leadingDays + daysInMonth) / 7) * 7;
+      $("parentCalendarRange").textContent =
+        `Tháng ${first.slice(5, 7)} / ${first.slice(0, 4)}`;
+      const headers = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+      const rows = sessions();
+      const grid = Array.from({ length: cells }, (_, index) => {
+        const key = shiftDay(start, index);
+        const events = rows.filter(
+          (row) => dateKey(row.ngay || row.date) === key,
+        );
+        const otherMonth = key.slice(0, 7) !== first.slice(0, 7);
+        const today = key === dayKey(serverNow);
+        return `<div class="cal-month-cell ${otherMonth ? "other-month" : ""} ${today ? "is-today" : ""}">
+          <strong>${Number(key.slice(8))}</strong>
+          ${events.map((row) => `<button class="cal-m-chip ${sessionState(row)}" type="button" data-action="session" data-id="${esc(row.buoiHocId)}" title="${esc(row.course)} · ${esc(row.time)}">${esc(row.time.slice(0, 5))} · ${esc(row.course)}</button>`).join("")}
+        </div>`;
+      }).join("");
+      $("parentCalendar").innerHTML =
+        `<div class="parent-month-scroll"><div class="cal-month-head">${headers.map((label) => `<span class="cal-month-head-cell">${label}</span>`).join("")}</div><div class="cal-month-grid">${grid}</div></div>`;
+    }
+    function renderLearning() {
+      $("learningTableBody").innerHTML =
+        notes()
+          .map(
+            (row) =>
+              `<tr><td>${esc(row.date)}</td><td><strong>${esc(row.course)}</strong></td><td>${tag(row.attend, row.attend?.startsWith("Vắng") ? "w" : "ok")}</td><td>${esc(row.baiTap || "Chưa giao bài")}<span class="parent-cell-sub">${esc(row.hanNop || "")}</span></td><td class="parent-money">${esc(row.score)}</td><td>${esc(row.comment)}</td><td>${documentLink(row.fileUrl)}</td></tr>`,
+          )
+          .join("") || emptyRow(7, "Chưa có kết quả buổi học.");
+    }
+    function transactionTag(row) {
+      const labels = {
+        khoi_tao: ["Đang khởi tạo", "i"],
+        cho_xac_nhan: ["Chờ đối soát", "w"],
+        da_xac_nhan: ["Đã xác nhận", "ok"],
+        thanh_cong: ["Đã xác nhận", "ok"],
+        that_bai: ["Không thành công", "r"],
+        huy: ["Đã hủy", "r"],
+        het_han: ["Hết hạn", "r"],
+        hoan_tien: ["Đã hoàn tiền", "i"],
+      };
+      const [label, tone] = labels[row.status] || ["Đang xử lý", "i"];
+      return tag(label, tone);
+    }
+    function renderBilling() {
+      $("invoiceTableBody").innerHTML =
+        invoices()
+          .map((row) => {
+            const remaining = Math.max(0, Number(row.must) - Number(row.paid));
+            const pending = pendingPayment(row);
+            const status = remaining === 0
+              ? tag("Đã thanh toán", "ok")
+              : pending
+                ? tag("Chờ đối soát", "w")
+                : tag(
+                    row.status === "mot_phan"
+                      ? "Đã đóng một phần"
+                      : "Chưa thanh toán",
+                    "w",
+                  );
+            const pay =
+              loaded && remaining > 0 && !pending
+                ? button("Thanh toán", "pay", row.id, "p")
+                : "";
+            return `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(row.course)}</td><td class="parent-money">${money(row.must)}</td><td class="parent-money">${money(row.paid)}</td><td class="parent-money ${remaining ? "parent-due" : ""}">${money(remaining)}</td><td>${esc(row.deadline)}</td><td>${status}</td><td><div class="parent-table-actions">${button("Chi tiết", "invoice", row.id)}${pay}</div></td></tr>`;
+          })
+          .join("") || emptyRow(8, "Chưa có hóa đơn học phí được phát hành.");
+      const invoiceCodes = new Set(invoices().map((row) => row.code));
+      const transactions = data.transactions.filter(
+        (row) =>
+          String(row.studentId) === childId || invoiceCodes.has(row.invCode),
+      );
+      $("transactionHistoryTableBody").innerHTML =
+        transactions
+          .map(
+            (row) =>
+              `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(row.invCode)}</td><td>${esc(providerName(row.channel))}</td><td class="parent-money">${money(row.amount)}</td><td>${esc(row.ref)}</td><td>${esc(row.time)}</td><td>${transactionTag(row)}</td></tr>`,
+          )
+          .join("") || emptyRow(7, "Chưa có giao dịch thanh toán.");
+    }
+    function providerName(value) {
+      return (
+        {
+          VIETQR_NAPAS: "Chuyển khoản ngân hàng",
+          VNPAY_GATEWAY: "VNPay",
+          MOMO_BUSINESS: "MoMo",
+        }[value] || value
+      );
+    }
+    function renderLeave() {
+      const rows = data.leaveRequests.filter(
+        (row) => String(row.studentId) === childId,
+      );
+      $("leaveHistoryTableBody").innerHTML =
+        rows
+          .map(
+            (row) =>
+              `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(student()?.hoTen)}</td><td>${esc(row.session)}</td><td>${esc(row.reason)}</td><td>${esc(row.date)}</td><td>${tag(row.status, row.status === "Đã duyệt" ? "ok" : row.status === "Từ chối" ? "r" : "w")}</td><td>${esc(row.feedback || "—")}</td></tr>`,
+          )
+          .join("") || emptyRow(7, "Chưa có đơn xin nghỉ học.");
+    }
+    function renderNotifications() {
+      const unread = notifications.filter((row) => !row.daDoc).length;
+      $("notificationCount").hidden = unread === 0;
+      $("notificationCount").textContent = unread > 99 ? "99+" : unread;
+      $("btnMarkAllRead").disabled = unread === 0;
+      $("parentReadAll").disabled = unread === 0;
+      $("parentNotificationPreview").innerHTML =
+        notifications
+          .slice(0, 5)
+          .map(
+            (row) =>
+              `<article class="np-item ${row.daDoc ? "" : "unread"}"><div class="np-item-top"><b>${esc(row.tieuDe)}</b></div><p>${esc(row.noiDung)}</p><time>${esc(displayTime(row.createdAt))}</time>${row.daDoc ? "" : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
+          )
+          .join("") || empty("Chưa có thông báo.");
+      $("notificationsListContainer").innerHTML =
+        notifications
+          .map(
+            (row) =>
+              `<article class="parent-notification ${row.daDoc ? "" : "unread"}"><div><h2>${esc(row.tieuDe)}</h2><p>${esc(row.noiDung)}</p><time>${esc(displayTime(row.createdAt))}</time></div>${row.daDoc ? tag("Đã đọc", "ok") : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
+          )
+          .join("") || empty("Chưa có thông báo.");
+    }
+    function render() {
+      renderChildren();
+      renderProposals();
+      renderDashboard();
+      renderCalendar();
+      renderLearning();
+      renderBilling();
+      renderLeave();
+      renderNotifications();
+    }
+    function selectChild(id) {
+      if (!data.students.some((row) => String(row.id) === String(id))) return;
+      childId = String(id);
+      localStorage.setItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID, childId);
+      render();
+    }
+    function closeMenu() {
+      $("parent-sidebar").classList.remove("open");
+      $("parent-backdrop").hidden = true;
+      $("parent-menu").setAttribute("aria-expanded", "false");
+    }
+    function showNotifications(open) {
+      $("parentNotificationPanel").hidden = !open;
+      $("parent-bell").setAttribute("aria-expanded", String(open));
+    }
+    function showScreen() {
+      const key = location.hash.split("/").pop();
+      const aliases = {
+        learning: "homework",
+        tuition: "billing",
+        history: "billing",
+      };
+      const candidate =
+        aliases[key] || String(key || "").replace(/^parent-/, "");
+      activeScreen = [
+        "dash",
+        "schedule",
+        "homework",
+        "billing",
+        "leave",
+        "notifications",
+      ].includes(candidate)
+        ? candidate
+        : "dash";
+      document.querySelectorAll("[data-screen]").forEach((element) => {
+        element.hidden = element.dataset.screen !== activeScreen;
+      });
+      const screen = document.querySelector(`[data-screen="${activeScreen}"]`);
+      screen.querySelector(".pg-head").after($("parentChildBar"));
+      $("parentChildBar").after($("parentNoChildren"));
+      $("parentNoChildren").after($("parentProposalBanner"));
+      $("parentProposalBanner").hidden = activeScreen !== "dash";
+      document.querySelectorAll("#parent-nav [data-tab]").forEach((element) => {
+        const selected = element.dataset.tab === activeScreen;
+        element.classList.toggle("on", selected);
+        if (selected) element.setAttribute("aria-current", "page");
+        else element.removeAttribute("aria-current");
+      });
+      closeMenu();
+      showNotifications(false);
+      $("parentAccountMenu").open = false;
+      const title = screen.querySelector("h1").textContent;
+      document.title = `${title} · EduCenter`;
+    }
+    function closeDialog() {
+      if (dialog.dataset.busy !== "true") dialog.close();
+    }
+    function openDialog(
+      title,
+      body,
+      onSubmit,
+      submitLabel = "Xác nhận",
+      extraActions = "",
+    ) {
+      dialog.dataset.busy = "false";
+      $("parent-dialog-content").innerHTML =
+        `<div class="parent-dialog-head"><h2 id="parent-dialog-title">${esc(title)}</h2>${button("✕", "dialog-close")}</div><form id="parentDialogForm"><div class="parent-dialog-body">${body}<p class="parent-dialog-error" id="parentDialogError" role="alert"></p></div><div class="parent-dialog-foot">${extraActions}${button(onSubmit ? "Hủy" : "Đóng", "dialog-close")}${onSubmit ? `<button class="btn p" type="submit">${esc(submitLabel)}</button>` : ""}</div></form>`;
+      $("parentDialogForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!onSubmit || dialog.dataset.busy === "true") return;
+        const values = Object.fromEntries(new FormData(event.target));
+        dialog.dataset.busy = "true";
+        event.submitter.disabled = true;
+        $("parentDialogError").textContent = "";
         try {
-          // Thử gọi API Backend PHP nếu server đang chạy
-          try {
-            await HttpService.put('/auth/change-password', { currentPassword, newPassword });
-          } catch (apiErr) {
-            console.warn('[ChangePassword] Chạy chế độ phát triển offline:', apiErr.message);
-          }
-
-          alert('Đã đổi mật khẩu thành công! Toàn bộ phiên làm việc cũ đã được thu hồi an toàn.');
-          closeChangePwd();
-        } catch (err) {
-          alert('Đổi mật khẩu thất bại: ' + (err.message || 'Lỗi không xác định'));
+          await onSubmit(values);
+          dialog.close();
+        } catch (error) {
+          $("parentDialogError").textContent =
+            error.message || "Không thể xử lý yêu cầu.";
+        } finally {
+          dialog.dataset.busy = "false";
+          if (event.submitter.isConnected) event.submitter.disabled = false;
         }
       });
+      if (!dialog.open) dialog.showModal();
+    }
+    function openSession(id) {
+      const row = sessions().find(
+        (session) => String(session.buoiHocId) === String(id),
+      );
+      if (!row) return;
+      const note = notes().find((record) => record.buoiHocId === row.buoiHocId);
+      const summary =
+        item("Học viên", esc(student()?.hoTen)) +
+        item("Khóa học", esc(row.course)) +
+        item("Thời gian", esc(`${row.date} · ${row.time}`)) +
+        item("Người dạy", esc(row.teacher)) +
+        item("Địa điểm", esc(row.room)) +
+        item(
+          "Loại buổi",
+          tag(
+            row.loai === "bu" ? "Học bù" : "Buổi học thường",
+            row.loai === "bu" ? "purple" : "i",
+          ),
+        ) +
+        item("Trạng thái", tag(row.status)) +
+        item("Chủ đề", esc(row.chuDe || "Chưa cập nhật")) +
+        item(
+          "Nội dung",
+          `<span class="parent-body-copy">${esc(row.noiDung || "Chưa cập nhật")}</span>`,
+        ) +
+        item("Chuyên cần", esc(note?.attend || "Chưa điểm danh"));
+      const actions = row.canLeave
+        ? button("Gửi đơn xin nghỉ", "leave-session", row.buoiHocId, "warn")
+        : "";
+      openDialog(
+        "Chi tiết buổi học",
+        `<div class="parent-summary">${summary}</div>${documentLink(row.fileUrl)}`,
+        null,
+        "",
+        actions,
+      );
+    }
+    function availableSessions(id) {
+      const existing = new Set(
+        data.leaveRequests
+          .filter(
+            (row) =>
+              String(row.studentId) === String(id) &&
+              ["Chờ giáo vụ duyệt", "Đã duyệt"].includes(row.status),
+          )
+          .map((row) => row.buoiHocId),
+      );
+      return (data.schedules[id] || [])
+        .filter(
+          (row) =>
+            row.canLeave === true &&
+            sessionStart(row) > serverNow.getTime() &&
+            !existing.has(row.buoiHocId),
+        )
+        .sort((left, right) => sessionStart(left) - sessionStart(right));
+    }
+    function openLeave(sessionId = "") {
+      if (!student() || !loaded) return;
+      const studentOptions = data.students
+        .map(
+          (row) =>
+            `<option value="${esc(row.id)}" ${String(row.id) === childId ? "selected" : ""}>${esc(row.hoTen)}</option>`,
+        )
+        .join("");
+      openDialog(
+        "Gửi đơn xin nghỉ học",
+        `<label>Học viên<select name="hocVienId" id="leaveKid" required>${studentOptions}</select></label><label>Buổi học cần xin nghỉ<select name="buoiHocId" id="leaveSession" required></select></label><label>Lý do xin nghỉ<textarea name="lyDo" rows="4" maxlength="500" required placeholder="Nhập lý do nghỉ học"></textarea></label>`,
+        async (values) => {
+          await HttpService.post("/people/parents/leave-requests", {
+            hocVienId: Number(values.hocVienId),
+            buoiHocId: Number(values.buoiHocId),
+            lyDo: values.lyDo.trim(),
+          });
+          await loadData();
+          selectChild(values.hocVienId);
+          location.hash = "/parent/parent-leave";
+          notify("Đã gửi đơn xin nghỉ đến Giáo vụ.");
+        },
+        "Gửi đơn xin nghỉ",
+      );
+      const fillSessions = () => {
+        const rows = availableSessions($("leaveKid").value);
+        $("leaveSession").innerHTML =
+          '<option value="">Chọn buổi học</option>' +
+          rows
+            .map(
+              (row) =>
+                `<option value="${esc(row.buoiHocId)}">${esc(row.date)} · ${esc(row.time)} · ${esc(row.course)}</option>`,
+            )
+            .join("");
+        $("parentDialogError").textContent = rows.length
+          ? ""
+          : "Chưa có buổi học sắp tới có thể gửi đơn xin nghỉ.";
+      };
+      $("leaveKid").addEventListener("change", fillSessions);
+      fillSessions();
+      if (sessionId) $("leaveSession").value = sessionId;
+    }
+    function openInvoice(id, payment = false) {
+      const invoice = invoices().find((row) => String(row.id) === String(id));
+      if (!invoice) return;
+      const remaining = Math.max(
+        0,
+        Number(invoice.must) - Number(invoice.paid),
+      );
+      const summary =
+        item("Hóa đơn", `<strong>${esc(invoice.code)}</strong>`) +
+        item("Học viên", esc(student()?.hoTen)) +
+        item("Khóa học", esc(invoice.course)) +
+        item("Phải thu", money(invoice.must)) +
+        item("Đã xác nhận thu", money(invoice.paid)) +
+        item(
+          "Còn lại",
+          `<strong class="parent-due">${money(remaining)}</strong>`,
+        );
+      if (!payment || !remaining || pendingPayment(invoice)) {
+        openDialog(
+          "Chi tiết hóa đơn",
+          `<div class="parent-summary">${summary}</div>`,
+          null,
+          "",
+          button("In hóa đơn", "print"),
+        );
+        return;
+      }
+      openDialog(
+        "Thông báo thanh toán học phí",
+        `<div class="parent-summary">${summary}</div><label>Kênh thanh toán<select name="nhaCungCap"><option value="VIETQR_NAPAS">Chuyển khoản ngân hàng</option><option value="VNPAY_GATEWAY">VNPay</option><option value="MOMO_BUSINESS">MoMo</option></select></label><label>Số tiền thông báo (VNĐ)<input type="text" value="${esc(money(remaining))}" readonly></label><p class="parent-payment-note">Sau khi chuyển tiền theo thông tin Trung tâm đã cung cấp, gửi thông báo để Trung tâm kiểm tra và xác nhận khoản thu.</p>`,
+        async (values) => {
+          await HttpService.post("/people/parents/payments", {
+            hoaDonId: Number(invoice.id),
+            nhaCungCap: values.nhaCungCap,
+            soTien: remaining,
+          });
+          await loadData();
+          notify("Đã gửi thông báo thanh toán. Khoản thu đang chờ đối soát.");
+        },
+        "Tôi đã chuyển khoản",
+      );
+    }
+    function respondToProposal(id, accepted) {
+      const proposal = proposals.find((row) => String(row.id) === String(id));
+      if (!proposal) return;
+      const body = `<p>${accepted ? "Xác nhận đồng ý" : "Từ chối"} đề xuất <strong>${esc(proposal.tenNguoiDay)}</strong> cho ${esc(proposal.tenHocVien || proposal.hoTenLienHe)}?</p>${accepted ? "" : '<label>Lý do từ chối<textarea name="lyDo" rows="3" maxlength="255" required></textarea></label>'}`;
+      openDialog(
+        accepted ? "Xác nhận người dạy" : "Từ chối đề xuất",
+        body,
+        async (values) => {
+          await HttpService.post(
+            `/academic/admissions/proposals/${proposal.id}/respond`,
+            {
+              trangThai: accepted ? "dong_y" : "tu_choi",
+              lyDo: values.lyDo?.trim() || null,
+            },
+          );
+          await loadData();
+          notify("Đã gửi phản hồi đề xuất đến Giáo vụ.");
+        },
+      );
+    }
+    function openPassword() {
+      $("parentAccountMenu").open = false;
+      openDialog(
+        "Đổi mật khẩu",
+        '<label>Mật khẩu hiện tại<input type="password" name="currentPassword" autocomplete="current-password" required maxlength="72"></label><label>Mật khẩu mới<input type="password" name="newPassword" autocomplete="new-password" required minlength="6" maxlength="72"></label><label>Xác nhận mật khẩu mới<input type="password" name="confirmPassword" autocomplete="new-password" required minlength="6" maxlength="72"></label>',
+        async (values) => {
+          if (values.newPassword !== values.confirmPassword)
+            throw new Error("Mật khẩu xác nhận chưa khớp.");
+          await HttpService.put("/auth/change-password", {
+            currentPassword: values.currentPassword,
+            newPassword: values.newPassword,
+          });
+          AccessService.clearSession();
+          window.location.replace(AppConfig.AUTH_PAGE);
+        },
+        "Cập nhật mật khẩu",
+      );
     }
 
-    // Khởi động
-    initStudentSelector();
+    document.addEventListener("click", async (event) => {
+      if (
+        !$("parentNotificationPanel").contains(event.target) &&
+        !$("parent-bell").contains(event.target)
+      )
+        showNotifications(false);
+      if (!$("parentAccountMenu").contains(event.target))
+        $("parentAccountMenu").open = false;
+      const control = event.target.closest(
+        "button[data-tab], button[data-action], button[data-calendar-view]",
+      );
+      if (!control || control.disabled) return;
+      if (control.dataset.tab) {
+        location.hash = `/parent/parent-${control.dataset.tab}`;
+        showScreen();
+        return;
+      }
+      if (control.dataset.calendarView) {
+        calendarView = control.dataset.calendarView;
+        renderCalendar();
+        return;
+      }
+      const action = control.dataset.action;
+      const id = control.dataset.id;
+      if (
+        loading &&
+        [
+          "leave",
+          "leave-session",
+          "pay",
+          "proposal-accept",
+          "proposal-reject",
+          "read",
+          "read-all",
+        ].includes(action)
+      ) {
+        notify("Đang cập nhật dữ liệu. Vui lòng thử lại sau ít giây.");
+        return;
+      }
+      switch (action) {
+        case "child":
+          selectChild(id);
+          break;
+        case "reload":
+          await loadData();
+          break;
+        case "previous-week":
+          changeCalendarPeriod(-1);
+          break;
+        case "next-week":
+          changeCalendarPeriod(1);
+          break;
+        case "today":
+          calendarDay = dayKey(serverNow);
+          renderCalendar();
+          break;
+        case "session":
+          openSession(id);
+          break;
+        case "leave-session":
+          closeDialog();
+          openLeave(id);
+          break;
+        case "leave":
+          openLeave();
+          break;
+        case "pay":
+          openInvoice(id, true);
+          break;
+        case "invoice":
+          openInvoice(id);
+          break;
+        case "proposal-accept":
+          respondToProposal(id, true);
+          break;
+        case "proposal-reject":
+          respondToProposal(id, false);
+          break;
+        case "password":
+          openPassword();
+          break;
+        case "dialog-close":
+          closeDialog();
+          break;
+        case "print":
+          window.print();
+          break;
+        case "read":
+          await busy(control, async () => {
+            await HttpService.post(
+              `/communication/notifications/${Number(id)}/read`,
+              {},
+            );
+            await loadData();
+          });
+          break;
+        case "read-all":
+          await busy(control, async () => {
+            await HttpService.post("/communication/notifications/read-all", {});
+            await loadData();
+            notify("Đã đánh dấu tất cả thông báo là đã đọc.");
+          });
+          break;
+      }
+    });
+    $("studentSelector").addEventListener("change", (event) =>
+      selectChild(event.target.value),
+    );
+    $("btnLogout").addEventListener("click", (event) =>
+      busy(event.currentTarget, async () => {
+        await HttpService.post("/auth/logout", {});
+        AccessService.clearSession();
+        window.location.replace(AppConfig.AUTH_PAGE);
+      }),
+    );
+    $("parent-menu").addEventListener("click", () => {
+      const open = $("parent-sidebar").classList.toggle("open");
+      $("parent-backdrop").hidden = !open;
+      $("parent-menu").setAttribute("aria-expanded", String(open));
+    });
+    $("parent-backdrop").addEventListener("click", closeMenu);
+    $("parent-bell").addEventListener("click", () => {
+      showNotifications($("parentNotificationPanel").hidden);
+      $("parentAccountMenu").open = false;
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !dialog.open) {
+        closeMenu();
+        showNotifications(false);
+        $("parentAccountMenu").open = false;
+      }
+    });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) closeDialog();
+    });
+    dialog.addEventListener("cancel", (event) => {
+      if (dialog.dataset.busy === "true") event.preventDefault();
+    });
+    window.addEventListener("hashchange", showScreen);
+    showScreen();
+    render();
+    loadData();
   });
 })();
 

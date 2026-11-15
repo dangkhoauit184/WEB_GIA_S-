@@ -103,4 +103,10 @@ const AccessService = {
 
 if (typeof window !== 'undefined') {
   window.AccessService = AccessService;
+  const sessionElement = document.getElementById('portal-session');
+  if (sessionElement) {
+    const session = JSON.parse(sessionElement.textContent);
+    AccessService.setSession(session.token, session.user);
+    sessionElement.remove();
+  }
 }

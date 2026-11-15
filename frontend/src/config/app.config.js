@@ -1,11 +1,13 @@
 /**
  * EduCenter ERP - Frontend Application Configuration
  */
+const _backendOrigin = ['localhost', '127.0.0.1'].includes(window.location.hostname) && window.location.port === '8769'
+  ? 'http://localhost:5000'
+  : window.location.origin;
+
 const AppConfig = {
-  // API Backend Base URL (Khi có Docker chạy ở cổng 8080)
-  API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8080/api'
-    : '/api',
+  // The shared login and role portals use the PHP origin.
+  API_BASE_URL: _backendOrigin + '/api',
 
   // Khóa lưu trữ trong localStorage / sessionStorage
   STORAGE_KEYS: {
@@ -16,17 +18,17 @@ const AppConfig = {
 
   // Cổng giao diện tương ứng theo vai trò (Role-based Routing)
   PORTAL_ROUTES: {
-    ADMIN: '/src/modules/reporting/features/dashboard/dashboard.html',
-    GIAO_VU: '/src/modules/academic/features/classes/classes.html',
-    GIAO_VIEN: '/src/modules/academic/features/attendance/attendance.html',
-    GIA_SU: '/src/modules/academic/features/attendance/attendance.html',
-    TRO_GIANG: '/src/modules/academic/features/attendance/attendance.html',
-    PHU_HUYNH: '/src/modules/people/features/parents/parents.html',
+    ADMIN: _backendOrigin + '/app',
+    GIAO_VU: _backendOrigin + '/app',
+    GIAO_VIEN: _backendOrigin + '/app',
+    GIA_SU: _backendOrigin + '/app',
+    TRO_GIANG: _backendOrigin + '/app',
+    PHU_HUYNH: _backendOrigin + '/app',
   },
 
   // Trang đăng nhập và trang công khai
-  AUTH_PAGE: '/src/modules/administration/features/auth/auth.html',
-  LANDING_PAGE: '/index.html',
+  AUTH_PAGE: _backendOrigin + '/login',
+  LANDING_PAGE: _backendOrigin + '/',
 };
 
 if (typeof window !== 'undefined') {
