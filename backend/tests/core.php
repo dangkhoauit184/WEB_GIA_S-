@@ -43,7 +43,9 @@ try {
         check(http('/api/auth/me','GET',null,'invalid.jwt.token')[0]===401,'invalid bearer');
         check(http('/api/auth/login','POST',null,null,'{broken')[0]===400,'malformed JSON');
         [$status,,$html]=http('/');
-        check($status===200 && str_contains($html,'id="login-form"'),'MVC view');
+        check($status===200 && str_contains($html,'EduCenter'),'public MVC page');
+        [$status,,$html]=http('/login');
+        check($status===200 && str_contains($html,'id="loginForm"'),'shared original login page');
     } finally { proc_terminate($server); proc_close($server); }
     echo "PASS: $assertions PHP core assertions (no database writes).\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); exit(1); }

@@ -97,12 +97,9 @@ nav = ''.join('<button type="button" data-screen="' + key + '" onclick="showS(\'
 shell = shell.replace('<nav id="admin-nav"></nav>', '<nav id="admin-nav">' + nav + '</nav>')
 assets = ['administration.js','views.js','catalog.js','permissions.js','audit.js','dashboard.js','tuition.js','payroll.js','leave-requests.js','timekeeping.js','staff.js','schedule.js']
 scripts = '\n'.join('<script src="/admin-assets/' + name + '" defer></script>' for name in assets)
-login = '''<section id="admin-login" class="login-wrap"><form id="admin-login-form" class="card login-card">
-<div class="brand-icon">E</div><h1>EduCenter ERP</h1><p class="sub">Đăng nhập cổng Quản trị viên</p>
-<label>Tên đăng nhập<input name="username" autocomplete="username" required></label>
-<label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
-<p id="login-error" class="form-error" role="alert"></p><button class="btn p" type="submit">Đăng nhập hệ thống</button><p><a href="/">Website Trung tâm</a></p>
-</form></section>'''
+login = '''<section id="admin-login" class="login-wrap" role="status"><div class="card login-card">
+<div class="brand-icon">E</div><h1>EduCenter ERP</h1><p>Đang mở không gian làm việc…</p>
+</div></section>'''
 tail = '''<main class="main" id="admin-content" tabindex="-1" aria-live="polite"></main></div></div>
 <dialog id="admin-dialog" aria-labelledby="dialog-title"><div id="dialog-content"></div></dialog>
 <div id="admin-toast" role="status" hidden></div><span id="admin-page-title" hidden></span>

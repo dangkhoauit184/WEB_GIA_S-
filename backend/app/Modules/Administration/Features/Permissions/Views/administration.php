@@ -12,12 +12,9 @@
 <script src="/admin-assets/leave-requests.js" defer></script>
 <script src="/admin-assets/timekeeping.js" defer></script>
 <script src="/admin-assets/staff.js" defer></script>
-<?php endif; ?><script src="/admin-assets/schedule.js" defer></script><script src="/admin-assets/admissions.js" defer></script><script src="/admin-assets/students.js" defer></script><script src="/admin-assets/parents.js" defer></script><script src="/admin-assets/classes.js" defer></script><link rel="stylesheet" href="/admin-assets/admissions.css"><?php if ($isAdmissions): ?><script src="/admin-assets/leave-requests.js" defer></script><script src="/admin-assets/tuition.js" defer></script><?php endif; ?></head><body class="administration" data-portal="<?= $isAdmissions ? 'admissions' : 'admin' ?>"><section id="admin-login" class="login-wrap"><form id="admin-login-form" class="card login-card">
-<div class="brand-icon">E</div><h1>EduCenter ERP</h1><p class="sub">Đăng nhập cổng <?= $portalTitle ?></p>
-<label>Tên đăng nhập<input name="username" autocomplete="username" required></label>
-<label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
-<p id="login-error" class="form-error" role="alert"></p><button class="btn p" type="submit">Đăng nhập hệ thống</button><p><a href="/">Website Trung tâm</a></p>
-</form></section><div class="app" id="admin-workspace" hidden>
+<?php endif; ?><script src="/admin-assets/schedule.js" defer></script><script src="/admin-assets/admissions.js" defer></script><script src="/admin-assets/students.js" defer></script><script src="/admin-assets/parents.js" defer></script><script src="/admin-assets/classes.js" defer></script><link rel="stylesheet" href="/admin-assets/admissions.css"><?php if ($isAdmissions): ?><script src="/admin-assets/leave-requests.js" defer></script><script src="/admin-assets/tuition.js" defer></script><?php endif; ?></head><body class="administration" data-portal="<?= $isAdmissions ? 'admissions' : 'admin' ?>"><section id="admin-login" class="login-wrap" role="status"><div class="card login-card">
+<div class="brand-icon">E</div><h1>EduCenter ERP</h1><p>Đang mở không gian làm việc…</p>
+</div></section><div class="app" id="admin-workspace" hidden>
 
 <!-- ═══════════════════════════════════════
      SIDEBAR

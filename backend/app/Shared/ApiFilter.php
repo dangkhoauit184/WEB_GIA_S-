@@ -10,7 +10,9 @@ final class ApiFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         if ($request->getMethod() === 'OPTIONS') {
-            return service('response')->setStatusCode(204);
+            $response = service('response')->setStatusCode(204);
+            $this->after($request, $response);
+            return $response;
         }
         if (str_starts_with($request->getUri()->getPath(), '/api/') && strlen($request->getBody()) > 1048576) {
             return ApiController::error(new ApiException(413, 'Nội dung vượt quá 1 MB.', 'PAYLOAD_TOO_LARGE'));

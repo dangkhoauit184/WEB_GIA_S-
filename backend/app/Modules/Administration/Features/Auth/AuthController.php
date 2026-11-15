@@ -3,11 +3,25 @@ namespace App\Modules\Administration\Features\Auth;
 
 final class AuthController extends \App\Shared\ApiController
 {
-    public function login() { return $this->respond(fn()=>AuthService::login(AuthValidator::login($this->input()))); }
+    public function login()
+    {
+        return $this->respond(function () {
+            $result = AuthService::login(AuthValidator::login($this->input()));
+            $this->response->setCookie([
+                'name'=>'educenter_session', 'value'=>$result['token'], 'expire'=>0,
+                'path'=>'/', 'secure'=>$this->request->isSecure(), 'httponly'=>true, 'samesite'=>'Lax',
+            ]);
+            return $result;
+        });
+    }
     public function register() { return $this->respond(fn()=>AuthService::register(AuthValidator::register($this->input())), 201); }
     public function sendOtp() { return $this->respond(fn()=>AuthService::sendOtp(AuthValidator::sendOtp($this->input()))); }
     public function resetPassword() { return $this->respond(fn()=>AuthService::resetPassword(AuthValidator::resetPassword($this->input()))); }
     public function me() { return $this->respond(fn()=>['user'=>AuthFilter::user()]); }
     public function changePassword() { return $this->respond(fn()=>AuthService::changePassword(AuthValidator::password($this->input()))); }
-    public function logout() { return $this->respond(fn()=>AuthService::logout()); }
+    public function logout()
+    {
+        $this->response->deleteCookie('educenter_session');
+        return $this->respond(fn()=>AuthService::logout());
+    }
 }

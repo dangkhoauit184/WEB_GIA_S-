@@ -2,6 +2,11 @@
  * EduCenter ERP - Auth Feature Logic
  */
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.location.href.split('?')[0] !== AppConfig.AUTH_PAGE) {
+    window.location.replace(AppConfig.AUTH_PAGE);
+    return;
+  }
+  AccessService.clearSession();
   const loginForm = document.getElementById('loginForm');
   const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
@@ -45,49 +50,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSubmit.textContent = 'Đang đăng nhập...';
 
     try {
-      let authResult = null;
-      try {
-        const response = await HttpService.post('/auth/login', { username, password });
-        authResult = response.data || response;
-      } catch (networkOrApiError) {
-        if (networkOrApiError.status && networkOrApiError.status !== 0) {
-          throw networkOrApiError;
-        }
-
-        console.warn('[Auth] Máy chưa bật PHP server. Khởi động Mock Session.');
-        let mockRole = 'PHU_HUYNH';
-        let mockName = 'Nguyễn Văn Phụ Huynh';
-        if (username.includes('admin')) { mockRole = 'ADMIN'; mockName = 'Quản trị viên Admin'; }
-        else if (username.includes('giaovu')) { mockRole = 'GIAO_VU'; mockName = 'Thầy/Cô Giáo Vụ'; }
-        else if (username.includes('giaovien')) { mockRole = 'GIAO_VIEN'; mockName = 'Thầy Nguyễn Văn A'; }
-        else if (username.includes('giasu')) { mockRole = 'GIA_SU'; mockName = 'Gia sư Trần Thị B'; }
-        else if (username.includes('trogiang')) { mockRole = 'TRO_GIANG'; mockName = 'Trợ giảng Lê C'; }
-
-        authResult = {
-          token: 'mock_jwt_token_for_local_development_' + Date.now(),
-          user: {
-            userId: 101,
-            accountId: 101,
-            username: username,
-            hoTen: mockName,
-            role: mockRole,
-            groupName: mockRole === 'ADMIN' ? 'Admin' : (mockRole === 'PHU_HUYNH' ? 'PhuHuynh' : 'NhanVien'),
-          }
-        };
-      }
+      const response = await HttpService.post('/auth/login', { username, password });
+      const authResult = response.data || response;
 
       AccessService.setSession(authResult.token, authResult.user);
       showAlert(`Đăng nhập thành công! Đang chuyển hướng...`, 'success');
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const redirectUrl = urlParams.get('redirect');
-
       setTimeout(() => {
-        if (redirectUrl) {
-          window.location.href = redirectUrl;
-        } else {
-          AccessService.redirectByRole();
-        }
+        AccessService.redirectByRole();
       }, 600);
 
     } catch (err) {
@@ -148,12 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await HttpService.post('/auth/forgot-password/send-otp', { identifier });
         const data = res.data || res;
-        const otpHint = data.otpDev ? ` (Mã OTP kiểm thử local: ${data.otpDev})` : '';
-        setModalAlert(forgotAlert, (data.message || `Đã tạo mã OTP cho ${identifier}.`) + otpHint, 'success');
-        if (data.otpDev) {
-          const otpInput = document.getElementById('forgotOtp');
-          if (otpInput && !otpInput.value) otpInput.value = data.otpDev;
-        }
+        setModalAlert(forgotAlert, data.message || 'Đã gửi mã OTP đến email đã đăng ký.', 'success');
       } catch (err) {
         setModalAlert(forgotAlert, err.message || 'Không thể gửi mã OTP. Vui lòng kiểm tra lại thông tin.');
       } finally {

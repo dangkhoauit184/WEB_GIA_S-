@@ -6,7 +6,7 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
-    // Server wiring only. Notification APIs/worker are implemented in the later BE phase.
+    // SMTP delivery for password recovery. General notification workers remain planned.
     public function __construct()
     {
         parent::__construct();

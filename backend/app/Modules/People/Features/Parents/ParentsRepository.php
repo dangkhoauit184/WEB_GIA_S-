@@ -157,6 +157,9 @@ final class ParentsRepository
             // 1. Thời khóa biểu của học viên (không trả về bất kỳ trường đơn giá/lương nào)
             $schedRows = Store::rows("SELECT b.id AS buoiHocId, b.ngay, b.gio_bat_dau AS gioBatDau,
                     b.gio_ket_thuc AS gioKetThuc, b.phong_hoc AS phongHoc, b.trang_thai AS trangThai,
+                    b.loai, b.chu_de_bai_hoc AS chuDe, b.noi_dung_bai_hoc AS noiDung,
+                    bt.tieu_de AS baiTap, bt.file_de_bai_url AS fileUrl, bt.han_nop AS hanNop,
+                    cs.ten_co_so AS tenCoSo,
                     l.ten_lop AS tenLop, l.ma_lop AS maLop, l.hinh_thuc AS hinhThuc,
                     COALESCE(k.ten, m.ten, l.ten_lop) AS tenKhoaHoc,
                     u_gv.hoten AS tenNguoiDay
@@ -165,8 +168,11 @@ final class ParentsRepository
                 LEFT JOIN khoa_hoc k ON k.id=l.khoa_hoc_id
                 LEFT JOIN mon_hoc m ON m.id=l.mon_hoc_id
                 JOIN buoi_hoc b ON b.lop_id=l.id
+                LEFT JOIN co_so cs ON cs.id=b.co_so_id
+                LEFT JOIN bai_tap bt ON bt.id=(SELECT MAX(hw.id) FROM bai_tap hw WHERE hw.buoi_hoc_id=b.id)
                 LEFT JOIN nhan_su_chuyen_mon ns ON ns.id=l.nguoi_day_chinh_id
-                LEFT JOIN users u_gv ON u_gv.user_id=ns.user_id
+                LEFT JOIN users u_gv ON u_gv.user_id=COALESCE((SELECT pc.user_id FROM phan_cong_buoi_hoc pc
+                    WHERE pc.buoi_hoc_id=b.id AND pc.vai_tro='day_chinh' AND pc.trang_thai<>'da_go' LIMIT 1),ns.user_id)
                 WHERE lhv.hoc_vien_id=? AND lhv.trang_thai IN ('dang_hoc','hoc_thu','cho_xep_lop')
                   AND (b.loai='thuong' OR b.pham_vi_bu='ca_lop'
                        OR EXISTS (SELECT 1 FROM hoc_bu_hoc_vien hb WHERE hb.buoi_bu_id=b.id AND hb.hoc_vien_id=lhv.hoc_vien_id))
@@ -185,18 +191,29 @@ final class ParentsRepository
                     : 'Offline' . ($r['phongHoc'] ? ' - ' . $r['phongHoc'] : '');
                 return [
                     'buoiHocId' => (int)$r['buoiHocId'],
+                    'ngay' => $r['ngay'],
+                    'gioBatDau' => $r['gioBatDau'],
+                    'maLop' => $r['maLop'],
+                    'loai' => $r['loai'],
+                    'trangThai' => $r['trangThai'],
+                    'chuDe' => $r['chuDe'],
+                    'noiDung' => $r['noiDung'],
+                    'baiTap' => $r['baiTap'],
+                    'fileUrl' => $r['fileUrl'],
+                    'hanNop' => $r['hanNop'] ? date('d/m/Y H:i', strtotime($r['hanNop'])) : null,
                     'date' => date('d/m/Y', strtotime((string)$r['ngay'])),
                     'time' => substr((string)$r['gioBatDau'], 0, 5) . ' - ' . substr((string)$r['gioKetThuc'], 0, 5),
                     'course' => $r['tenKhoaHoc'] ?: $r['tenLop'],
-                    'room' => $room,
+                    'room' => $r['tenCoSo'] ? $r['tenCoSo'].' · '.$room : $room,
                     'teacher' => $r['tenNguoiDay'] ?: 'Giáo viên trung tâm',
                     'status' => $statusMap[$r['trangThai']] ?? $r['trangThai'],
-                    'canLeave' => $r['trangThai'] === 'du_kien',
+                    'canLeave' => $r['trangThai'] === 'du_kien' && strtotime($r['ngay'].' '.$r['gioBatDau']) > time(),
                 ];
             }, $schedRows);
 
             // 2. Sổ theo dõi buổi học & điểm bài tập
-            $noteRows = Store::rows("SELECT s.id, b.ngay, COALESCE(k.ten, l.ten_lop) AS tenKhoaHoc,
+            $noteRows = Store::rows("SELECT s.id, s.buoi_hoc_id AS buoiHocId, b.ngay, COALESCE(k.ten, l.ten_lop) AS tenKhoaHoc,
+                    bt.tieu_de AS baiTap, bt.file_de_bai_url AS fileUrl, bt.han_nop AS hanNop,
                     s.trang_thai_diem_danh AS diemDanh, s.diem_bai_tap_giay AS diemBaiTap,
                     s.muc_tiep_thu AS mucTiepThu, s.nhan_xet_buoi_hoc AS nhanXetBuoiHoc,
                     s.nhan_xet_bai_tap AS nhanXetBaiTap
@@ -204,6 +221,8 @@ final class ParentsRepository
                 JOIN buoi_hoc b ON b.id=s.buoi_hoc_id
                 JOIN lop_hoc l ON l.id=b.lop_id
                 LEFT JOIN khoa_hoc k ON k.id=l.khoa_hoc_id
+                LEFT JOIN bai_tap bt ON bt.id=COALESCE(s.bai_tap_id,
+                    (SELECT MAX(hw.id) FROM bai_tap hw WHERE hw.buoi_hoc_id=b.id))
                 WHERE s.hoc_vien_id=?
                 ORDER BY b.ngay DESC, s.id DESC LIMIT 50", [(int)$student['id']]);
 
@@ -215,6 +234,10 @@ final class ParentsRepository
             ];
             $learningNotes[$sid] = array_map(static function (array $n) use ($attendMap): array {
                 return [
+                    'buoiHocId' => (int)$n['buoiHocId'],
+                    'baiTap' => $n['baiTap'],
+                    'fileUrl' => $n['fileUrl'],
+                    'hanNop' => $n['hanNop'] ? date('d/m/Y H:i', strtotime($n['hanNop'])) : null,
                     'date' => date('d/m/Y', strtotime((string)$n['ngay'])),
                     'course' => $n['tenKhoaHoc'],
                     'attend' => $attendMap[$n['diemDanh']] ?? $n['diemDanh'],
@@ -251,7 +274,8 @@ final class ParentsRepository
         }
 
         // 4. Lịch sử đơn xin nghỉ cá nhân của các con thuộc phụ huynh này
-        $leaveRows = Store::rows("SELECT dxn.id, dxn.hoc_vien_id AS hocVienId, dxn.ly_do AS lyDo,
+        $leaveRows = Store::rows("SELECT dxn.id, dxn.buoi_hoc_id AS buoiHocId, dxn.hoc_vien_id AS hocVienId, dxn.ly_do AS lyDo,
+                dxn.ly_do_tu_choi AS feedback,
                 dxn.trang_thai AS trangThai, dxn.created_at AS createdAt,
                 b.ngay, COALESCE(k.ten, l.ten_lop) AS tenKhoaHoc
             FROM don_xin_nghi dxn
@@ -273,6 +297,8 @@ final class ParentsRepository
                 'id' => (int)$r['id'],
                 'code' => 'NP-' . str_pad((string)$r['id'], 4, '0', STR_PAD_LEFT),
                 'studentId' => (string)$r['hocVienId'],
+                'buoiHocId' => (int)$r['buoiHocId'],
+                'feedback' => $r['feedback'],
                 'session' => date('d/m/Y', strtotime((string)$r['ngay'])) . ' · ' . $r['tenKhoaHoc'],
                 'reason' => $r['lyDo'],
                 'date' => date('d/m/Y', strtotime((string)$r['createdAt'])),
@@ -284,15 +310,18 @@ final class ParentsRepository
         $txRows = Store::rows("SELECT gd.id, gd.ma_yeu_cau AS maYeuCau, gd.nha_cung_cap AS nhaCungCap,
                 gd.ma_giao_dich_cong AS maGiaoDichCong, gd.so_tien AS soTien,
                 gd.trang_thai AS trangThai, gd.created_at AS createdAt,
-                hd.ma_hd AS maHd
+                hd.ma_hd AS maHd, COALESCE(dk.hoc_vien_id,lhv.hoc_vien_id) AS studentId
             FROM giao_dich_truc_tuyen gd
             JOIN hoa_don hd ON hd.id=gd.hoa_don_id
+            LEFT JOIN dang_ky_khoa_hoc dk ON dk.id=hd.dang_ky_khoa_hoc_id
+            LEFT JOIN lop_hoc_vien lhv ON lhv.id=hd.lop_hoc_vien_id
             WHERE gd.phu_huynh_id=?
             ORDER BY gd.id DESC LIMIT 50", [$parentUserId]);
 
         $transactions = array_map(static function (array $tx): array {
             return [
                 'id' => (int)$tx['id'],
+                'studentId' => (string)$tx['studentId'],
                 'code' => $tx['maYeuCau'],
                 'invCode' => $tx['maHd'],
                 'channel' => $tx['nhaCungCap'],
@@ -304,6 +333,7 @@ final class ParentsRepository
         }, $txRows);
 
         return [
+            'serverTime' => date('c'),
             'parent' => $parent,
             'students' => $students,
             'schedules' => $schedules,
@@ -317,7 +347,7 @@ final class ParentsRepository
     public static function createLeaveRequest(int $parentUserId, array $data): array
     {
         return Store::transaction(function () use ($parentUserId, $data) {
-            $student = Store::one('SELECT id, ho_ten FROM hoc_vien WHERE id=? AND phu_huynh_user_id=? AND deleted_at IS NULL', [
+            $student = Store::one('SELECT id, ho_ten FROM hoc_vien WHERE id=? AND phu_huynh_user_id=? AND deleted_at IS NULL FOR UPDATE', [
                 $data['hocVienId'],
                 $parentUserId,
             ]);
@@ -325,16 +355,20 @@ final class ParentsRepository
                 throw new \App\Shared\ApiException(403, 'Học viên không thuộc quyền quản lý của tài khoản phụ huynh này.', 'FORBIDDEN_STUDENT');
             }
 
-            $session = Store::one("SELECT b.id, b.ngay, b.trang_thai, COALESCE(k.ten, l.ten_lop) AS tenKhoaHoc
+            $session = Store::one("SELECT b.id, b.ngay, b.gio_bat_dau AS gioBatDau, b.trang_thai, COALESCE(k.ten, l.ten_lop) AS tenKhoaHoc
                 FROM buoi_hoc b
                 JOIN lop_hoc l ON l.id=b.lop_id
                 LEFT JOIN khoa_hoc k ON k.id=l.khoa_hoc_id
                 JOIN lop_hoc_vien lhv ON lhv.lop_id=l.id
-                WHERE b.id=? AND lhv.hoc_vien_id=?", [$data['buoiHocId'], $data['hocVienId']]);
+                WHERE b.id=? AND lhv.hoc_vien_id=? AND l.deleted_at IS NULL
+                  AND lhv.trang_thai IN ('dang_hoc','hoc_thu')
+                  AND (b.loai='thuong' OR b.pham_vi_bu='ca_lop'
+                    OR EXISTS (SELECT 1 FROM hoc_bu_hoc_vien hb WHERE hb.buoi_bu_id=b.id AND hb.hoc_vien_id=lhv.hoc_vien_id))",
+                [$data['buoiHocId'], $data['hocVienId']]);
             if (!$session) {
                 throw new \App\Shared\ApiException(404, 'Không tìm thấy buổi học của học viên.', 'SESSION_NOT_FOUND');
             }
-            if ($session['trang_thai'] !== 'du_kien') {
+            if ($session['trang_thai'] !== 'du_kien' || strtotime($session['ngay'].' '.$session['gioBatDau']) <= time()) {
                 throw new \App\Shared\ApiException(409, 'Chỉ có thể gửi đơn xin nghỉ cho buổi học dự kiến sắp diễn ra.');
             }
 
@@ -391,6 +425,16 @@ final class ParentsRepository
             }
             if ((int)$data['soTien'] !== $remaining) {
                 throw new \App\Shared\ApiException(400, 'Số tiền thanh toán phải đúng bằng số dư còn phải thu của hóa đơn (' . number_format($remaining) . ' đ).');
+            }
+
+            $pending = Store::one("SELECT id,ma_yeu_cau,nha_cung_cap,ma_giao_dich_cong,so_tien,created_at
+                FROM giao_dich_truc_tuyen WHERE hoa_don_id=? AND phu_huynh_id=? AND trang_thai='cho_xac_nhan'
+                ORDER BY id DESC LIMIT 1", [$invoice['id'], $parentUserId]);
+            if ($pending) {
+                return ['id'=>(int)$pending['id'], 'code'=>$pending['ma_yeu_cau'], 'invCode'=>$invoice['ma_hd'],
+                    'channel'=>$pending['nha_cung_cap'], 'amount'=>(int)$pending['so_tien'],
+                    'ref'=>$pending['ma_giao_dich_cong'], 'time'=>date('d/m/Y H:i', strtotime($pending['created_at'])),
+                    'status'=>'cho_xac_nhan'];
             }
 
             $maYeuCau = 'GD-WEB-' . strtoupper(bin2hex(random_bytes(5)));

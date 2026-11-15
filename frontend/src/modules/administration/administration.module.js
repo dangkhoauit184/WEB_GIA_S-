@@ -28,10 +28,11 @@ window.Admin = (() => {
     user = null;
     renderVersion++;
     $('admin-workspace').hidden = true;
-    $('admin-login').hidden = false;
     $('admin-content').replaceChildren();
     document.querySelectorAll('.modal-ov.show').forEach(modal => modal.classList.remove('show'));
     if ($('admin-dialog').open) $('admin-dialog').close();
+    AccessService.clearSession();
+    window.location.replace(AppConfig.AUTH_PAGE);
   }
 
   async function api(path, method = 'GET', body) {
@@ -48,7 +49,6 @@ window.Admin = (() => {
     const result = await response.json().catch(() => null);
     if (response.status === 401) {
       reset();
-      $('login-error').textContent = 'Phiên đã hết hạn. Vui lòng đăng nhập lại.';
     }
     if (!response.ok || !result?.success) {
       const error = new Error(result?.message || 'Không xử lý được yêu cầu.');
@@ -356,25 +356,6 @@ window.Admin = (() => {
   }
 
   window.addEventListener('DOMContentLoaded', () => {
-    $('admin-login-form').addEventListener('submit', async event => {
-      event.preventDefault();
-      const button = event.target.querySelector('button');
-      button.disabled = true;
-      $('login-error').textContent = '';
-      try {
-        const result = await api('/api/auth/login', 'POST', Object.fromEntries(new FormData(event.target)));
-        token = result.token;
-        const accepted = admissionsPortal ? ['ADMIN', 'GIAO_VU'].includes(result.user.role) : result.user.role === 'ADMIN';
-        if (!accepted) {
-          await api('/api/auth/logout', 'POST', {});
-          token = null;
-          throw new Error(admissionsPortal ? 'Cổng này dành cho Admin hoặc Giáo vụ / Điều phối.' : 'Cổng này dành cho tài khoản Admin.');
-        }
-        event.target.reset();
-        openWorkspace(result.user);
-      } catch (error) { $('login-error').textContent = error.message; }
-      finally { button.disabled = false; }
-    });
     $('admin-logout').addEventListener('click', event => busy(event.currentTarget, async () => {
       await api('/api/auth/logout', 'POST', {});
       reset();
@@ -388,6 +369,10 @@ window.Admin = (() => {
       if ($('admin-dialog').dataset.busy === 'true') event.preventDefault();
     });
     window.addEventListener('hashchange', render);
+    token = AccessService.getToken();
+    const account = AccessService.getCurrentUser();
+    if (token && account) openWorkspace(account);
+    else reset();
   });
 
   return { $, esc, money, date, query, api, heading, table, tag, button, options, pager, bindPager, busy,

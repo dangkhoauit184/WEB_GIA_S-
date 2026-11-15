@@ -93,71 +93,88 @@ final class AuthService
         });
     }
 
-    public static function sendOtp(array $data): array
+    private static function lockRecoveryAccount(string $identifier): array
     {
-        $account = AuthRepository::username($data['identifier']);
-        if (!$account) {
-            throw new ApiException(404, 'Không tìm thấy tài khoản với Email hoặc Tên đăng nhập này.', 'ACCOUNT_NOT_FOUND');
-        }
-        if ($account['status'] !== 'active') {
+        $account = AuthRepository::username($identifier);
+        if (!$account) throw new ApiException(404, 'Không tìm thấy tài khoản.', 'ACCOUNT_NOT_FOUND');
+        Store::one('SELECT account_id FROM account WHERE account_id=? FOR UPDATE', [$account['account_id']]);
+        $account = AuthRepository::account((int)$account['account_id']);
+        if (!$account || $account['status'] !== 'active') {
             throw new ApiException(403, 'Tài khoản đang bị khóa hoặc chưa kích hoạt.', 'ACCOUNT_INACTIVE');
         }
-        $otp = (string)random_int(100000, 999999);
-        $expiresAt = time() + 600;
-        Store::audit((int)$account['user_id'], 'khac', (int)$account['account_id'], [
-            'action' => 'forgot_password_otp',
-            'otpHash' => hash('sha256', $otp),
-            'expiresAt' => $expiresAt,
-            'used' => false,
-        ]);
-        return [
-            'sent' => true,
-            'identifier' => $data['identifier'],
-            'expiresInSeconds' => 600,
-            'otpDev' => $otp,
-            'message' => 'Đã tạo mã xác nhận OTP (hiệu lực 10 phút).',
-        ];
+        return $account;
+    }
+
+    public static function sendOtp(array $data): array
+    {
+        return Store::transaction(function () use ($data) {
+            $account = self::lockRecoveryAccount($data['identifier']);
+            if (!filter_var($account['email'], FILTER_VALIDATE_EMAIL)) {
+                throw new ApiException(400, 'Tài khoản chưa có email hợp lệ. Vui lòng liên hệ quản trị viên.', 'EMAIL_REQUIRED');
+            }
+            $previous = AuthRepository::latestOtp((int)$account['account_id']);
+            if ((int)($previous['sentAt'] ?? 0) > time() - 60) {
+                throw new ApiException(429, 'Vui lòng chờ 60 giây trước khi gửi lại mã OTP.', 'OTP_RATE_LIMITED');
+            }
+            $otp = (string)random_int(100000, 999999);
+            $record = [
+                'action'=>'forgot_password_otp', 'version'=>2,
+                'otpHash'=>hash_hmac('sha256', $otp, Access::secret()),
+                'passwordVersion'=>Access::fingerprint($account),
+                'sentAt'=>time(), 'expiresAt'=>time()+600, 'attempts'=>0, 'used'=>false,
+            ];
+            Store::audit((int)$account['user_id'], 'khac', (int)$account['account_id'], $record);
+            $mail = service('email');
+            $mail->clear(true);
+            $config = config('Email');
+            $mail->setFrom($config->fromEmail, $config->fromName);
+            $mail->setTo($account['email']);
+            $mail->setSubject('EduCenter - Mã xác nhận đặt lại mật khẩu');
+            $mail->setMailType('text');
+            $mail->setMessage("Mã OTP của bạn là {$otp}. Mã có hiệu lực 10 phút và chỉ dùng một lần. Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.");
+            if (!$mail->send()) {
+                throw new ApiException(503, 'Chưa gửi được email OTP. Vui lòng thử lại sau hoặc liên hệ quản trị viên.', 'EMAIL_UNAVAILABLE');
+            }
+            return ['sent'=>true, 'expiresInSeconds'=>600,
+                'message'=>'Đã gửi mã OTP đến email đã đăng ký. Vui lòng kiểm tra hộp thư.'];
+        });
     }
 
     public static function resetPassword(array $data): array
     {
-        $account = AuthRepository::username($data['identifier']);
-        if (!$account) {
-            throw new ApiException(404, 'Không tìm thấy tài khoản với Email hoặc Tên đăng nhập này.', 'ACCOUNT_NOT_FOUND');
-        }
-        $otpRecord = AuthRepository::latestOtp((int)$account['account_id']);
-        if (!$otpRecord || !empty($otpRecord['used'])) {
-            throw new ApiException(400, 'Vui lòng bấm Lấy mã OTP trước khi đặt lại mật khẩu.', 'OTP_NOT_FOUND');
-        }
-        if ((int)($otpRecord['expiresAt'] ?? 0) < time()) {
-            throw new ApiException(400, 'Mã OTP đã hết hạn. Vui lòng lấy mã OTP mới.', 'OTP_EXPIRED');
-        }
-        if (!hash_equals((string)($otpRecord['otpHash'] ?? ''), hash('sha256', trim($data['otp'])))) {
-            throw new ApiException(400, 'Mã xác nhận OTP không chính xác.', 'INVALID_OTP');
-        }
-
-        Store::transaction(function () use ($account, $data, $otpRecord) {
+        $result = Store::transaction(function () use ($data) {
+            $account = self::lockRecoveryAccount($data['identifier']);
+            $record = AuthRepository::latestOtp((int)$account['account_id']);
+            if (!$record || ($record['version'] ?? 0) !== 2 || !empty($record['used'])
+                || !hash_equals((string)($record['passwordVersion'] ?? ''), Access::fingerprint($account))) {
+                throw new ApiException(400, 'Vui lòng lấy mã OTP mới trước khi đặt lại mật khẩu.', 'OTP_NOT_FOUND');
+            }
+            if ((int)$record['expiresAt'] <= time()) {
+                throw new ApiException(400, 'Mã OTP đã hết hạn. Vui lòng lấy mã mới.', 'OTP_EXPIRED');
+            }
+            if ((int)$record['attempts'] >= 5) {
+                throw new ApiException(429, 'Mã OTP đã bị khóa do nhập sai nhiều lần. Vui lòng lấy mã mới.', 'OTP_ATTEMPTS_EXCEEDED');
+            }
+            unset($record['auditId']);
+            if (!hash_equals($record['otpHash'], hash_hmac('sha256', trim($data['otp']), Access::secret()))) {
+                $record['attempts']++;
+                Store::audit((int)$account['user_id'], 'khac', (int)$account['account_id'], $record);
+                // Commit the failed attempt before returning the validation error.
+                return ['invalidOtp'=>true];
+            }
             Store::execute('UPDATE account SET password_hash=? WHERE account_id=?', [
-                password_hash($data['newPassword'], PASSWORD_BCRYPT),
-                $account['account_id'],
+                password_hash($data['newPassword'], PASSWORD_BCRYPT), $account['account_id'],
             ]);
-            Store::audit((int)$account['user_id'], 'khac', (int)$account['account_id'], [
-                'action' => 'forgot_password_otp',
-                'otpHash' => $otpRecord['otpHash'],
-                'expiresAt' => $otpRecord['expiresAt'],
-                'used' => true,
-            ]);
+            $record['used'] = true;
+            Store::audit((int)$account['user_id'], 'khac', (int)$account['account_id'], $record);
             Store::audit((int)$account['user_id'], 'sua', (int)$account['account_id'], [
-                'action' => 'account_status_changed',
-                'reason' => 'reset_password_by_otp',
+                'action'=>'account_status_changed', 'reason'=>'reset_password_by_otp',
             ]);
+            return ['reset'=>true, 'username'=>$account['username'],
+                'message'=>'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.'];
         });
-
-        return [
-            'reset' => true,
-            'username' => $account['username'],
-            'message' => 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.',
-        ];
+        if (!empty($result['invalidOtp'])) throw new ApiException(400, 'Mã xác nhận OTP không chính xác.', 'INVALID_OTP');
+        return $result;
     }
 
     public static function bootstrap(array $input, bool $reset = false): array

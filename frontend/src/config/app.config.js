@@ -1,20 +1,13 @@
 /**
  * EduCenter ERP - Frontend Application Configuration
  */
-const getPrefix = () => {
-  if (typeof window === 'undefined') return '';
-  const path = window.location.pathname;
-  const idx = path.indexOf('/frontend');
-  return idx !== -1 ? path.substring(0, idx) + '/frontend' : '';
-};
-
-const _prefix = getPrefix();
+const _backendOrigin = ['localhost', '127.0.0.1'].includes(window.location.hostname) && window.location.port === '8769'
+  ? 'http://localhost:5000'
+  : window.location.origin;
 
 const AppConfig = {
-  // API Backend Base URL (Hỗ trợ cả port 5000 chuẩn và port 8080)
-  API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000/api'
-    : '/api',
+  // The shared login and role portals use the PHP origin.
+  API_BASE_URL: _backendOrigin + '/api',
 
   // Khóa lưu trữ trong localStorage / sessionStorage
   STORAGE_KEYS: {
@@ -25,17 +18,17 @@ const AppConfig = {
 
   // Cổng giao diện tương ứng theo vai trò (Role-based Routing)
   PORTAL_ROUTES: {
-    ADMIN: _prefix + '/src/modules/reporting/features/dashboard/dashboard.html',
-    GIAO_VU: _prefix + '/src/modules/academic/features/classes/classes.html',
-    GIAO_VIEN: _prefix + '/src/modules/academic/features/attendance/attendance.html',
-    GIA_SU: _prefix + '/src/modules/academic/features/attendance/attendance.html',
-    TRO_GIANG: _prefix + '/src/modules/academic/features/attendance/attendance.html',
-    PHU_HUYNH: _prefix + '/src/modules/people/features/parents/parents.html',
+    ADMIN: _backendOrigin + '/app',
+    GIAO_VU: _backendOrigin + '/app',
+    GIAO_VIEN: _backendOrigin + '/app',
+    GIA_SU: _backendOrigin + '/app',
+    TRO_GIANG: _backendOrigin + '/app',
+    PHU_HUYNH: _backendOrigin + '/app',
   },
 
   // Trang đăng nhập và trang công khai
-  AUTH_PAGE: _prefix + '/src/modules/administration/features/auth/auth.html',
-  LANDING_PAGE: _prefix + '/index.html',
+  AUTH_PAGE: _backendOrigin + '/login',
+  LANDING_PAGE: _backendOrigin + '/',
 };
 
 if (typeof window !== 'undefined') {

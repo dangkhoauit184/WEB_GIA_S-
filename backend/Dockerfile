@@ -21,6 +21,7 @@ RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts --no-a
 COPY backend/ ./
 COPY shared/ /var/www/educenter/shared/
 COPY frontend/src/ /var/www/educenter/frontend/src/
+COPY frontend/index.html /var/www/educenter/frontend/index.html
 RUN composer dump-autoload --no-dev --optimize \
     && mkdir -p writable/cache writable/logs writable/session writable/uploads \
     && chown -R www-data:www-data writable

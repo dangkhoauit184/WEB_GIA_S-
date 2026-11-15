@@ -21,18 +21,18 @@ function rejects(callable $work,string $label): void
     }
     throw new \RuntimeException('FAIL: '.$label);
 }
-function http(string $path,string $method='GET',?array $data=null,?string $token=null,?string $raw=null): array
+function http(string $path,string $method='GET',?array $data=null,?string $token=null,?string $raw=null,array $extraHeaders=[]): array
 {
     global $baseUrl;
-    $headers="Content-Type: application/json\r\n".($token?"Authorization: Bearer $token\r\n":'');
+    $headers="Content-Type: application/json\r\n".($token?"Authorization: Bearer $token\r\n":'').implode("\r\n",$extraHeaders);
     $context=stream_context_create(['http'=>['method'=>$method,'header'=>$headers,
         'content'=>$raw??($data!==null?json_encode($data,JSON_THROW_ON_ERROR):''),
-        'ignore_errors'=>true,'timeout'=>20]]);
+        'ignore_errors'=>true,'timeout'=>20,'follow_location'=>0]]);
     $text=file_get_contents($baseUrl.$path,false,$context);
     if($text===false) throw new \RuntimeException('HTTP server unavailable');
     preg_match('/\s(\d{3})\s/',$http_response_header[0],$match);
     $body=json_decode($text,true);
-    return [(int)$match[1],$body,$text];
+    return [(int)$match[1],$body,$text,$http_response_header];
 }
 function startServer(): array
 {
