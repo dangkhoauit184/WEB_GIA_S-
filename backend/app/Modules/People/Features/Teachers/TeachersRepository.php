@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\People\Features\Teachers;
 
-use App\Shared\{Access,Store};
+use App\Shared\{Access,ApiException,Store};
 
 final class TeachersRepository
 {
@@ -69,6 +69,38 @@ final class TeachersRepository
         ];
     }
 
+    public static function availability(array $actor, ?int $id, ?array $slot): array
+    {
+        return Store::transaction(function () use ($actor, $id, $slot) {
+            Store::one('SELECT user_id FROM users WHERE user_id=? FOR UPDATE', [$actor['userId']]);
+            Store::one('SELECT id FROM nhan_su_chuyen_mon WHERE id=? FOR UPDATE', [$actor['teacherId']]);
+            $before = $id === null ? null : Store::one(
+                'SELECT * FROM nhan_su_lich_ranh WHERE id=? AND nhan_su_id=? FOR UPDATE', [$id, $actor['teacherId']]
+            );
+            if ($id !== null && !$before) throw new ApiException(404, 'Không tìm thấy khung giờ rảnh.');
+            if ($slot === null) {
+                Store::execute('DELETE FROM nhan_su_lich_ranh WHERE id=? AND nhan_su_id=?', [$id, $actor['teacherId']]);
+                Store::recordAudit($actor['userId'], 'xoa', 'nhan_su_lich_ranh', $id, $before, null);
+                return ['id'=>$id];
+            }
+            $other = Store::one('SELECT id FROM nhan_su_lich_ranh WHERE nhan_su_id=? AND thu=?
+                AND gio_bat_dau<? AND gio_ket_thuc>? AND id<>? LIMIT 1',
+                [$actor['teacherId'], $slot['thu'], $slot['gioKetThuc'], $slot['gioBatDau'], $id ?? 0]);
+            if ($other) throw new ApiException(409, 'Khung giờ này trùng với lịch rảnh đã đăng ký.');
+            if ($id === null && (int)Store::one('SELECT COUNT(*) AS n FROM nhan_su_lich_ranh WHERE nhan_su_id=?', [$actor['teacherId']])['n'] >= 100) {
+                throw new ApiException(400, 'Bạn đã đăng ký đủ 100 khung giờ rảnh.');
+            }
+            $values = ['nhan_su_id'=>$actor['teacherId'], 'thu'=>$slot['thu'],
+                'gio_bat_dau'=>$slot['gioBatDau'], 'gio_ket_thuc'=>$slot['gioKetThuc']];
+            $action = $id === null ? 'them' : 'sua';
+            if ($id === null) $id = Store::insert('nhan_su_lich_ranh', $values);
+            else Store::execute('UPDATE nhan_su_lich_ranh SET thu=?,gio_bat_dau=?,gio_ket_thuc=? WHERE id=? AND nhan_su_id=?',
+                [$slot['thu'], $slot['gioBatDau'], $slot['gioKetThuc'], $id, $actor['teacherId']]);
+            Store::recordAudit($actor['userId'], $action, 'nhan_su_lich_ranh', $id, $before, $values);
+            return ['id'=>$id] + $slot;
+        });
+    }
+
     private static function relations(int $id,array $data): void
     {
         if (isset($data['monDays'])) {
@@ -110,6 +142,7 @@ final class TeachersRepository
     public static function update(int $id,int $userId,array $data,?int $actor=null): void
     {
         Store::transaction(function() use($id,$userId,$data,$actor) {
+            Store::one('SELECT user_id FROM users WHERE user_id=? FOR UPDATE',[$userId]);
             $before=Store::one('SELECT * FROM nhan_su_chuyen_mon WHERE id=? FOR UPDATE',[$id]);
             if($actor!==null) $before+=['user'=>Store::one('SELECT * FROM users WHERE user_id=?',[$userId]),'relations'=>self::extras($id)];
             Store::update('users','user_id',$userId,$data,self::USER_FIELDS);

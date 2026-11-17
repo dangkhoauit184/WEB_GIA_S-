@@ -34,11 +34,13 @@ final class TeachersValidator
         }
         if (isset($data['khuVucIds'])) foreach ($data['khuVucIds'] as &$id) $id=Input::validate(['id'=>$id],['id'=>['id',true]])['id'];
         if (isset($data['lichRanhs'])) {
-            foreach ($data['lichRanhs'] as &$item) {
+            foreach ($data['lichRanhs'] as $index=>&$item) {
                 if (!is_array($item)) Input::fail('lichRanhs');
                 $item=Input::validate($item,['thu'=>['id',true],'gioBatDau'=>['time',true],'gioKetThuc'=>['time',true]]);
                 if ($item['thu']<2 || $item['thu']>8) Input::fail('thu');
-                Input::pair($item,'gioBatDau','gioKetThuc');
+                if ($item['gioKetThuc']<=$item['gioBatDau']) {
+                    throw new \App\Shared\ApiException(400, 'Khung giờ '.($index+1).' cần có giờ kết thúc sau giờ bắt đầu.');
+                }
             }
         }
         return $data;

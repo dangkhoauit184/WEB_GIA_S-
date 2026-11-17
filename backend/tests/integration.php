@@ -101,7 +101,7 @@ try {
         [$username,$password,'ADMIN','data-portal="admin"'],
         ['staff_'.$suffix,'Staff@123','GIAO_VU','data-portal="admissions"'],
         ['ph_'.$suffix,'Parent@123','PHU_HUYNH','studentSelector'],
-        ['gv_'.$suffix,'Teacher@123','GIAO_VIEN','portalTitle'],
+        ['gv_'.$suffix,'Teacher@123','GIAO_VIEN','teacher-content'],
         ['gs_'.$suffix,'Tutor@123','GIA_SU','portalTitle'],
         ['ta_'.$suffix,'Assistant@123','TRO_GIANG','portalTitle'],
     ];
@@ -167,6 +167,135 @@ try {
     $portal=requestOk('/api/people/parents/portal','GET',null,$parentToken);
     check($portal['transactions'][0]['studentId']===(string)$student['id'],'transactions follow the selected child');
     check((int)$portal['invoices'][$student['id']][0]['paid']===0,'reporting a transfer never confirms receipt');
+    // Teacher portal operations stay scoped and never accept client clock/pay data.
+    $teacherToken=requestOk('/api/auth/login','POST',['username'=>'gv_'.$suffix,'password'=>'Teacher@123'])['token'];
+    $work=requestOk('/api/academic/attendance/workspace','GET',null,$teacherToken);
+    check(count($work['classes'])===1 && count($work['sessions'])===count($sessions),'teacher workspace reads assigned classes and sessions');
+    check(!preg_match('/donGia|don_gia|mucTra|muc_tra|tongLuong|tong_luong/',json_encode($work)),'teacher workspace excludes salary');
+    check(http('/api/academic/attendance/workspace','GET',null,$parentToken)[0]===403,'parent cannot use teacher APIs');
+    check(http('/api/academic/attendance/workspace','GET',null,$tutorToken)[0]===403,'tutor portal remains separate');
+    $teacherSession=(int)$sessions[1]['id'];
+    $teacherDetail=requestOk('/api/academic/attendance/sessions/'.$teacherSession,'GET',null,$teacherToken);
+    check(http('/api/academic/attendance/sessions/'.$teacherSession,'GET',null,$tutorToken)[0]===403,'another role cannot inspect teacher log');
+    $teacherLog=['revision'=>$teacherDetail['revision'],'chuDe'=>'Bài giảng kiểm thử','noiDung'=>'Nội dung đã dạy',
+        'baiTap'=>['tieuDe'=>'Bài tập giấy','fileDeBaiUrl'=>'https://example.test/de-bai.pdf'],
+        'hocViens'=>[['hocVienId'=>$student['id'],'trangThaiDiemDanh'=>'co_mat','diemBaiTapGiay'=>8.5]]];
+    check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken)[0]===409,'checkin required for log');
+    check(http('/api/academic/attendance/sessions/'.$teacherSession.'/checkin','POST',['checkinLuc'=>'2000-01-01'],$teacherToken)[0]===400,'server rejects client clock');
+    $clock=requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/checkin','POST',[],$teacherToken);
+    check($clock['checkinLuc']!==null && $clock['trangThai']==='dang_day','teacher checkin persists');
+    $calendarIds=array_map('intval',array_column(requestOk('/api/academic/scheduling/sessions','GET',null,$teacherToken),'id'));
+    $workspaceIds=array_map('intval',array_column(requestOk('/api/academic/attendance/workspace','GET',null,$teacherToken)['sessions'],'id'));
+    check(in_array($teacherSession,$calendarIds,true) && in_array($teacherSession,$workspaceIds,true),'checked-in session stays in both calendar sources');
+    check(requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/checkin','POST',[],$teacherToken)['checkinLuc']===$clock['checkinLuc'],'checkin replay keeps first timestamp');
+    $teacherLog['revision']=$clock['revision'];
+    $saved=requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken);
+    check((float)$saved['hocViens'][0]['diemBaiTapGiay']===8.5 && $saved['baiTap']['tieuDe']==='Bài tập giấy','teacher log and grade persist');
+    check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken)[0]===409,'stale log cannot overwrite newer data');
+    $teacherLog['revision']=$saved['revision'];
+    $teacherLog['hocViens'][0]['hocVienId']=$student2['id'];
+    check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken)[0]===409,'teacher cannot grade a student outside roster');
+    Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id=?',[$clock['phanCongId']]);
+    $clock=requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/checkout','POST',[],$teacherToken);
+    check($clock['checkoutLuc']!==null && $clock['trangThai']==='da_day','checkout persists and ends session');
+    check((int)$clock['soPhutTinhCong']===0 && $clock['gioLichBatDau']!==null && $clock['gioLichKetThuc']!==null,
+        'checkout outside scheduled hours returns zero minutes and schedule snapshot');
+    check(in_array($teacherSession,array_map('intval',array_column(requestOk('/api/academic/scheduling/sessions','GET',null,$teacherToken),'id')),true),'completed session remains on timetable');
+    check(requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/checkout','POST',[],$teacherToken)['checkoutLuc']===$clock['checkoutLuc'],'checkout replay stable');
+    check(http('/api/people/teachers/me/profile','PUT',['donGiaGioChuan'=>1],$teacherToken)[0]===400,'self profile rejects rate changes');
+    check(http('/api/people/teachers/me/profile','PUT',['trangThai'=>'ngung_hop_tac'],$teacherToken)[0]===400,'self profile rejects status changes');
+    requestOk('/api/people/teachers/me/profile','PUT',['gioiThieu'=>'Chuyên môn tự cập nhật'],$teacherToken);
+    $selfProfile=requestOk('/api/people/teachers/me/profile','PUT',['hoTen'=>'Giáo viên cập nhật','email'=>"updated.gv.$suffix@example.test",
+        'ngaySinh'=>'1995-02-15','gioiTinh'=>'nu','sdt'=>'0900000000','diaChi'=>'Địa chỉ mới'],$teacherToken);
+    check($selfProfile['hoTen']==='Giáo viên cập nhật' && $selfProfile['ngaySinh']==='1995-02-15' && $selfProfile['gioiTinh']==='nu','teacher personal profile fields persist');
+    check(http('/api/people/teachers/me/profile','PUT',['lichRanhs'=>[['thu'=>3,'gioBatDau'=>'18:00','gioKetThuc'=>'20:00'],['thu'=>3,'gioBatDau'=>'19:00','gioKetThuc'=>'21:00']]],$teacherToken)[0]===400,'overlapping free slots refused');
+    $availabilityPath='/api/people/teachers/me/availability';
+    $freeSlot=requestOk($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'06:00','gioKetThuc'=>'07:00'],$teacherToken,201);
+    $freeId=(int)$freeSlot['id'];
+    $secondSlot=requestOk($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'07:00','gioKetThuc'=>'08:00'],$teacherToken,201);
+    check(http($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'06:30','gioKetThuc'=>'07:30'],$teacherToken)[0]===409,'individual availability refuses overlap and allows adjacent slots');
+    check(http($availabilityPath.'/'.$freeId,'PUT',['thu'=>8,'gioBatDau'=>'08:00','gioKetThuc'=>'07:00'],$teacherToken)[0]===400,'individual availability refuses reversed hours');
+    check(http($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'04:00'],$teacherToken)[0]===400,'individual availability requires both hours');
+    check(http($availabilityPath,'POST',['thu'=>9,'gioBatDau'=>'04:00','gioKetThuc'=>'05:00'],$teacherToken)[0]===400,'individual availability requires a valid weekday');
+    check(http($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'04:00','gioKetThuc'=>'05:00','nhanSuId'=>1],$teacherToken)[0]===400,'availability rejects another owner field');
+    check(http($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'04:00','gioKetThuc'=>'05:00'],$parentToken)[0]===403,'parent cannot add teacher availability');
+    check(http($availabilityPath.'/'.$freeId,'DELETE',null,$parentToken)[0]===403,'parent cannot delete teacher availability');
+    $changedSlot=requestOk($availabilityPath.'/'.$freeId,'PUT',['thu'=>8,'gioBatDau'=>'05:30','gioKetThuc'=>'06:30'],$teacherToken);
+    check((int)$changedSlot['id']===$freeId && $changedSlot['gioBatDau']==='05:30:00','availability edit preserves slot identity');
+    check(http($availabilityPath.'/'.$freeId,'PUT',['thu'=>8,'gioBatDau'=>'07:15','gioKetThuc'=>'08:15'],$teacherToken)[0]===409,'availability edit excludes itself and checks other slots');
+    check(Store::one('SELECT gio_bat_dau FROM nhan_su_lich_ranh WHERE id=?',[$freeId])['gio_bat_dau']==='05:30:00','failed edit preserves saved availability');
+    requestOk($availabilityPath.'/'.$freeId,'DELETE',null,$teacherToken);
+    check(Store::one('SELECT id FROM nhan_su_lich_ranh WHERE id=?',[$secondSlot['id']])!==null,'deleting one slot preserves other slots');
+    check(http($availabilityPath.'/'.$freeId,'DELETE',null,$teacherToken)[0]===404,'deleted availability returns not found on retry');
+    check((int)Store::one("SELECT COUNT(*) AS n FROM audit_log WHERE bang='nhan_su_lich_ranh' AND ban_ghi_id=? AND user_id=?",[$freeId,$teacher['userId']])['n']===3,'availability create edit delete are audited');
+    requestOk($availabilityPath.'/'.$secondSlot['id'],'DELETE',null,$teacherToken);
+    $noonSlot=requestOk($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'11:00','gioKetThuc'=>'12:00'],$teacherToken,201);
+    check($noonSlot['gioBatDau']==='11:00:00' && $noonSlot['gioKetThuc']==='12:00:00','availability accepts 11 to noon in 24 hour format');
+    requestOk($availabilityPath.'/'.$noonSlot['id'],'DELETE',null,$teacherToken);
+    $requestSession=Store::insert('buoi_hoc',['lop_id'=>$classId,'ngay'=>'2098-01-07','gio_bat_dau'=>'18:00','gio_ket_thuc'=>'20:00']);
+    Store::insert('phan_cong_buoi_hoc',['buoi_hoc_id'=>$requestSession,'user_id'=>$teacher['userId'],'vai_tro'=>'day_chinh']);
+    $requestBody=['loai'=>'doi_lich','buoiHocId'=>$requestSession,'lyDo'=>'Có việc cá nhân','ngayMoi'=>'2098-01-08','gioBatDau'=>'18:00','gioKetThuc'=>'20:00'];
+    [$badStatus,$badTime]=http('/api/academic/attendance/requests','POST',array_replace($requestBody,['gioKetThuc'=>'00:00']),$teacherToken);
+    check($badStatus===400 && str_contains($badTime['message'],'Giờ kết thúc phải sau giờ bắt đầu') && !str_contains($badTime['message'],'gioKetThuc'),'reschedule reversed hours give a readable error');
+    [$badStatus,$badTime]=http('/api/academic/attendance/requests','POST',array_replace($requestBody,['gioKetThuc'=>'invalid']),$teacherToken);
+    check($badStatus===400 && str_contains($badTime['message'],'Giờ kết thúc'),'reschedule malformed hour identifies the field');
+    [$badStatus,$badTime]=http('/api/academic/attendance/requests','POST',array_replace($requestBody,['ngayMoi'=>'2000-01-01']),$teacherToken);
+    check($badStatus===400 && str_contains($badTime['message'],'thời điểm hiện tại'),'reschedule past proposal refused clearly');
+    [$badStatus,$badTime]=http('/api/academic/attendance/requests','POST',['loai'=>'dieu_chinh_cong','buoiHocId'=>$teacherSession,'lyDo'=>'Sai giờ',
+        'checkinMoi'=>'2026-11-17T18:00','checkoutMoi'=>'2026-11-17T00:00'],$teacherToken);
+    check($badStatus===400 && str_contains($badTime['message'],'Check-out đề nghị phải sau Check-in'),'correction reversed datetime gives a readable error');
+    $reschedule=requestOk('/api/academic/attendance/requests','POST',$requestBody,$teacherToken,201);
+    check(Store::one('SELECT trang_thai FROM don_xin_nghi WHERE id=?',[$reschedule['id']])['trang_thai']==='cho_duyet','reschedule awaits staff approval');
+    check(http('/api/academic/attendance/requests','POST',$requestBody,$teacherToken)[0]===409,'duplicate pending request refused');
+    $wholeLeave=requestOk('/api/academic/attendance/requests','POST',['loai'=>'nghi_day','buoiHocId'=>$requestSession,'lyDo'=>'Lớp cần nghỉ'],$teacherToken,201);
+    check(Store::one('SELECT trang_thai FROM yeu_cau_nghi_lop WHERE id=?',[$wholeLeave['id']])['trang_thai']==='cho_duyet','whole class request awaits admin');
+    requestOk('/api/academic/attendance/requests','POST',['loai'=>'dieu_chinh_cong','buoiHocId'=>$teacherSession,
+        'lyDo'=>'Xin kiểm tra giờ dạy','checkinMoi'=>$sessions[1]['ngay'].'T18:10','checkoutMoi'=>$sessions[1]['ngay'].'T19:30'],$teacherToken,201);
+    $teacherRequests=requestOk('/api/academic/attendance/workspace','GET',null,$teacherToken)['requests'];
+    check(count($teacherRequests)===3,'teacher request history includes all three workflows');
+    check((int)Store::one("SELECT COUNT(*) AS n FROM thong_bao WHERE khoa_chong_trung LIKE 'teacher-request:%'")['n']>=3,'requests notify reviewers');
+    $unassignedTeacher=requestOk('/api/people/teachers','POST',['maNs'=>'GV2-'.$suffix,'hoTen'=>'Giáo viên chưa phân công',
+        'email'=>"gv2.$suffix@example.test",'username'=>'gv2_'.$suffix,'password'=>'Teacher@123'],$token,201);
+    $unassignedToken=requestOk('/api/auth/login','POST',['username'=>'gv2_'.$suffix,'password'=>'Teacher@123'])['token'];
+    $ownedSlot=requestOk($availabilityPath,'POST',['thu'=>8,'gioBatDau'=>'06:00','gioKetThuc'=>'07:00'],$teacherToken,201);
+    check(http($availabilityPath.'/'.$ownedSlot['id'],'PUT',['thu'=>8,'gioBatDau'=>'04:00','gioKetThuc'=>'05:00'],$unassignedToken)[0]===404,'teacher cannot edit another teacher availability');
+    check(http($availabilityPath.'/'.$ownedSlot['id'],'DELETE',null,$unassignedToken)[0]===404,'teacher cannot delete another teacher availability');
+    requestOk($availabilityPath.'/'.$ownedSlot['id'],'DELETE',null,$teacherToken);
+    check(requestOk('/api/academic/attendance/workspace','GET',null,$unassignedToken)['sessions']===[],'unassigned teacher sees no other sessions');
+    check(http('/api/academic/attendance/sessions/'.$teacherSession,'GET',null,$unassignedToken)[0]===404,'teacher cannot read another assignment');
+    check(http('/api/academic/attendance/sessions/'.$teacherSession.'/checkin','POST',[],$unassignedToken)[0]===404,'teacher cannot checkin for another person');
+    Store::execute('UPDATE account SET group_id=2 WHERE account_id=?',[$staffAccount]);
+    $reviewerToken=requestOk('/api/auth/login','POST',['username'=>'staff_'.$suffix,'password'=>'Staff@123'])['token'];
+    requestOk('/api/academic/leave-requests/personal/'.$reschedule['id'].'/decide','POST',['trangThai'=>'da_duyet'],$reviewerToken);
+    check(http('/api/academic/leave-requests/classes/'.$wholeLeave['id'].'/decision','POST',['trangThai'=>'da_duyet'],$reviewerToken)[0]===403,'staff cannot approve whole class request');
+    requestOk('/api/academic/leave-requests/classes/'.$wholeLeave['id'].'/decision','POST',['trangThai'=>'tu_choi','ghiChu'=>'Giữ lịch cũ'],$token);
+    $correctionId=Store::one('SELECT id FROM dieu_chinh_cong WHERE phan_cong_id=?',[$clock['phanCongId']])['id'];
+    requestOk('/api/finance/timekeeping/corrections/'.$correctionId.'/decision','POST',['trangThai'=>'da_duyet'],$token);
+    $adjusted=requestOk('/api/academic/attendance/sessions/'.$teacherSession,'GET',null,$teacherToken);
+    check((int)$adjusted['soPhutTinhCong']===80 && (int)$adjusted['checkinTre']===1,'approved teacher correction gives 80 minutes and late flag');
+    Store::insert('bang_cong_thang',['user_id'=>$teacher['userId'],'nam'=>2026,'thang'=>11,'trang_thai'=>'da_chot',
+        'chot_boi'=>$login['user']['userId'],'chot_luc'=>date('Y-m-d H:i:s')]);
+    check(http('/api/academic/attendance/sessions/'.$sessions[2]['id'].'/checkin','POST',[],$teacherToken)[0]===409,'closed period blocks new teacher clock');
+    $teacherLog['revision']=$adjusted['revision'];
+    $teacherLog['hocViens'][0]['hocVienId']=$student['id'];
+    check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken)[0]===409,'closed period blocks teacher log edits');
+    requestOk('/api/people/teachers/me/profile','PUT',['lichRanhs'=>[['thu'=>3,'gioBatDau'=>'18:00','gioKetThuc'=>'21:00'],
+        ['thu'=>2,'gioBatDau'=>'08:00','gioKetThuc'=>'12:00']]],$teacherToken);
+    $employeeId=Store::one('SELECT id FROM nhan_vien WHERE user_id=?',[$staffUser])['id'];
+    $opportunityId=Store::insert('yeu_cau_hoc',['ma_yc'=>'APP-'.$suffix,'hoc_vien_id'=>$student['id'],'mon_hoc_id'=>1,
+        'cap_lop_id'=>9,'hinh_thuc'=>'online','nhan_vien_id'=>$employeeId,'nguoi_gui_id'=>$parent['userId']]);
+    Store::insert('yeu_cau_lich',['yeu_cau_id'=>$opportunityId,'thu'=>2,'gio_bat_dau'=>'09:00','gio_ket_thuc'=>'11:00']);
+    $opportunities=requestOk('/api/people/teachers/me/opportunities','GET',null,$teacherToken);
+    check(in_array($opportunityId,array_map('intval',array_column($opportunities,'id')),true),'teacher sees matching opportunities');
+    check(!str_contains(json_encode($opportunities),'sdt') && !str_contains(json_encode($opportunities),'phuHuynh'),'opportunities exclude family contact');
+    $application=requestOk('/api/people/teachers/me/opportunities/'.$opportunityId.'/apply','POST',[],$teacherToken,201);
+    check($application['ttNhanSu']==='dong_y','application records teacher acceptance');
+    $replay=requestOk('/api/people/teachers/me/opportunities/'.$opportunityId.'/apply','POST',[],$teacherToken,201);
+    check((int)$replay['id']===(int)$application['id'],'application replay does not duplicate proposal');
+    requestOk('/api/academic/admissions/proposals/'.$application['id'].'/respond','POST',['trangThai'=>'dong_y','lyDo'=>null],$parentToken);
+    check(Store::one('SELECT trang_thai FROM yeu_cau_hoc WHERE id=?',[$opportunityId])['trang_thai']==='da_chot','application follows normal parent confirmation workflow');
+    // The administration suite shares this disposable DB and asserts its own handoff totals.
+    Store::execute('DELETE FROM yeu_cau_hoc WHERE id=?',[$opportunityId]);
     requestOk('/api/auth/logout','POST',[],$parentToken);
     check(http('/api/auth/me','GET',null,$parentToken)[0]===401,'logout revokes token');
     requestOk('/api/auth/change-password','PUT',['currentPassword'=>$password,'newPassword'=>'Changed@456'],$token);

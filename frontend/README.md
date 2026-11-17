@@ -8,4 +8,4 @@ Khung HTML/CSS/JavaScript đặt tại src/modules/module/features/feature; comp
 - [Cài/chạy dự án và dùng bản web hiện có](../docs/huong-dan-cai-dat-va-su-dung.md).
 - [Giao diện gốc tham khảo](../docs/demo/index.html).
 
-Cổng Admin chạy tại `/admin`, cổng Giáo vụ 8 màn chạy tại `/staff`. View PHP dùng chung trong backend và gọi API bằng các module JavaScript ở frontend/src. Những feature còn lại theo trạng thái trong đặc tả. Tạo lại template/style Admin và Giáo vụ bằng `python backend/scripts/build-admin-assets.py` khi cập nhật bản giao diện tham chiếu.
+Đăng nhập chung tại `/login`, PHP chọn cổng Admin, Giáo vụ, Phụ huynh hoặc Giáo viên tại `/app`. Giao diện Giáo viên nằm trong `src/modules/people/features/teachers/`, dùng CSS chung và API PHP/MySQL. Phạm vi từng cổng được ghi trong đặc tả. Tạo lại template/style Admin và Giáo vụ bằng `python backend/scripts/build-admin-assets.py` khi cập nhật bản giao diện tham chiếu.

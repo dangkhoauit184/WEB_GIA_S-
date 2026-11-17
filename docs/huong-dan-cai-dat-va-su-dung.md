@@ -1,6 +1,6 @@
 # Hướng dẫn cài đặt và sử dụng EduCenter ERP cho thành viên nhóm
 
-Cập nhật 15/11/2026 (cài đặt, đăng nhập chung và quy trình pull/push), áp dụng schema `005_operations_ready`. Đây là tài liệu thao tác duy nhất cho máy mới, máy đang dùng, chia sẻ dữ liệu, kiểm thử và triển khai. Đặc tả và thiết kế nằm trong [Thông tin đồ án](thong-tin-do-an.md).
+Cập nhật 16/11/2026 (cài đặt, pull/push và bộ demo đủ sáu vai trò), áp dụng schema `005_operations_ready`. Đây là tài liệu thao tác duy nhất cho máy mới, máy đang dùng, chia sẻ dữ liệu, kiểm thử và triển khai. Đặc tả và thiết kế nằm trong [Thông tin đồ án](thong-tin-do-an.md).
 
 Đọc theo thứ tự: **cài công cụ → lấy repo → tạo cấu hình riêng → bật MySQL → cài DB mới hoặc phục hồi DB → cấp user API → bật PHP → tạo tài khoản web → kiểm tra**. Máy đã có dữ liệu đi thẳng đến [chạy hằng ngày](#hang-ngay) hoặc [nâng cấp DB](#db-cu).
 
@@ -253,7 +253,8 @@ Mọi vai trò đăng nhập tại **http://localhost:5000/login**. Sau khi đă
 - Admin dùng cổng quản trị.
 - Giáo vụ dùng cổng tuyển sinh/điều phối.
 - Phụ huynh dùng cổng quản lý thông tin các con.
-- Giáo viên, Gia sư và Trợ giảng đăng nhập được, giao diện nghiệp vụ đang triển khai.
+- Giáo viên dùng cổng lịch dạy, check-in/out, sổ buổi học, đề xuất lớp và đơn từ.
+- Gia sư và Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ đang triển khai.
 
 Đăng xuất quay về trang đăng nhập. F5 tại `/app` kiểm tra lại phiên. Phiên hết hạn hoặc đã thu hồi sẽ chuyển về `/login`. PHP phục vụ giao diện và API cùng cổng 5000. Các liên kết cũ `/admin`, `/staff` chuyển về `/app`; giao diện được chọn theo vai trò của tài khoản. Cookie phiên có HttpOnly, SameSite=Lax và Secure khi chạy HTTPS. API nghiệp vụ dùng Bearer JWT và kiểm tra quyền ở backend.
 
@@ -304,9 +305,62 @@ Khi chọn người dạy, biểu mẫu hiển thị lịch rảnh đã đăng k
 
 Các thao tác ở cổng này gọi API PHP và MySQL 005. Máy đã cài 005 chỉ cần chạy server hiện có. Nội dung mẫu trong index phục vụ đối chiếu giao diện. Dữ liệu cổng Giáo vụ lấy từ DB riêng của từng máy. Hợp đồng API và kiểm chứng nằm ở mục 12.3 của đặc tả.
 
+### Kiểm tra cổng Giáo viên
+
+Đăng nhập tại `http://localhost:5000/login` bằng tài khoản Giáo viên được cấp. Với bộ demo tại mục 7.3, dùng **demo_giaovien**, mật khẩu **Demo@123**. PHP mở giao diện Giáo viên tại `/app`. Máy đã chạy schema 005 có thể dùng trực tiếp các API mới.
+
+Tổng quan có ca hôm nay và bảng phân công của tuần hiện tại từ Thứ Hai đến Chủ Nhật, lấy ngày từ máy chủ. Bấm Xem thời khóa biểu tuần để mở đúng tuần đang hiển thị. Đơn đổi lịch kiểm tra ngay giờ kết thúc sau giờ bắt đầu và thời điểm đề xuất còn ở tương lai. Điều chỉnh công và hạn nộp bài dùng hai ô ngày/giờ, nhập giờ HH:mm. Lỗi hiển thị dưới trường đang sai.
+
+1. Vào Tổng quan hoặc Lịch dạy cá nhân để xem các ca được phân công. Lịch có chế độ tuần, tháng, danh sách và bộ lọc lớp. Chọn ca để xem địa điểm, phòng hoặc liên kết học trực tuyến.
+2. Bấm Check-in khi vào ca. Hệ thống lưu giờ máy chủ. Sau khi dạy, bấm Check-out để ghi nhận giờ ra và phút công. Thao tác bấm lại giữ lần ghi nhận ban đầu.
+3. Trong chi tiết ca, bấm Mở sổ. Danh sách ban đầu hiển thị tên học viên và lớp. Bấm từng học viên để bung thông tin, nhập chủ đề/nội dung và điểm danh/chấm bài. Có bốn trạng thái điểm danh. Mỗi học viên có một điểm bài tập của buổi, nhận xét, mức tiếp thu và thái độ. Nhập tên bài tập, nội dung, hạn nộp và liên kết đề bài/PDF khi giao bài. Bấm Lưu sổ hoặc Lưu sổ & Check-out. Phụ huynh đọc được dữ liệu của con sau khi lưu.
+4. Vào Lớp phụ trách & Lịch rảnh để xem danh sách học viên và lịch lớp. Thời khóa biểu lịch rảnh có chế độ tuần/tháng và cũng hiển thị trong Hồ sơ cá nhân & Chuyên môn khi bấm avatar. Bấm Thêm lịch rảnh hoặc dấu + tại ngày cần đăng ký, chọn thứ và giờ rồi lưu. Bấm khung giờ đã có để sửa hoặc xóa, xác nhận trước khi xóa. Các khung giờ lặp lại hàng tuần, thay đổi sẽ áp dụng cho thứ đó trong mọi tuần. Ô giờ dùng dạng 24 giờ HH:mm, ví dụ 11:00–12:00 là 11 giờ đến 12 giờ trưa, 18:00–20:00 là buổi tối. Giờ thiếu, giờ kết thúc trước giờ bắt đầu hoặc khung giờ trùng được báo ngay trong hộp nhập và khóa nút Lưu đến khi hợp lệ. Chỉnh sửa hồ sơ cá nhân dùng biểu mẫu riêng để cập nhật liên hệ, giới thiệu và đơn vị công tác. Môn/khối chuyên môn do trung tâm quản lý.
+5. Bộ demo mặc định đã chốt các yêu cầu mẫu. Để thử ứng tuyển, Giáo vụ tạo yêu cầu học mới còn mở, có phụ huynh/học viên và lịch phù hợp hồ sơ giáo viên. Để thử phản hồi đề xuất, Giáo vụ gửi đề xuất đến đúng giáo viên. Trong Đề xuất ghép lớp & Ứng tuyển, phản hồi Đồng ý/Từ chối đề xuất Giáo vụ gửi. Các yêu cầu phù hợp chuyên môn, khu vực và lịch rảnh hiện ở Cơ hội nhận lớp. Bấm Ứng tuyển để gửi sang luồng đề xuất, sau đó theo dõi phản hồi phụ huynh. Admin thực hiện xếp lớp.
+6. Gửi đơn nghỉ cả lớp, đổi lịch hoặc điều chỉnh công tại Đơn từ. Nghỉ cả lớp và điều chỉnh công chuyển Admin. Giáo vụ xử lý đề nghị đổi lịch rồi cập nhật ca sau khi thống nhất. Lịch sử đơn hiển thị trạng thái và phản hồi.
+7. Chọn tháng tại Bảng công cá nhân để xem các ca đã check-in, phút công, cờ trễ và trạng thái kỳ. Bấm avatar ở góc phải để xem hồ sơ chuyên môn, sửa họ tên/email/ngày sinh/giới tính/thông tin liên hệ hoặc đăng xuất. Có thể in bảng công. Đơn giá và số tiền lương được quản lý ở cổng Admin.
+
+Nếu chưa thấy ca, kiểm tra phân công cho đúng người trong lịch của Giáo vụ/Admin. Buổi bù cá nhân chỉ có các học viên được xếp bù. Ca hủy/đổi và kỳ công đã khóa được bảo vệ. Kiểm thử thao tác ghi trên DB riêng có tên kết thúc `_test` theo mục kiểm thử của tài liệu này.
+
 ### 7.3. Dữ liệu demo trong DataGrip
 
-File `database/seeders/demo-thu-cong.sql` dùng để nhập dữ liệu mẫu trong DataGrip. Phần 1 thêm dữ liệu cho các vai trò trên schema 005, cần có Admin đang hoạt động. Chạy phần 1 từ `USE` đến hết mục A8 trong cùng Query Console. Để dọn, chọn riêng phần 2 bên trong khối chú thích, từ `USE` đến `DROP PROCEDURE` cuối file. Tham số `DGTEST` chọn bộ Giáo vụ cũ, `SQLDEMO` chọn bộ mới, `CA_HAI` chọn cả hai. Thanh toán, hóa đơn, lịch sử và hồ sơ tham chiếu cần thiết được giữ. File chạy thủ công độc lập với init/migrate.
+Bộ demo dùng schema 005, tự tạo tài khoản Admin và dữ liệu cho sáu vai trò. Mở `database/seeders/demo-thu-cong.sql` bằng kết nối MySQL root local, chọn schema `trung_tam_gia_su` và SQL dialect **MySQL**. Trong Database Explorer, bấm chuột phải vào schema → **SQL Scripts → Run SQL Script** rồi chọn file này. File cài thủ tục `sp_demo_educenter` và gọi `THEM` một lần. [Cách chạy file SQL trong DataGrip](https://www.jetbrains.com/help/datagrip/run-sql-files.html).
+
+Sau lần chạy đầu, chỉ cần chọn và chạy **một lệnh CALL** tương ứng trong Query Console. Tên schema đang chọn phải là `trung_tam_gia_su`.
+
+**Thêm dữ liệu demo** bằng lệnh sau. Nếu bộ đã được tạo, lệnh trả kết quả hiện có. Các ID nằm trong biến cục bộ của thủ tục, cùng một giao dịch.
+
+```sql
+CALL sp_demo_educenter('THEM');
+```
+
+**Xem và đối chiếu dữ liệu** bằng lệnh sau. Kết quả gồm số lượng, tài khoản, học viên/lớp, lịch và hóa đơn.
+
+```sql
+CALL sp_demo_educenter('XEM');
+```
+
+Bộ đầy đủ có **15 tài khoản, 12 học viên, 5 lớp, 20 ca và 10 hóa đơn**. Mật khẩu chung của các tài khoản demo là **`Demo@123`**. Đăng nhập tại **http://localhost:5000/login**.
+
+| Vai trò | Tài khoản |
+| --- | --- |
+| Admin | demo_admin |
+| Giáo vụ | demo_giaovu |
+| Giáo viên | demo_giaovien |
+| Gia sư | demo_giasu |
+| Trợ giảng | demo_trogiang |
+| Phụ huynh | demo_phuhuynh |
+
+Admin, Giáo vụ, Phụ huynh và Giáo viên có giao diện nghiệp vụ. Gia sư/Trợ giảng có dữ liệu phân công và màn xác nhận vai trò, giao diện nghiệp vụ vẫn đang triển khai. Lịch có hai ca cho mỗi lớp vào ngày mai và buổi bù vào ngày kia. Phụ huynh mẫu có nhiều con để kiểm tra chuyển học viên.
+
+**Xóa dữ liệu nghiệp vụ demo, giữ tài khoản và mật khẩu** bằng lệnh dưới đây. Lệnh dọn 31 bảng nghiệp vụ, gồm học viên, nhu cầu học, lớp, lịch học, học vụ, hóa đơn, thanh toán, công, thông báo và lịch sử demo. Tài khoản, mật khẩu hiện có, nhóm quyền, danh mục chuẩn, trạng thái cài đặt và hồ sơ vai trò tối thiểu và trạng thái bảo mật tài khoản được giữ để tiếp tục đăng nhập. Dừng backend, sao lưu và kiểm chứng bản sao theo mục 9 trước khi chạy lệnh xóa.
+
+```sql
+CALL sp_demo_educenter('XOA');
+```
+
+Sau khi xóa, dùng `CALL sp_demo_educenter('THEM');` để tạo lại bộ demo cho tất cả vai trò bằng các tài khoản đã giữ. Mật khẩu hiện có của tài khoản được giữ nguyên khi thêm lại. Tài khoản demo mới dùng mật khẩu **Demo@123**. Chạy lại `THEM` trả bộ đã tạo, tránh chèn trùng. Các lệnh thêm, xem và xóa nằm ở cuối file SQL để chọn chạy riêng. Khởi động lại backend sau khi dọn rồi nhấn Ctrl+F5 trên web.
+
+Ngày 17/11/2026, DB local được dọn theo yêu cầu giữ tài khoản/mật khẩu sau khi sao lưu và khôi phục thử đạt. Bản sao SQL/JSON được lưu ngoài repo trong `%LOCALAPPDATA%/EduCenterBackups`. Chu trình thêm → xóa → thêm lại và giữ mật khẩu được kiểm tra trên database `_test` trước khi áp dụng.
 
 ### 7.4. Sử dụng cổng Phụ huynh
 

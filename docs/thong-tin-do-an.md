@@ -335,7 +335,7 @@ Action check đọc số object/version và dữ liệu vi phạm: lệch số d
 
 API nghiệp vụ dùng Authorization: Bearer, ngoại trừ login/health/manifest/status và route public được khai báo rõ. Thành công `{success:true,data:...}`, tên trường camelCase; lỗi success=false, code/message; 401 phiên sai,403 thiếu quyền,404 không thấy/ngoài scope,409 trùng/xung đột,400 vi phạm nghiệp vụ. SQL SIGNAL45000 được ánh xạ BUSINESS_RULE_VIOLATION, lỗi server không trả SQL/password cho client.
 
-Routes.php/module và app/Config/Routes.php mới là căn cứ route đã triển khai. Word có endpoint minh họa và tên controller cũ; không dùng chúng như tài liệu API chạy được. Chưa có đủ API đăng ký khóa, checkout online, check-in/out, nghỉ/bù, học vụ, payroll hay worker thông báo. status planned không phải chức năng đã xong; health200 chỉ xác nhận PHP/MySQL.
+Routes.php/module và app/Config/Routes.php mới là căn cứ route đã triển khai. Word có endpoint minh họa và tên controller cũ; không dùng chúng như tài liệu API chạy được. Các API mới của Admin, Giáo vụ, Phụ huynh và Giáo viên được liệt kê tại mục 12. Checkout/gateway thật, worker email và cổng Gia sư/Trợ giảng tiếp tục cần triển khai. status planned không phải chức năng đã xong; health200 chỉ xác nhận PHP/MySQL.
 
 <a id="figma"></a>
 ## 9. Figma và giao diện
@@ -354,28 +354,28 @@ Phần cũ dùng đặc tả trước004/005, cần cập nhật:
 - Check-in bỏ GPS/ảnh/cửa sổ30 phút/ngưỡng trễ15 phút, phân biệt phút hiện diện/phút công; lịch bù không bắt buộc đơn đã duyệt, không phí/hạn mức.
 - Thêm nội dung thông báo học phí khóa/nhận tiền/xếp lớp; nối prototype theo luồng mới và kiểm tra responsive khi triển khai.
 
-Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí; nội dung công/lương/check-in/bù đối chiếu thêm bản thiết kế đã lưu do công cụ Figma chạm hạn mức. Chưa chỉnh canvas theo005. Không coi Figma là FE đã kết nối DB. Demo HTML lưu ở reference/ dùng localStorage và dữ liệu mô phỏng; giữ để tham khảo giao diện, không dùng làm backend.
+Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí; nội dung công/lương/check-in/bù đối chiếu thêm bản thiết kế đã lưu do công cụ Figma chạm hạn mức. Chưa chỉnh canvas theo005. Không coi Figma là FE đã kết nối DB. Demo HTML lưu ở docs/demo/index.html dùng localStorage và dữ liệu mô phỏng; giữ để tham khảo giao diện, không dùng làm backend.
 
 <a id="tien-do"></a>
 ## 10. Tiến độ, kiểm chứng và phần tiếp theo
 
-Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Giáo viên/Gia sư/Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ tiếp tục ở trạng thái đang triển khai. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
+Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Ngày 17/11/2026 bổ sung cổng Giáo viên theo tám màn trong index, chi tiết tại mục 12.6. Gia sư/Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ tiếp tục ở trạng thái đang triển khai. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
 
 | Phần | Đã có | Còn phải làm |
 | --- | --- | --- |
 | DB/server | Schema005, migration/seed/check, Docker PHP/MySQL, SMTP local, backup/restore, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
 | PHP nền | Auth/JWT/scope, hồ sơ, lớp/lịch, matching, Catalog/Permissions; Admin-only xếp lớp và che lương ở các API liên quan | Tiếp tục kiểm chứng scope theo từng luồng/cơ sở khi nối các cổng |
 | Administration | Cổng Admin 10 màn theo prototype đã chốt, khóa/cấu hình, tài khoản/quyền, nhân sự/hồ sơ, audit | Nghiệm thu cùng chủ đồ án và tích hợp các cổng của đồng đội |
-| Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp lớp độc lập tiền; Admissions tiếp nhận, ghép, đề xuất, API phản hồi theo người và bàn giao Admin | Màn gửi đăng ký/phản hồi trong cổng phụ huynh và người dạy do thành viên 2/3 tích hợp |
-| Học vụ/nghỉ/bù | Admin giám sát và duyệt nghỉ cả lớp; Giáo vụ xem lịch/lớp/sĩ số, xếp/sửa ca, duyệt nghỉ cá nhân và lưu bù theo thỏa thuận | Cổng người dạy/phụ huynh và học vụ từng buổi |
-| Tài chính/công | Giáo vụ tạo/phát hành hóa đơn trọn khóa, tra công nợ và phiếu thu; Admin xác nhận tiền, duyệt điều chỉnh công, đơn giá, chốt/trả/mở khóa, in phiếu | Checkout/gateway/webhook thật, check-in/out người dạy |
+| Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp lớp độc lập tiền; Admissions tiếp nhận, ghép, đề xuất, API phản hồi theo người và bàn giao Admin | Tiếp tục đăng ký khóa theo phạm vi Phụ huynh và tích hợp cổng Gia sư/Trợ giảng |
+| Học vụ/nghỉ/bù | Admin giám sát và duyệt nghỉ cả lớp; Giáo vụ xem lịch/lớp/sĩ số, xếp/sửa ca, duyệt nghỉ cá nhân và lưu bù theo thỏa thuận | Cổng Gia sư/Trợ giảng và kiểm thử liên thông học vụ |
+| Tài chính/công | Giáo vụ tạo/phát hành hóa đơn trọn khóa, tra công nợ và phiếu thu; Admin xác nhận tiền, duyệt điều chỉnh công, đơn giá, chốt/trả/mở khóa, in phiếu | Checkout/gateway/webhook thật; cổng Gia sư/Trợ giảng |
 | Thông báo | Dữ liệu, trigger học phí, SMTP thử, tổng việc chờ Admin | API thông báo đầy đủ, worker/retry/template/mail thật |
-| FE | Cổng Admin và 8 màn Giáo vụ dùng API PHP/MySQL; giao diện gốc ở docs/demo/index.html | Các cổng còn lại theo phân công nhóm, kiểm thử responsive/liên thông |
+| FE | Cổng Admin, Giáo vụ, Phụ huynh và 8 màn Giáo viên dùng API PHP/MySQL; giao diện gốc ở docs/demo/index.html | Cổng Gia sư/Trợ giảng, kiểm thử nghiệm thu và liên thông |
 | Báo cáo/nộp bài | Dashboard Admin, in phiếu công/lương và lịch đang lọc | Báo cáo khác, xuất dữ liệu, báo cáo môn học, kịch bản trình diễn |
 
 Phạm vi local ngày 11/11/2026 theo mục 12.1. Phần Admin đã nối API thật gồm xếp lớp, đối soát tiền, công/lương và lịch. Các feature có nhiều cổng tiếp tục giữ `planned` cho luồng còn thiếu trong manifest. Các số liệu trên dashboard lấy DB của máy đang chạy.
 
-Các việc tiếp theo đi theo phân công nhóm gồm cổng phụ huynh đăng ký/phản hồi/nhận thông báo, thanh toán và webhook xác minh, học vụ từng buổi, cổng check-in và gửi yêu cầu của người dạy, báo cáo/mail và kiểm thử liên thông trước triển khai public. Tiến độ Giáo vụ ngày 12/11 nằm tại mục 12.3. Chỉ triển khai tiếp trong phạm vi được giao.
+Các việc tiếp theo đi theo phân công nhóm gồm hoàn thiện đăng ký khóa, thanh toán và webhook xác minh, cổng Gia sư/Trợ giảng, báo cáo/mail và kiểm thử liên thông trước triển khai public. Tiến độ Giáo vụ ngày 12/11 nằm tại mục 12.3. Chỉ triển khai tiếp trong phạm vi được giao.
 
 Kết quả đã ghi nhận08/11/2026 trên nền005:
 
@@ -671,6 +671,36 @@ Các thao tác gọi API hiện có, lỗi kết nối hiển thị thông báo 
 ### 12.5. Khôi phục tài khoản qua email
 
 Luồng quên mật khẩu gửi OTP trực tiếp qua SMTP đến email đã đăng ký. API không trả mã, giao diện không tự điền mã. OTP lưu dạng HMAC, hết hạn sau 10 phút, chỉ dùng một lần, giới hạn gửi lại 60 giây và tối đa 5 lần nhập sai. Khóa hàng tài khoản bảo vệ thao tác gửi/tiêu thụ mã đồng thời. SMTP lỗi không ghi nhận mã mới. Mã cũ phát hành theo cơ chế thử nghiệm phải được gửi lại. Đổi mật khẩu thu hồi các phiên cũ. Mailpit dùng kiểm thử local; SMTP thật cần cấu hình riêng. Worker email thông báo nghiệp vụ vẫn chưa triển khai.
+
+### 12.6. Cổng Giáo viên ngày 17/11/2026
+
+Cổng dùng `frontend/src/modules/people/features/teachers/teachers.html`, `teachers.css`, `teachers.js` và CSS dùng chung đã bóc từ index. Đăng nhập chung `/login`, PHP chọn giao diện tại `/app` theo vai trò `GIAO_VIEN`. Tám màn gồm tổng quan/đề xuất, lịch cá nhân, vận hành ca, sổ buổi học/chấm bài, lớp phụ trách/lịch rảnh, ghép lớp/ứng tuyển, đơn từ và bảng công cá nhân. Thanh điều hướng có bảy mục. Sổ buổi học mở từ chi tiết ca. Mỗi học viên hiển thị tên và lớp trong hàng thu gọn, bấm để mở điểm danh/chấm bài/nhận xét. Bảng công chỉ liệt kê các ca đã có check-in trong tháng đang chọn. Lịch dùng các thành phần CSS tuần/tháng chung với Admin/Giáo vụ, có chọn tháng, bộ lọc lớp và tải lại dữ liệu khi chuyển màn. Ca đã check-in hoặc hoàn tất vẫn có trên lịch. Tổng quan lấy ca đúng ngày máy chủ, loại ca hủy/đổi khỏi việc cần dạy hôm nay. Khối ca hôm nay và bảng phân công tuần hiện tại từ Thứ Hai đến Chủ Nhật bám bố cục index, dùng trạng thái check-in/out thực tế và liên kết mở đúng tuần trên thời khóa biểu. Hồ sơ chuyên môn, sửa thông tin cá nhân và đăng xuất nằm trong menu avatar. Lịch rảnh đã đăng ký hiển thị bằng lưới tuần/tháng, lấy các khung giờ lặp theo thứ trong tuần. Hồ sơ cá nhân hiển thị cùng thời khóa biểu lịch rảnh tuần/tháng. Thêm lịch từ nút Thêm lịch rảnh hoặc ngày trên lịch, bấm khung giờ để sửa/xóa và xác nhận trước khi xóa. Hộp nhập kiểm tra ngay giờ bắt đầu/kết thúc và giao nhau cùng thứ, đánh dấu trường lỗi và khóa nút Lưu đến khi hợp lệ. Mỗi thao tác chỉ cập nhật một khung giờ, khóa hồ sơ người dạy khi kiểm tra trùng và ghi audit. Biểu mẫu sửa thông tin cá nhân được tách khỏi việc chỉnh lịch rảnh. Ô nhập giờ của cổng Giáo viên dùng HH:mm 24 giờ. Điều chỉnh công và hạn nộp bài tách ngày/giờ, ghép về datetime local khi gửi API. Biểu mẫu kiểm tra ngay giờ sai định dạng, thiếu ngày/giờ, kết thúc trước bắt đầu, Check-out trước Check-in và thời điểm đổi lịch đã qua. Thông báo lỗi thời gian từ API sử dụng nhãn tiếng Việt. Bảng công hiển thị lý do khi ca đã check-out có 0 phút tính công theo snapshot lịch.
+
+| API | Công dụng |
+| --- | --- |
+| GET `/api/academic/attendance/workspace` | Hồ sơ của mình, lớp/lịch được phân công, phút công và đơn đã gửi |
+| GET `/api/academic/attendance/sessions/:id` | Ca được phân công, danh sách học viên, sổ, bài tập và revision |
+| POST `/api/academic/attendance/sessions/:id/checkin` hoặc `/checkout` | Body rỗng, ghi giờ MySQL và giữ timestamp khi gọi lại |
+| PUT `/api/academic/attendance/sessions/:id/log` | Lưu chủ đề, nội dung, liên kết bài giảng, bài tập và học vụ từng học viên |
+| POST `/api/academic/attendance/requests` | Gửi `nghi_day`, `doi_lich` hoặc `dieu_chinh_cong` |
+| POST `/api/people/teachers/me/availability` | Thêm khung giờ rảnh của giáo viên đang đăng nhập |
+| PUT `/api/people/teachers/me/availability/:id` | Sửa một khung giờ rảnh thuộc hồ sơ cá nhân |
+| DELETE `/api/people/teachers/me/availability/:id` | Xóa một khung giờ rảnh thuộc hồ sơ cá nhân, có audit |
+| PUT `/api/people/teachers/me/profile` | Cập nhật họ tên, email, ngày sinh, giới tính, liên hệ, giới thiệu, đơn vị công tác và lịch rảnh |
+| GET `/api/people/teachers/me/opportunities` | Yêu cầu học còn mở và khớp hồ sơ/lịch của giáo viên |
+| POST `/api/people/teachers/me/opportunities/:id/apply` | Ứng tuyển qua bảng đề xuất hiện có |
+| GET `/api/academic/admissions/proposals`, POST `/:id/respond` | Xem đề xuất của mình, xác nhận hoặc từ chối kèm lý do |
+| GET `/api/communication/notifications`, POST `/read-all` hoặc `/:id/read` | Thông báo theo tài khoản |
+
+Check-in/out khóa người dùng → ca → phân công, kiểm tra lại phân công và kỳ công trước khi ghi. API lấy `NOW()` từ MySQL, trigger 004 giữ snapshot lịch, tính giao thời gian và cờ trễ. Giáo viên dạy chính thao tác ca được phân công. Ca hủy/đổi và kỳ đã khóa chặn thao tác ghi mới. Yêu cầu điều chỉnh vẫn gửi được cho Admin xem xét theo quy trình hiện hành. API trả các trường công cần dùng và loại đơn giá/tiền lương khỏi dữ liệu giáo viên.
+
+Sổ buổi học yêu cầu đã check-in. Backend kiểm tra danh sách học viên theo ngày ghi danh và phạm vi bù cá nhân. Mỗi buổi/học viên cập nhật một dòng sổ, một điểm bài chấm, bốn trạng thái điểm danh và các nhận xét. Bài tập của buổi được cập nhật trong bảng `bai_tap`. Các liên kết bài giảng/đề bài dùng HTTP(S) hoặc đường dẫn tuyệt đối nội bộ đã lưu. `revision` dựa trên dữ liệu hiện có ngăn ghi đè sổ vừa thay đổi. Nội dung, bài tập và điểm danh lưu cùng giao dịch. Thông báo nhận xét được gửi vào tài khoản phụ huynh của học viên.
+
+Đơn nghỉ cả lớp lưu `yeu_cau_nghi_lop` để Admin duyệt. Đề nghị đổi lịch lưu `don_xin_nghi` với đối tượng `day_chinh`, lý do chứa ngày/giờ đề xuất để Giáo vụ xem và xử lý theo luồng hiện có. Việc duyệt đơn và cập nhật lịch là hai thao tác của Giáo vụ. Yêu cầu chỉnh công lưu `dieu_chinh_cong`, giữ giờ gốc và giờ đề nghị, chỉ Admin có quyền quyết định và áp dụng. Mỗi ca/loại đơn có tối đa một đơn đang chờ của người gửi.
+
+Ứng tuyển kiểm tra lại chuyên môn, khu vực, lịch rảnh, xung đột lịch và trạng thái yêu cầu trước khi tạo `de_xuat_nhan_su`. Giáo viên ứng tuyển có phản hồi `dong_y`, phụ huynh tiếp tục ở `cho`. Cả hai đồng ý mới bàn giao Admin xếp lớp. Gọi lại cùng ứng tuyển trả đề xuất đã có. Danh sách cơ hội chỉ trả nhu cầu, môn/khối, hình thức và lịch, giữ thông tin liên hệ gia đình trong các luồng có quyền. Các thao tác ghi có audit. Hồ sơ cá nhân chỉ nhận các trường được phép, quyền tài khoản, trạng thái hợp tác và đơn giá tiếp tục do Admin quản lý.
+
+Bộ kiểm thử chạy trên DB `_test` gồm quyền theo người/ca, chống giả giờ và sửa đơn giá, ghi sổ trước check-in, revision cũ, học viên ngoài ca, lặp check-in/out, khóa kỳ, ba loại đơn/đúng người duyệt, điều chỉnh 18:10–19:30 thành 80 phút/trễ và ứng tuyển → phản hồi phụ huynh. Kiểm tra giao diện trên trình duyệt có lưu sổ/tải lại, đơn từ, phản hồi/ứng tuyển, hồ sơ/lịch rảnh và responsive. Gia sư/Trợ giảng vẫn chờ triển khai cổng riêng theo phân công nhóm.
 
 <a id="tu-dien-du-lieu"></a>
 ## 13. Từ điển dữ liệu toàn bộ 43 bảng
@@ -1920,3 +1950,5 @@ BI/BU/BD tương ứng BEFORE INSERT/UPDATE/DELETE; AI/AU tương ứng AFTER IN
 | `trg_tt_thong_bao_ai` | AFTER INSERT | `thanh_toan` | [triggers/payments.sql](../database/triggers/payments.sql) |
 | `trg_lhv_admin_bi` | BEFORE INSERT | `lop_hoc_vien` | [triggers/payments.sql](../database/triggers/payments.sql) |
 | `trg_lhv_admin_bu` | BEFORE UPDATE | `lop_hoc_vien` | [triggers/payments.sql](../database/triggers/payments.sql) |
+
+Dữ liệu demo local ngày 17/11/2026 dùng `database/seeders/demo-thu-cong.sql`. `XOA` dọn 31 bảng nghiệp vụ và giữ tài khoản/mật khẩu, quyền, danh mục chuẩn và định danh vai trò. `THEM` tái sử dụng tài khoản cùng hồ sơ vai trò đã giữ để tạo lại dữ liệu sáu vai trò. Script dùng charset/collation tường minh cho các mã so sánh, kiểm tra xung đột mã hồ sơ và chạy lặp ổn định. Bộ kiểm thử DB riêng kiểm tra số lượng, dữ liệu trùng, chu trình thêm/xóa/thêm và giữ nguyên thông tin đăng nhập.
