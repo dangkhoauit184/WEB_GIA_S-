@@ -7,6 +7,7 @@ use App\Modules\People\Features\Parents\ParentsValidator;
 use App\Modules\People\Features\Teachers\TeachersValidator;
 use App\Modules\Academic\Features\Scheduling\SchedulingValidator;
 use App\Modules\Academic\Features\Classes\ClassesValidator;
+use App\Modules\Academic\Features\Attendance\AttendanceValidator;
 
 try {
     foreach(['Admin'=>'ADMIN','NhanVien'=>'GIAO_VU','TroGiang'=>'TRO_GIANG','PhuHuynh'=>'PHU_HUYNH'] as $group=>$role) check(Access::role($group)===$role,'role '.$group);
@@ -20,6 +21,13 @@ try {
     rejects(fn()=>ParentsValidator::validate(['hoTen'=>'A','email'=>'a@example.com','username'=>'foo']),'unpaired credentials');
     rejects(fn()=>TeachersValidator::validate(['maNs'=>'NS','hoTen'=>'A','email'=>'a@example.com','monDays'=>[null]]),'invalid nested subjects');
     rejects(fn()=>TeachersValidator::match(['monHocId'=>1,'capLopId'=>9,'thu'=>3]),'incomplete availability');
+    try {
+        TeachersValidator::validate(['lichRanhs'=>[['thu'=>6,'gioBatDau'=>'11:00','gioKetThuc'=>'10:00']]],false);
+        check(false,'invalid availability range must fail');
+    } catch(ApiException $error) {
+        check($error->status===400 && str_contains($error->getMessage(),'Khung giờ 1') && str_contains($error->getMessage(),'kết thúc'),
+            'availability range error identifies the row in Vietnamese');
+    }
     rejects(fn()=>SchedulingValidator::weekly(['lopId'=>1,'thu'=>9,'gioBatDau'=>'18:00','gioKetThuc'=>'20:00','hieuLucTu'=>'2026-11-01']),'invalid weekday');
     rejects(fn()=>SchedulingValidator::weekly(['lopId'=>1,'thu'=>3,'gioBatDau'=>'21:00','gioKetThuc'=>'20:00','hieuLucTu'=>'2026-11-01']),'inverted time');
     rejects(fn()=>SchedulingValidator::generate(['lopId'=>1,'tuNgay'=>'2026-12-01','denNgay'=>'2026-11-01']),'inverted generation range');
@@ -27,6 +35,33 @@ try {
     check(StudentsValidator::validate(['ghiChu'=>null],false)===['ghiChu'=>null],'explicit null update');
     check(StudentsValidator::validate([],false)===[],'missing fields not overwritten');
     check(Input::validate(['password'=>'  Abcd123  '],['password'=>['password',true]])['password']==='  Abcd123  ','password spaces preserved');
+    check(AttendanceValidator::url('/uploads/de-bai.pdf')==='/uploads/de-bai.pdf','legacy local coursework links preserved');
+    rejects(fn()=>AttendanceValidator::url('//example.test/file.pdf'),'protocol-relative coursework links refused');
+    rejects(fn()=>AttendanceValidator::url('javascript:alert(1)'),'script coursework links refused');
+    rejects(fn()=>AttendanceValidator::url('/\\example.test/file.pdf'),'backslash coursework links refused');
+    check(AttendanceValidator::dateTime('2028-02-29T18:10')==='2028-02-29 18:10:00','local datetime normalized');
+    $noon=Input::validate(['gioBatDau'=>'11:00','gioKetThuc'=>'12:00'],['gioBatDau'=>['time',true],'gioKetThuc'=>['time',true]]);
+    Input::pair($noon,'gioBatDau','gioKetThuc');
+    check($noon['gioKetThuc']==='12:00:00','24 hour noon remains noon');
+    try {
+        Input::pair(['gioBatDau'=>'11:00:00','gioKetThuc'=>'00:00:00'],'gioBatDau','gioKetThuc');
+        check(false,'midnight before start must fail');
+    } catch(ApiException $error) {
+        check(str_contains($error->getMessage(),'Giờ kết thúc phải sau giờ bắt đầu') && !str_contains($error->getMessage(),'gioKetThuc'),'time range error uses the visible field name');
+    }
+    try {
+        Input::validate(['gioKetThuc'=>'25:00'],['gioKetThuc'=>['time',true]]);
+        check(false,'invalid hour must fail');
+    } catch(ApiException $error) {
+        check(str_starts_with($error->getMessage(),'Giờ kết thúc'),'invalid hour error uses Vietnamese');
+    }
+    rejects(fn()=>AttendanceValidator::dateTime('2026-02-30T18:10'),'impossible correction date refused');
+    rejects(fn()=>AttendanceValidator::fields(['donGia'=>1],[]),'unapproved teacher fields refused');
+    $logInput=['revision'=>'version','chuDe'=>'Bài học','hocViens'=>[['hocVienId'=>1,'trangThaiDiemDanh'=>'co_mat','diemBaiTapGiay'=>11]]];
+    rejects(fn()=>AttendanceValidator::log($logInput),'teacher score above ten refused');
+    $logInput['hocViens'][0]['diemBaiTapGiay']=8;
+    $logInput['hocViens'][]=$logInput['hocViens'][0];
+    rejects(fn()=>AttendanceValidator::log($logInput),'duplicate student in teacher log refused');
     foreach([1644=>[400,'BUSINESS_RULE_VIOLATION'],1062=>[409,'DUPLICATE_ENTRY'],1452=>[400,'DATA_CONSTRAINT_ERROR']] as $number=>[$status,$code]) {
         $response=ApiController::error(new \RuntimeException('test',$number));
         check($response->getStatusCode()===$status && json_decode($response->getBody(),true)['code']===$code,'SQL error mapping '.$number);

@@ -56,12 +56,20 @@ final class Input
 
     public static function fail(string $field): never
     {
+        $label = ['gioBatDau'=>'Giờ bắt đầu', 'gioKetThuc'=>'Giờ kết thúc', 'ngayMoi'=>'Ngày đề xuất',
+            'thu'=>'Ngày trong tuần', 'ngay'=>'Ngày học', 'tuNgay'=>'Ngày bắt đầu', 'denNgay'=>'Ngày kết thúc',
+            'hieuLucTu'=>'Ngày bắt đầu hiệu lực', 'hieuLucDen'=>'Ngày kết thúc hiệu lực',
+            'ngaySinh'=>'Ngày sinh', 'buoiHocId'=>'Ca học', 'hanNop'=>'Hạn nộp bài'][$field] ?? null;
+        if ($label !== null) throw new ApiException(400, $label.' không hợp lệ hoặc còn thiếu.');
         throw new ApiException(400, "Trường '$field' không hợp lệ hoặc còn thiếu.");
     }
 
     public static function pair(array $data, string $start, string $end): void
     {
-        if (isset($data[$start], $data[$end]) && $data[$end] <= $data[$start]) self::fail($end);
+        if (isset($data[$start], $data[$end]) && $data[$end] <= $data[$start]) {
+            if ($end === 'gioKetThuc') throw new ApiException(400, 'Giờ kết thúc phải sau giờ bắt đầu trong cùng ngày.');
+            self::fail($end);
+        }
     }
 
     public static function credentials(array $data): void

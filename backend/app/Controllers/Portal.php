@@ -67,6 +67,8 @@ final class Portal extends \CodeIgniter\Controller
                 $html = str_replace('</head>', $scripts.'</head>', $html);
             } elseif ($user['role'] === 'PHU_HUYNH') {
                 $html = $this->frontendPage('src/modules/people/features/parents/parents.html');
+            } elseif ($user['role'] === 'GIAO_VIEN') {
+                $html = $this->frontendPage('src/modules/people/features/teachers/teachers.html');
             } else {
                 $html = $this->frontendPage('src/modules/academic/features/attendance/attendance.html');
             }

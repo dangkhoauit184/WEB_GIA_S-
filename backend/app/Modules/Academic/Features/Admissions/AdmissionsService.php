@@ -95,7 +95,7 @@ final class AdmissionsService
         return self::matching($request);
     }
 
-    private static function parentId(array $request): ?int
+    public static function parentId(array $request): ?int
     {
         if ($request['phu_huynh_user_id']) return (int)$request['phu_huynh_user_id'];
         $parent = Store::one("SELECT a.user_id FROM account a JOIN role_group g ON g.group_id=a.group_id

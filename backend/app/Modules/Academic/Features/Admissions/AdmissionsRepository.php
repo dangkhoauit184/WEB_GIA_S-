@@ -116,7 +116,9 @@ final class AdmissionsRepository
         [$scope, $params] = AdmissionsFilter::scope($actor);
         $from = ' FROM de_xuat_nhan_su dx JOIN yeu_cau_hoc y ON y.id=dx.yeu_cau_id
             JOIN nhan_su_chuyen_mon ns ON ns.id=dx.nhan_su_id JOIN users u ON u.user_id=ns.user_id
-            LEFT JOIN hoc_vien hv ON hv.id=y.hoc_vien_id AND hv.deleted_at IS NULL';
+            LEFT JOIN hoc_vien hv ON hv.id=y.hoc_vien_id AND hv.deleted_at IS NULL
+            JOIN mon_hoc m ON m.id=y.mon_hoc_id JOIN cap_lop cl ON cl.id=y.cap_lop_id
+            LEFT JOIN khu_vuc kv ON kv.id=y.khu_vuc_id';
         $where = ' WHERE 1=1';
         if (in_array($actor['role'], ['ADMIN', 'GIAO_VU'], true)) $where .= $scope;
         elseif ($actor['role'] === 'PHU_HUYNH') {
@@ -128,10 +130,13 @@ final class AdmissionsRepository
             $where .= ' AND (y.ma_yc LIKE ? OR u.hoten LIKE ? OR hv.ho_ten LIKE ? OR y.ho_ten_lien_he LIKE ?)';
             array_push($params, ...array_fill(0, 4, '%'.$filters['q'].'%'));
         }
-        return self::page('SELECT dx.*,y.ma_yc,y.trang_thai AS trang_thai_yeu_cau,y.hoc_vien_id,
+        $page = self::page('SELECT dx.*,y.ma_yc,y.trang_thai AS trang_thai_yeu_cau,y.hoc_vien_id,
+            y.hinh_thuc,m.ten AS ten_mon,cl.ten AS ten_cap_lop,kv.ten AS ten_khu_vuc,y.muc_tieu,
             hv.ho_ten AS ten_hoc_vien,y.ho_ten_lien_he,u.hoten AS ten_nguoi_day,ns.ma_ns,
             (SELECT GROUP_CONCAT(l.ma_lop SEPARATOR \', \') FROM lop_hoc l WHERE l.de_xuat_id=dx.id AND l.deleted_at IS NULL) AS ma_lop',
             $from, $where, $params, $filters, 'dx.id DESC');
+        foreach ($page['items'] as &$item) $item['lichYeuCau'] = self::slots((int)$item['yeuCauId']);
+        return $page;
     }
 
     public static function candidate(array $request, array $slots, array $profile): ?array

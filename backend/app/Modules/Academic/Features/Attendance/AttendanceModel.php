@@ -1,4 +1,10 @@
 <?php
 namespace App\Modules\Academic\Features\Attendance;
 
-// TODO: feature chưa triển khai; không có API nghiệp vụ.
+final class AttendanceModel
+{
+    public static function map(array $row): array
+    {
+        return \App\Shared\ApiModel::map($row);
+    }
+}

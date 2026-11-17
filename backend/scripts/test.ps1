@@ -70,6 +70,7 @@ try {
     $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/004_business_policy.sql'))
     $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/005_operations_policy.sql'))
     $sql+="`nINSERT INTO schema_migrations(version,status,applied_at) VALUES ('001_feature_based','applied',NOW()),('002_routine_review','applied',NOW()),('003_attribute_review','applied',NOW()),('004_business_rules','applied',NOW()),('005_operations_ready','applied',NOW());"
+    $baselineSql=$sql
     [void](Invoke-TestSql $sql)
     Invoke-PhpTest 'test'
     Invoke-PhpTest 'test:db'
@@ -87,6 +88,36 @@ try {
     }
     $report=Invoke-TestSql ([IO.File]::ReadAllText((Join-Path $projectRoot 'database/checks.sql')))
     if($report -match '(?m)^VI_PHAM\t[^\t]+\t[1-9]') { throw $report }
+    # Recreate the all-role manual demo with retained credentials on its own database.
+    $testDatabase='educenter_manual_demo_test'
+    Invoke-Docker exec -e "MYSQL_PWD=$testPassword" $testContainer mysql --user=root --execute "CREATE DATABASE $testDatabase CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"
+    [void](Invoke-TestSql $baselineSql)
+    $manualDemo=[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/demo-thu-cong.sql')).Replace('USE trung_tam_gia_su;',"USE $testDatabase;")
+    [void](Invoke-TestSql $manualDemo)
+    $expectedCounts=Invoke-TestSql 'SELECT COUNT(*) FROM account; SELECT COUNT(*) FROM hoc_vien; SELECT COUNT(*) FROM lop_hoc; SELECT COUNT(*) FROM buoi_hoc; SELECT COUNT(*) FROM hoa_don;'
+    $demoCounts=$expectedCounts -split '\r?\n'
+    if($demoCounts[0] -ne '15' -or $demoCounts[1] -ne '12' -or $demoCounts[2] -ne '5' -or [int]$demoCounts[3] -lt 20 -or $demoCounts[4] -ne '10') { throw 'Bộ demo thiếu dữ liệu cho các vai trò.' }
+    $credentialQuery='SELECT account_id,user_id,group_id,username,password_hash,status,is_deleted FROM account ORDER BY account_id;'
+    $credentialsBefore=Invoke-TestSql $credentialQuery
+    $rolesQuery='SELECT id,user_id,ma_ns,phan_loai,trang_thai FROM nhan_su_chuyen_mon ORDER BY id; SELECT id,user_id,ma_nv,trang_thai FROM nhan_vien ORDER BY id;'
+    $rolesBefore=Invoke-TestSql $rolesQuery
+    [void](Invoke-TestSql "INSERT INTO audit_log(user_id,hanh_dong,bang,ban_ghi_id,du_lieu_moi) SELECT user_id,'sua','account',account_id,JSON_OBJECT('action','account_status_changed') FROM account WHERE username='demo_admin'; INSERT INTO audit_log(user_id,hanh_dong,bang,ban_ghi_id,du_lieu_moi) SELECT user_id,'khac','account',account_id,JSON_OBJECT('action','dang_xuat','tokenHash','revoked-test-token') FROM account WHERE username='demo_admin';")
+    $authAuditQuery="SELECT id,user_id,ban_ghi_id,du_lieu_moi FROM audit_log WHERE bang='account' ORDER BY id;"
+    $authAuditBefore=Invoke-TestSql $authAuditQuery
+    [void](Invoke-TestSql "CALL sp_demo_educenter('THEM'); CALL sp_demo_educenter('XOA'); CALL sp_demo_educenter('XOA');")
+    if((Invoke-TestSql $credentialQuery) -cne $credentialsBefore -or (Invoke-TestSql $rolesQuery) -cne $rolesBefore) { throw 'Dọn demo làm thay đổi tài khoản hoặc vai trò.' }
+    if((Invoke-TestSql $authAuditQuery) -cne $authAuditBefore) { throw 'Dọn demo làm mất trạng thái bảo mật của tài khoản.' }
+    $businessTables=(Invoke-TestSql "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name NOT IN ('users','role_group','account','function','role_group_function','mon_hoc','cap_lop','khu_vuc','cau_hinh','nhan_vien','nhan_su_chuyen_mon','schema_migrations','audit_log')") -split '\r?\n'
+    $countQuery='SELECT '+(($businessTables | ForEach-Object { '(SELECT COUNT(*) FROM '+$_+')' }) -join '+')+';'
+    if((Invoke-TestSql $countQuery) -ne '0') { throw 'Còn dữ liệu nghiệp vụ sau khi dọn demo.' }
+    [void](Invoke-TestSql "CALL sp_demo_educenter('THEM'); CALL sp_demo_educenter('THEM');")
+    if((Invoke-TestSql $credentialQuery) -cne $credentialsBefore) { throw 'Thêm lại demo làm đổi mật khẩu đang dùng.' }
+    if((Invoke-TestSql $authAuditQuery) -cne $authAuditBefore) { throw 'Thêm lại demo làm mất phiên đã thu hồi.' }
+    if((Invoke-TestSql 'SELECT COUNT(*) FROM account; SELECT COUNT(*) FROM hoc_vien; SELECT COUNT(*) FROM lop_hoc; SELECT COUNT(*) FROM buoi_hoc; SELECT COUNT(*) FROM hoa_don;') -ne $expectedCounts) { throw 'Chạy lại demo tạo dữ liệu trùng hoặc thiếu.' }
+    $report=Invoke-TestSql ([IO.File]::ReadAllText((Join-Path $projectRoot 'database/checks.sql')))
+    if($report -match '(?m)^VI_PHAM\t[^\t]+\t[1-9]') { throw $report }
+    Write-Output 'PASS: manual demo for all roles, repeat seed/cleanup, retained credentials and database checks.'
+    $testDatabase='educenter_sql_test'
     & python database/tests/verify_upgrade.py --container $testContainer
     if($LASTEXITCODE -ne 0) { throw 'Kiểm thử nâng cấp database thất bại.' }
     & python database/tests/verify_upgrade.py --container $testContainer --baseline004
