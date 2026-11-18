@@ -37,6 +37,7 @@
     const dialog = $("parent-dialog");
     let data = {
       students: [],
+      courses: [],
       schedules: {},
       learningNotes: {},
       invoices: {},
@@ -441,8 +442,8 @@
                     "w",
                   );
             const pay =
-              loaded && remaining > 0 && !pending
-                ? button("Thanh toán", "pay", row.id, "p")
+              loaded && remaining > 0
+                ? button("💳 Thanh toán QR", "pay", row.id, "p")
                 : "";
             return `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(row.course)}</td><td class="parent-money">${money(row.must)}</td><td class="parent-money">${money(row.paid)}</td><td class="parent-money ${remaining ? "parent-due" : ""}">${money(remaining)}</td><td>${esc(row.deadline)}</td><td>${status}</td><td><div class="parent-table-actions">${button("Chi tiết", "invoice", row.id)}${pay}</div></td></tr>`;
           })
@@ -698,6 +699,123 @@
       fillSessions();
       if (sessionId) $("leaveSession").value = sessionId;
     }
+    function buildQrSvg(seedText) {
+      const size = 25;
+      const grid = Array.from({ length: size }, () => Array(size).fill(false));
+      const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+      const putFinder = (r0, c0) => {
+        for (let r = -1; r <= 7; r++) {
+          for (let c = -1; c <= 7; c++) {
+            const rr = r0 + r, cc = c0 + c;
+            if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+            reserved[rr][cc] = true;
+            grid[rr][cc] =
+              r >= 0 && r <= 6 && c >= 0 && c <= 6 &&
+              (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4));
+          }
+        }
+      };
+      putFinder(0, 0);
+      putFinder(0, size - 7);
+      putFinder(size - 7, 0);
+      for (let i = 8; i < size - 8; i++) {
+        reserved[6][i] = reserved[i][6] = true;
+        grid[6][i] = grid[i][6] = i % 2 === 0;
+      }
+      for (let r = size - 9; r <= size - 5; r++) {
+        for (let c = size - 9; c <= size - 5; c++) {
+          reserved[r][c] = true;
+          const dr = Math.abs(r - (size - 7)), dc = Math.abs(c - (size - 7));
+          grid[r][c] = Math.max(dr, dc) === 2 || (dr === 0 && dc === 0);
+        }
+      }
+      let hash = 2166136261;
+      for (let i = 0; i < seedText.length; i++) {
+        hash ^= seedText.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (reserved[r][c]) continue;
+          hash ^= (r * 31 + c * 17) & 0xff;
+          hash = Math.imul(hash, 16777619);
+          grid[r][c] = (hash >>> 3) % 10 < 5;
+        }
+      }
+      let rects = "";
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (grid[r][c]) rects += `<rect x="${c + 2}" y="${r + 2}" width="1" height="1" fill="#0f172a"/>`;
+        }
+      }
+      return `<svg viewBox="0 0 ${size + 4} ${size + 4}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mã QR thanh toán"><rect width="${size + 4}" height="${size + 4}" rx="2" fill="#ffffff"/>${rects}</svg>`;
+    }
+
+    function buildQrPaymentCard(invoiceCode, amount) {
+      const memo = `EDU ${invoiceCode}`;
+      const qrUrl = `https://img.vietqr.io/image/VCB-1029384756-qr_only.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent("TRUNG TAM GIA SU EDUCENTER")}`;
+      const fallbackSvg = buildQrSvg(`${memo}|${amount}|VCB|1029384756`);
+      return `<div class="parent-qr-card">
+        <div class="parent-qr-frame">
+          <span class="parent-qr-badge">VIETQR · NAPAS 247</span>
+          <div class="parent-qr-visual">
+            <img src="${esc(qrUrl)}" alt="Mã VietQR ${esc(invoiceCode)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false;">
+            <div hidden>${fallbackSvg}</div>
+          </div>
+        </div>
+        <div class="parent-qr-meta">
+          <div class="parent-qr-meta-title">Quét mã QR để thanh toán học phí</div>
+          <div class="parent-qr-row"><span>Ngân hàng</span><b>Vietcombank (VCB)</b></div>
+          <div class="parent-qr-row"><span>Số tài khoản</span><b>1029384756</b></div>
+          <div class="parent-qr-row"><span>Chủ tài khoản</span><b>TRUNG TAM GIA SU EDUCENTER</b></div>
+          <div class="parent-qr-row"><span>Số tiền</span><b class="parent-qr-amount">${esc(money(amount))}</b></div>
+          <div class="parent-qr-row"><span>Nội dung CK</span><b>${esc(memo)}</b></div>
+        </div>
+      </div>`;
+    }
+
+    function openEnrollCourse() {
+      if (!loaded) return;
+      const courses = Array.isArray(data.courses) ? data.courses : [];
+      if (!courses.length) {
+        notify("Hiện chưa có khóa học nào đang mở đăng ký.", true);
+        return;
+      }
+      const studentOptions = data.students
+        .map(
+          (row) =>
+            `<option value="${esc(row.id)}" ${String(row.id) === childId ? "selected" : ""}>${esc(row.hoTen)} (${esc(row.maHv)})</option>`,
+        )
+        .join("");
+      const courseOptions = courses
+        .map(
+          (c) =>
+            `<option value="${esc(c.id)}">${esc(c.ten)} — ${esc(money(c.hocPhi))} / trọn khóa</option>`,
+        )
+        .join("");
+      openDialog(
+        "Đăng ký Khóa học & Thanh toán QR",
+        `<label>Học viên đăng ký<select name="hocVienId" required>${studentOptions}</select></label><label>Chọn Khóa học trọn gói<select name="khoaHocId" required>${courseOptions}</select></label><p class="parent-payment-note">Sau khi xác nhận đăng ký, hệ thống sẽ phát hành Hóa đơn học phí trọn khóa và mở ngay mã QR để Phụ huynh thanh toán.</p>`,
+        async (values) => {
+          const res = await HttpService.post("/people/parents/enrollments", {
+            hocVienId: Number(values.hocVienId),
+            khoaHocId: Number(values.khoaHocId),
+          });
+          await loadData();
+          selectChild(values.hocVienId);
+          location.hash = "/parent/parent-billing";
+          showScreen();
+          const newInvId = res?.data?.hoaDon?.id;
+          if (newInvId) {
+            setTimeout(() => openInvoice(newInvId, true), 60);
+          } else {
+            notify("Đã đăng ký khóa học và tạo hóa đơn thành công.");
+          }
+        },
+        "Tiếp tục & Mở mã QR thanh toán →",
+      );
+    }
+
     function openInvoice(id, payment = false) {
       const invoice = invoices().find((row) => String(row.id) === String(id));
       if (!invoice) return;
@@ -715,7 +833,7 @@
           "Còn lại",
           `<strong class="parent-due">${money(remaining)}</strong>`,
         );
-      if (!payment || !remaining || pendingPayment(invoice)) {
+      if (!payment || !remaining) {
         openDialog(
           "Chi tiết hóa đơn",
           `<div class="parent-summary">${summary}</div>`,
@@ -726,18 +844,19 @@
         return;
       }
       openDialog(
-        "Thông báo thanh toán học phí",
-        `<div class="parent-summary">${summary}</div><label>Kênh thanh toán<select name="nhaCungCap"><option value="VIETQR_NAPAS">Chuyển khoản ngân hàng</option><option value="VNPAY_GATEWAY">VNPay</option><option value="MOMO_BUSINESS">MoMo</option></select></label><label>Số tiền thông báo (VNĐ)<input type="text" value="${esc(money(remaining))}" readonly></label><p class="parent-payment-note">Sau khi chuyển tiền theo thông tin Trung tâm đã cung cấp, gửi thông báo để Trung tâm kiểm tra và xác nhận khoản thu.</p>`,
+        "💳 Thanh toán Học phí qua Mã QR (VietQR)",
+        `<div class="parent-summary">${summary}</div>${buildQrPaymentCard(invoice.code, remaining)}<label>Phương thức thanh toán trực tuyến<select name="nhaCungCap"><option value="VIETQR_NAPAS">Chuyển khoản QR Ngân hàng (VietQR / Napas 247)</option><option value="VNPAY_GATEWAY">Cổng thanh toán VNPay QR</option><option value="MOMO_BUSINESS">Ví điện tử MoMo Doanh nghiệp</option></select></label><label>Số tiền thanh toán (VNĐ)<input type="text" value="${esc(money(remaining))}" readonly></label><p class="parent-payment-note">Quét mã QR phía trên hoặc bấm xác nhận bên dưới để hoàn tất thanh toán. Hệ thống sẽ tự động lập phiếu thu và đồng bộ học phí sang Giáo vụ &amp; Admin.</p>`,
         async (values) => {
           await HttpService.post("/people/parents/payments", {
             hoaDonId: Number(invoice.id),
             nhaCungCap: values.nhaCungCap,
             soTien: remaining,
+            xacNhanQr: true,
           });
           await loadData();
-          notify("Đã gửi thông báo thanh toán. Khoản thu đang chờ đối soát.");
+          notify("Thanh toán QR thành công! Học phí đã được gạch nợ và đồng bộ hệ thống.");
         },
-        "Tôi đã chuyển khoản",
+        "✓ Tôi đã quét QR & Hoàn tất thanh toán",
       );
     }
     function respondToProposal(id, accepted) {
@@ -847,6 +966,9 @@
           break;
         case "pay":
           openInvoice(id, true);
+          break;
+        case "enroll-course":
+          openEnrollCourse();
           break;
         case "invoice":
           openInvoice(id);

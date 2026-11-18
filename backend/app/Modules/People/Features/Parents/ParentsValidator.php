@@ -44,6 +44,26 @@ final class ParentsValidator
             'hoaDonId' => ['id', true],
             'nhaCungCap' => ['string', true],
             'soTien' => ['integer', true],
+            'xacNhanQr' => ['bool', false],
         ]);
+    }
+
+    public static function enrollment(array $input): array
+    {
+        $data = Input::validate($input, [
+            'khoaHocId' => ['id', false],
+            'maKhoa' => ['string', false],
+            'hocVienId' => ['id', false],
+            'hoTenHocVien' => ['string', false],
+            'capLopId' => ['id', false],
+            'truong' => ['string', false],
+        ]);
+        if (empty($data['khoaHocId']) && empty($data['maKhoa'])) {
+            Input::fail('khoaHocId');
+        }
+        if (empty($data['hocVienId']) && empty($data['hoTenHocVien'])) {
+            Input::fail('hocVienId');
+        }
+        return $data;
     }
 }
