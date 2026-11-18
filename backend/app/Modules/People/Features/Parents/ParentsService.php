@@ -60,6 +60,13 @@ final class ParentsService
         return ParentsRepository::portalData((int)$user['userId']);
     }
 
+    public static function createEnrollment(array $body): array
+    {
+        $user = self::parentUser();
+        $data = ParentsValidator::enrollment($body);
+        return ParentsRepository::createEnrollment((int)$user['userId'], $data);
+    }
+
     public static function createLeaveRequest(array $body): array
     {
         $user = self::parentUser();

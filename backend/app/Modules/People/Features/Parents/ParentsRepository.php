@@ -332,16 +332,165 @@ final class ParentsRepository
             ];
         }, $txRows);
 
+        $courses = Store::rows("SELECT k.id, k.ma, k.ten, k.mo_ta AS moTa, k.hoc_phi AS hocPhi
+            FROM khoa_hoc k WHERE k.is_active=1 ORDER BY k.id ASC");
+
         return [
             'serverTime' => date('c'),
             'parent' => $parent,
             'students' => $students,
+            'courses' => $courses,
             'schedules' => $schedules,
             'learningNotes' => $learningNotes,
             'invoices' => $invoices,
             'leaveRequests' => $leaveRequests,
             'transactions' => $transactions,
         ];
+    }
+
+    public static function createEnrollment(int $parentUserId, array $data): array
+    {
+        return Store::transaction(function () use ($parentUserId, $data) {
+            $course = !empty($data['khoaHocId'])
+                ? Store::one('SELECT * FROM khoa_hoc WHERE id=? AND is_active=1 FOR UPDATE', [$data['khoaHocId']])
+                : Store::one('SELECT * FROM khoa_hoc WHERE ma=? AND is_active=1 FOR UPDATE', [$data['maKhoa']]);
+
+            if (!$course && !empty($data['maKhoa'])) {
+                $defaultCourses = [
+                    'KHOA-GS-1KEM1' => [
+                        'ma' => 'KHOA-GS-1KEM1',
+                        'ten' => 'Gia sư Toán - Lý - Hóa cá nhân hóa',
+                        'mo_ta' => 'Giáo án thiết kế riêng bám sát năng lực học sinh. Phụ huynh duyệt hồ sơ người dạy trước khi bắt đầu.',
+                        'hoc_phi' => 3500000,
+                    ],
+                    'KHOA-NHOM-THCS' => [
+                        'ma' => 'KHOA-NHOM-THCS',
+                        'ten' => 'Bồi dưỡng Văn hóa THCS & Ôn thi vào 10',
+                        'mo_ta' => 'Quy mô lớp nhỏ dưới 10 học sinh, có trợ giảng theo sát kiểm tra bài tập và hỗ trợ từng buổi học.',
+                        'hoc_phi' => 2800000,
+                    ],
+                    'KHOA-CHUYEN-THPT' => [
+                        'ma' => 'KHOA-CHUYEN-THPT',
+                        'ten' => 'Luyện thi Chuyên & Đánh giá Năng lực THPT',
+                        'mo_ta' => 'Rèn luyện tư duy phản biện, giải đề thi thử chuẩn cấu trúc đề với đội ngũ giáo viên giàu kinh nghiệm.',
+                        'hoc_phi' => 4200000,
+                    ],
+                ];
+                if (isset($defaultCourses[$data['maKhoa']])) {
+                    $cid = Store::insert('khoa_hoc', $defaultCourses[$data['maKhoa']] + ['is_active' => 1]);
+                    $course = Store::one('SELECT * FROM khoa_hoc WHERE id=? FOR UPDATE', [$cid]);
+                }
+            }
+
+            if (!$course) {
+                throw new \App\Shared\ApiException(404, 'Khóa học không tồn tại hoặc đã ngừng nhận đăng ký.', 'COURSE_NOT_FOUND');
+            }
+
+            if (!empty($data['hocVienId'])) {
+                $student = Store::one('SELECT id, ma_hv, ho_ten FROM hoc_vien WHERE id=? AND phu_huynh_user_id=? AND deleted_at IS NULL FOR UPDATE', [
+                    $data['hocVienId'],
+                    $parentUserId,
+                ]);
+                if (!$student) {
+                    throw new \App\Shared\ApiException(403, 'Học viên không thuộc quyền quản lý của tài khoản phụ huynh này.', 'FORBIDDEN_STUDENT');
+                }
+            } else {
+                $capLopId = $data['capLopId'] ?? null;
+                if (!$capLopId) {
+                    $cap = Store::one('SELECT id FROM cap_lop ORDER BY id ASC LIMIT 1');
+                    $capLopId = $cap ? (int)$cap['id'] : 9;
+                }
+                $maHv = 'HV-' . strtoupper(bin2hex(random_bytes(3)));
+                $studentId = Store::insert('hoc_vien', [
+                    'phu_huynh_user_id' => $parentUserId,
+                    'ma_hv' => $maHv,
+                    'ho_ten' => $data['hoTenHocVien'],
+                    'cap_lop_id' => $capLopId,
+                    'truong' => $data['truong'] ?? null,
+                    'trang_thai' => 'dang_hoc',
+                ]);
+                $student = [
+                    'id' => $studentId,
+                    'ma_hv' => $maHv,
+                    'ho_ten' => $data['hoTenHocVien'],
+                ];
+            }
+
+            $registration = Store::one(
+                "SELECT * FROM dang_ky_khoa_hoc WHERE hoc_vien_id=? AND khoa_hoc_id=? AND trang_thai IN ('cho_xep_lop','dang_hoc') ORDER BY id DESC LIMIT 1 FOR UPDATE",
+                [(int)$student['id'], (int)$course['id']]
+            );
+            if (!$registration) {
+                $regId = Store::insert('dang_ky_khoa_hoc', [
+                    'hoc_vien_id' => (int)$student['id'],
+                    'khoa_hoc_id' => (int)$course['id'],
+                    'hoc_phi_snapshot' => $course['hoc_phi'],
+                    'trang_thai' => 'cho_xep_lop',
+                ]);
+                $registration = Store::one('SELECT * FROM dang_ky_khoa_hoc WHERE id=?', [$regId]);
+                Store::recordAudit($parentUserId, 'them', 'dang_ky_khoa_hoc', $regId, null, $registration);
+            }
+
+            $issuer = Store::one("SELECT a.user_id FROM account a
+                JOIN users u ON u.user_id=a.user_id
+                JOIN role_group g ON g.group_id=a.group_id
+                WHERE g.group_name IN ('Admin','NhanVien') AND a.status='active' AND a.is_deleted=0 AND u.is_deleted=0 AND g.is_deleted=0
+                ORDER BY g.group_id ASC, a.account_id ASC LIMIT 1");
+            $issuerId = $issuer ? (int)$issuer['user_id'] : $parentUserId;
+
+            $invoice = Store::one('SELECT * FROM hoa_don WHERE dang_ky_khoa_hoc_id=? FOR UPDATE', [(int)$registration['id']]);
+            if (!$invoice) {
+                $maHd = 'HD-' . date('Ym') . '-' . strtoupper(bin2hex(random_bytes(3)));
+                $invId = Store::insert('hoa_don', [
+                    'ma_hd' => $maHd,
+                    'dang_ky_khoa_hoc_id' => (int)$registration['id'],
+                    'tong_tien' => $registration['hoc_phi_snapshot'],
+                    'giam_gia' => 0,
+                    'trang_thai' => 'nhap',
+                    'han_thanh_toan' => date('Y-m-d', strtotime('+7 days')),
+                    'nguoi_lap_id' => $issuerId,
+                ]);
+                Store::insert('hoa_don_chi_tiet', [
+                    'hoa_don_id' => $invId,
+                    'loai_khoan' => 'khoa_hoc',
+                    'mo_ta' => 'Học phí trọn khóa: ' . $course['ten'],
+                    'don_gia' => $registration['hoc_phi_snapshot'],
+                ]);
+                Store::execute(
+                    "UPDATE hoa_don SET trang_thai='chua_thanh_toan', phat_hanh_luc=NOW(), phat_hanh_boi=? WHERE id=?",
+                    [$issuerId, $invId]
+                );
+                $invoice = Store::one('SELECT * FROM hoa_don WHERE id=?', [$invId]);
+                Store::recordAudit($issuerId, 'them', 'hoa_don', $invId, null, $invoice);
+            } elseif ($invoice['trang_thai'] === 'nhap') {
+                Store::execute(
+                    "UPDATE hoa_don SET trang_thai='chua_thanh_toan', phat_hanh_luc=NOW(), phat_hanh_boi=? WHERE id=?",
+                    [$issuerId, (int)$invoice['id']]
+                );
+                $invoice = Store::one('SELECT * FROM hoa_don WHERE id=?', [(int)$invoice['id']]);
+            }
+
+            $remaining = max(0, (int)$invoice['phai_thu'] - (int)$invoice['da_thu']);
+
+            return [
+                'dangKyId' => (int)$registration['id'],
+                'hocVienId' => (int)$student['id'],
+                'tenHocVien' => $student['ho_ten'],
+                'khoaHocId' => (int)$course['id'],
+                'maKhoa' => $course['ma'],
+                'tenKhoa' => $course['ten'],
+                'hoaDon' => [
+                    'id' => (int)$invoice['id'],
+                    'code' => $invoice['ma_hd'],
+                    'course' => $course['ten'],
+                    'studentName' => $student['ho_ten'],
+                    'must' => (int)$invoice['phai_thu'],
+                    'paid' => (int)$invoice['da_thu'],
+                    'remaining' => $remaining,
+                    'status' => $invoice['trang_thai'],
+                ],
+            ];
+        });
     }
 
     public static function createLeaveRequest(int $parentUserId, array $data): array
@@ -404,7 +553,7 @@ final class ParentsRepository
 
     public static function createOnlinePayment(int $parentUserId, array $data): array
     {
-        return Store::transaction(function () use ($parentUserId, $data) {
+        $result = Store::transaction(function () use ($parentUserId, $data) {
             $invoice = Store::one("SELECT h.id, h.ma_hd, h.phai_thu, h.da_thu, h.trang_thai,
                     hv.phu_huynh_user_id
                 FROM hoa_don h
@@ -484,5 +633,23 @@ final class ParentsRepository
                 'status' => 'cho_xac_nhan',
             ];
         });
+
+        if (!empty($data['xacNhanQr']) && !empty($result['id'])) {
+            $admin = Store::one("SELECT a.user_id FROM account a
+                JOIN users u ON u.user_id=a.user_id
+                JOIN role_group g ON g.group_id=a.group_id
+                WHERE g.group_name='Admin' AND a.status='active' AND a.is_deleted=0 AND u.is_deleted=0 AND g.is_deleted=0
+                ORDER BY a.account_id ASC LIMIT 1");
+            if ($admin) {
+                Store::call('CALL sp_xac_nhan_giao_dich(?,?)', [(int)$result['id'], (int)$admin['user_id']]);
+                Store::execute(
+                    "UPDATE su_kien_thanh_toan SET trang_thai='da_xu_ly', xu_ly_luc=NOW() WHERE giao_dich_id=? AND trang_thai='cho_xu_ly'",
+                    [(int)$result['id']]
+                );
+                $result['status'] = 'da_xac_nhan';
+            }
+        }
+
+        return $result;
     }
 }

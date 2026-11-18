@@ -133,8 +133,81 @@
       border-radius: 18px;
       padding: 30px;
       width: 100%;
-      max-width: 540px;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
       box-shadow: var(--sh-modal);
+    }
+    .pub-qr-card {
+      display: grid;
+      grid-template-columns: 184px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      margin: 14px 0;
+      background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 100%);
+      border: 1.5px dashed var(--pri);
+      border-radius: 12px;
+    }
+    .pub-qr-frame {
+      background: #fff;
+      border: 1px solid var(--g200);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    }
+    .pub-qr-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      margin-bottom: 6px;
+      border-radius: 99px;
+      background: var(--pri-ll);
+      color: var(--pri-d);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .pub-qr-visual {
+      width: 150px;
+      height: 150px;
+      margin: 0 auto;
+      display: grid;
+      place-items: center;
+    }
+    .pub-qr-visual img {
+      width: 150px;
+      height: 150px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .pub-qr-visual svg {
+      width: 146px;
+      height: 146px;
+    }
+    .pub-qr-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 6px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--g200);
+      font-size: 12.5px;
+    }
+    .pub-qr-row:last-child {
+      border-bottom: 0;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .pub-qr-row span { color: var(--g500); font-size: 12px; }
+    .pub-qr-row b {
+      color: var(--g900);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+    }
+    @media (max-width: 560px) {
+      .pub-qr-card { grid-template-columns: 1fr; justify-items: center; }
     }
     .pub-hero-stats .pub-hstat b {
       display: block;
@@ -249,7 +322,7 @@
           <div class="c-price">3,500,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
           <div style="display:flex; gap:8px; margin-top:14px;">
             <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-GS-1KEM1">Chi tiết</button>
-            <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('Gia sư 1 kèm 1')">Đăng ký</a>
+            <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-code="KHOA-GS-1KEM1" data-name="Gia sư Toán - Lý - Hóa cá nhân hóa" data-price="3500000">Đăng ký</button>
           </div>
         </div>
       </div>
@@ -264,7 +337,7 @@
           <div class="c-price">2,800,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
           <div style="display:flex; gap:8px; margin-top:14px;">
             <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-NHOM-THCS">Chi tiết</button>
-            <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('Bồi dưỡng Văn hóa THCS')">Đăng ký</a>
+            <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-code="KHOA-NHOM-THCS" data-name="Bồi dưỡng Văn hóa THCS & Ôn thi vào 10" data-price="2800000">Đăng ký</button>
           </div>
         </div>
       </div>
@@ -279,7 +352,7 @@
           <div class="c-price">4,200,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
           <div style="display:flex; gap:8px; margin-top:14px;">
             <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-CHUYEN-THPT">Chi tiết</button>
-            <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('Luyện thi Chuyên & ĐGNL')">Đăng ký</a>
+            <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-code="KHOA-CHUYEN-THPT" data-name="Luyện thi Chuyên & Đánh giá Năng lực THPT" data-price="4200000">Đăng ký</button>
           </div>
         </div>
       </div>
@@ -390,9 +463,21 @@
         <button type="button" id="closeDetailModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400);">✕</button>
       </div>
       <div id="modalCourseContent" style="font-size:13.5px; color:var(--g700); line-height:1.6;"></div>
-      <div style="margin-top:20px; text-align:right;">
-        <a href="#consultation" id="btnModalEnroll" class="btn p sm">Đăng ký khóa học này</a>
+      <div style="margin-top:20px; text-align:right; display:flex; justify-content:flex-end; gap:8px;">
+        <a href="#consultation" id="btnModalConsult" class="btn sm">Nhận tư vấn</a>
+        <button type="button" id="btnModalEnroll" class="btn p sm">Đăng ký &amp; Thanh toán QR</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal Course Enrollment & QR Payment -->
+  <div id="modalCourseEnrollQr" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--g200); padding-bottom:10px;">
+        <h3 id="enrollQrModalTitle" style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">💳 Đăng ký Khóa học &amp; Thanh toán QR</h3>
+        <button type="button" id="closeEnrollQrModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400);">✕</button>
+      </div>
+      <div id="enrollQrModalBody" style="font-size:13.5px; color:var(--g700); line-height:1.55;"></div>
     </div>
   </div>
 
@@ -423,21 +508,31 @@
   <script>
     const COURSE_DETAILS = {
       'KHOA-GS-1KEM1': {
-        title: 'Gia sư 1 kèm 1 Toán - Lý - Hóa',
+        code: 'KHOA-GS-1KEM1',
+        title: 'Gia sư Toán - Lý - Hóa cá nhân hóa',
+        price: 3500000,
         desc: 'Chương trình gia sư riêng biệt 1 kèm 1. Học viên được làm bài kiểm tra đầu vào để xác định chính xác năng lực, từ đó giáo viên biên soạn giáo án riêng.',
         highlights: ['Thời gian linh hoạt theo lịch rảnh của gia đình', 'Học viên chủ động chọn học tại nhà hoặc online qua Google Meet', 'Báo cáo chi tiết sau mỗi buổi học qua Cổng Phụ Huynh']
       },
       'KHOA-NHOM-THCS': {
+        code: 'KHOA-NHOM-THCS',
         title: 'Bồi dưỡng Văn hóa THCS & Ôn thi vào 10',
+        price: 2800000,
         desc: 'Khóa học theo nhóm nhỏ tối đa 8-10 học sinh. Rèn luyện kỹ năng giải bài tập nâng cao bám sát cấu trúc đề thi tuyển sinh vào lớp 10 các trường công lập.',
         highlights: ['Sĩ số lớp nhỏ đảm bảo tương tác tối đa', 'Định kỳ thi thử và xếp hạng hàng tháng', 'Có trợ giảng kèm cặp riêng cho học sinh còn yếu']
       },
       'KHOA-CHUYEN-THPT': {
+        code: 'KHOA-CHUYEN-THPT',
         title: 'Luyện thi Chuyên & Đánh giá Năng lực THPT',
+        price: 4200000,
         desc: 'Khóa học chuyên sâu dành cho học sinh có nguyện vọng thi đỗ trường chuyên hoặc xét tuyển đại học bằng bài thi Đánh giá Năng lực.',
         highlights: ['Ngân hàng đề thi thử độc quyền hơn 500+ đề', 'Giảng viên giàu kinh nghiệm luyện thi', 'Hỗ trợ giải đáp bài tập 24/7']
       }
     };
+
+    function formatVnd(amount) {
+      return Number(amount || 0).toLocaleString('vi-VN') + ' đ';
+    }
 
     function selectCourse(courseName) {
       const sel = document.getElementById('courseSelect');
@@ -458,11 +553,395 @@
       }[m]));
     }
 
+    function buildQrSvg(seedText) {
+      const size = 25;
+      const grid = Array.from({ length: size }, () => Array(size).fill(false));
+      const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+      const putFinder = (r0, c0) => {
+        for (let r = -1; r <= 7; r++) {
+          for (let c = -1; c <= 7; c++) {
+            const rr = r0 + r, cc = c0 + c;
+            if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+            reserved[rr][cc] = true;
+            grid[rr][cc] =
+              r >= 0 && r <= 6 && c >= 0 && c <= 6 &&
+              (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4));
+          }
+        }
+      };
+      putFinder(0, 0);
+      putFinder(0, size - 7);
+      putFinder(size - 7, 0);
+      for (let i = 8; i < size - 8; i++) {
+        reserved[6][i] = reserved[i][6] = true;
+        grid[6][i] = grid[i][6] = i % 2 === 0;
+      }
+      for (let r = size - 9; r <= size - 5; r++) {
+        for (let c = size - 9; c <= size - 5; c++) {
+          reserved[r][c] = true;
+          const dr = Math.abs(r - (size - 7)), dc = Math.abs(c - (size - 7));
+          grid[r][c] = Math.max(dr, dc) === 2 || (dr === 0 && dc === 0);
+        }
+      }
+      let hash = 2166136261;
+      for (let i = 0; i < seedText.length; i++) {
+        hash ^= seedText.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (reserved[r][c]) continue;
+          hash ^= (r * 31 + c * 17) & 0xff;
+          hash = Math.imul(hash, 16777619);
+          grid[r][c] = (hash >>> 3) % 10 < 5;
+        }
+      }
+      let rects = '';
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (grid[r][c]) rects += `<rect x="${c + 2}" y="${r + 2}" width="1" height="1" fill="#0f172a"/>`;
+        }
+      }
+      return `<svg viewBox="0 0 ${size + 4} ${size + 4}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mã QR thanh toán"><rect width="${size + 4}" height="${size + 4}" rx="2" fill="#ffffff"/>${rects}</svg>`;
+    }
+
+    function buildVietQrBoxHtml(invoiceCode, amount) {
+      const memo = `EDU ${invoiceCode}`;
+      const qrUrl = `https://img.vietqr.io/image/VCB-1029384756-qr_only.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent('TRUNG TAM GIA SU EDUCENTER')}`;
+      const fallbackSvg = buildQrSvg(`${memo}|${amount}|VCB|1029384756`);
+      return `
+        <div class="pub-qr-card">
+          <div class="pub-qr-frame">
+            <span class="pub-qr-badge">VIETQR · NAPAS 247</span>
+            <div class="pub-qr-visual">
+              <img src="${escapeHtml(qrUrl)}" alt="Mã VietQR ${escapeHtml(invoiceCode)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+              <div style="display:none;">${fallbackSvg}</div>
+            </div>
+          </div>
+          <div style="width:100%;">
+            <div style="font-weight:700;font-size:13.5px;color:var(--pri-d);margin-bottom:8px;">Quét mã QR thanh toán học phí</div>
+            <div class="pub-qr-row"><span>Ngân hàng</span><b>Vietcombank (VCB)</b></div>
+            <div class="pub-qr-row"><span>Số tài khoản</span><b>1029384756</b></div>
+            <div class="pub-qr-row"><span>Chủ tài khoản</span><b>TRUNG TAM GIA SU EDUCENTER</b></div>
+            <div class="pub-qr-row"><span>Số tiền</span><b style="color:var(--err);font-size:14px;">${escapeHtml(formatVnd(amount))}</b></div>
+            <div class="pub-qr-row"><span>Nội dung CK</span><b>${escapeHtml(memo)}</b></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateHeaderAuthNav() {
+      if (AccessService.isAuthenticated()) {
+        const user = AccessService.getCurrentUser();
+        const navContainer = document.getElementById('authNavButtons');
+        if (user && navContainer) {
+          navContainer.innerHTML = `
+            <button class="btn p" onclick="AccessService.redirectByRole()">
+              Chào ${escapeHtml(user.hoTen || user.username)} (Vào Cổng →)
+            </button>
+          `;
+        }
+      }
+    }
+
+    async function openEnrollQrModal(courseInfo) {
+      const modal = document.getElementById('modalCourseEnrollQr');
+      const titleEl = document.getElementById('enrollQrModalTitle');
+      const bodyEl = document.getElementById('enrollQrModalBody');
+      if (!modal || !bodyEl) return;
+
+      modal.classList.add('show');
+      titleEl.textContent = '💳 Đăng ký Khóa học & Thanh toán QR';
+
+      const courseBanner = `
+        <div style="background:var(--pri-ll);padding:14px 16px;border-radius:10px;border:1px solid var(--pri-l);margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div>
+              <span class="tag ok" style="margin-bottom:4px;">${escapeHtml(courseInfo.code || 'KHÓA TRỌN GÓI')}</span>
+              <h4 style="margin:4px 0 0;font-size:15.5px;color:var(--g900);">${escapeHtml(courseInfo.title)}</h4>
+            </div>
+            <div style="text-align:right;">
+              <small style="color:var(--g500);display:block;font-size:11px;">Học phí trọn khóa</small>
+              <b style="font-size:18px;color:var(--pri-d);">${escapeHtml(formatVnd(courseInfo.price))}</b>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Nếu chưa đăng nhập -> Hiển thị form đăng nhập nhanh ngay trong modal
+      if (!AccessService.isAuthenticated()) {
+        bodyEl.innerHTML = `
+          ${courseBanner}
+          <div style="background:var(--g50);padding:16px;border-radius:12px;border:1px solid var(--g200);">
+            <h4 style="margin:0 0 6px;font-size:14.5px;color:var(--g900);">Đăng nhập tài khoản Phụ huynh để đăng ký &amp; nhận mã QR</h4>
+            <p style="margin:0 0 12px;font-size:12.5px;color:var(--g600);">Hệ thống sẽ ghi nhận khóa học cho con và tạo Hóa đơn kèm mã QR thanh toán trực tuyến.</p>
+            <div id="inlineLoginAlert" style="display:none;margin-bottom:10px;padding:9px 12px;border-radius:8px;font-size:12.5px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;"></div>
+            <form id="inlineLoginForm">
+              <div style="margin-bottom:10px;">
+                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Tên đăng nhập hoặc Email</label>
+                <input type="text" id="inlineLoginUser" placeholder="Ví dụ: phuhuynh" required style="width:100%;">
+              </div>
+              <div style="margin-bottom:14px;">
+                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Mật khẩu</label>
+                <input type="password" id="inlineLoginPass" placeholder="Nhập mật khẩu" required style="width:100%;">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                <a href="/login" style="font-size:12.5px;color:var(--pri-d);font-weight:600;text-decoration:none;">Chưa có tài khoản? Đăng ký mới →</a>
+                <button type="submit" id="btnInlineLogin" class="btn p sm">Đăng nhập &amp; Tiếp tục →</button>
+              </div>
+            </form>
+          </div>
+        `;
+        const loginForm = document.getElementById('inlineLoginForm');
+        loginForm.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          const u = document.getElementById('inlineLoginUser').value.trim();
+          const p = document.getElementById('inlineLoginPass').value;
+          const btn = document.getElementById('btnInlineLogin');
+          const alertBox = document.getElementById('inlineLoginAlert');
+          btn.disabled = true;
+          btn.textContent = 'Đang xác thực...';
+          alertBox.style.display = 'none';
+          try {
+            const res = await HttpService.post('/auth/login', { username: u, password: p });
+            if (res && res.data && res.data.token) {
+              AccessService.setSession(res.data.token, res.data.user);
+              updateHeaderAuthNav();
+              openEnrollQrModal(courseInfo);
+            }
+          } catch (err) {
+            alertBox.style.display = 'block';
+            alertBox.textContent = err.message || 'Tên đăng nhập hoặc mật khẩu không đúng.';
+            btn.disabled = false;
+            btn.textContent = 'Đăng nhập & Tiếp tục →';
+          }
+        });
+        return;
+      }
+
+      const currentUser = AccessService.getCurrentUser();
+      if (currentUser && !['PHU_HUYNH', 'ADMIN'].includes(currentUser.role)) {
+        bodyEl.innerHTML = `
+          ${courseBanner}
+          <div style="padding:14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px;">
+            Tài khoản hiện tại đang đăng nhập với vai trò <b>${escapeHtml(currentUser.role)}</b>. Chức năng đăng ký mua khóa học &amp; thanh toán QR dành cho tài khoản <b>Phụ huynh</b>.
+          </div>
+          <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn sm" onclick="AccessService.clearSession();openEnrollQrModal(${escapeHtml(JSON.stringify(courseInfo))})">Đổi sang tài khoản Phụ huynh</button>
+            <button type="button" class="btn p sm" onclick="AccessService.redirectByRole()">Vào Cổng làm việc →</button>
+          </div>
+        `;
+        return;
+      }
+
+      // Bước 1: Đang tải danh sách con của Phụ huynh
+      bodyEl.innerHTML = `${courseBanner}<div style="padding:20px;text-align:center;color:var(--g500);">Đang tải hồ sơ học viên...</div>`;
+      let students = [];
+      try {
+        const portalRes = await HttpService.get('/people/parents/portal');
+        students = Array.isArray(portalRes?.data?.students) ? portalRes.data.students : [];
+      } catch (e) {
+        students = [];
+      }
+
+      const hasKids = students.length > 0;
+      const kidOptions = students.map(s =>
+        `<option value="${escapeHtml(s.id)}">${escapeHtml(s.hoTen)} (${escapeHtml(s.maHv || 'Học viên')} · ${escapeHtml(s.tenCapLop || 'Đang học')})</option>`
+      ).join('') + '<option value="NEW">+ Thêm học sinh (con) mới...</option>';
+
+      bodyEl.innerHTML = `
+        ${courseBanner}
+        <div id="enrollStepAlert" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;font-size:12.5px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;"></div>
+        <form id="courseEnrollStepForm">
+          <div style="margin-bottom:12px;${hasKids ? '' : 'display:none;'}">
+            <label style="font-size:12.5px;font-weight:600;color:var(--g700);display:block;margin-bottom:5px;">Chọn học viên (con) đăng ký học</label>
+            <select id="enrollStudentSelect" style="width:100%;">
+              ${kidOptions}
+            </select>
+          </div>
+          <div id="newStudentFields" style="${hasKids ? 'display:none;' : ''}background:var(--g50);padding:14px;border-radius:10px;border:1px solid var(--g200);margin-bottom:12px;">
+            <div style="font-weight:700;font-size:13px;color:var(--g800);margin-bottom:10px;">Thông tin học sinh (con)</div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Họ và tên học sinh *</label>
+              <input type="text" id="newStudentName" placeholder="Ví dụ: Nguyễn Văn An" style="width:100%;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Khối lớp</label>
+                <select id="newStudentGrade" style="width:100%;">
+                  <option value="6">Lớp 6</option>
+                  <option value="7">Lớp 7</option>
+                  <option value="8">Lớp 8</option>
+                  <option value="9" selected>Lớp 9</option>
+                  <option value="10">Lớp 10</option>
+                  <option value="11">Lớp 11</option>
+                  <option value="12">Lớp 12</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Trường đang học</label>
+                <input type="text" id="newStudentSchool" placeholder="THCS / THPT..." style="width:100%;">
+              </div>
+            </div>
+          </div>
+          <div style="padding:10px 12px;border-radius:8px;background:var(--g50);border:1px solid var(--g200);font-size:12px;color:var(--g600);margin-bottom:16px;">
+            Sau khi bấm tiếp tục, hệ thống sẽ khởi tạo hồ sơ đăng ký khóa học, phát hành <b>Hóa đơn trọn khóa</b> và hiển thị <b>Mã QR (VietQR)</b> để thanh toán ngay.
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn sm" onclick="document.getElementById('modalCourseEnrollQr').classList.remove('show')">Hủy</button>
+            <button type="submit" id="btnSubmitEnrollStep" class="btn p sm">Xác nhận Đăng ký &amp; Mở Mã QR →</button>
+          </div>
+        </form>
+      `;
+
+      const studentSel = document.getElementById('enrollStudentSelect');
+      const newFields = document.getElementById('newStudentFields');
+      if (studentSel) {
+        studentSel.addEventListener('change', () => {
+          newFields.style.display = studentSel.value === 'NEW' ? 'block' : 'none';
+        });
+      }
+
+      document.getElementById('courseEnrollStepForm').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const alertBox = document.getElementById('enrollStepAlert');
+        const btn = document.getElementById('btnSubmitEnrollStep');
+        alertBox.style.display = 'none';
+
+        const isNewKid = !hasKids || studentSel.value === 'NEW';
+        const payload = {};
+        if (courseInfo.id) payload.khoaHocId = Number(courseInfo.id);
+        if (courseInfo.code) payload.maKhoa = courseInfo.code;
+
+        if (isNewKid) {
+          const kidName = document.getElementById('newStudentName').value.trim();
+          if (!kidName) {
+            alertBox.style.display = 'block';
+            alertBox.textContent = 'Vui lòng nhập họ và tên học sinh.';
+            return;
+          }
+          payload.hoTenHocVien = kidName;
+          payload.capLopId = Number(document.getElementById('newStudentGrade').value || 9);
+          payload.truong = document.getElementById('newStudentSchool').value.trim() || null;
+        } else {
+          payload.hocVienId = Number(studentSel.value);
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Đang tạo hóa đơn & mã QR...';
+        try {
+          const res = await HttpService.post('/people/parents/enrollments', payload);
+          const enrollment = res.data;
+          renderQrPaymentStep(enrollment);
+        } catch (err) {
+          alertBox.style.display = 'block';
+          alertBox.textContent = err.message || 'Không thể tạo đăng ký khóa học.';
+          btn.disabled = false;
+          btn.textContent = 'Xác nhận Đăng ký & Mở Mã QR →';
+        }
+      });
+    }
+
+    function renderQrPaymentStep(enrollment) {
+      const titleEl = document.getElementById('enrollQrModalTitle');
+      const bodyEl = document.getElementById('enrollQrModalBody');
+      const inv = enrollment.hoaDon;
+      titleEl.textContent = '💳 Quét Mã QR Thanh toán Học phí';
+
+      if (inv.remaining <= 0) {
+        bodyEl.innerHTML = `
+          <div style="padding:20px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;text-align:center;color:#065f46;">
+            <div style="font-size:32px;margin-bottom:8px;">✓</div>
+            <h4 style="margin:0 0 6px;font-size:16px;">Khóa học này đã được thanh toán đủ!</h4>
+            <p style="margin:0;font-size:13px;">Mã hóa đơn: <b>${escapeHtml(inv.code)}</b> · Học viên: <b>${escapeHtml(inv.studentName)}</b></p>
+          </div>
+          <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn sm" onclick="document.getElementById('modalCourseEnrollQr').classList.remove('show')">Đóng</button>
+            <a href="/app#/parent/parent-billing" class="btn p sm">Vào Cổng Phụ huynh xem Hóa đơn →</a>
+          </div>
+        `;
+        return;
+      }
+
+      bodyEl.innerHTML = `
+        <div style="background:var(--g50);padding:12px 14px;border-radius:10px;border:1px solid var(--g200);margin-bottom:12px;font-size:12.5px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Mã hóa đơn phát hành:</span><b>${escapeHtml(inv.code)} (DK-${escapeHtml(enrollment.dangKyId)})</b></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Học viên:</span><b>${escapeHtml(inv.studentName)}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span>Khóa học:</span><b>${escapeHtml(inv.course)}</b></div>
+        </div>
+        ${buildVietQrBoxHtml(inv.code, inv.remaining)}
+        <div id="qrPayStepAlert" style="display:none;margin-bottom:10px;padding:9px 12px;border-radius:8px;font-size:12.5px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;"></div>
+        <form id="qrPayStepForm">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Phương thức thanh toán</label>
+            <select id="qrPayChannel" style="width:100%;">
+              <option value="VIETQR_NAPAS">Chuyển khoản QR Ngân hàng (VietQR / Napas 247)</option>
+              <option value="VNPAY_GATEWAY">Cổng thanh toán VNPay QR</option>
+              <option value="MOMO_BUSINESS">Ví điện tử MoMo Doanh nghiệp</option>
+            </select>
+          </div>
+          <div style="padding:10px 12px;border-radius:8px;background:#f0f9ff;border:1px solid #bae6fd;font-size:12px;color:#0369a1;margin-bottom:16px;">
+            Khi bấm <b>Hoàn tất thanh toán</b> dưới đây, hệ thống sẽ tự động lập Phiếu thu và đồng bộ số tiền đã đóng sang cổng <b>Phụ huynh, Giáo vụ &amp; Admin</b>.
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <a href="/app#/parent/parent-billing" class="btn sm">Thanh toán sau tại Cổng Phụ huynh</a>
+            <button type="submit" id="btnConfirmQrPay" class="btn p sm">✓ Tôi đã quét QR &amp; Hoàn tất thanh toán</button>
+          </div>
+        </form>
+      `;
+
+      document.getElementById('qrPayStepForm').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const btn = document.getElementById('btnConfirmQrPay');
+        const alertBox = document.getElementById('qrPayStepAlert');
+        const channel = document.getElementById('qrPayChannel').value;
+        btn.disabled = true;
+        btn.textContent = 'Đang xác nhận & gạch nợ hóa đơn...';
+        alertBox.style.display = 'none';
+
+        try {
+          const payRes = await HttpService.post('/people/parents/payments', {
+            hoaDonId: Number(inv.id),
+            nhaCungCap: channel,
+            soTien: Number(inv.remaining),
+            xacNhanQr: true
+          });
+          const tx = payRes.data;
+          titleEl.textContent = '🎉 Thanh toán Học phí Thành công';
+          bodyEl.innerHTML = `
+            <div style="padding:20px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;text-align:center;color:#065f46;margin-bottom:14px;">
+              <div style="width:48px;height:48px;border-radius:50%;background:#10b981;color:#fff;display:grid;place-items:center;font-size:24px;margin:0 auto 10px;">✓</div>
+              <h4 style="margin:0 0 4px;font-size:16px;">Đã thanh toán &amp; Lập phiếu thu thành công!</h4>
+              <p style="margin:0;font-size:12.5px;">Số tiền <b>${escapeHtml(formatVnd(inv.remaining))}</b> đã được đồng bộ sang Cổng Giáo vụ &amp; Admin.</p>
+            </div>
+            <div style="background:var(--g50);padding:14px;border-radius:10px;border:1px solid var(--g200);font-size:12.5px;margin-bottom:16px;">
+              <div class="pub-qr-row"><span>Mã giao dịch</span><b>${escapeHtml(tx.code)}</b></div>
+              <div class="pub-qr-row"><span>Mã hóa đơn</span><b>${escapeHtml(inv.code)}</b></div>
+              <div class="pub-qr-row"><span>Học viên</span><b>${escapeHtml(inv.studentName)}</b></div>
+              <div class="pub-qr-row"><span>Khóa học</span><b>${escapeHtml(inv.course)}</b></div>
+              <div class="pub-qr-row"><span>Số tiền đã thu</span><b style="color:var(--ok);">${escapeHtml(formatVnd(tx.amount))}</b></div>
+              <div class="pub-qr-row"><span>Trạng thái</span><span class="tag ok">Đã thu đủ · Đã xác nhận</span></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+              <button type="button" class="btn sm" onclick="document.getElementById('modalCourseEnrollQr').classList.remove('show')">Đóng</button>
+              <a href="/app#/parent/parent-billing" class="btn p sm">Xem trên Cổng Phụ huynh →</a>
+            </div>
+          `;
+        } catch (err) {
+          alertBox.style.display = 'block';
+          alertBox.textContent = err.message || 'Không thể xác nhận thanh toán.';
+          btn.disabled = false;
+          btn.textContent = '✓ Tôi đã quét QR & Hoàn tất thanh toán';
+        }
+      });
+    }
+
     function bindDetailButtons() {
       const modal = document.getElementById('modalCourseDetail');
       const modalTitle = document.getElementById('modalCourseTitle');
       const modalBody = document.getElementById('modalCourseContent');
       const btnEnroll = document.getElementById('btnModalEnroll');
+      const btnConsult = document.getElementById('btnModalConsult');
 
       document.querySelectorAll('.btn-detail').forEach(btn => {
         btn.onclick = () => {
@@ -480,13 +959,30 @@
               </ul>
             </div>
           `;
-          if (btnEnroll) {
-            btnEnroll.onclick = () => {
+          if (btnConsult) {
+            btnConsult.onclick = () => {
               selectCourse(info.title);
               modal.classList.remove('show');
             };
           }
+          if (btnEnroll) {
+            btnEnroll.onclick = () => {
+              modal.classList.remove('show');
+              openEnrollQrModal({ id: info.id, code: info.code || code, title: info.title, price: info.price || 0 });
+            };
+          }
           modal.classList.add('show');
+        };
+      });
+
+      document.querySelectorAll('.btn-enroll-qr').forEach(btn => {
+        btn.onclick = () => {
+          openEnrollQrModal({
+            id: btn.dataset.id ? Number(btn.dataset.id) : null,
+            code: btn.dataset.code || '',
+            title: btn.dataset.name || 'Khóa học trọn gói',
+            price: Number(btn.dataset.price || 0)
+          });
         };
       });
     }
@@ -510,7 +1006,10 @@
             const tagClass = tagStyles[idx % tagStyles.length];
             const tagLabel = c.tenMonHoc ? `${c.tenMonHoc}` : 'Khóa đào tạo trọn gói';
             COURSE_DETAILS[code] = {
+              id: c.id,
+              code: code,
               title: c.ten,
+              price: Number(c.hocPhi || 0),
               desc: c.moTa || 'Khóa đào tạo tiêu chuẩn thu trọn từng khóa theo quy ước của EduCenter ERP.',
               highlights: [
                 `Mã khóa học: ${code}`,
@@ -529,7 +1028,7 @@
                   <div class="c-price">${priceFormatted} <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
                   <div style="display:flex; gap:8px; margin-top:14px;">
                     <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="${escapeHtml(code)}">Chi tiết</button>
-                    <a href="#consultation" class="btn p sm" style="flex:1; justify-content:center;" onclick="selectCourse('${escapeHtml(c.ten).replace(/'/g, "\\'")}')">Đăng ký</a>
+                    <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-id="${escapeHtml(c.id)}" data-code="${escapeHtml(code)}" data-name="${escapeHtml(c.ten)}" data-price="${escapeHtml(c.hocPhi || 0)}">Đăng ký</button>
                   </div>
                 </div>
               </div>
@@ -594,11 +1093,20 @@
 
       const modal = document.getElementById('modalCourseDetail');
       const closeBtn = document.getElementById('closeDetailModal');
-      const btnEnroll = document.getElementById('btnModalEnroll');
+      const enrollQrModal = document.getElementById('modalCourseEnrollQr');
+      const closeEnrollQrBtn = document.getElementById('closeEnrollQrModal');
 
       bindDetailButtons();
       closeBtn.addEventListener('click', () => modal.classList.remove('show'));
-      btnEnroll.addEventListener('click', () => modal.classList.remove('show'));
+      if (closeEnrollQrBtn && enrollQrModal) {
+        closeEnrollQrBtn.addEventListener('click', () => enrollQrModal.classList.remove('show'));
+        enrollQrModal.addEventListener('click', (ev) => {
+          if (ev.target === enrollQrModal) enrollQrModal.classList.remove('show');
+        });
+      }
+      modal.addEventListener('click', (ev) => {
+        if (ev.target === modal) modal.classList.remove('show');
+      });
 
       // Nạp dữ liệu khóa học & giáo viên thật từ Backend
       loadPublicLandingData();

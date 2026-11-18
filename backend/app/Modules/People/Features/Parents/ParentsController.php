@@ -10,6 +10,7 @@ final class ParentsController extends \App\Shared\ApiController
     public function publicLanding() { return $this->respond(fn()=>ParentsService::publicLanding()); }
     public function createPublicConsultation() { return $this->respond(fn()=>ParentsService::createPublicConsultation($this->input()),201); }
     public function portal() { return $this->respond(fn()=>ParentsService::portal()); }
+    public function createEnrollment() { return $this->respond(fn()=>ParentsService::createEnrollment($this->input()),201); }
     public function createLeaveRequest() { return $this->respond(fn()=>ParentsService::createLeaveRequest($this->input()),201); }
     public function createOnlinePayment() { return $this->respond(fn()=>ParentsService::createOnlinePayment($this->input()),201); }
 }
