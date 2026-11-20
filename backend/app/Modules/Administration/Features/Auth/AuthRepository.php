@@ -21,6 +21,11 @@ final class AuthRepository
         return Store::one(self::SELECT . ' AND (a.username=? OR u.email=?) LIMIT 1', [$username, $username]);
     }
 
+    public static function email(string $email): ?array
+    {
+        return Store::one(self::SELECT . ' AND LOWER(u.email)=LOWER(?) LIMIT 1', [trim($email)]);
+    }
+
     public static function account(int $id): ?array
     {
         return Store::one(self::SELECT . ' AND a.account_id=? LIMIT 1', [$id]);

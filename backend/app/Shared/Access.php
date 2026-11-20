@@ -12,6 +12,47 @@ final class Access
     public static ?object $claims = null;
     public static ?string $token = null;
 
+    public static function reset(): void
+    {
+        self::$current = null;
+        self::$claims = null;
+        self::$token = null;
+    }
+
+    public static function isSecureRequest(\CodeIgniter\HTTP\IncomingRequest $request): bool
+    {
+        if ($request->isSecure()) return true;
+        $forwarded = strtolower(trim(explode(',', $request->getHeaderLine('X-Forwarded-Proto'))[0] ?? ''));
+        if ($forwarded === 'https') return true;
+        return str_starts_with(strtolower(trim(getenv('APP_BASE_URL') ?: '')), 'https://');
+    }
+
+    private static function verifyCookieCsrf(\CodeIgniter\HTTP\IncomingRequest $request): void
+    {
+        $method = strtoupper($request->getMethod());
+        if (in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) return;
+
+        $isXhr = strtolower($request->getHeaderLine('X-Requested-With')) === 'xmlhttprequest';
+        $isJson = str_starts_with(strtolower($request->getHeaderLine('Content-Type')), 'application/json');
+        if (!$isXhr && !$isJson) {
+            throw new ApiException(403, 'Yêu cầu thiếu xác thực nguồn gốc hợp lệ.', 'CSRF_REJECTED');
+        }
+
+        $origin = trim($request->getHeaderLine('Origin'));
+        if ($origin !== '') {
+            $originHost = strtolower((string)parse_url($origin, PHP_URL_HOST));
+            $originPort = parse_url($origin, PHP_URL_PORT);
+            $requestHost = strtolower((string)$request->getUri()->getHost());
+            $hostHeader = strtolower(trim($request->getHeaderLine('Host')));
+            $expectedHostPort = $hostHeader !== '' ? $hostHeader : $requestHost;
+            $originHostPort = $originPort ? ($originHost . ':' . $originPort) : $originHost;
+            $allowed = array_filter(array_map('trim', explode(',', getenv('CORS_ORIGINS') ?: 'http://localhost:5000,http://127.0.0.1:5000')));
+            if ($originHostPort !== $expectedHostPort && $originHost !== $requestHost && !in_array($origin, $allowed, true)) {
+                throw new ApiException(403, 'Nguồn gửi yêu cầu không hợp lệ.', 'CSRF_REJECTED');
+            }
+        }
+    }
+
     public static function secret(): string
     {
         $key = getenv('JWT_SECRET') ?: '';
@@ -42,12 +83,24 @@ final class Access
     public static function user(): array
     {
         if (self::$current !== null) return self::$current;
-        $header = service('request')->getHeaderLine('Authorization');
-        if (!preg_match('/^Bearer\s+(\S+)$/iD', $header, $match)) {
-            throw new ApiException(401, 'Vui lòng đăng nhập để tiếp tục.', 'UNAUTHORIZED');
+        $request = service('request');
+        $header = $request->getHeaderLine('Authorization');
+        $fromCookie = false;
+        if (preg_match('/^Bearer\s+(\S+)$/iD', $header, $match)) {
+            $rawToken = $match[1];
+        } else {
+            $cookie = $request->getCookie('educenter_session');
+            if (!is_string($cookie) || $cookie === '' || strlen($cookie) > 16384) {
+                throw new ApiException(401, 'Vui lòng đăng nhập để tiếp tục.', 'UNAUTHORIZED');
+            }
+            $rawToken = $cookie;
+            $fromCookie = true;
+        }
+        if ($fromCookie && $request instanceof \CodeIgniter\HTTP\IncomingRequest) {
+            self::verifyCookieCsrf($request);
         }
         try {
-            $claims = JWT::decode($match[1], new Key(self::secret(), 'HS256'));
+            $claims = JWT::decode($rawToken, new Key(self::secret(), 'HS256'));
             if (($claims->iss ?? '') !== 'educenter-php' || empty($claims->accountId) || empty($claims->pwd)) throw new \UnexpectedValueException();
         } catch (ApiException $error) {
             throw $error;
@@ -56,10 +109,10 @@ final class Access
         }
         $account = AuthRepository::account((int)$claims->accountId);
         if (!$account || $account['status'] !== 'active' || !hash_equals(self::fingerprint($account), $claims->pwd)
-            || AuthRepository::revoked((int)$claims->accountId, hash('sha256', $match[1]))) {
+            || AuthRepository::revoked((int)$claims->accountId, hash('sha256', $rawToken))) {
             throw new ApiException(401, 'Phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại.', 'INVALID_TOKEN');
         }
-        self::$token = $match[1]; self::$claims = $claims;
+        self::$token = $rawToken; self::$claims = $claims;
         return self::$current = AuthModel::map($account, AuthRepository::permissions((int)$account['group_id']));
     }
 

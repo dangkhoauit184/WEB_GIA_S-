@@ -67,23 +67,51 @@ final class ParentsRepository
         $courses = Store::rows("SELECT k.id, k.ma, k.ten, k.mo_ta AS moTa, k.hoc_phi AS hocPhi
             FROM khoa_hoc k
             WHERE k.is_active=1
-            ORDER BY k.id ASC LIMIT 12");
+            ORDER BY k.id ASC");
 
-        $teachers = Store::rows("SELECT ns.id, ns.ma_ns AS maNs, ns.phan_loai AS phanLoai,
-                ns.nghe_nghiep AS ngheNghiep, ns.don_vi_cong_tac AS donViCongTac,
+        $subjects = Store::rows("SELECT m.id, m.ma, m.ten
+            FROM mon_hoc m
+            WHERE m.is_active=1
+            ORDER BY m.id ASC");
+
+        $gradeLevels = Store::rows("SELECT cl.id, cl.ten, cl.cap_hoc AS capHoc
+            FROM cap_lop cl
+            ORDER BY cl.id ASC");
+
+        $campuses = Store::rows("SELECT cs.id, cs.ten_co_so AS tenCoSo, cs.dia_chi AS diaChi,
+                cs.so_dien_thoai AS soDienThoai, cs.email, kv.ten AS tenKhuVuc
+            FROM co_so cs
+            LEFT JOIN khu_vuc kv ON kv.id=cs.khu_vuc_id
+            WHERE cs.is_active=1
+            ORDER BY cs.id ASC");
+
+        // Strictly public teaching profile fields only (never email, phone, CCCD, bank, or pay rates).
+        $teachers = Store::rows("SELECT ns.id, ns.phan_loai AS phanLoai,
+                ns.don_vi_cong_tac AS donViCongTac,
                 ns.gioi_thieu AS gioiThieu, ns.kinh_nghiem_nam AS kinhNghiemNam,
                 ns.hinh_thuc_day AS hinhThucDay, u.hoten AS hoTen,
-                (SELECT GROUP_CONCAT(DISTINCT m.ten SEPARATOR ', ')
-                 FROM nhan_su_mon nsm JOIN mon_hoc m ON m.id=nsm.mon_hoc_id
+                (SELECT GROUP_CONCAT(DISTINCT m.ten ORDER BY m.id SEPARATOR ', ')
+                 FROM nhan_su_mon nsm JOIN mon_hoc m ON m.id=nsm.mon_hoc_id AND m.is_active=1
                  WHERE nsm.nhan_su_id=ns.id) AS chuyenMon
             FROM nhan_su_chuyen_mon ns
             JOIN users u ON u.user_id=ns.user_id AND u.is_deleted=0
             WHERE ns.deleted_at IS NULL AND ns.trang_thai='hoat_dong'
-            ORDER BY ns.kinh_nghiem_nam DESC, ns.id ASC LIMIT 8");
+            ORDER BY ns.kinh_nghiem_nam DESC, ns.id ASC");
+
+        $stats = [
+            'courses' => count($courses),
+            'subjects' => count($subjects),
+            'campuses' => count($campuses),
+            'teachers' => count($teachers),
+        ];
 
         return [
             'courses' => $courses,
+            'subjects' => $subjects,
+            'gradeLevels' => $gradeLevels,
+            'campuses' => $campuses,
             'teachers' => $teachers,
+            'stats' => $stats,
         ];
     }
 

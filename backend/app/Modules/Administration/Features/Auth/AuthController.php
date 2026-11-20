@@ -3,14 +3,51 @@ namespace App\Modules\Administration\Features\Auth;
 
 final class AuthController extends \App\Shared\ApiController
 {
+    private function setSessionCookie(array $result): void
+    {
+        $rememberMe = !empty($result['rememberMe']);
+        $expiresIn = (int)($result['expiresIn'] ?? 0);
+        $this->response->setCookie([
+            'name' => 'educenter_session',
+            'value' => $result['token'],
+            'expire' => $rememberMe && $expiresIn > 0 ? time() + $expiresIn : 0,
+            'path' => '/',
+            'secure' => \App\Shared\Access::isSecureRequest($this->request),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+
+    private function clearSessionCookie(): void
+    {
+        $this->response->setCookie([
+            'name' => 'educenter_session',
+            'value' => '',
+            'expire' => time() - 3600,
+            'path' => '/',
+            'secure' => \App\Shared\Access::isSecureRequest($this->request),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+
     public function login()
     {
         return $this->respond(function () {
             $result = AuthService::login(AuthValidator::login($this->input()));
-            $this->response->setCookie([
-                'name'=>'educenter_session', 'value'=>$result['token'], 'expire'=>0,
-                'path'=>'/', 'secure'=>$this->request->isSecure(), 'httponly'=>true, 'samesite'=>'Lax',
-            ]);
+            $this->setSessionCookie($result);
+            return $result;
+        });
+    }
+    public function googleConfig()
+    {
+        return $this->respond(fn()=>AuthService::googleConfig());
+    }
+    public function googleLogin()
+    {
+        return $this->respond(function () {
+            $result = AuthService::googleLogin(AuthValidator::googleLogin($this->input()));
+            $this->setSessionCookie($result);
             return $result;
         });
     }
@@ -24,13 +61,13 @@ final class AuthController extends \App\Shared\ApiController
     {
         return $this->respond(function () {
             $result = AuthService::changePassword(AuthValidator::password($this->input()));
-            $this->response->deleteCookie('educenter_session');
+            $this->clearSessionCookie();
             return $result;
         });
     }
     public function logout()
     {
-        $this->response->deleteCookie('educenter_session');
+        $this->clearSessionCookie();
         return $this->respond(fn()=>AuthService::logout());
     }
 }

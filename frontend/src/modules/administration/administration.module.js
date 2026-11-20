@@ -23,7 +23,7 @@ window.Admin = (() => {
     toastTimer = setTimeout(() => { $('admin-toast').hidden = true; }, 5500);
   }
 
-  function reset() {
+  function reset(loggedOut = false) {
     token = null;
     user = null;
     renderVersion++;
@@ -31,8 +31,9 @@ window.Admin = (() => {
     $('admin-content').replaceChildren();
     document.querySelectorAll('.modal-ov.show').forEach(modal => modal.classList.remove('show'));
     if ($('admin-dialog').open) $('admin-dialog').close();
-    AccessService.clearSession();
-    window.location.replace(AppConfig.AUTH_PAGE);
+    if (loggedOut) AccessService.markLoggedOut();
+    else AccessService.clearSession();
+    window.location.replace(AppConfig.AUTH_PAGE + (loggedOut ? '?loggedOut=1' : ''));
   }
 
   async function api(path, method = 'GET', body) {
@@ -40,7 +41,11 @@ window.Admin = (() => {
     try {
       response = await fetch(path, {
         method,
-        headers: { ...(body instanceof FormData ? {} : {'Content-Type':'application/json'}), ...(token ? { Authorization:`Bearer ${token}` } : {}) },
+        credentials: 'same-origin',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(body instanceof FormData ? {} : {'Content-Type':'application/json'}),
+        },
         ...(body === undefined ? {} : { body:body instanceof FormData ? body : JSON.stringify(body) })
       });
     } catch {
@@ -358,7 +363,7 @@ window.Admin = (() => {
   window.addEventListener('DOMContentLoaded', () => {
     $('admin-logout').addEventListener('click', event => busy(event.currentTarget, async () => {
       await api('/api/auth/logout', 'POST', {});
-      reset();
+      reset(true);
     }));
     $('admin-refresh')?.addEventListener('click', render);
     $('admin-menu').addEventListener('click', () => {
@@ -369,9 +374,8 @@ window.Admin = (() => {
       if ($('admin-dialog').dataset.busy === 'true') event.preventDefault();
     });
     window.addEventListener('hashchange', render);
-    token = AccessService.getToken();
     const account = AccessService.getCurrentUser();
-    if (token && account) openWorkspace(account);
+    if (account) openWorkspace(account);
     else reset();
   });
 

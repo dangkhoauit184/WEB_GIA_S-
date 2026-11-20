@@ -6,24 +6,89 @@ use Firebase\JWT\JWT;
 
 final class AuthService
 {
+    private const MAX_REMEMBER_SECONDS = 604800; // 7 days hard cap
+
+    private static function parseDuration(string $raw, string $envName): int
+    {
+        if (!preg_match('/^(\d+)([smhd])$/D', trim($raw), $match)) {
+            throw new ApiException(503, $envName . ' không hợp lệ.', 'SERVER_NOT_CONFIGURED');
+        }
+        $seconds = (int)$match[1] * ['s'=>1,'m'=>60,'h'=>3600,'d'=>86400][$match[2]];
+        if ($seconds <= 0) {
+            throw new ApiException(503, $envName . ' phải lớn hơn 0.', 'SERVER_NOT_CONFIGURED');
+        }
+        return $seconds;
+    }
+
+    private static function issueSession(array $account, bool $rememberMe, string $method, array $auditExtra = []): array
+    {
+        if ($account['status'] !== 'active') {
+            throw new ApiException(403, 'Tài khoản đang bị khóa hoặc chưa kích hoạt. Vui lòng liên hệ trung tâm.', 'ACCOUNT_INACTIVE');
+        }
+        $user = AuthModel::map($account, AuthRepository::permissions((int)$account['group_id']));
+        $shortSeconds = self::parseDuration(getenv('JWT_EXPIRES_IN') ?: '8h', 'JWT_EXPIRES_IN');
+        if ($rememberMe) {
+            $rememberRaw = getenv('JWT_REMEMBER_EXPIRES_IN') ?: '7d';
+            $seconds = min(self::parseDuration($rememberRaw, 'JWT_REMEMBER_EXPIRES_IN'), self::MAX_REMEMBER_SECONDS);
+            $seconds = max($seconds, $shortSeconds);
+        } else {
+            $seconds = $shortSeconds;
+        }
+        $now = time();
+        $claims = array_intersect_key($user, array_flip(['accountId','userId','groupId','groupName','role','username','nhanVienId','nhanSuId','phanLoai']));
+        $claims += [
+            'iss' => 'educenter-php',
+            'iat' => $now,
+            'exp' => $now + $seconds,
+            'jti' => bin2hex(random_bytes(16)),
+            'pwd' => Access::fingerprint($account),
+            'rem' => $rememberMe,
+        ];
+        $token = JWT::encode($claims, Access::secret(), 'HS256');
+        Store::audit((int)$user['userId'], 'dang_nhap', (int)$user['accountId'], array_merge([
+            'username' => $user['username'],
+            'role' => $user['role'],
+            'method' => $method,
+            'rememberMe' => $rememberMe,
+            'expiresIn' => $seconds,
+        ], $auditExtra));
+        return [
+            'token' => $token,
+            'user' => $user,
+            'rememberMe' => $rememberMe,
+            'expiresIn' => $seconds,
+        ];
+    }
+
     public static function login(array $input): array
     {
         $account = AuthRepository::username($input['username']);
         if (!$account || !password_verify($input['password'], $account['password_hash'])) {
             throw new ApiException(401, 'Tên đăng nhập hoặc mật khẩu không chính xác.', 'INVALID_CREDENTIALS');
         }
-        if ($account['status'] !== 'active') {
-            throw new ApiException(403, 'Tài khoản đang bị khóa hoặc chưa kích hoạt.', 'ACCOUNT_INACTIVE');
+        return self::issueSession($account, (bool)($input['rememberMe'] ?? false), 'password');
+    }
+
+    public static function googleConfig(): array
+    {
+        return GoogleIdentity::config();
+    }
+
+    public static function googleLogin(array $input): array
+    {
+        $verified = GoogleIdentity::verify($input['credential']);
+        $account = AuthRepository::email($verified['email']);
+        if (!$account) {
+            throw new ApiException(
+                403,
+                'Email Google (' . $verified['email'] . ') chưa được liên kết với tài khoản nào trong hệ thống. Vui lòng liên hệ trung tâm để được cấp/cập nhật email tài khoản, hoặc đăng nhập bằng tên tài khoản và mật khẩu.',
+                'GOOGLE_ACCOUNT_NOT_LINKED'
+            );
         }
-        $user = AuthModel::map($account, AuthRepository::permissions((int)$account['group_id']));
-        $duration = getenv('JWT_EXPIRES_IN') ?: '8h';
-        if (!preg_match('/^(\d+)([smhd])$/D', $duration, $match)) throw new ApiException(503, 'JWT_EXPIRES_IN không hợp lệ.', 'SERVER_NOT_CONFIGURED');
-        $seconds = (int)$match[1] * ['s'=>1,'m'=>60,'h'=>3600,'d'=>86400][$match[2]];
-        $claims = array_intersect_key($user, array_flip(['accountId','userId','groupId','groupName','role','username','nhanVienId','nhanSuId','phanLoai']));
-        $claims += ['iss'=>'educenter-php', 'iat'=>time(), 'exp'=>time()+$seconds, 'jti'=>bin2hex(random_bytes(16)), 'pwd'=>Access::fingerprint($account)];
-        $token = JWT::encode($claims, Access::secret(), 'HS256');
-        Store::audit((int)$user['userId'], 'dang_nhap', (int)$user['accountId'], ['username'=>$user['username'], 'role'=>$user['role']]);
-        return ['token'=>$token, 'user'=>$user];
+        return self::issueSession($account, (bool)($input['rememberMe'] ?? false), 'google', [
+            'googleSub' => $verified['sub'],
+            'email' => $verified['email'],
+        ]);
     }
 
     public static function changePassword(array $input): array

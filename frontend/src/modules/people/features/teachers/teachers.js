@@ -697,7 +697,7 @@
         .join("");
       if (mode === "month")
         return `<div class="cal-month-cell ${isToday ? "is-today" : ""} ${day.slice(0, 7) !== selected.slice(0, 7) ? "other-month" : ""}"><div class="row-b"><b>${Number(day.slice(8))}</b><button type="button" class="teacher-add-free" data-action="add-availability" data-id="${weekday}" aria-label="Thêm lịch rảnh ngày ${date(day)}">+</button></div>${entries}</div>`;
-      return `<div class="cal-day-col ${isToday ? "is-today" : ""}"><div class="cal-col-head ${isToday ? "is-today" : ""}"><div class="d-name">${headings[index]}${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div><div class="d-num">${day.slice(8)}/${day.slice(5, 7)}</div></div><div class="cal-col-body">${entries}${button("+ Thêm lịch", "add-availability", weekday, "teacher-add-free")}</div></div>`;
+      return `<div class="cal-day-col ${isToday ? "is-today" : ""}"><div class="cal-col-head ${isToday ? "is-today" : ""}"><div class="d-name">${headings[index]}${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div><div class="d-num">${day.slice(8)}/${day.slice(5, 7)}</div></div><div class="cal-col-body">${entries}${button("+ Thêm lịch rảnh", "add-availability", weekday, "teacher-add-free")}</div></div>`;
     }).join("");
     return `<section data-availability-calendar aria-label="Thời khóa biểu lịch rảnh"><div class="pg-head"><div><h2>Thời khóa biểu lịch rảnh</h2><p class="sub">Các khung giờ lặp lại hàng tuần. Bấm vào lịch để sửa hoặc xóa.</p></div>${button("+ Thêm lịch rảnh", "add-availability", "", "p")}</div><div class="cal-box">
       <div class="cal-bar"><div class="row">${button("‹ Trước", "availability-prev")}${button("Hôm nay", "availability-today")}${button("Sau ›", "availability-next")}</div>
@@ -1220,8 +1220,8 @@
           return;
         await api("/administration/auth/logout", "post", {});
         state.dirty = false;
-        AccessService.clearSession();
-        location.replace(AppConfig.AUTH_PAGE);
+        AccessService.markLoggedOut();
+        location.replace(AppConfig.AUTH_PAGE + "?loggedOut=1");
         return;
       default:
         return;

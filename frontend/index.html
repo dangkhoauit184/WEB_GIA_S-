@@ -3,123 +3,846 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EduCenter · Hệ thống Gia sư & Đào tạo Chất lượng cao</title>
+  <title>EduCenter · Trung tâm Gia sư &amp; Bồi dưỡng Văn hóa</title>
   <link rel="stylesheet" href="src/shared/styles/common.css">
   <style>
-    /* Public Navigation Sticky Header */
-    .pub-nav {
+    :root {
+      --landing-max: 1180px;
+      --landing-border: #e2e8f0;
+      --landing-surface: #ffffff;
+      --landing-muted: #f4f8f8;
+      --landing-ink: #0f172a;
+      --landing-ink-2: #334155;
+      --landing-ink-3: #64748b;
+      --landing-ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --landing-accent-soft: #ccfbf1;
+      --landing-glow: rgba(13, 148, 136, 0.14);
+    }
+
+    html { scroll-behavior: smooth; }
+    body.landing-page {
+      margin: 0;
+      background: var(--landing-surface);
+      color: var(--landing-ink);
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: clip;
+    }
+
+    .landing-wrap {
+      max-width: var(--landing-max);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .landing-page a:focus-visible,
+    .landing-page button:focus-visible,
+    .landing-page input:focus-visible,
+    .landing-page select:focus-visible,
+    .landing-page textarea:focus-visible {
+      outline: 2px solid var(--pri, #0d9488);
+      outline-offset: 2px;
+    }
+
+    .landing-page .btn {
+      transition: transform 0.18s var(--landing-ease), box-shadow 0.2s var(--landing-ease), background-color 0.18s, border-color 0.18s, color 0.18s;
+    }
+    .landing-page .btn.p:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px -6px rgba(13, 148, 136, 0.42);
+    }
+    .landing-page .btn:active { transform: translateY(0); }
+
+    /* Header */
+    .l-header {
       position: sticky;
       top: 0;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--g200);
       z-index: 100;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--landing-border);
+      transition: box-shadow 0.25s var(--landing-ease), background-color 0.25s;
     }
-    .pub-nav-inner {
-      max-width: 1280px;
+    .l-header.is-scrolled {
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 8px 24px -16px rgba(15, 23, 42, 0.16);
+    }
+    .l-header-inner {
+      max-width: var(--landing-max);
       margin: 0 auto;
       padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 20px;
     }
-    .pub-brand {
-      display: flex;
+    .l-brand {
+      display: inline-flex;
       align-items: center;
       gap: 10px;
       text-decoration: none;
+      color: var(--landing-ink);
+      flex-shrink: 0;
     }
-    .pub-logo-ico {
+    .l-brand-mark {
       width: 36px;
       height: 36px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, var(--pri), var(--pri-d));
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 60%, #115e59 100%);
       color: #fff;
       display: grid;
       place-items: center;
-      font-size: 18px;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.03em;
+      box-shadow: 0 6px 14px -6px rgba(13, 148, 136, 0.55);
+      transition: transform 0.2s var(--landing-ease);
     }
-    .pub-nav-links {
+    .l-brand:hover .l-brand-mark { transform: scale(1.04); }
+    .l-brand-name {
+      display: block;
+      font-size: 15.5px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .l-brand-sub {
+      display: block;
+      font-size: 11px;
+      color: var(--landing-ink-3);
+      font-weight: 500;
+    }
+    .l-nav {
       display: flex;
-      gap: 24px;
       align-items: center;
+      gap: 24px;
     }
-    .pub-nav-links a {
-      color: var(--g700);
+    .l-nav a {
+      position: relative;
+      color: var(--landing-ink-2);
       text-decoration: none;
       font-size: 13.5px;
       font-weight: 600;
+      padding: 4px 0;
+      transition: color 0.18s;
     }
-    .pub-nav-links a:hover {
-      color: var(--pri);
+    .l-nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 2px;
+      border-radius: 99px;
+      background: var(--pri, #0d9488);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.22s var(--landing-ease);
+    }
+    .l-nav a:hover { color: var(--pri-d, #0f766e); }
+    .l-nav a:hover::after { transform: scaleX(1); }
+    .l-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
-    /* Container for sections */
-    .pub-section {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 60px 24px;
+    /* Hero */
+    .l-hero {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 86% 14%, rgba(13, 148, 136, 0.11) 0%, transparent 44%),
+        radial-gradient(circle at 10% 88%, rgba(14, 165, 233, 0.06) 0%, transparent 40%),
+        linear-gradient(180deg, #f3faf9 0%, #f8fbfb 52%, #ffffff 100%);
+      border-bottom: 1px solid var(--landing-border);
+      padding: 68px 0 60px;
     }
-    .pub-sec-head {
-      text-align: center;
-      margin-bottom: 40px;
+    .l-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(15, 118, 110, 0.11) 1px, transparent 1px);
+      background-size: 26px 26px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, transparent 85%);
+      -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, transparent 85%);
+      pointer-events: none;
     }
-    .pub-sec-head h2 {
-      font-size: 26px;
+    .l-hero > .landing-wrap {
+      position: relative;
+      z-index: 1;
+    }
+    .l-hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.98fr);
+      gap: 44px;
+      align-items: center;
+    }
+    .l-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(240, 253, 250, 0.92);
+      border: 1px solid var(--pri-l, #99f6e4);
+      color: var(--pri-d, #0f766e);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 10px -4px rgba(13, 148, 136, 0.2);
+    }
+    .l-eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--pri, #0d9488);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+    }
+    .l-hero h1 {
+      font-size: clamp(28px, 3.6vw, 41px);
+      line-height: 1.18;
+      letter-spacing: -0.03em;
       font-weight: 800;
-      color: var(--g900);
-      margin-bottom: 8px;
+      color: var(--landing-ink);
+      margin: 0 0 16px;
+    }
+    .l-hero h1 .l-hl {
+      color: var(--pri-d, #0f766e);
+      background: linear-gradient(120deg, #0f766e 0%, #0d9488 60%, #0284c7 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .l-hero-lead {
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: var(--landing-ink-2);
+      margin: 0 0 28px;
+      max-width: 560px;
+    }
+    .l-hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .l-hero-cta .btn {
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+    /* Signature deep-slate & teal hero summary card */
+    .l-summary-card {
+      position: relative;
+      background: linear-gradient(155deg, #0f172a 0%, #102a31 58%, #134e4a 100%);
+      border: 1px solid rgba(94, 234, 212, 0.22);
+      border-radius: 16px;
+      padding: 24px;
+      color: #f8fafc;
+      box-shadow:
+        0 20px 38px -18px rgba(15, 23, 42, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+      overflow: hidden;
+    }
+    .l-summary-card::after {
+      content: "";
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .l-summary-title {
+      position: relative;
+      z-index: 1;
+      font-size: 12px;
+      font-weight: 700;
+      color: #5eead4;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin: 0 0 14px;
+    }
+    .l-metric-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .l-metric {
+      padding: 14px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background-color 0.2s, border-color 0.2s, transform 0.2s var(--landing-ease);
+    }
+    .l-metric:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(94, 234, 212, 0.35);
+      transform: translateY(-2px);
+    }
+    .l-metric b {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .l-metric span {
+      display: block;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+    .l-summary-list {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      padding: 14px 0 0;
+      list-style: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+    .l-summary-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.45;
+    }
+    .l-check-ico {
+      width: 16px;
+      height: 16px;
+      color: #2dd4bf;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* Sections */
+    .l-section {
+      padding: 68px 0;
+    }
+    .l-section.alt {
+      background: linear-gradient(180deg, #f3f9f9 0%, #f8fafc 100%);
+      border-top: 1px solid var(--landing-border);
+      border-bottom: 1px solid var(--landing-border);
+    }
+    .l-sec-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .l-sec-head > div::before {
+      content: "";
+      display: block;
+      width: 30px;
+      height: 3px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #0d9488 0%, #2dd4bf 100%);
+      margin-bottom: 10px;
+    }
+    .l-sec-head h2 {
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--landing-ink);
+      margin: 0 0 6px;
+    }
+    .l-sec-head p {
+      font-size: 14px;
+      color: var(--landing-ink-3);
+      margin: 0;
+      max-width: 640px;
+    }
+
+    /* Subject Chips */
+    .l-subjects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .l-subject-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 13px;
+      border-radius: 999px;
+      background: var(--landing-surface);
+      border: 1px solid var(--landing-border);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--landing-ink-2);
+      transition: border-color 0.18s, background-color 0.18s, color 0.18s, transform 0.18s var(--landing-ease);
+    }
+    .l-subject-pill:hover {
+      border-color: var(--pri-l, #99f6e4);
+      background: var(--pri-ll, #f0fdfa);
+      color: var(--pri-d, #0f766e);
+      transform: translateY(-1px);
+    }
+
+    /* Horizontal Carousel (Courses & Teachers) */
+    .l-carousel-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .l-carousel-controls[hidden] { display: none; }
+    .l-carousel-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--landing-border);
+      background: var(--landing-surface);
+      color: var(--landing-ink-2);
+      display: inline-grid;
+      place-items: center;
+      cursor: pointer;
+      transition: border-color 0.18s, background-color 0.18s, color 0.18s, box-shadow 0.18s, opacity 0.18s;
+    }
+    .l-carousel-btn:hover:not(:disabled) {
+      border-color: var(--pri, #0d9488);
+      background: var(--pri-ll, #f0fdfa);
+      color: var(--pri-d, #0f766e);
+      box-shadow: 0 6px 14px -10px rgba(13, 148, 136, 0.45);
+    }
+    .l-carousel-btn:disabled {
+      opacity: 0.36;
+      cursor: not-allowed;
+    }
+    .l-carousel-viewport {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .l-carousel-track {
+      --cols: 3;
+      --gap: 20px;
+      display: flex;
+      gap: var(--gap);
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 6px 0 14px;
+      margin: -6px 0 -14px;
+      border-radius: 13px;
+    }
+    .l-carousel-track::-webkit-scrollbar { display: none; }
+    .l-carousel-track > article {
+      box-sizing: border-box;
+      flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
+      min-width: 0;
+      scroll-snap-align: start;
+    }
+    .l-carousel-track > .l-state {
+      box-sizing: border-box;
+      flex: 1 0 100%;
+      width: 100%;
+      scroll-snap-align: none;
+    }
+
+    /* Courses */
+    .l-courses-grid {
+      --cols: 3;
+      --gap: 20px;
+    }
+    .l-course-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--landing-surface);
+      border: 1px solid var(--landing-border);
+      border-radius: 13px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      transition: transform 0.22s var(--landing-ease), border-color 0.22s, box-shadow 0.22s var(--landing-ease);
+    }
+    .l-course-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #0d9488 0%, #2dd4bf 100%);
+      opacity: 0.22;
+      transition: opacity 0.22s;
+    }
+    .l-course-card:hover {
+      transform: translateY(-3px);
+      border-color: #99f6e4;
+      box-shadow: 0 14px 28px -16px rgba(13, 148, 136, 0.28), 0 4px 12px -6px rgba(15, 23, 42, 0.08);
+    }
+    .l-course-card:hover::before { opacity: 1; }
+    .l-course-code {
+      display: inline-block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--pri-d, #0f766e);
+      background: var(--pri-ll, #f0fdfa);
+      border: 1px solid var(--pri-l, #99f6e4);
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .l-course-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--landing-ink);
+      margin: 0 0 8px;
+      line-height: 1.35;
+    }
+    .l-course-card p {
+      font-size: 13px;
+      color: var(--landing-ink-3);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .l-course-foot {
+      padding-top: 14px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .l-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--pri-d, #0f766e);
+      letter-spacing: -0.01em;
+    }
+    .l-price small {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--landing-ink-3);
+    }
+    .l-course-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .l-course-actions .btn {
+      flex: 1;
       justify-content: center;
     }
-    .pub-sec-head p {
-      color: var(--g500);
+
+    /* Process */
+    .l-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .l-step {
+      background: var(--landing-surface);
+      border: 1px solid var(--landing-border);
+      border-radius: 13px;
+      padding: 22px 20px;
+      transition: transform 0.22s var(--landing-ease), border-color 0.22s, box-shadow 0.22s var(--landing-ease);
+    }
+    .l-step:hover {
+      transform: translateY(-2px);
+      border-color: #99f6e4;
+      box-shadow: 0 12px 24px -16px rgba(13, 148, 136, 0.24);
+    }
+    .l-step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      color: #ffffff;
+      font-size: 12.5px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 12px -6px rgba(13, 148, 136, 0.55);
+    }
+    .l-step h3 {
       font-size: 14.5px;
+      font-weight: 700;
+      color: var(--landing-ink);
+      margin: 0 0 6px;
+    }
+    .l-step p {
+      font-size: 13px;
+      color: var(--landing-ink-3);
+      line-height: 1.55;
       margin: 0;
     }
 
-    /* Grid for Courses */
-    .pub-courses-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 22px;
+    /* Teachers */
+    .l-teachers-grid {
+      --cols: 4;
+      --gap: 18px;
     }
-    @media(max-width: 960px) {
-      .pub-courses-container { grid-template-columns: 1fr; }
+    .l-teacher-card {
+      background: var(--landing-surface);
+      border: 1px solid var(--landing-border);
+      border-radius: 13px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.22s var(--landing-ease), border-color 0.22s, box-shadow 0.22s var(--landing-ease);
+    }
+    .l-teacher-card:hover {
+      transform: translateY(-2px);
+      border-color: #99f6e4;
+      box-shadow: 0 12px 24px -16px rgba(13, 148, 136, 0.24);
+    }
+    .l-teacher-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .l-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%);
+      border: 1.5px solid #99f6e4;
+      color: var(--pri-d, #0f766e);
+      font-weight: 800;
+      font-size: 15px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .l-teacher-card h3 {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--landing-ink);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .l-teacher-role {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--pri-d, #0f766e);
+      margin-top: 2px;
+    }
+    .l-teacher-meta {
+      font-size: 12.5px;
+      color: var(--landing-ink-2);
+      line-height: 1.45;
+    }
+    .l-teacher-bio {
+      font-size: 12.5px;
+      color: var(--landing-ink-3);
+      line-height: 1.5;
+      margin: 0;
     }
 
-    /* Grid for Tutors */
-    .pub-tutors-container {
+    /* Campuses & Consultation */
+    .l-contact-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      gap: 32px;
+      align-items: start;
     }
-    @media(max-width: 1024px) {
-      .pub-tutors-container { grid-template-columns: repeat(2, 1fr); }
+    .l-campus-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 16px;
     }
-    @media(max-width: 640px) {
-      .pub-tutors-container { grid-template-columns: 1fr; }
+    .l-campus-card {
+      background: var(--landing-surface);
+      border: 1px solid var(--landing-border);
+      border-left: 3px solid var(--pri, #0d9488);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: transform 0.2s var(--landing-ease), box-shadow 0.2s var(--landing-ease), border-color 0.2s;
+    }
+    .l-campus-card:hover {
+      transform: translateX(2px);
+      box-shadow: 0 10px 20px -16px rgba(15, 23, 42, 0.2);
+    }
+    .l-campus-card h3 {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--landing-ink);
+      margin: 0 0 6px;
+    }
+    .l-campus-meta {
+      font-size: 13px;
+      color: var(--landing-ink-2);
+      line-height: 1.55;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .l-form-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--landing-surface);
+      border: 1px solid var(--landing-border);
+      border-radius: 14px;
+      padding: 26px;
+      box-shadow: 0 14px 32px -20px rgba(15, 23, 42, 0.16);
+    }
+    .l-form-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #0d9488 0%, #0284c7 100%);
+    }
+    .l-form-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--landing-ink);
+      margin: 0 0 6px;
+    }
+    .l-form-card .l-form-sub {
+      font-size: 13px;
+      color: var(--landing-ink-3);
+      margin: 0 0 18px;
+    }
+    .l-form-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .l-field {
+      margin-bottom: 12px;
+    }
+    .l-field label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--landing-ink-2);
+      margin-bottom: 5px;
+    }
+    .l-field input,
+    .l-field select,
+    .l-field textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-family: inherit;
+      color: var(--landing-ink);
+      background: #fff;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .l-field input:focus,
+    .l-field select:focus,
+    .l-field textarea:focus {
+      border-color: var(--pri, #0d9488);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+      outline: none;
     }
 
-    /* Contact Grid */
-    .pub-contact-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 36px;
-      background: var(--w);
-      border: 1px solid var(--g200);
-      border-radius: 18px;
-      padding: 40px;
-      box-shadow: var(--sh);
+    /* States: Loading, Empty, Error */
+    .l-state {
+      grid-column: 1 / -1;
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--landing-border);
+      background: var(--landing-surface);
+      color: var(--landing-ink-3);
+      font-size: 13.5px;
+      text-align: center;
     }
-    @media(max-width: 860px) {
-      .pub-contact-grid { grid-template-columns: 1fr; }
+    .l-state.error {
+      border-color: #fecdd3;
+      background: #fff1f2;
+      color: #be123c;
+    }
+    .l-state .btn { margin-top: 10px; }
+
+    /* Alerts */
+    .l-alert {
+      display: none;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+    .l-alert.show { display: block; }
+    .l-alert.ok { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .l-alert.err { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
+
+    /* Footer */
+    .l-footer {
+      background: linear-gradient(180deg, #0f172a 0%, #0b1322 100%);
+      border-top: 2px solid var(--pri, #0d9488);
+      color: #cbd5e1;
+      padding: 46px 0 28px;
+      font-size: 13px;
+    }
+    .l-footer-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr) minmax(0, 1.1fr);
+      gap: 28px;
+      margin-bottom: 28px;
+    }
+    .l-footer h4 {
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 700;
+      margin: 0 0 10px;
+    }
+    .l-footer p {
+      margin: 0 0 6px;
+      color: #94a3b8;
+      line-height: 1.55;
+    }
+    .l-footer ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .l-footer a {
+      color: #94a3b8;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .l-footer a:hover { color: #5eead4; }
+    .l-footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: #64748b;
+      font-size: 12px;
     }
 
-    /* Modal Overlay */
+    /* Modals */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.65);
+      background: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(4px);
       display: none;
       align-items: center;
@@ -130,421 +853,366 @@
     .modal-overlay.show { display: flex; }
     .modal-box {
       background: #fff;
-      border-radius: 18px;
-      padding: 30px;
+      border-radius: 14px;
+      padding: 26px;
       width: 100%;
-      max-width: 580px;
+      max-width: 540px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: var(--sh-modal);
+      box-shadow: var(--sh-modal, 0 20px 25px -5px rgba(0, 0, 0, 0.2));
+      animation: lModalIn 0.2s var(--landing-ease);
     }
-    .pub-qr-card {
-      display: grid;
-      grid-template-columns: 184px 1fr;
-      gap: 16px;
-      align-items: center;
-      padding: 16px;
-      margin: 14px 0;
-      background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 100%);
-      border: 1.5px dashed var(--pri);
-      border-radius: 12px;
+    @keyframes lModalIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .pub-qr-frame {
-      background: #fff;
-      border: 1px solid var(--g200);
-      border-radius: 10px;
-      padding: 10px;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+
+    /* Subtle scroll reveal */
+    .l-reveal {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.48s var(--landing-ease), transform 0.48s var(--landing-ease);
     }
-    .pub-qr-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      margin-bottom: 6px;
-      border-radius: 99px;
-      background: var(--pri-ll);
-      color: var(--pri-d);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
+    .l-reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
     }
-    .pub-qr-visual {
-      width: 150px;
-      height: 150px;
-      margin: 0 auto;
-      display: grid;
-      place-items: center;
+
+    @media (prefers-reduced-motion: reduce) {
+      .l-reveal, .l-reveal.is-visible { opacity: 1; transform: none; transition: none; }
+      .modal-box { animation: none; }
+      * { scroll-behavior: auto !important; }
     }
-    .pub-qr-visual img {
-      width: 150px;
-      height: 150px;
-      object-fit: contain;
-      border-radius: 6px;
+
+    @media (max-width: 1024px) {
+      .l-courses-grid { --cols: 2; --gap: 16px; }
+      .l-teachers-grid { --cols: 2; --gap: 16px; }
+      .l-steps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-    .pub-qr-visual svg {
-      width: 146px;
-      height: 146px;
+    @media (max-width: 820px) {
+      .l-nav { display: none; }
+      .l-hero { padding: 44px 0 40px; }
+      .l-hero-grid, .l-contact-grid, .l-footer-grid { grid-template-columns: 1fr; }
+      .l-section { padding: 48px 0; }
     }
-    .pub-qr-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      padding-bottom: 6px;
-      margin-bottom: 6px;
-      border-bottom: 1px solid var(--g200);
-      font-size: 12.5px;
-    }
-    .pub-qr-row:last-child {
-      border-bottom: 0;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-    .pub-qr-row span { color: var(--g500); font-size: 12px; }
-    .pub-qr-row b {
-      color: var(--g900);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12.5px;
-    }
-    @media (max-width: 560px) {
-      .pub-qr-card { grid-template-columns: 1fr; justify-items: center; }
-    }
-    .pub-hero-stats .pub-hstat b {
-      display: block;
-      font-size: 26px;
-      font-weight: 800;
-      color: #5eead4;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
-    }
-    .pub-hero-stats .pub-hstat span {
-      display: block;
-      font-size: 11.5px;
-      color: #94a3b8;
-      margin-top: 2px;
+    @media (max-width: 600px) {
+      .l-courses-grid, .l-teachers-grid { --cols: 1; --gap: 14px; }
+      .l-carousel-track.is-scrollable > article { flex: 0 0 min(86%, 340px); }
+      .l-steps-grid, .l-form-row { grid-template-columns: 1fr; }
+      .l-header-inner, .landing-wrap { padding-left: 16px; padding-right: 16px; }
     }
   </style>
 </head>
-<body>
-  <!-- Header -->
-  <header class="pub-nav">
-    <div class="pub-nav-inner">
-      <a href="index.html" class="pub-brand">
-        <div class="pub-logo-ico">🎓</div>
-        <div>
-          <b style="font-size:16px; color:var(--g900); display:block; letter-spacing:-.02em;">EduCenter ERP</b>
-          <small style="font-size:11px; color:var(--g500); display:block;">Trung tâm Gia sư & Bồi dưỡng Văn hóa</small>
-        </div>
+<body class="landing-page">
+  <header class="l-header">
+    <div class="l-header-inner">
+      <a href="index.html" class="l-brand">
+        <span class="l-brand-mark" aria-hidden="true">E</span>
+        <span>
+          <span class="l-brand-name">EduCenter ERP</span>
+          <span class="l-brand-sub">Trung tâm Gia sư &amp; Bồi dưỡng Văn hóa</span>
+        </span>
       </a>
 
-      <nav class="pub-nav-links">
-        <a href="#courses">Khóa học & Học phí</a>
-        <a href="#teachers">Đội ngũ Người dạy</a>
-        <a href="#consultation">Tư vấn Lộ trình</a>
-        <a href="#contact">Liên hệ</a>
+      <nav class="l-nav" aria-label="Điều hướng trang chủ">
+        <a href="#courses">Khóa học</a>
+        <a href="#process">Quy trình</a>
+        <a href="#teachers">Đội ngũ</a>
+        <a href="#consultation">Cơ sở &amp; Tư vấn</a>
       </nav>
 
-      <div id="authNavButtons">
-        <a href="src/modules/administration/features/auth/auth.html" class="btn p">
-          Đăng nhập Hệ thống
-        </a>
+      <div id="authNavButtons" class="l-header-actions">
+        <a href="#consultation" class="btn sm">Tư vấn</a>
+        <a href="src/modules/administration/features/auth/auth.html" class="btn p sm">Đăng nhập</a>
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="pub-hero">
-    <div style="max-width:1280px; margin:0 auto; padding:0 24px;">
-      <div class="pub-hero-grid">
+  <main>
+    <!-- Hero -->
+    <section class="l-hero">
+      <div class="landing-wrap l-hero-grid">
         <div>
-          <span class="pub-badge">
-            <span style="color:#5eead4; font-size:14px;">✨</span> Hệ thống Gia sư & Đào tạo Chuẩn mực IS207
-          </span>
-          <h1>Đồng hành cùng sự tiến bộ vượt bậc của con em bạn</h1>
-          <p>
-            Mô hình kèm 1:1 và lớp nhóm nhỏ chuyên sâu. Minh bạch từng buổi học với sổ theo dõi điện tử, phụ huynh trực tiếp duyệt hồ sơ người dạy trước khi bắt đầu.
+          <span class="l-eyebrow">Quản lý đào tạo &amp; gia sư minh bạch</span>
+          <h1>Học tập bài bản theo lớp nhóm nhỏ và <span class="l-hl">gia sư kèm riêng</span></h1>
+          <p class="l-hero-lead">
+            EduCenter tổ chức các khóa bồi dưỡng văn hóa và kèm 1:1, 1:2 theo chương trình phổ thông. Phụ huynh theo dõi lịch học, sổ nhận xét buổi học, bài tập và học phí trọn khóa trực tiếp trên hệ thống.
           </p>
-          <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <a href="src/modules/administration/features/auth/auth.html" class="btn p" style="padding:11px 24px; font-size:14px;">
-              Vào Cổng Học tập / Đăng nhập →
-            </a>
-            <a href="#consultation" class="btn dark" style="padding:11px 20px; font-size:14px;">
-              Đăng ký tư vấn miễn phí
-            </a>
-          </div>
-
-          <div class="pub-hero-stats">
-            <div class="pub-hstat"><b>98.5%</b><span>Phụ huynh hài lòng</span></div>
-            <div class="pub-hstat"><b>100%</b><span>Người dạy đạt kiểm định</span></div>
-            <div class="pub-hstat"><b>3 Cơ sở</b><span>TP.HCM & Dạy Online</span></div>
-            <div class="pub-hstat"><b>Trọn khóa</b><span>Minh bạch học phí</span></div>
+          <div class="l-hero-cta">
+            <a href="#courses" class="btn p">Xem khóa học đang mở</a>
+            <a href="#consultation" class="btn">Đăng ký tư vấn</a>
+            <a href="src/modules/administration/features/auth/auth.html" class="btn" id="heroPortalLink">Đăng nhập cổng học tập</a>
           </div>
         </div>
 
-        <div>
-          <div class="pub-hero-card">
-            <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:12px;">Vì sao chọn EduCenter?</h3>
-            <div style="display:flex; flex-direction:column; gap:12px; font-size:13px; color:#e2e8f0;">
-              <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#5eead4; font-weight:800;">✓</span>
-                <div><b>Duyệt hồ sơ Gia sư trực tuyến:</b> Phụ huynh xem trước bằng cấp, chuyên môn trước khi xếp lớp.</div>
-              </div>
-              <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#5eead4; font-weight:800;">✓</span>
-                <div><b>Học phí trọn từng khóa:</b> Không chi phí ẩn, độc lập hoàn toàn với tiến độ xếp lớp.</div>
-              </div>
-              <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#5eead4; font-weight:800;">✓</span>
-                <div><b>Sổ theo dõi buổi học tức thì:</b> Xem điểm bài tập, mức tiếp thu (1-5★) và nhận xét của thầy cô ngay sau ca dạy.</div>
-              </div>
+        <aside class="l-summary-card" aria-label="Thông tin vận hành hiện tại">
+          <h2 class="l-summary-title">Thông tin đang mở trên hệ thống</h2>
+          <div class="l-metric-grid">
+            <div class="l-metric">
+              <b id="statCourses">—</b>
+              <span>Khóa học đang mở đăng ký</span>
+            </div>
+            <div class="l-metric">
+              <b id="statSubjects">—</b>
+              <span>Môn học đang giảng dạy</span>
+            </div>
+            <div class="l-metric">
+              <b id="statTeachers">—</b>
+              <span>Hồ sơ giảng dạy hoạt động</span>
+            </div>
+            <div class="l-metric">
+              <b id="statCampuses">—</b>
+              <span>Cơ sở đào tạo hoạt động</span>
             </div>
           </div>
+          <ul class="l-summary-list">
+            <li>
+              <svg class="l-check-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Học phí niêm yết trọn từng khóa, chốt giá tại thời điểm đăng ký.</span>
+            </li>
+            <li>
+              <svg class="l-check-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Phụ huynh xem trước đề xuất người dạy và theo dõi điểm, nhận xét sau từng buổi.</span>
+            </li>
+            <li>
+              <svg class="l-check-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Xếp lớp, điểm danh, đơn nghỉ và học phí được đối soát tập trung trên một nền tảng.</span>
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Courses & Subjects (100% DB) -->
+    <section id="courses" class="l-section l-reveal">
+      <div class="landing-wrap">
+        <div class="l-sec-head">
+          <div>
+            <h2>Khóa học &amp; Môn học đang mở</h2>
+            <p>Danh sách khóa học đang mở đăng ký và học phí trọn khóa niêm yết từ hệ thống.</p>
+          </div>
+          <div class="l-carousel-controls" data-carousel-controls="coursesListContainer" hidden>
+            <button type="button" class="l-carousel-btn" data-dir="-1" aria-label="Xem khóa học trước" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="l-carousel-btn" data-dir="1" aria-label="Xem khóa học tiếp theo" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="subjectsContainer" class="l-subjects" aria-live="polite"></div>
+
+        <div class="l-carousel-viewport">
+          <div id="coursesListContainer" class="l-courses-grid l-carousel-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Danh sách khóa học đang mở" aria-live="polite">
+            <div class="l-state">Đang tải danh sách khóa học…</div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Courses Section -->
-  <section id="courses" class="pub-section">
-    <div class="pub-sec-head">
-      <h2>Danh mục Khóa học Trọng điểm</h2>
-      <p>Áp dụng thu trọn từng khóa theo quy ước đào tạo của EduCenter ERP</p>
-    </div>
-
-    <div id="coursesListContainer" class="pub-courses-container">
-      <div class="pub-course-card">
-        <div style="margin-bottom:14px;">
-          <span class="tag ok" style="margin-bottom:8px;">Gia sư 1 kèm 1</span>
-          <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">Gia sư Toán - Lý - Hóa cá nhân hóa</h3>
-          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Giáo án thiết kế riêng bám sát năng lực học sinh. Phụ huynh duyệt hồ sơ người dạy trước khi bắt đầu.</p>
+    <!-- Process -->
+    <section id="process" class="l-section alt l-reveal">
+      <div class="landing-wrap">
+        <div class="l-sec-head">
+          <div>
+            <h2>Quy trình đăng ký và theo dõi học tập</h2>
+            <p>Các bước vận hành tiêu chuẩn giữa phụ huynh, bộ phận giáo vụ và đội ngũ giảng dạy.</p>
+          </div>
         </div>
+
+        <div class="l-steps-grid">
+          <article class="l-step">
+            <span class="l-step-num">01</span>
+            <h3>Tiếp nhận nhu cầu</h3>
+            <p>Phụ huynh gửi phiếu tư vấn hoặc đăng ký trực tiếp khóa học đang mở theo môn và khối lớp của học sinh.</p>
+          </article>
+          <article class="l-step">
+            <span class="l-step-num">02</span>
+            <h3>Ghép &amp; thống nhất người dạy</h3>
+            <p>Giáo vụ rà soát chuyên môn và lịch rảnh phù hợp để đề xuất người dạy; phụ huynh xác nhận trước khi chốt.</p>
+          </article>
+          <article class="l-step">
+            <span class="l-step-num">03</span>
+            <h3>Xếp lớp &amp; phát hành học phí</h3>
+            <p>Trung tâm xếp lớp theo khóa đã đăng ký, bố trí lịch học cố định và phát hành hóa đơn học phí trọn khóa.</p>
+          </article>
+          <article class="l-step">
+            <span class="l-step-num">04</span>
+            <h3>Theo dõi từng buổi học</h3>
+            <p>Sau mỗi buổi dạy, phụ huynh xem chuyên cần, nội dung học, điểm bài tập giấy và nhận xét trên cổng Phụ huynh.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Teachers (100% DB) -->
+    <section id="teachers" class="l-section l-reveal">
+      <div class="landing-wrap">
+        <div class="l-sec-head">
+          <div>
+            <h2>Đội ngũ giảng dạy</h2>
+            <p>Thông tin chuyên môn công khai của giáo viên, gia sư và trợ giảng đang hoạt động.</p>
+          </div>
+          <div class="l-carousel-controls" data-carousel-controls="tutorsListContainer" hidden>
+            <button type="button" class="l-carousel-btn" data-dir="-1" aria-label="Xem giảng viên trước" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="l-carousel-btn" data-dir="1" aria-label="Xem giảng viên tiếp theo" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="l-carousel-viewport">
+          <div id="tutorsListContainer" class="l-teachers-grid l-carousel-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Danh sách đội ngũ giảng dạy" aria-live="polite">
+            <div class="l-state">Đang tải thông tin đội ngũ giảng dạy…</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Campuses & Consultation Form -->
+    <section id="consultation" class="l-section alt l-reveal">
+      <div class="landing-wrap l-contact-grid">
         <div>
-          <div class="c-price">3,500,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
-          <div style="display:flex; gap:8px; margin-top:14px;">
-            <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-GS-1KEM1">Chi tiết</button>
-            <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-code="KHOA-GS-1KEM1" data-name="Gia sư Toán - Lý - Hóa cá nhân hóa" data-price="3500000">Đăng ký</button>
+          <div class="l-sec-head" style="margin-bottom: 16px;">
+            <div>
+              <h2>Cơ sở đào tạo &amp; Liên hệ</h2>
+              <p>Thông tin các cơ sở đang hoạt động của trung tâm trên hệ thống.</p>
+            </div>
+          </div>
+
+          <div id="campusesContainer" class="l-campus-list" aria-live="polite">
+            <div class="l-state">Đang tải thông tin cơ sở…</div>
           </div>
         </div>
-      </div>
 
-      <div class="pub-course-card">
-        <div style="margin-bottom:14px;">
-          <span class="tag i" style="margin-bottom:8px;">Lớp nhóm tiêu chuẩn</span>
-          <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">Bồi dưỡng Văn hóa THCS & Ôn thi vào 10</h3>
-          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Quy mô lớp nhỏ dưới 10 học sinh, có trợ giảng theo sát kiểm tra bài tập và hỗ trợ từng buổi học.</p>
-        </div>
-        <div>
-          <div class="c-price">2,800,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
-          <div style="display:flex; gap:8px; margin-top:14px;">
-            <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-NHOM-THCS">Chi tiết</button>
-            <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-code="KHOA-NHOM-THCS" data-name="Bồi dưỡng Văn hóa THCS & Ôn thi vào 10" data-price="2800000">Đăng ký</button>
-          </div>
-        </div>
-      </div>
+        <div class="l-form-card">
+          <h3>Đăng ký tư vấn nhu cầu học</h3>
+          <p class="l-form-sub">Yêu cầu được ghi nhận trực tiếp về bộ phận Giáo vụ để tư vấn lộ trình phù hợp.</p>
+          <div id="consultAlert" class="l-alert" role="alert"></div>
 
-      <div class="pub-course-card">
-        <div style="margin-bottom:14px;">
-          <span class="tag purple" style="margin-bottom:8px;">Nâng cao & Ôn thi</span>
-          <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">Luyện thi Chuyên & Đánh giá Năng lực THPT</h3>
-          <p style="font-size:13px; color:var(--g600); line-height:1.5;">Rèn luyện tư duy phản biện, giải đề thi thử chuẩn cấu trúc đề với đội ngũ giáo viên giàu kinh nghiệm.</p>
-        </div>
-        <div>
-          <div class="c-price">4,200,000 đ <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
-          <div style="display:flex; gap:8px; margin-top:14px;">
-            <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="KHOA-CHUYEN-THPT">Chi tiết</button>
-            <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-code="KHOA-CHUYEN-THPT" data-name="Luyện thi Chuyên & Đánh giá Năng lực THPT" data-price="4200000">Đăng ký</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+          <form id="consultForm">
+            <div class="l-form-row">
+              <div class="l-field">
+                <label for="parentName">Họ và tên phụ huynh *</label>
+                <input type="text" id="parentName" required maxlength="150" autocomplete="name" placeholder="Nhập họ và tên">
+              </div>
+              <div class="l-field">
+                <label for="parentPhone">Số điện thoại liên hệ *</label>
+                <input type="tel" id="parentPhone" required maxlength="20" autocomplete="tel" placeholder="Nhập số điện thoại">
+              </div>
+            </div>
 
-  <!-- Teachers Section (Giới thiệu người dạy) -->
-  <section id="teachers" class="pub-section" style="background:var(--g50); border-top:1px solid var(--g200); border-bottom:1px solid var(--g200);">
-    <div class="pub-sec-head">
-      <h2>Đội ngũ Giáo viên & Gia sư Tiêu biểu</h2>
-      <p>Hồ sơ năng lực minh bạch – Phụ huynh duyệt hồ sơ trước khi bắt đầu khóa học</p>
-    </div>
+            <div class="l-field">
+              <label for="parentEmail">Email liên hệ (không bắt buộc)</label>
+              <input type="email" id="parentEmail" maxlength="150" autocomplete="email" placeholder="ten@example.com">
+            </div>
 
-    <div id="tutorsListContainer" class="pub-tutors-container">
-      <div class="pub-tutor-card">
-        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
-          👨‍🏫
-        </div>
-        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Thầy Nguyễn Văn A</h4>
-        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Giáo viên Toán Chuyên · 8 năm KN</div>
-        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">Thạc sĩ Toán ĐH Sư Phạm TP.HCM. Chuyên luyện thi vào lớp 10 Chuyên và HSG.</p>
-      </div>
+            <div class="l-form-row">
+              <div class="l-field">
+                <label for="subjectSelect">Môn học quan tâm</label>
+                <select id="subjectSelect">
+                  <option value="">Chọn môn học</option>
+                </select>
+              </div>
+              <div class="l-field">
+                <label for="gradeSelect">Khối lớp của học sinh</label>
+                <select id="gradeSelect">
+                  <option value="">Chọn khối lớp</option>
+                </select>
+              </div>
+            </div>
 
-      <div class="pub-tutor-card">
-        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
-          👩‍🏫
-        </div>
-        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Cô Trần Thị B</h4>
-        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Gia sư Vật Lý 1:1 · ĐH Bách Khoa</div>
-        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">Thủ khoa A1, giải Nhì Quốc gia môn Vật Lý. Phương pháp giảng dạy trực quan, dễ nhớ.</p>
-      </div>
+            <div class="l-field">
+              <label for="courseSelect">Khóa học cần tư vấn</label>
+              <select id="courseSelect">
+                <option value="Tư vấn lộ trình phù hợp">Tư vấn lộ trình phù hợp</option>
+              </select>
+            </div>
 
-      <div class="pub-tutor-card">
-        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
-          👨‍🎓
-        </div>
-        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Thầy Lê Hoàng C</h4>
-        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Gia sư Hóa học & KHTN · ĐH Y Dược</div>
-        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">Á khoa ĐH Y Dược. Giúp học sinh nắm vững bản chất phương trình và phản ứng hóa học.</p>
-      </div>
+            <div class="l-field">
+              <label for="parentNote">Ghi chú nhu cầu (hình thức học, khung giờ dự kiến…)</label>
+              <textarea id="parentNote" rows="3" maxlength="500" placeholder="Mô tả ngắn mục tiêu học tập và thời gian thuận tiện"></textarea>
+            </div>
 
-      <div class="pub-tutor-card">
-        <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
-          👩‍🎓
-        </div>
-        <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">Cô Phạm Mai D</h4>
-        <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">Trợ giảng & Luyện thi Tiếng Anh</div>
-        <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">IELTS 8.0, Cử nhân ĐH Ngoại Thương. Nhiệt tình kiểm tra bài tập và kèm phát âm.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Consultation Form Section -->
-  <section id="consultation" class="pub-section">
-    <div class="pub-contact-grid">
-      <div>
-        <span class="tag ok" style="margin-bottom:12px;">Hỗ trợ Tư vấn Học vụ 24/7</span>
-        <h2 style="font-size:22px; font-weight:800; color:var(--g900); margin:0 0 12px;">Đăng ký Tư vấn Lộ trình & Tìm Gia sư Miễn phí</h2>
-        <p style="font-size:13.5px; color:var(--g600); line-height:1.6; margin-bottom:20px;">
-          Điền thông tin nhu cầu học tập của con. Bộ phận <b>Giáo vụ EduCenter</b> sẽ tiếp nhận yêu cầu trên hệ thống, lọc người dạy phù hợp và liên hệ tư vấn trong 30 phút!
-        </p>
-
-        <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--g700);">
-          <div><b>✓ Cơ sở 1:</b> Khu Công nghệ cao, TP. Thủ Đức, TP.HCM</div>
-          <div><b>✓ Cơ sở 2:</b> Quận 1 · <b>Cơ sở 3:</b> Quận 3</div>
-          <div><b>✓ Hotline:</b> 1900 6868 · <b>Email:</b> contact@educenter.edu.vn</div>
+            <button type="submit" id="btnSubmitConsult" class="btn p" style="width: 100%; justify-content: center; padding: 10px 16px;">
+              Gửi yêu cầu tư vấn
+            </button>
+          </form>
         </div>
       </div>
-
-      <div style="background:var(--g50); padding:26px; border-radius:14px; border:1px solid var(--g200);">
-        <h3 style="margin:0 0 14px; font-size:16px; font-weight:700; color:var(--g900);">Phiếu tiếp nhận nhu cầu học</h3>
-        <div id="consultAlert" style="display:none; margin-bottom:12px; padding:10px 12px; border-radius:8px; font-size:13px; font-weight:500;"></div>
-        <form id="consultForm">
-          <div style="margin-bottom:12px;">
-            <label for="parentName">Họ và tên Phụ huynh</label>
-            <input type="text" id="parentName" placeholder="Nguyễn Văn A" required>
-          </div>
-          <div style="margin-bottom:12px;">
-            <label for="parentPhone">Số điện thoại liên hệ</label>
-            <input type="tel" id="parentPhone" placeholder="0901234567" required>
-          </div>
-          <div style="margin-bottom:12px;">
-            <label for="courseSelect">Khóa học / Lớp cần tư vấn</label>
-            <select id="courseSelect" required>
-              <option value="Gia sư 1 kèm 1">Gia sư 1 kèm 1 Toán - Lý - Hóa</option>
-              <option value="Bồi dưỡng Văn hóa THCS">Bồi dưỡng Văn hóa THCS & Ôn thi vào 10</option>
-              <option value="Luyện thi Chuyên & ĐGNL">Luyện thi Chuyên & Đánh giá Năng lực</option>
-              <option value="Khác">Khác (Cần tư vấn riêng)</option>
-            </select>
-          </div>
-          <div style="margin-bottom:16px;">
-            <label for="parentNote">Yêu cầu cụ thể (Hình thức học online/offline...)</label>
-            <textarea id="parentNote" rows="2" placeholder="Ví dụ: Cần gia sư kèm môn Toán lớp 9 tại nhà..."></textarea>
-          </div>
-          <button type="submit" id="btnSubmitConsult" class="btn p" style="width:100%; padding:10px; justify-content:center; font-size:13.5px;">
-            Gửi Yêu Cầu Cho Giáo Vụ
-          </button>
-        </form>
-      </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <!-- Modal Course Detail -->
-  <div id="modalCourseDetail" class="modal-overlay">
+  <div id="modalCourseDetail" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalCourseTitle">
     <div class="modal-box">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--g200); padding-bottom:10px;">
-        <h3 id="modalCourseTitle" style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">Chi tiết Khóa học</h3>
-        <button type="button" id="closeDetailModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400);">✕</button>
+        <h3 id="modalCourseTitle" style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">Chi tiết khóa học</h3>
+        <button type="button" id="closeDetailModal" aria-label="Đóng" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g500);">✕</button>
       </div>
       <div id="modalCourseContent" style="font-size:13.5px; color:var(--g700); line-height:1.6;"></div>
-      <div style="margin-top:20px; text-align:right; display:flex; justify-content:flex-end; gap:8px;">
+      <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
         <a href="#consultation" id="btnModalConsult" class="btn sm">Nhận tư vấn</a>
-        <button type="button" id="btnModalEnroll" class="btn p sm">Đăng ký &amp; Thanh toán QR</button>
+        <button type="button" id="btnModalEnroll" class="btn p sm">Đăng ký khóa học</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Course Enrollment & QR Payment -->
-  <div id="modalCourseEnrollQr" class="modal-overlay">
+  <!-- Modal Course Enrollment -->
+  <div id="modalCourseEnrollQr" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="enrollQrModalTitle">
     <div class="modal-box">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--g200); padding-bottom:10px;">
-        <h3 id="enrollQrModalTitle" style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">💳 Đăng ký Khóa học &amp; Thanh toán QR</h3>
-        <button type="button" id="closeEnrollQrModal" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g400);">✕</button>
+        <h3 id="enrollQrModalTitle" style="margin:0; font-size:17px; font-weight:700; color:var(--g900);">Đăng ký khóa học</h3>
+        <button type="button" id="closeEnrollQrModal" aria-label="Đóng" style="border:0; background:0; font-size:18px; cursor:pointer; color:var(--g500);">✕</button>
       </div>
       <div id="enrollQrModalBody" style="font-size:13.5px; color:var(--g700); line-height:1.55;"></div>
     </div>
   </div>
 
-  <footer id="contact" style="background:#090d16; color:#94a3b8; padding:44px 24px 30px; font-size:13px; text-align:center; border-top:1px solid rgba(255,255,255,.08);">
-    <div style="max-width:1280px; margin:0 auto; display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; text-align:left; margin-bottom:24px;">
-      <div>
-        <b style="color:#fff; font-size:15px;">🎓 EduCenter ERP</b>
-        <p style="margin-top:6px; color:#64748b;">Hệ thống Quản lý Trung tâm Gia sư & Bồi dưỡng Văn hóa.</p>
+  <footer id="contact" class="l-footer">
+    <div class="landing-wrap">
+      <div class="l-footer-grid">
+        <div>
+          <h4>EduCenter ERP</h4>
+          <p>Hệ thống quản lý trung tâm gia sư và bồi dưỡng văn hóa: tiếp nhận nhu cầu, xếp lớp, vận hành buổi học, sổ theo dõi và quản lý học phí trọn khóa.</p>
+        </div>
+        <div>
+          <h4>Điều hướng</h4>
+          <ul>
+            <li><a href="#courses">Khóa học đang mở</a></li>
+            <li><a href="#process">Quy trình học tập</a></li>
+            <li><a href="#teachers">Đội ngũ giảng dạy</a></li>
+            <li><a href="#consultation">Đăng ký tư vấn</a></li>
+            <li><a href="src/modules/administration/features/auth/auth.html">Đăng nhập hệ thống</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Cơ sở hoạt động</h4>
+          <div id="footerCampuses">
+            <p>Đang tải thông tin cơ sở…</p>
+          </div>
+        </div>
       </div>
-      <div>
-        <b style="color:#fff;">Cơ sở đào tạo:</b>
-        <p style="margin-top:6px; color:#64748b;">Khu Công nghệ cao, TP. Thủ Đức · Quận 1 · Quận 3</p>
+
+      <div class="l-footer-bottom">
+        <span>© 2026 EduCenter ERP</span>
+        <span>Cổng học tập &amp; quản trị nội bộ</span>
       </div>
-      <div>
-        <b style="color:#fff;">Hỗ trợ đồ án IS207:</b>
-        <p style="margin-top:6px; color:#64748b;">Hotline: 1900 6868 · Email: contact@educenter.edu.vn</p>
-      </div>
-    </div>
-    <div style="border-top:1px solid rgba(255,255,255,.06); padding-top:16px; color:#64748b; font-size:12px;">
-      © 2026 EduCenter ERP. All rights reserved.
     </div>
   </footer>
 
-  <!-- Scripts -->
   <script src="src/config/app.config.js"></script>
   <script src="src/shared/services/http.js"></script>
   <script src="src/shared/permissions/access.js"></script>
   <script>
-    const COURSE_DETAILS = {
-      'KHOA-GS-1KEM1': {
-        code: 'KHOA-GS-1KEM1',
-        title: 'Gia sư Toán - Lý - Hóa cá nhân hóa',
-        price: 3500000,
-        desc: 'Chương trình gia sư riêng biệt 1 kèm 1. Học viên được làm bài kiểm tra đầu vào để xác định chính xác năng lực, từ đó giáo viên biên soạn giáo án riêng.',
-        highlights: ['Thời gian linh hoạt theo lịch rảnh của gia đình', 'Học viên chủ động chọn học tại nhà hoặc online qua Google Meet', 'Báo cáo chi tiết sau mỗi buổi học qua Cổng Phụ Huynh']
-      },
-      'KHOA-NHOM-THCS': {
-        code: 'KHOA-NHOM-THCS',
-        title: 'Bồi dưỡng Văn hóa THCS & Ôn thi vào 10',
-        price: 2800000,
-        desc: 'Khóa học theo nhóm nhỏ tối đa 8-10 học sinh. Rèn luyện kỹ năng giải bài tập nâng cao bám sát cấu trúc đề thi tuyển sinh vào lớp 10 các trường công lập.',
-        highlights: ['Sĩ số lớp nhỏ đảm bảo tương tác tối đa', 'Định kỳ thi thử và xếp hạng hàng tháng', 'Có trợ giảng kèm cặp riêng cho học sinh còn yếu']
-      },
-      'KHOA-CHUYEN-THPT': {
-        code: 'KHOA-CHUYEN-THPT',
-        title: 'Luyện thi Chuyên & Đánh giá Năng lực THPT',
-        price: 4200000,
-        desc: 'Khóa học chuyên sâu dành cho học sinh có nguyện vọng thi đỗ trường chuyên hoặc xét tuyển đại học bằng bài thi Đánh giá Năng lực.',
-        highlights: ['Ngân hàng đề thi thử độc quyền hơn 500+ đề', 'Giảng viên giàu kinh nghiệm luyện thi', 'Hỗ trợ giải đáp bài tập 24/7']
-      }
-    };
+    const COURSE_DETAILS = {};
+    let LANDING_GRADES = [];
 
     function formatVnd(amount) {
       return Number(amount || 0).toLocaleString('vi-VN') + ' đ';
-    }
-
-    function selectCourse(courseName) {
-      const sel = document.getElementById('courseSelect');
-      if (!sel) return;
-      const hasOption = Array.from(sel.options).some(opt => opt.value === courseName);
-      if (!hasOption && courseName) {
-        const opt = document.createElement('option');
-        opt.value = courseName;
-        opt.textContent = courseName;
-        sel.insertBefore(opt, sel.lastElementChild);
-      }
-      sel.value = courseName;
     }
 
     function escapeHtml(text) {
@@ -553,17 +1221,40 @@
       }[m]));
     }
 
+    function nameInitial(name) {
+      const cleaned = String(name || '').replace(/\[[^\]]*\]/g, '').trim();
+      const parts = cleaned.split(/\s+/).filter(Boolean);
+      return (parts.length ? parts[parts.length - 1][0] : 'E').toUpperCase();
+    }
+
+    function selectCourse(courseName) {
+      const sel = document.getElementById('courseSelect');
+      if (!sel || !courseName) return;
+      const hasOption = Array.from(sel.options).some(opt => opt.value === courseName);
+      if (!hasOption) {
+        const opt = document.createElement('option');
+        opt.value = courseName;
+        opt.textContent = courseName;
+        sel.insertBefore(opt, sel.firstElementChild);
+      }
+      sel.value = courseName;
+    }
+
     function updateHeaderAuthNav() {
-      if (AccessService.isAuthenticated()) {
-        const user = AccessService.getCurrentUser();
-        const navContainer = document.getElementById('authNavButtons');
-        if (user && navContainer) {
-          navContainer.innerHTML = `
-            <button class="btn p" onclick="AccessService.redirectByRole()">
-              Chào ${escapeHtml(user.hoTen || user.username)} (Vào Cổng →)
-            </button>
-          `;
-        }
+      if (!AccessService.isAuthenticated()) return;
+      const user = AccessService.getCurrentUser();
+      const navContainer = document.getElementById('authNavButtons');
+      const heroLink = document.getElementById('heroPortalLink');
+      if (user && navContainer) {
+        navContainer.innerHTML = `
+          <button type="button" class="btn p sm" onclick="AccessService.redirectByRole()">
+            ${escapeHtml(user.hoTen || user.username)} · Vào cổng
+          </button>
+        `;
+      }
+      if (heroLink) {
+        heroLink.textContent = 'Vào cổng làm việc';
+        heroLink.href = '/app';
       }
     }
 
@@ -574,43 +1265,42 @@
       if (!modal || !bodyEl) return;
 
       modal.classList.add('show');
-      titleEl.textContent = '💳 Đăng ký Khóa học & Thanh toán QR';
+      titleEl.textContent = 'Đăng ký khóa học';
 
       const courseBanner = `
         <div style="background:var(--pri-ll);padding:14px 16px;border-radius:10px;border:1px solid var(--pri-l);margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
             <div>
-              <span class="tag ok" style="margin-bottom:4px;">${escapeHtml(courseInfo.code || 'KHÓA TRỌN GÓI')}</span>
-              <h4 style="margin:4px 0 0;font-size:15.5px;color:var(--g900);">${escapeHtml(courseInfo.title)}</h4>
+              <span class="l-course-code" style="margin-bottom:4px;">${escapeHtml(courseInfo.code || 'KHÓA HỌC')}</span>
+              <h4 style="margin:4px 0 0;font-size:15px;color:var(--g900);">${escapeHtml(courseInfo.title)}</h4>
             </div>
             <div style="text-align:right;">
               <small style="color:var(--g500);display:block;font-size:11px;">Học phí trọn khóa</small>
-              <b style="font-size:18px;color:var(--pri-d);">${escapeHtml(formatVnd(courseInfo.price))}</b>
+              <b style="font-size:17px;color:var(--pri-d);">${escapeHtml(formatVnd(courseInfo.price))}</b>
             </div>
           </div>
         </div>
       `;
 
-      // Nếu chưa đăng nhập -> Hiển thị form đăng nhập nhanh ngay trong modal
       if (!AccessService.isAuthenticated()) {
         bodyEl.innerHTML = `
           ${courseBanner}
-          <div style="background:var(--g50);padding:16px;border-radius:12px;border:1px solid var(--g200);">
-            <h4 style="margin:0 0 6px;font-size:14.5px;color:var(--g900);">Đăng nhập tài khoản Phụ huynh để đăng ký &amp; nhận mã QR</h4>
-            <p style="margin:0 0 12px;font-size:12.5px;color:var(--g600);">Hệ thống sẽ ghi nhận khóa học cho con và tạo Hóa đơn kèm mã QR thanh toán trực tuyến.</p>
-            <div id="inlineLoginAlert" style="display:none;margin-bottom:10px;padding:9px 12px;border-radius:8px;font-size:12.5px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;"></div>
+          <div style="background:var(--g50);padding:16px;border-radius:10px;border:1px solid var(--g200);">
+            <h4 style="margin:0 0 6px;font-size:14.5px;color:var(--g900);">Đăng nhập tài khoản Phụ huynh để đăng ký khóa học</h4>
+            <p style="margin:0 0 12px;font-size:12.5px;color:var(--g600);">Hệ thống sẽ ghi nhận đăng ký cho học viên và phát hành hóa đơn trọn khóa trong cổng Phụ huynh.</p>
+            <div id="inlineLoginAlert" class="l-alert err" role="alert"></div>
             <form id="inlineLoginForm">
-              <div style="margin-bottom:10px;">
-                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Tên đăng nhập hoặc Email</label>
-                <input type="text" id="inlineLoginUser" placeholder="Ví dụ: phuhuynh" required style="width:100%;">
+              <div class="l-field">
+                <label for="inlineLoginUser">Tên đăng nhập hoặc Email</label>
+                <input type="text" id="inlineLoginUser" required autocomplete="username">
               </div>
-              <div style="margin-bottom:14px;">
-                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Mật khẩu</label>
-                <input type="password" id="inlineLoginPass" placeholder="Nhập mật khẩu" required style="width:100%;">
+              <div class="l-field">
+                <label for="inlineLoginPass">Mật khẩu</label>
+                <input type="password" id="inlineLoginPass" required autocomplete="current-password">
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                <a href="/login" style="font-size:12.5px;color:var(--pri-d);font-weight:600;text-decoration:none;">Chưa có tài khoản? Đăng ký mới →</a>
-                <button type="submit" id="btnInlineLogin" class="btn p sm">Đăng nhập &amp; Tiếp tục →</button>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;">
+                <a href="/login" style="font-size:12.5px;color:var(--pri-d);font-weight:600;text-decoration:none;">Chưa có tài khoản? Mở trang đăng nhập</a>
+                <button type="submit" id="btnInlineLogin" class="btn p sm">Đăng nhập và tiếp tục</button>
               </div>
             </form>
           </div>
@@ -623,20 +1313,20 @@
           const btn = document.getElementById('btnInlineLogin');
           const alertBox = document.getElementById('inlineLoginAlert');
           btn.disabled = true;
-          btn.textContent = 'Đang xác thực...';
-          alertBox.style.display = 'none';
+          btn.textContent = 'Đang xác thực…';
+          alertBox.className = 'l-alert err';
           try {
             const res = await HttpService.post('/auth/login', { username: u, password: p });
-            if (res && res.data && res.data.token) {
-              AccessService.setSession(res.data.token, res.data.user);
+            if (res && res.data && res.data.user) {
+              AccessService.setSession(null, res.data.user);
               updateHeaderAuthNav();
               openEnrollQrModal(courseInfo);
             }
           } catch (err) {
-            alertBox.style.display = 'block';
+            alertBox.className = 'l-alert err show';
             alertBox.textContent = err.message || 'Tên đăng nhập hoặc mật khẩu không đúng.';
             btn.disabled = false;
-            btn.textContent = 'Đăng nhập & Tiếp tục →';
+            btn.textContent = 'Đăng nhập và tiếp tục';
           }
         });
         return;
@@ -647,72 +1337,62 @@
         bodyEl.innerHTML = `
           ${courseBanner}
           <div style="padding:14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px;">
-            Tài khoản hiện tại đang đăng nhập với vai trò <b>${escapeHtml(currentUser.role)}</b>. Chức năng đăng ký mua khóa học &amp; thanh toán QR dành cho tài khoản <b>Phụ huynh</b>.
+            Tài khoản hiện tại có vai trò <b>${escapeHtml(currentUser.role)}</b>. Chức năng đăng ký khóa học dành cho tài khoản <b>Phụ huynh</b>.
           </div>
           <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px;">
-            <button type="button" class="btn sm" onclick="AccessService.clearSession();openEnrollQrModal(${escapeHtml(JSON.stringify(courseInfo))})">Đổi sang tài khoản Phụ huynh</button>
-            <button type="button" class="btn p sm" onclick="AccessService.redirectByRole()">Vào Cổng làm việc →</button>
+            <a class="btn sm" href="/login?switch=1">Đăng nhập tài khoản khác</a>
+            <button type="button" class="btn p sm" onclick="AccessService.redirectByRole()">Vào cổng làm việc</button>
           </div>
         `;
         return;
       }
 
-      // Bước 1: Đang tải danh sách con của Phụ huynh
-      bodyEl.innerHTML = `${courseBanner}<div style="padding:20px;text-align:center;color:var(--g500);">Đang tải hồ sơ học viên...</div>`;
+      bodyEl.innerHTML = `${courseBanner}<div style="padding:20px;text-align:center;color:var(--g500);">Đang tải danh sách học viên…</div>`;
       let students = [];
       try {
         const portalRes = await HttpService.get('/people/parents/portal');
         students = Array.isArray(portalRes?.data?.students) ? portalRes.data.students : [];
-      } catch (e) {
+      } catch {
         students = [];
       }
 
       const hasKids = students.length > 0;
       const kidOptions = students.map(s =>
         `<option value="${escapeHtml(s.id)}">${escapeHtml(s.hoTen)} (${escapeHtml(s.maHv || 'Học viên')} · ${escapeHtml(s.tenCapLop || 'Đang học')})</option>`
-      ).join('') + '<option value="NEW">+ Thêm học sinh (con) mới...</option>';
+      ).join('') + '<option value="NEW">+ Thêm học sinh mới…</option>';
+
+      const gradeOptions = LANDING_GRADES.length
+        ? LANDING_GRADES.map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.ten)}</option>`).join('')
+        : '<option value="">Chưa tải được danh sách khối lớp</option>';
 
       bodyEl.innerHTML = `
         ${courseBanner}
-        <div id="enrollStepAlert" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;font-size:12.5px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;"></div>
+        <div id="enrollStepAlert" class="l-alert err" role="alert"></div>
         <form id="courseEnrollStepForm">
-          <div style="margin-bottom:12px;${hasKids ? '' : 'display:none;'}">
-            <label style="font-size:12.5px;font-weight:600;color:var(--g700);display:block;margin-bottom:5px;">Chọn học viên (con) đăng ký học</label>
-            <select id="enrollStudentSelect" style="width:100%;">
-              ${kidOptions}
-            </select>
+          <div class="l-field" style="${hasKids ? '' : 'display:none;'}">
+            <label for="enrollStudentSelect">Chọn học viên đăng ký</label>
+            <select id="enrollStudentSelect">${kidOptions}</select>
           </div>
           <div id="newStudentFields" style="${hasKids ? 'display:none;' : ''}background:var(--g50);padding:14px;border-radius:10px;border:1px solid var(--g200);margin-bottom:12px;">
-            <div style="font-weight:700;font-size:13px;color:var(--g800);margin-bottom:10px;">Thông tin học sinh (con)</div>
-            <div style="margin-bottom:10px;">
-              <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Họ và tên học sinh *</label>
-              <input type="text" id="newStudentName" placeholder="Ví dụ: Nguyễn Văn An" style="width:100%;">
+            <div style="font-weight:700;font-size:13px;color:var(--g800);margin-bottom:10px;">Thông tin học sinh</div>
+            <div class="l-field">
+              <label for="newStudentName">Họ và tên học sinh *</label>
+              <input type="text" id="newStudentName" placeholder="Nhập họ và tên học sinh">
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div>
-                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Khối lớp</label>
-                <select id="newStudentGrade" style="width:100%;">
-                  <option value="6">Lớp 6</option>
-                  <option value="7">Lớp 7</option>
-                  <option value="8">Lớp 8</option>
-                  <option value="9" selected>Lớp 9</option>
-                  <option value="10">Lớp 10</option>
-                  <option value="11">Lớp 11</option>
-                  <option value="12">Lớp 12</option>
-                </select>
+            <div class="l-form-row">
+              <div class="l-field">
+                <label for="newStudentGrade">Khối lớp</label>
+                <select id="newStudentGrade">${gradeOptions}</select>
               </div>
-              <div>
-                <label style="font-size:12px;font-weight:600;color:var(--g700);display:block;margin-bottom:4px;">Trường đang học</label>
-                <input type="text" id="newStudentSchool" placeholder="THCS / THPT..." style="width:100%;">
+              <div class="l-field">
+                <label for="newStudentSchool">Trường đang học</label>
+                <input type="text" id="newStudentSchool" placeholder="Tên trường (nếu có)">
               </div>
             </div>
           </div>
-          <div style="padding:10px 12px;border-radius:8px;background:var(--g50);border:1px solid var(--g200);font-size:12px;color:var(--g600);margin-bottom:16px;">
-            Sau khi bấm tiếp tục, hệ thống sẽ khởi tạo hồ sơ đăng ký khóa học, phát hành <b>Hóa đơn trọn khóa</b> và hiển thị <b>Mã QR (VietQR)</b> để thanh toán ngay.
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
             <button type="button" class="btn sm" onclick="document.getElementById('modalCourseEnrollQr').classList.remove('show')">Hủy</button>
-            <button type="submit" id="btnSubmitEnrollStep" class="btn p sm">Xác nhận Đăng ký &amp; Mở Mã QR →</button>
+            <button type="submit" id="btnSubmitEnrollStep" class="btn p sm">Xác nhận đăng ký</button>
           </div>
         </form>
       `;
@@ -729,7 +1409,7 @@
         ev.preventDefault();
         const alertBox = document.getElementById('enrollStepAlert');
         const btn = document.getElementById('btnSubmitEnrollStep');
-        alertBox.style.display = 'none';
+        alertBox.className = 'l-alert err';
 
         const isNewKid = !hasKids || studentSel.value === 'NEW';
         const payload = {};
@@ -738,39 +1418,42 @@
 
         if (isNewKid) {
           const kidName = document.getElementById('newStudentName').value.trim();
+          const gradeVal = document.getElementById('newStudentGrade').value;
           if (!kidName) {
-            alertBox.style.display = 'block';
+            alertBox.className = 'l-alert err show';
             alertBox.textContent = 'Vui lòng nhập họ và tên học sinh.';
             return;
           }
           payload.hoTenHocVien = kidName;
-          payload.capLopId = Number(document.getElementById('newStudentGrade').value || 9);
+          if (gradeVal) payload.capLopId = Number(gradeVal);
           payload.truong = document.getElementById('newStudentSchool').value.trim() || null;
         } else {
           payload.hocVienId = Number(studentSel.value);
         }
 
         btn.disabled = true;
-        btn.textContent = 'Đang tạo hóa đơn & mã QR...';
+        btn.textContent = 'Đang tạo đăng ký…';
         try {
           const res = await HttpService.post('/people/parents/enrollments', payload);
           const enrollment = res.data;
-          renderQrPaymentStep(enrollment);
+          document.getElementById('enrollQrModalTitle').textContent = 'Đăng ký khóa học thành công';
+          document.getElementById('enrollQrModalBody').innerHTML = `
+            <p style="margin:0 0 14px;">Hóa đơn <b>${escapeHtml(enrollment.hoaDon.code)}</b> đã được phát hành. Bạn có thể mở cổng Phụ huynh để xem mã QR thanh toán và theo dõi xếp lớp.</p>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+              <button type="button" class="btn sm" onclick="document.getElementById('modalCourseEnrollQr').classList.remove('show')">Đóng</button>
+              <a class="btn p sm" href="/app#/parent/parent-billing">Mở hóa đơn &amp; thanh toán</a>
+            </div>
+          `;
         } catch (err) {
-          alertBox.style.display = 'block';
+          alertBox.className = 'l-alert err show';
           alertBox.textContent = err.message || 'Không thể tạo đăng ký khóa học.';
           btn.disabled = false;
-          btn.textContent = 'Xác nhận Đăng ký & Mở Mã QR →';
+          btn.textContent = 'Xác nhận đăng ký';
         }
       });
     }
 
-    function renderQrPaymentStep(enrollment) {
-      document.getElementById('enrollQrModalTitle').textContent = 'Đăng ký khóa học thành công';
-      document.getElementById('enrollQrModalBody').innerHTML = `<p>Hóa đơn <b>${escapeHtml(enrollment.hoaDon.code)}</b> đã được phát hành. Mở cổng Phụ huynh để xem QR và tài khoản nhận tiền do Admin chọn.</p><a class="btn p" href="/app#/parent/parent-billing">Mở hóa đơn & Thanh toán</a>`;
-    }
-
-    function bindDetailButtons() {
+    function bindCourseButtons() {
       const modal = document.getElementById('modalCourseDetail');
       const modalTitle = document.getElementById('modalCourseTitle');
       const modalBody = document.getElementById('modalCourseContent');
@@ -785,12 +1468,16 @@
 
           modalTitle.textContent = info.title;
           modalBody.innerHTML = `
-            <p style="margin-bottom:12px;">${escapeHtml(info.desc)}</p>
-            <div style="background:var(--pri-ll); padding:14px; border-radius:8px; border:1px solid var(--pri-l);">
-              <b style="color:var(--pri-d); display:block; margin-bottom:6px;">Điểm nổi bật của khóa:</b>
-              <ul style="margin:0 0 0 16px; padding:0; font-size:12.5px;">
-                ${(info.highlights || []).map(h => `<li style="margin-bottom:4px;">${escapeHtml(h)}</li>`).join('')}
-              </ul>
+            <p style="margin:0 0 12px;">${escapeHtml(info.desc || 'Khóa học thu trọn gói theo quy định niêm yết của trung tâm.')}</p>
+            <div style="background:var(--g50);padding:14px;border-radius:10px;border:1px solid var(--g200);font-size:13px;">
+              <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                <span style="color:var(--g500);">Mã khóa học</span>
+                <b style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">${escapeHtml(info.code)}</b>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                <span style="color:var(--g500);">Học phí trọn khóa</span>
+                <b>${escapeHtml(formatVnd(info.price))}</b>
+              </div>
             </div>
           `;
           if (btnConsult) {
@@ -802,7 +1489,7 @@
           if (btnEnroll) {
             btnEnroll.onclick = () => {
               modal.classList.remove('show');
-              openEnrollQrModal({ id: info.id, code: info.code || code, title: info.title, price: info.price || 0 });
+              openEnrollQrModal({ id: info.id, code: info.code, title: info.title, price: info.price });
             };
           }
           modal.classList.add('show');
@@ -814,115 +1501,341 @@
           openEnrollQrModal({
             id: btn.dataset.id ? Number(btn.dataset.id) : null,
             code: btn.dataset.code || '',
-            title: btn.dataset.name || 'Khóa học trọn gói',
+            title: btn.dataset.name || 'Khóa học',
             price: Number(btn.dataset.price || 0)
           });
         };
       });
     }
 
+    const CAROUSEL_CONTROLLERS = {};
+
+    function initHorizontalCarousel(trackId) {
+      const track = document.getElementById(trackId);
+      const controls = document.querySelector(`[data-carousel-controls="${trackId}"]`);
+      if (!track || !controls) return null;
+
+      const prevBtn = controls.querySelector('[data-dir="-1"]');
+      const nextBtn = controls.querySelector('[data-dir="1"]');
+      let rafId = 0;
+
+      const getStepInfo = () => {
+        const firstCard = track.querySelector('article');
+        if (!firstCard) return { cardStep: track.clientWidth, pageStep: track.clientWidth };
+        const style = window.getComputedStyle(track);
+        const gap = parseFloat(style.columnGap || style.gap || '0') || 0;
+        const cardStep = firstCard.getBoundingClientRect().width + gap;
+        const visibleCount = Math.max(1, Math.floor((track.clientWidth + gap + 2) / cardStep));
+        return { cardStep, pageStep: cardStep * visibleCount };
+      };
+
+      const update = () => {
+        const cards = track.querySelectorAll('article');
+        const hasCards = cards.length > 0;
+        if (!hasCards) {
+          track.classList.remove('is-scrollable');
+          controls.hidden = true;
+          if (prevBtn) prevBtn.disabled = true;
+          if (nextBtn) nextBtn.disabled = true;
+          return;
+        }
+
+        const isMobile = window.matchMedia('(max-width: 600px)').matches;
+        const canOverflow = isMobile ? cards.length > 1 : (track.scrollWidth > track.clientWidth + 2);
+        track.classList.toggle('is-scrollable', canOverflow);
+
+        // Re-measure after toggling mobile peek width
+        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+        const scrollable = maxScroll > 2;
+        controls.hidden = !scrollable;
+        if (prevBtn) prevBtn.disabled = !scrollable || track.scrollLeft <= 2;
+        if (nextBtn) nextBtn.disabled = !scrollable || track.scrollLeft >= maxScroll - 2;
+      };
+
+      const scheduleUpdate = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
+          update();
+        });
+      };
+
+      const scrollByDelta = (delta) => {
+        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+        if (maxScroll <= 2) return;
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const target = Math.max(0, Math.min(maxScroll, track.scrollLeft + delta));
+        track.scrollTo({ left: target, behavior: reduced ? 'auto' : 'smooth' });
+      };
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          const { pageStep } = getStepInfo();
+          scrollByDelta(-pageStep);
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          const { pageStep } = getStepInfo();
+          scrollByDelta(pageStep);
+        });
+      }
+
+      track.addEventListener('scroll', scheduleUpdate, { passive: true });
+      track.addEventListener('keydown', (ev) => {
+        const tag = ev.target && ev.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+        if (maxScroll <= 2) return;
+        const { cardStep, pageStep } = getStepInfo();
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (ev.key === 'ArrowRight') {
+          ev.preventDefault();
+          scrollByDelta(cardStep);
+        } else if (ev.key === 'ArrowLeft') {
+          ev.preventDefault();
+          scrollByDelta(-cardStep);
+        } else if (ev.key === 'PageDown') {
+          ev.preventDefault();
+          scrollByDelta(pageStep);
+        } else if (ev.key === 'PageUp') {
+          ev.preventDefault();
+          scrollByDelta(-pageStep);
+        } else if (ev.key === 'Home') {
+          ev.preventDefault();
+          track.scrollTo({ left: 0, behavior: reduced ? 'auto' : 'smooth' });
+        } else if (ev.key === 'End') {
+          ev.preventDefault();
+          track.scrollTo({ left: maxScroll, behavior: reduced ? 'auto' : 'smooth' });
+        }
+      });
+
+      if ('ResizeObserver' in window) {
+        const ro = new ResizeObserver(scheduleUpdate);
+        ro.observe(track);
+      } else {
+        window.addEventListener('resize', scheduleUpdate, { passive: true });
+      }
+
+      const controller = {
+        refresh(resetScroll = false) {
+          if (resetScroll) track.scrollLeft = 0;
+          scheduleUpdate();
+        }
+      };
+      CAROUSEL_CONTROLLERS[trackId] = controller;
+      return controller;
+    }
+
+    function refreshAllCarousels(resetScroll = false) {
+      Object.values(CAROUSEL_CONTROLLERS).forEach(ctrl => ctrl.refresh(resetScroll));
+    }
+
+    function renderLoadingStates() {
+      document.getElementById('coursesListContainer').innerHTML = '<div class="l-state">Đang tải danh sách khóa học…</div>';
+      document.getElementById('tutorsListContainer').innerHTML = '<div class="l-state">Đang tải thông tin đội ngũ giảng dạy…</div>';
+      document.getElementById('campusesContainer').innerHTML = '<div class="l-state">Đang tải danh sách cơ sở…</div>';
+      document.getElementById('footerCampuses').innerHTML = '<p>Đang tải thông tin cơ sở…</p>';
+      refreshAllCarousels(true);
+    }
+
+    function renderErrorStates(message) {
+      const box = `<div class="l-state error"><div>${escapeHtml(message)}</div><button type="button" class="btn sm" onclick="loadPublicLandingData()">Thử lại</button></div>`;
+      document.getElementById('coursesListContainer').innerHTML = box;
+      document.getElementById('tutorsListContainer').innerHTML = box;
+      document.getElementById('campusesContainer').innerHTML = box;
+      document.getElementById('footerCampuses').innerHTML = '<p>Chưa tải được thông tin cơ sở.</p>';
+      refreshAllCarousels(true);
+    }
+
     async function loadPublicLandingData() {
       if (typeof HttpService === 'undefined') return;
+      renderLoadingStates();
       try {
         const res = await HttpService.get('/people/parents/public/landing');
         const data = res && res.data ? res.data : null;
-        if (!data) return;
+        if (!data) throw new Error('Không nhận được dữ liệu từ máy chủ.');
 
-        // 1. Render danh mục khóa học từ Backend nếu có dữ liệu
-        if (Array.isArray(data.courses) && data.courses.length > 0) {
-          const coursesEl = document.getElementById('coursesListContainer');
-          const selectEl = document.getElementById('courseSelect');
-          const tagStyles = ['ok', 'i', 'purple', 'warn'];
+        const courses = Array.isArray(data.courses) ? data.courses : [];
+        const subjects = Array.isArray(data.subjects) ? data.subjects : [];
+        const gradeLevels = Array.isArray(data.gradeLevels) ? data.gradeLevels : [];
+        const campuses = Array.isArray(data.campuses) ? data.campuses : [];
+        const teachers = Array.isArray(data.teachers) ? data.teachers : [];
+        LANDING_GRADES = gradeLevels;
 
-          coursesEl.innerHTML = data.courses.map((c, idx) => {
+        // Real DB counts only (exact counts from backend stats, fallback to array length)
+        const stats = data.stats && typeof data.stats === 'object' ? data.stats : {};
+        document.getElementById('statCourses').textContent = String(stats.courses ?? courses.length);
+        document.getElementById('statSubjects').textContent = String(stats.subjects ?? subjects.length);
+        document.getElementById('statTeachers').textContent = String(stats.teachers ?? teachers.length);
+        document.getElementById('statCampuses').textContent = String(stats.campuses ?? campuses.length);
+
+        // Subjects pills + select
+        const subjectsEl = document.getElementById('subjectsContainer');
+        if (subjects.length) {
+          subjectsEl.innerHTML = subjects.map(s => `<span class="l-subject-pill">${escapeHtml(s.ten)}</span>`).join('');
+        } else {
+          subjectsEl.innerHTML = '';
+        }
+        const subjectSelect = document.getElementById('subjectSelect');
+        if (subjectSelect) {
+          subjectSelect.innerHTML = '<option value="">Chọn môn học</option>' +
+            subjects.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.ten)}</option>`).join('');
+        }
+
+        // Grade levels select
+        const gradeSelect = document.getElementById('gradeSelect');
+        if (gradeSelect) {
+          gradeSelect.innerHTML = '<option value="">Chọn khối lớp</option>' +
+            gradeLevels.map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.ten)}</option>`).join('');
+        }
+
+        // Courses cards + select
+        const coursesEl = document.getElementById('coursesListContainer');
+        const courseSelect = document.getElementById('courseSelect');
+        Object.keys(COURSE_DETAILS).forEach(k => delete COURSE_DETAILS[k]);
+
+        if (courses.length) {
+          coursesEl.innerHTML = courses.map(c => {
             const code = c.ma || `KHOA-${c.id}`;
-            const priceFormatted = Number(c.hocPhi || 0).toLocaleString('vi-VN') + ' đ';
-            const tagClass = tagStyles[idx % tagStyles.length];
-            const tagLabel = c.tenMonHoc ? `${c.tenMonHoc}` : 'Khóa đào tạo trọn gói';
-            COURSE_DETAILS[code] = {
-              id: c.id,
-              code: code,
-              title: c.ten,
-              price: Number(c.hocPhi || 0),
-              desc: c.moTa || 'Khóa đào tạo tiêu chuẩn thu trọn từng khóa theo quy ước của EduCenter ERP.',
-              highlights: [
-                `Mã khóa học: ${code}`,
-                `Học phí trọn khóa niêm yết: ${priceFormatted}`,
-                'Duyệt hồ sơ người dạy và theo dõi tiến độ từng buổi trên Cổng Phụ Huynh'
-              ]
-            };
+            const price = Number(c.hocPhi || 0);
+            COURSE_DETAILS[code] = { id: c.id, code, title: c.ten, price, desc: c.moTa || '' };
             return `
-              <div class="pub-course-card">
-                <div style="margin-bottom:14px;">
-                  <span class="tag ${tagClass}" style="margin-bottom:8px;">${escapeHtml(tagLabel)}</span>
-                  <h3 style="font-size:17px; font-weight:700; color:var(--g900); margin:4px 0 8px;">${escapeHtml(c.ten)}</h3>
-                  <p style="font-size:13px; color:var(--g600); line-height:1.5;">${escapeHtml(c.moTa || 'Giáo án thiết kế bám sát năng lực học viên, cam kết chất lượng đầu ra.')}</p>
-                </div>
+              <article class="l-course-card">
                 <div>
-                  <div class="c-price">${priceFormatted} <span style="font-size:12px; font-weight:normal; color:var(--g500);">/ trọn khóa</span></div>
-                  <div style="display:flex; gap:8px; margin-top:14px;">
-                    <button class="btn sm btn-detail" style="flex:1; justify-content:center;" data-code="${escapeHtml(code)}">Chi tiết</button>
-                    <button type="button" class="btn p sm btn-enroll-qr" style="flex:1; justify-content:center;" data-id="${escapeHtml(c.id)}" data-code="${escapeHtml(code)}" data-name="${escapeHtml(c.ten)}" data-price="${escapeHtml(c.hocPhi || 0)}">Đăng ký</button>
+                  <span class="l-course-code">${escapeHtml(code)}</span>
+                  <h3>${escapeHtml(c.ten)}</h3>
+                  <p>${escapeHtml(c.moTa || 'Khóa học thu trọn gói theo chương trình của trung tâm.')}</p>
+                </div>
+                <div class="l-course-foot">
+                  <div class="l-price">${escapeHtml(formatVnd(price))} <small>/ trọn khóa</small></div>
+                  <div class="l-course-actions">
+                    <button type="button" class="btn sm btn-detail" data-code="${escapeHtml(code)}">Chi tiết</button>
+                    <button type="button" class="btn p sm btn-enroll-qr" data-id="${escapeHtml(c.id)}" data-code="${escapeHtml(code)}" data-name="${escapeHtml(c.ten)}" data-price="${escapeHtml(price)}">Đăng ký</button>
                   </div>
                 </div>
-              </div>
+              </article>
             `;
           }).join('');
-
-          if (selectEl) {
-            selectEl.innerHTML = data.courses.map(c =>
-              `<option value="${escapeHtml(c.ten)}">${escapeHtml(c.ten)} (${Number(c.hocPhi || 0).toLocaleString('vi-VN')} đ)</option>`
-            ).join('') + '<option value="Khác">Khác (Cần tư vấn lộ trình riêng)</option>';
-          }
-
-          bindDetailButtons();
+          bindCourseButtons();
+        } else {
+          coursesEl.innerHTML = '<div class="l-state">Hiện chưa có khóa học nào mở đăng ký. Bạn có thể gửi yêu cầu tư vấn bên dưới để giáo vụ hỗ trợ.</div>';
         }
 
-        // 2. Render đội ngũ Giáo viên & Gia sư từ Backend nếu có dữ liệu
-        if (Array.isArray(data.teachers) && data.teachers.length > 0) {
-          const tutorsEl = document.getElementById('tutorsListContainer');
-          const avatars = ['👨‍🏫', '👩‍🏫', '👨‍🎓', '👩‍🎓'];
-          tutorsEl.innerHTML = data.teachers.map((t, idx) => {
-            const roleMap = {
-              giao_vien: 'Giáo viên',
-              gia_su: 'Gia sư',
-              tro_giang: 'Trợ giảng'
-            };
-            const rawRole = String(t.phanLoai || 'gia_su').split(',')[0];
-            const roleLabel = roleMap[rawRole] || 'Giáo viên / Gia sư';
-            const expText = Number(t.kinhNghiemNam || 0) > 0 ? ` · ${t.kinhNghiemNam} năm KN` : '';
-            const subTitle = t.chuyenMon
-              ? `${roleLabel} ${t.chuyenMon}${expText}`
-              : `${roleLabel}${t.donViCongTac ? ' · ' + t.donViCongTac : expText}`;
-            const desc = t.gioiThieu || (t.donViCongTac ? `Đơn vị công tác: ${t.donViCongTac}. Phương pháp giảng dạy tận tâm, bám sát học lực học sinh.` : 'Hồ sơ năng lực đã kiểm định bởi Hội đồng Học vụ EduCenter.');
+        if (courseSelect) {
+          courseSelect.innerHTML =
+            courses.map(c => `<option value="${escapeHtml(c.ten)}">${escapeHtml(c.ten)} (${escapeHtml(formatVnd(c.hocPhi))})</option>`).join('') +
+            '<option value="Tư vấn lộ trình phù hợp">Khác (Cần tư vấn lộ trình riêng)</option>';
+        }
+
+        // Teachers
+        const tutorsEl = document.getElementById('tutorsListContainer');
+        if (teachers.length) {
+          const roleMap = { giao_vien: 'Giáo viên', gia_su: 'Gia sư', tro_giang: 'Trợ giảng' };
+          tutorsEl.innerHTML = teachers.map(t => {
+            const roles = String(t.phanLoai || '').split(',').map(r => roleMap[r.trim()]).filter(Boolean);
+            const roleText = roles.length ? roles.join(' · ') : 'Giảng dạy';
+            const expYears = Number(t.kinhNghiemNam || 0);
+            const metaParts = [];
+            if (t.chuyenMon) metaParts.push('Môn: ' + t.chuyenMon);
+            if (expYears > 0) metaParts.push(expYears + ' năm kinh nghiệm');
+            if (t.donViCongTac) metaParts.push(t.donViCongTac);
             return `
-              <div class="pub-tutor-card">
-                <div style="width:64px; height:64px; border-radius:50%; background:var(--pri-ll); border:2px solid var(--pri-l); margin:0 auto 12px; display:grid; place-items:center; font-size:28px;">
-                  ${avatars[idx % avatars.length]}
+              <article class="l-teacher-card">
+                <div class="l-teacher-head">
+                  <div class="l-avatar" aria-hidden="true">${escapeHtml(nameInitial(t.hoTen))}</div>
+                  <div>
+                    <h3>${escapeHtml(t.hoTen)}</h3>
+                    <div class="l-teacher-role">${escapeHtml(roleText)}</div>
+                  </div>
                 </div>
-                <h4 style="font-size:15px; font-weight:700; color:var(--g900); margin:0 0 3px; text-align:center;">${escapeHtml(t.hoTen)}</h4>
-                <div style="font-size:12px; color:var(--pri-d); font-weight:600; text-align:center; margin-bottom:8px;">${escapeHtml(subTitle)}</div>
-                <p style="font-size:12.5px; color:var(--g600); text-align:center; line-height:1.45; margin:0;">${escapeHtml(desc)}</p>
-              </div>
+                ${metaParts.length ? `<div class="l-teacher-meta">${escapeHtml(metaParts.join(' · '))}</div>` : ''}
+                ${t.gioiThieu ? `<p class="l-teacher-bio">${escapeHtml(t.gioiThieu)}</p>` : ''}
+              </article>
             `;
           }).join('');
+        } else {
+          tutorsEl.innerHTML = '<div class="l-state">Chưa có hồ sơ đội ngũ giảng dạy công khai trên hệ thống.</div>';
         }
+
+        // Campuses (public contact from DB only)
+        const campusesEl = document.getElementById('campusesContainer');
+        const footerCampusesEl = document.getElementById('footerCampuses');
+        if (campuses.length) {
+          campusesEl.innerHTML = campuses.map(cs => `
+            <article class="l-campus-card">
+              <h3>${escapeHtml(cs.tenCoSo)}</h3>
+              <div class="l-campus-meta">
+                ${cs.diaChi ? `<span>Địa chỉ: ${escapeHtml(cs.diaChi)}${cs.tenKhuVuc ? ' (' + escapeHtml(cs.tenKhuVuc) + ')' : ''}</span>` : ''}
+                ${cs.soDienThoai ? `<span>Điện thoại: ${escapeHtml(cs.soDienThoai)}</span>` : ''}
+                ${cs.email ? `<span>Email: ${escapeHtml(cs.email)}</span>` : ''}
+              </div>
+            </article>
+          `).join('');
+
+          footerCampusesEl.innerHTML = campuses.map(cs => {
+            const parts = [cs.tenCoSo, cs.diaChi, cs.soDienThoai].filter(Boolean);
+            return `<p>${escapeHtml(parts.join(' · '))}</p>`;
+          }).join('');
+        } else {
+          campusesEl.innerHTML = '<div class="l-state">Chưa có cơ sở đào tạo công khai trên hệ thống. Vui lòng gửi phiếu tư vấn bên cạnh để được liên hệ.</div>';
+          footerCampusesEl.innerHTML = '<p>Chưa cập nhật danh sách cơ sở công khai.</p>';
+        }
+        refreshAllCarousels(true);
       } catch (err) {
-        console.warn('[Landing] Sử dụng dữ liệu giới thiệu mặc định khi chưa kết nối API:', err.message);
+        console.warn('[Landing API]', err);
+        renderErrorStates('Không thể tải dữ liệu từ máy chủ lúc này. Vui lòng thử lại sau.');
+      }
+    }
+
+    async function syncCookieSession() {
+      if (AccessService.isAuthenticated()) {
+        updateHeaderAuthNav();
+        return;
+      }
+      try {
+        const res = await fetch(`${AppConfig.API_BASE_URL}/auth/me`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { Accept: 'application/json' }
+        });
+        if (!res.ok) return;
+        const body = await res.json();
+        const user = body?.data?.user || body?.data;
+        if (user && user.role) {
+          AccessService.setSession(null, user);
+          updateHeaderAuthNav();
+        }
+      } catch {
+        // Guest visitor or offline API: keep default Login button
       }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      if (AccessService.isAuthenticated()) {
-        const user = AccessService.getCurrentUser();
-        const navContainer = document.getElementById('authNavButtons');
-        if (user && navContainer) {
-          navContainer.innerHTML = `
-            <button class="btn p" onclick="AccessService.redirectByRole()">
-              Chào ${escapeHtml(user.hoTen || user.username)} (Vào Cổng →)
-            </button>
-          `;
-        }
+      syncCookieSession();
+
+      // Subtle header elevation on scroll
+      const headerEl = document.querySelector('.l-header');
+      if (headerEl) {
+        const onScroll = () => headerEl.classList.toggle('is-scrolled', window.scrollY > 10);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      }
+
+      // Gentle scroll-reveal (respects reduced motion)
+      const revealEls = document.querySelectorAll('.l-reveal');
+      if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const observer = new IntersectionObserver((entries, obs) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              obs.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.08, rootMargin: '0px 0px -24px 0px' });
+        revealEls.forEach((el) => observer.observe(el));
+      } else {
+        revealEls.forEach((el) => el.classList.add('is-visible'));
       }
 
       const modal = document.getElementById('modalCourseDetail');
@@ -930,60 +1843,61 @@
       const enrollQrModal = document.getElementById('modalCourseEnrollQr');
       const closeEnrollQrBtn = document.getElementById('closeEnrollQrModal');
 
-      bindDetailButtons();
       closeBtn.addEventListener('click', () => modal.classList.remove('show'));
-      if (closeEnrollQrBtn && enrollQrModal) {
-        closeEnrollQrBtn.addEventListener('click', () => enrollQrModal.classList.remove('show'));
-        enrollQrModal.addEventListener('click', (ev) => {
-          if (ev.target === enrollQrModal) enrollQrModal.classList.remove('show');
-        });
-      }
-      modal.addEventListener('click', (ev) => {
-        if (ev.target === modal) modal.classList.remove('show');
+      closeEnrollQrBtn.addEventListener('click', () => enrollQrModal.classList.remove('show'));
+      modal.addEventListener('click', (ev) => { if (ev.target === modal) modal.classList.remove('show'); });
+      enrollQrModal.addEventListener('click', (ev) => { if (ev.target === enrollQrModal) enrollQrModal.classList.remove('show'); });
+      document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape') {
+          modal.classList.remove('show');
+          enrollQrModal.classList.remove('show');
+        }
       });
 
-      // Nạp dữ liệu khóa học & giáo viên thật từ Backend
+      initHorizontalCarousel('coursesListContainer');
+      initHorizontalCarousel('tutorsListContainer');
       loadPublicLandingData();
 
-      // Xử lý gửi Phiếu tiếp nhận nhu cầu học qua Backend API
       const consultForm = document.getElementById('consultForm');
       const consultAlert = document.getElementById('consultAlert');
       const btnSubmitConsult = document.getElementById('btnSubmitConsult');
 
       consultForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const parentName = document.getElementById('parentName').value.trim();
-        const phone = document.getElementById('parentPhone').value.trim();
-        const course = document.getElementById('courseSelect').value;
-        const note = document.getElementById('parentNote').value.trim();
+        const hoTenLienHe = document.getElementById('parentName').value.trim();
+        const sdtLienHe = document.getElementById('parentPhone').value.trim();
+        const emailLienHe = document.getElementById('parentEmail').value.trim();
+        const monHocVal = document.getElementById('subjectSelect').value;
+        const capLopVal = document.getElementById('gradeSelect').value;
+        const khoaHocQuanTam = document.getElementById('courseSelect').value;
+        const ghiChu = document.getElementById('parentNote').value.trim();
+
+        const payload = {
+          hoTenLienHe,
+          sdtLienHe,
+          khoaHocQuanTam: khoaHocQuanTam || null,
+          ghiChu: ghiChu || null,
+        };
+        if (emailLienHe) payload.emailLienHe = emailLienHe;
+        if (monHocVal) payload.monHocId = Number(monHocVal);
+        if (capLopVal) payload.capLopId = Number(capLopVal);
 
         btnSubmitConsult.disabled = true;
-        btnSubmitConsult.textContent = 'Đang gửi yêu cầu lên hệ thống...';
-        consultAlert.style.display = 'none';
+        btnSubmitConsult.textContent = 'Đang gửi yêu cầu…';
+        consultAlert.className = 'l-alert';
 
         try {
-          const response = await HttpService.post('/people/parents/public/consultations', {
-            hoTenLienHe: parentName,
-            sdtLienHe: phone,
-            khoaHocQuanTam: course,
-            ghiChu: note
-          });
+          const response = await HttpService.post('/people/parents/public/consultations', payload);
           const maYc = response?.data?.maYc ? ` (Mã phiếu: ${response.data.maYc})` : '';
-          consultAlert.style.display = 'block';
-          consultAlert.style.background = '#ecfdf5';
-          consultAlert.style.border = '1px solid #a7f3d0';
-          consultAlert.style.color = '#065f46';
-          consultAlert.textContent = `✓ Đã gửi yêu cầu tư vấn khóa [${course}] thành công${maYc}! Bộ phận Giáo vụ sẽ liên hệ SĐT ${phone} trong 30 phút.`;
+          consultAlert.className = 'l-alert ok show';
+          consultAlert.textContent = `Đã ghi nhận yêu cầu tư vấn${maYc}. Bộ phận Giáo vụ sẽ liên hệ qua số ${sdtLienHe}.`;
           consultForm.reset();
         } catch (err) {
-          consultAlert.style.display = 'block';
-          consultAlert.style.background = '#fef2f2';
-          consultAlert.style.border = '1px solid #fecaca';
-          consultAlert.style.color = '#b91c1c';
-          consultAlert.textContent = err.message || 'Không thể kết nối máy chủ. Vui lòng kiểm tra lại thông tin hoặc thử lại.';
+          consultAlert.className = 'l-alert err show';
+          consultAlert.textContent = err.message || 'Không thể gửi yêu cầu lúc này. Vui lòng thử lại.';
         } finally {
           btnSubmitConsult.disabled = false;
-          btnSubmitConsult.textContent = 'Gửi Yêu Cầu Cho Giáo Vụ';
+          btnSubmitConsult.textContent = 'Gửi yêu cầu tư vấn';
         }
       });
     });

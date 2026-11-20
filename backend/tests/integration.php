@@ -144,8 +144,10 @@ try {
         }
         foreach([1,2] as $load) {
             [$status,,$html]=http('/app','GET',null,null,null,[$cookie]);
-            check($status===200 && str_contains($html,$marker) && str_contains($html,'id="portal-session"'),'role page and refresh '.$role.' '.$load);
+            check($status===200 && str_contains($html,$marker) && str_contains($html,'id="portal-session"') && !str_contains($html,$ownToken),'role page and refresh without token in HTML '.$role.' '.$load);
         }
+        check(http('/api/auth/me','GET',null,null,null,[$cookie])[0]===200,'cookie-only auth works for API GET '.$role);
+        check(http('/api/auth/logout','POST',null,null,'',[$cookie,'Origin: https://evil.example'])[0]===403,'cookie auth blocks cross-site CSRF without XHR header '.$role);
         [$status,,,$headers]=http('/api/auth/logout','POST',[],$body['data']['token'],null,[$cookie]);
         check($status===200 && str_contains(implode("\n",$headers),'educenter_session='),'logout clears cookie '.$role);
         [$status,,,$headers]=http('/app','GET',null,null,null,[$cookie]);
@@ -429,6 +431,54 @@ try {
         check(http('/api/auth/me','GET',null,$ownToken)[0]===401 && http('/api/auth/me','GET',null,$second['token'])[0]===401,'all prior sessions invalidated '.$role);
         check(http('/api/auth/login','POST',['username'=>$portalUsername,'password'=>$portalPassword])[0]===401,'old password refused '.$role);
         check(requestOk('/api/auth/login','POST',['username'=>$portalUsername,'password'=>$newPassword])['user']['role']===$role,'new password preserves spaces and role '.$role);
+    }
+    // Remember Me (7d max JWT + synchronized cookie) and Google login DB account-matching checks.
+    [$remStatus,$remBody,,$remHeaders]=http('/api/auth/login','POST',['username'=>$username,'password'=>'Recovered@789','rememberMe'=>true]);
+    check($remStatus===200 && $remBody['data']['rememberMe']===true && $remBody['data']['expiresIn']===604800,'rememberMe issues 7-day session');
+    $remSetCookie=implode("\n",array_filter($remHeaders,static fn($h)=>str_starts_with(strtolower($h),'set-cookie:')));
+    check(str_contains(strtolower($remSetCookie),'max-age=') || str_contains(strtolower($remSetCookie),'expires='),'rememberMe persists cookie across browser restarts');
+    preg_match('/educenter_session=([^;]+)/',$remSetCookie,$remCookieMatch);
+    $remCookie='Cookie: educenter_session='.$remCookieMatch[1];
+    check(http('/login','GET',null,null,null,[$remCookie])[0]===303,'already-authenticated cookie on /login redirects to /app');
+    check(http('/api/auth/logout','POST',[],null,null,[$remCookie,'X-Requested-With: XMLHttpRequest'])[0]===200,'cookie-only logout revokes remembered session');
+    check(http('/api/auth/me','GET',null,null,null,[$remCookie])[0]===401,'revoked 7-day cookie immediately rejected');
+
+    $rsa=openssl_pkey_new(['private_key_bits'=>2048,'private_key_type'=>OPENSSL_KEYTYPE_RSA]);
+    openssl_pkey_export($rsa,$gPriv);
+    $gPub=openssl_pkey_get_details($rsa)['rsa'];
+    $b64u=static fn(string $bin)=>rtrim(strtr(base64_encode($bin),'+/','-_'),'=');
+    $gJwks=['keys'=>[['kty'=>'RSA','alg'=>'RS256','use'=>'sig','kid'=>'int-kid','n'=>$b64u($gPub['n']),'e'=>$b64u($gPub['e'])]]];
+    $gLoader=new ReflectionProperty(\App\Modules\Administration\Features\Auth\GoogleIdentity::class,'jwksLoader');
+    $gLoader->setValue(null,static fn(bool $r)=>$gJwks);
+    $prevGClient=getenv('GOOGLE_CLIENT_ID');
+    putenv('GOOGLE_CLIENT_ID=int-client.apps.googleusercontent.com');
+    try {
+        $makeGToken=static fn(string $email,bool $verified=true)=>\Firebase\JWT\JWT::encode([
+            'iss'=>'https://accounts.google.com','aud'=>'int-client.apps.googleusercontent.com',
+            'sub'=>'google-sub-'.$suffix,'email'=>$email,'email_verified'=>$verified,
+            'iat'=>time(),'exp'=>time()+600,
+        ],$gPriv,'RS256','int-kid');
+        $gAdmin=AuthService::googleLogin(['credential'=>$makeGToken($login['user']['email']),'rememberMe'=>true]);
+        check($gAdmin['user']['role']==='ADMIN' && $gAdmin['rememberMe']===true && $gAdmin['expiresIn']===604800,'Google login matches active existing account and DB role');
+        $usersBefore=(int)Store::one('SELECT COUNT(*) AS n FROM users')['n'];
+        $accountsBefore=(int)Store::one('SELECT COUNT(*) AS n FROM account')['n'];
+        try {
+            AuthService::googleLogin(['credential'=>$makeGToken("unlinked.$suffix@gmail.com"),'rememberMe'=>false]);
+            check(false,'unlinked Google email must be rejected');
+        } catch (\App\Shared\ApiException $error) {
+            check($error->status===403 && $error->errorCode==='GOOGLE_ACCOUNT_NOT_LINKED','unlinked Google email returns 403 guidance');
+        }
+        check((int)Store::one('SELECT COUNT(*) AS n FROM users')['n']===$usersBefore && (int)Store::one('SELECT COUNT(*) AS n FROM account')['n']===$accountsBefore,'Google login never auto-creates user or account');
+        Store::execute("UPDATE account SET status='locked' WHERE account_id=?",[$staffAccount]);
+        try {
+            AuthService::googleLogin(['credential'=>$makeGToken("staff.$suffix@example.test"),'rememberMe'=>false]);
+            check(false,'locked account must be rejected for Google login');
+        } catch (\App\Shared\ApiException $error) {
+            check($error->status===403 && $error->errorCode==='ACCOUNT_INACTIVE','locked account rejected on Google login');
+        }
+    } finally {
+        $gLoader->setValue(null,null);
+        putenv($prevGClient===false?'GOOGLE_CLIENT_ID':'GOOGLE_CLIENT_ID='.$prevGClient);
     }
     echo "PASS: $assertions HTTP/MySQL integration assertions on isolated test database.\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); $failed=true; }

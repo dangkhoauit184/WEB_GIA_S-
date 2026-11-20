@@ -142,7 +142,7 @@ window.AccountUI = (() => {
     if (pending) return;
     open("Đăng xuất", '<p role="status">Đang đăng xuất…</p>');
     pending = true;
-    try { await api("/auth/logout","post",{}); AccessService.clearSession(); window.location.replace(AppConfig.AUTH_PAGE); }
+    try { await api("/auth/logout","post",{}); AccessService.markLoggedOut(); window.location.replace(AppConfig.AUTH_PAGE + "?loggedOut=1"); }
     catch (error) { open("Đăng xuất", `<p class="account-error" role="alert">${esc(error.message)}</p><button class="btn" data-account-action="logout">Thử lại</button>`); }
     finally { pending = false; }
   }
