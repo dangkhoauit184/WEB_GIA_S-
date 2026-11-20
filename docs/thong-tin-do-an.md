@@ -121,7 +121,7 @@ Nội dung buổi, bài giảng, đề giao về nhà và điểm bài chấm l�
 
 Admin tạo/quản lý tài khoản và nhóm quyền. users là hồ sơ con người; account có username, hash mật khẩu, nhóm và trạng thái. Hồ sơ nhân viên, chuyên môn và học viên liên kết riêng; user_id không đồng nghĩa nhan_su_id/hoc_vien_id/account_id.
 
-Người dùng đăng nhập → kiểm tra bcrypt/tài khoản active → phát JWT → mỗi request kiểm tra lại account/nhóm/quyền/scope → điều hướng đúng cổng. Logout lưu hash token bị thu hồi; đổi mật khẩu làm phiên cũ mất hiệu lực. Không trả password_hash trong API. Không dùng màn chọn vai trò của prototype làm cơ chế phân quyền thật.
+Người dùng đăng nhập → kiểm tra bcrypt/tài khoản active (hoặc xác minh Google ID token RS256 qua `POST /api/auth/google` khớp đúng `GOOGLE_CLIENT_ID`, `iss`, `exp`, `email_verified=true` và `users.email` hiện có, không tự tạo tài khoản/vai trò) → phát JWT trong cookie `HttpOnly` `educenter_session` (phiên ngắn `JWT_EXPIRES_IN` mặc định 8h, hoặc tối đa 7 ngày qua `JWT_REMEMBER_EXPIRES_IN` khi chọn Ghi nhớ đăng nhập; không lưu access token vào `localStorage`) → mỗi request kiểm tra lại account/nhóm/quyền/scope → điều hướng đúng cổng. Logout lưu hash token bị thu hồi, xóa cookie và gọi `disableAutoSelect()` cho Google One Tap; đổi mật khẩu làm phiên cũ mất hiệu lực. Không trả password_hash trong API. Không dùng màn chọn vai trò của prototype làm cơ chế phân quyền thật.
 
 ### 4.2. Đăng ký khóa và nhu cầu ghép người dạy
 
@@ -429,6 +429,19 @@ BE luôn kiểm tra tài khoản, quyền, scope và chuyển trạng thái; kh�
 - Chỉ đánh dấu hoàn thành khi phần được giao gọi API PHP thật, lưu/đọc MySQL đúng, quyền được kiểm tra ở BE và có kết quả kiểm thử. Demo/localStorage, DB hoặc khung file riêng lẻ chưa chứng minh luồng đã chạy; phần chưa triển khai giữ TODO/status planned.
 
 Checklist thao tác dành cho đồng đội nằm ở [mục 8.3 của hướng dẫn sử dụng](huong-dan-cai-dat-va-su-dung.md#phoi-hop-nhom).
+
+<a id="cai-thien-backlog"></a>
+### 10.2. Danh sách hạng mục cải thiện ghi nhận (chưa triển khai)
+
+Các mục dưới đây được chủ đồ án ghi nhận để tổng hợp khi rà soát cải thiện đồ án; **chưa phải quyết định triển khai ngay**, chỉ thực hiện khi chủ đồ án yêu cầu cụ thể:
+
+- **Lọc khóa học theo môn học trên trang chủ công khai (`frontend/index.html` + BE/Admin):**
+  - Mục tiêu: biến dãy nút môn học trong khu vực *Khóa học & Môn học đang mở* thành bộ lọc thật (thêm nút `Tất cả` mặc định, bấm từng môn chỉ hiện khóa thuộc môn đó, giữ nguyên trượt ngang, reset vị trí trượt và cập nhật nút trái/phải, đủ trạng thái trống/tải/lỗi, hỗ trợ bàn phím và điện thoại, không đổi nghiệp vụ học phí/đăng ký).
+  - Thực trạng đã kiểm tra ngày 21/11/2026: bảng `khoa_hoc` (schema `005`) hiện chưa có cột `mon_hoc_id` và form Thêm/Sửa khóa học của Admin (`frontend/src/modules/administration/features/catalog/catalog.js`) chưa có ô chọn môn; quan hệ hiện tại đi gián tiếp qua `lop_hoc.mon_hoc_id` nên khóa chưa mở lớp sẽ có môn `NULL`.
+  - Phương án lựa chọn khi làm: (1) *Khuyến nghị:* bổ sung cột `khoa_hoc.mon_hoc_id` (nullable FK → `mon_hoc.id`) qua migration nhỏ + thêm ô chọn môn trong form Admin + hỗ trợ lọc ở API công khai; (2) giữ nguyên DB, lọc ở BE theo `lop_hoc.mon_hoc_id` (khóa chưa mở lớp chỉ hiện ở `Tất cả`); (3) lọc chuỗi theo tên khóa (dễ lệch nếu đặt tên không trùng tên môn).
+- **Sửa nét trang trí thừa ở tiêu đề có nút trượt trên trang chủ (`frontend/index.html`):** selector `.l-sec-head > div::before` đang áp dụng luôn lên khối nút `.l-carousel-controls`, tạo 1 vạch xanh ngắn thừa bên cạnh cặp nút `<` `>` (đổi sang `.l-sec-head > div:first-child::before`).
+- **Cờ duyệt hiển thị công khai hồ sơ giảng dạy (`nhan_su_chuyen_mon`):** cân nhắc thêm cờ chọn lọc (ví dụ `is_public`) để Admin quyết định ai được đưa lên website công khai thay vì mặc định lấy mọi nhân sự `trang_thai = 'hoat_dong'`.
+- **Cấu hình liên hệ/hotline chung của trung tâm (`cau_hinh`):** hiện trang chủ lấy liên hệ theo từng cơ sở `co_so`; có thể bổ sung khóa cấu hình hotline/email chung nếu trung tâm cần đầu mối tổng đài riêng.
 
 <a id="lich-su"></a>
 ## 11. Lịch sử và tài liệu nguồn
