@@ -8,12 +8,19 @@ use App\Modules\People\Features\Teachers\TeachersValidator;
 use App\Modules\Academic\Features\Scheduling\SchedulingValidator;
 use App\Modules\Academic\Features\Classes\ClassesValidator;
 use App\Modules\Academic\Features\Attendance\AttendanceValidator;
+use App\Modules\Administration\Features\Auth\AuthValidator;
 
 try {
     foreach(['Admin'=>'ADMIN','NhanVien'=>'GIAO_VU','TroGiang'=>'TRO_GIANG','PhuHuynh'=>'PHU_HUYNH'] as $group=>$role) check(Access::role($group)===$role,'role '.$group);
     check(Access::role('GiangVien','giao_vien,gia_su')==='GIAO_VIEN','teacher role');
     check(Access::role('GiangVien','gia_su')==='GIA_SU','tutor role');
     check(Access::role('unknown')===null,'unknown role denied');
+    check(\App\Modules\Finance\Features\Tuition\TuitionModel::vietQrPayload('970416','257678859',1000,'Chuyen tien') === '00020101021238530010A0000007270123000697041601092576788590208QRIBFTTA5303704540410005802VN62150811Chuyen tien6304BBB8','NAPAS QR matches independent published vector including CRC');
+    rejects(fn()=>\App\Modules\Finance\Features\Tuition\TuitionValidator::bank(['bankBin'=>'970436','bankName'=>'Demo','accountNo'=>'DEMOEDU01','accountName'=>'Demo','active'=>true,'isDemo'=>false]),'demo account cannot be marked as a real payment recipient');
+    $parsed=\App\Modules\Finance\Features\Tuition\TuitionModel::readVietQr('00020101021238530010A0000007270123000697041601092576788590208QRIBFTTA5303704540410005802VN62150811Chuyen tien6304BBB8');
+    check($parsed===['bankBin'=>'970416','accountNo'=>'257678859','amount'=>'1000','memo'=>'Chuyen tien'],'uploaded QR parser reads independent NAPAS vector');
+    rejects(fn()=>\App\Modules\Finance\Features\Tuition\TuitionModel::readVietQr('https://malicious.example/'),'URL QR is not a bank transfer QR');
+    rejects(fn()=>\App\Modules\Finance\Features\Tuition\TuitionModel::readVietQr(substr(\App\Modules\Finance\Features\Tuition\TuitionModel::vietQrPayload('970436','1234567890',1000,'TEST'),0,-4).'0000'),'QR checksum required');
     rejects(fn()=>StudentsValidator::validate(['maHv'=>'HV','hoTen'=>'A','phuHuynhUserId'=>-1]),'invalid parent id');
     rejects(fn()=>StudentsValidator::validate(['maHv'=>'HV','hoTen'=>'A','phuHuynhUserId'=>1,'ngaySinh'=>'2026-02-30']),'invalid calendar date');
     rejects(fn()=>StudentsValidator::validate(['hoTen'=>'  '],false),'blank update');
@@ -35,6 +42,11 @@ try {
     check(StudentsValidator::validate(['ghiChu'=>null],false)===['ghiChu'=>null],'explicit null update');
     check(StudentsValidator::validate([],false)===[],'missing fields not overwritten');
     check(Input::validate(['password'=>'  Abcd123  '],['password'=>['password',true]])['password']==='  Abcd123  ','password spaces preserved');
+    check(AuthValidator::login(['username'=>'demo','password'=>'      '])['password']==='      ','login preserves all password bytes');
+    check(AuthValidator::password(['currentPassword'=>'      ','newPassword'=>'  Abcd123  ','confirmPassword'=>'  Abcd123  '])===['currentPassword'=>'      ','newPassword'=>'  Abcd123  '],'change-password preserves password bytes');
+    rejects(fn()=>AuthValidator::password(['currentPassword'=>'old','newPassword'=>'abcdef','confirmPassword'=>'abcdef ']),'confirmation compares exact bytes');
+    rejects(fn()=>AuthValidator::password(['currentPassword'=>'old','newPassword'=>str_repeat('á',37)]),'password byte length validated');
+    rejects(fn()=>AuthValidator::password(['currentPassword'=>'old','newPassword'=>"abc\0def"]),'password null byte validated');
     check(AttendanceValidator::url('/uploads/de-bai.pdf')==='/uploads/de-bai.pdf','legacy local coursework links preserved');
     rejects(fn()=>AttendanceValidator::url('//example.test/file.pdf'),'protocol-relative coursework links refused');
     rejects(fn()=>AttendanceValidator::url('javascript:alert(1)'),'script coursework links refused');

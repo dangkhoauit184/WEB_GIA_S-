@@ -29,15 +29,59 @@ final class AuthService
     public static function changePassword(array $input): array
     {
         $user = AuthFilter::user();
-        $account = AuthRepository::account((int)$user['accountId']);
-        if (!password_verify($input['currentPassword'], $account['password_hash'])) {
-            throw new ApiException(400, 'Mật khẩu hiện tại không chính xác.', 'INVALID_CURRENT_PASSWORD');
-        }
-        Store::transaction(function () use ($account, $input, $user) {
+        Store::transaction(function () use ($input, $user) {
+            $account = Store::one('SELECT account_id,password_hash FROM account WHERE account_id=? AND is_deleted=0 FOR UPDATE', [$user['accountId']]);
+            if (!$account || !password_verify($input['currentPassword'], $account['password_hash'])) {
+                throw new ApiException(400, 'Mật khẩu hiện tại không chính xác.', 'INVALID_CURRENT_PASSWORD');
+            }
             Store::execute('UPDATE account SET password_hash=? WHERE account_id=?', [password_hash($input['newPassword'], PASSWORD_BCRYPT), $account['account_id']]);
             Store::audit((int)$user['userId'], 'sua', (int)$user['accountId'], ['action'=>'doi_mat_khau']);
         });
         return ['updated'=>true, 'requiresLogin'=>true];
+    }
+
+    public static function profile(): array
+    {
+        $actor = AuthFilter::user();
+        $profile = Store::one('SELECT hoten AS hoTen,email,sdt,ngaysinh AS ngaySinh,diachi AS diaChi,nghe_nghiep AS ngheNghiep FROM users WHERE user_id=? AND is_deleted=0', [$actor['userId']]);
+        if (!$profile) throw new ApiException(404, 'Không tìm thấy hồ sơ cá nhân.');
+        $profile += ['username'=>$actor['username'], 'role'=>$actor['role']];
+        if ($actor['role'] === 'GIAO_VU') {
+            $profile['staff'] = Store::one('SELECT nv.ma_nv AS maNv,nv.chuc_vu AS chucVu,nv.ngay_vao_lam AS ngayVaoLam,nv.trang_thai AS trangThai,cs.ten_co_so AS tenCoSo FROM nhan_vien nv LEFT JOIN co_so cs ON cs.id=nv.co_so_id WHERE nv.user_id=?', [$actor['userId']]);
+        } elseif (in_array($actor['role'], ['GIAO_VIEN','GIA_SU','TRO_GIANG'], true)) {
+            // Select public professional fields explicitly. Rates and banking data stay out of this endpoint.
+            $professional = Store::one('SELECT id,ma_ns AS maNs,gioi_tinh AS gioiTinh,don_vi_cong_tac AS donViCongTac,gioi_thieu AS gioiThieu,kinh_nghiem_nam AS kinhNghiemNam,hinh_thuc_day AS hinhThucDay,trang_thai AS trangThai FROM nhan_su_chuyen_mon WHERE user_id=? AND deleted_at IS NULL', [$actor['userId']]);
+            if ($professional) {
+                $extras = \App\Modules\People\Features\Teachers\TeachersRepository::extras((int)$professional['id']);
+                $professional['monDays'] = array_map(static fn($row)=>array_intersect_key($row, array_flip(['tenMon','capLopTu','capLopDen'])), $extras['monDays']);
+                $professional['khuVucs'] = $extras['khuVucs'];
+                $professional['lichRanhs'] = $extras['lichRanhs'];
+            }
+            $profile['professional'] = $professional;
+        } elseif ($actor['role'] === 'PHU_HUYNH') {
+            $profile['children'] = Store::rows('SELECT ma_hv AS maHv,ho_ten AS hoTen FROM hoc_vien WHERE phu_huynh_user_id=? AND deleted_at IS NULL ORDER BY ho_ten,id', [$actor['userId']]);
+        }
+        return $profile;
+    }
+
+    public static function updateProfile(array $body): array
+    {
+        $actor = AuthFilter::user();
+        $data = AuthValidator::profile($body, $actor['role']);
+        if (in_array($actor['role'], ['GIAO_VIEN','GIA_SU','TRO_GIANG'], true)) {
+            \App\Modules\People\Features\Teachers\TeachersService::updateProfile($data);
+        } else {
+            Store::transaction(function () use ($actor, $data) {
+                $before = Store::one('SELECT hoten,email,sdt,ngaysinh,diachi,nghe_nghiep FROM users WHERE user_id=? AND is_deleted=0 FOR UPDATE', [$actor['userId']]);
+                if (!$before) throw new ApiException(404, 'Không tìm thấy hồ sơ cá nhân.');
+                $columns = ['hoTen'=>'hoten','email'=>'email','sdt'=>'sdt','ngaySinh'=>'ngaysinh','diaChi'=>'diachi','ngheNghiep'=>'nghe_nghiep'];
+                $after = $before;
+                foreach ($data as $key=>$value) $after[$columns[$key]] = $value;
+                Store::update('users', 'user_id', $actor['userId'], $data, $columns);
+                Store::recordAudit($actor['userId'], 'sua', 'users', $actor['userId'], $before, $after);
+            });
+        }
+        return self::profile();
     }
 
     public static function logout(): array

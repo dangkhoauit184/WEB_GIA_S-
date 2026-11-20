@@ -40,8 +40,8 @@ window.Admin = (() => {
     try {
       response = await fetch(path, {
         method,
-        headers: { 'Content-Type':'application/json', ...(token ? { Authorization:`Bearer ${token}` } : {}) },
-        ...(body === undefined ? {} : { body:JSON.stringify(body) })
+        headers: { ...(body instanceof FormData ? {} : {'Content-Type':'application/json'}), ...(token ? { Authorization:`Bearer ${token}` } : {}) },
+        ...(body === undefined ? {} : { body:body instanceof FormData ? body : JSON.stringify(body) })
       });
     } catch {
       throw new Error('Không kết nối được máy chủ. Vui lòng kiểm tra kết nối rồi thử lại.');
@@ -344,7 +344,7 @@ window.Admin = (() => {
     $('sRole').textContent = roleLabel;
     if ($('udRole')) $('udRole').textContent = roleLabel;
     if ($('udName')) $('udName').textContent = account.hoTen;
-    if ($('admin-avatar')) $('admin-avatar').textContent = account.hoTen.trim().split(/\s+/).pop()[0].toUpperCase();
+    if ($('admin-avatar')) $('admin-avatar').textContent = AccountUI.initial(account.hoTen);
     if ($('topDateText')) {
       const daysVi = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
       const now = new Date();
@@ -393,15 +393,15 @@ window.setPortal = (role, focus, screen) => {
   else if (role === 'admin' && Admin.user?.role === 'ADMIN') location.href = `/admin#/admin/${screen || 'admin-dash'}`;
   else toast('Chọn cổng bằng tài khoản đúng vai trò khi đăng nhập. Các cổng khác do thành viên phụ trách triển khai.', 'info');
 };
-window.toggleUserDropdown = () => document.getElementById('userDropdown').classList.toggle('show');
+window.toggleUserDropdown = () => {
+  const open = document.getElementById('userDropdown').classList.toggle('show');
+  document.getElementById('admin-avatar').setAttribute('aria-expanded', String(open));
+};
 window.openAccountManagement = () => showS('accounts');
 window.handleLogout = async () => {
   document.getElementById('admin-logout').click();
 };
-window.openChangePwdModal = () => Admin.formDialog({ title:'Đổi mật khẩu', fields:[
-  { name:'currentPassword', label:'Mật khẩu hiện tại', type:'password', required:true },
-  { name:'newPassword', label:'Mật khẩu mới', type:'password', required:true }
-], onSubmit:async body => { await Admin.api('/api/auth/change-password', 'PUT', body); location.reload(); } });
+window.openChangePwdModal = () => AccountUI.password();
 const readNotifIds = new Set();
 window.syncNotifBadge = () => {
   const unread = document.querySelectorAll('#notifPanel .np-item.unread').length;

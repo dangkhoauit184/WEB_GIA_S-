@@ -42,7 +42,7 @@ function Invoke-TestSql([string]$Sql) {
 function Invoke-PhpTest([string]$Script) {
     Invoke-Docker run --rm --network $testNetwork `
         -e DB_HOST=$testContainer -e DB_PORT=3306 -e DB_NAME=$testDatabase `
-        -e DB_USER=root -e DB_PASSWORD=$testPassword -e TEST_WITH_DB=1 -e JWT_SECRET=$testJwt `
+        -e DB_USER=root -e DB_PASSWORD=$testPassword -e TEST_WITH_DB=1 -e JWT_SECRET=$testJwt -e COMPOSER_PROCESS_TIMEOUT=1200 -e PAYOS_ENABLED=false `
         --mount "type=bind,source=$projectRoot,target=/var/www/educenter" `
         educenter-php-runtime:local composer $Script
 }

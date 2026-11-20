@@ -2,7 +2,7 @@
 -- Chạy cả file bằng SQL Scripts > Run SQL Script trong DataGrip, SQL dialect MySQL.
 -- File tạo một thủ tục và gọi THEM. Chạy lại THEM giữ bộ đã tạo, tránh chèn trùng.
 -- Sau lần đầu, chỉ cần chạy một trong ba lệnh CALL ở cuối file.
--- XOA xóa dữ liệu nghiệp vụ demo, giữ tài khoản/mật khẩu, phân quyền và hồ sơ vai trò tối thiểu.
+-- XOA xóa TOÀN BỘ dữ liệu nghiệp vụ trong DB local demo, kể cả dòng nhập tay; giữ tài khoản/mật khẩu và vai trò.
 -- Giữ trạng thái bảo mật tài khoản, danh mục hệ thống và schema_migrations. Dừng backend và sao lưu DB trước khi gọi XOA.
 -- Mật khẩu của các tài khoản demo là Demo@123, chỉ dùng cho DB local demo.
 
@@ -274,11 +274,8 @@ demo: BEGIN
         WHERE JSON_UNQUOTE(JSON_EXTRACT(du_lieu_moi,'$.nguon'))='manual_sql_fixture'
           AND JSON_UNQUOTE(JSON_EXTRACT(du_lieu_moi,'$.version'))='all_roles_v2'
     ) THEN
-        IF EXISTS (SELECT 1 FROM hoc_vien) OR EXISTS (SELECT 1 FROM co_so)
-            OR EXISTS (SELECT 1 FROM lop_hoc) OR EXISTS (SELECT 1 FROM khoa_hoc)
-            OR EXISTS (SELECT 1 FROM yeu_cau_hoc) OR EXISTS (SELECT 1 FROM hoa_don) THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='DB con du lieu nghiep vu. Sao luu, goi XOA de don demo roi THEM.';
-        END IF;
+        -- Bổ sung theo namespace SQLDEMO01. Không xóa nghiệp vụ đang có.
+        -- Nếu trùng mã fixture mà thiếu marker, UNIQUE sẽ dừng và rollback toàn bộ phần thêm.
         START TRANSACTION;
 -- A1. Danh muc chuan. Moi dong mot INSERT, giu nguyen dong da ton tai.
 INSERT INTO `role_group` (`group_id`, `group_name`, `description`, `created_at`, `is_deleted`)
@@ -1413,6 +1410,15 @@ DELIMITER ;
 
 -- Chạy cả file lần đầu sẽ thêm bộ demo. Chạy lại giữ dữ liệu đã có và trả kết quả.
 CALL sp_demo_educenter('THEM');
+
+-- Tài khoản minh họa, không tạo QR chuyển tiền thật. Không ghi đè tài khoản thật đã cấu hình.
+INSERT IGNORE INTO cau_hinh(khoa,gia_tri,mo_ta) VALUES
+('payment.bank.demo-vcb','{"bin":"970436","bank":"Vietcombank (DEMO)","number":"DEMOEDU01","holder":"EDUCENTER DEMO","active":true,"demo":true}','Tài khoản minh họa, không chuyển tiền');
+INSERT IGNORE INTO cau_hinh(khoa,gia_tri,mo_ta) VALUES
+('payment.bank.demo-mb','{"bin":"970422","bank":"MB (DEMO)","number":"DEMOEDU02","holder":"EDUCENTER DEMO","active":true,"demo":true}','Tài khoản minh họa thứ hai');
+INSERT IGNORE INTO cau_hinh(khoa,gia_tri,mo_ta) VALUES
+('payment.bank.default','demo-vcb','Tài khoản nhận học phí mặc định');
+UPDATE cau_hinh SET gia_tri='demo-vcb' WHERE khoa='payment.bank.default' AND gia_tri='';
 
 /*
 ===================== CÁC LỆNH TỰ THAO TÁC TRONG DATAGRIP =====================

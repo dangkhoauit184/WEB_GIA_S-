@@ -45,7 +45,7 @@ final class ParentsService
         return ParentsRepository::createPublicConsultation($data);
     }
 
-    private static function parentUser(): array
+    public static function parentUser(): array
     {
         $user = Access::user();
         if (!in_array($user['role'] ?? '', ['PHU_HUYNH', 'ADMIN'], true)) {
@@ -58,6 +58,13 @@ final class ParentsService
     {
         $user = self::parentUser();
         return ParentsRepository::portalData((int)$user['userId']);
+    }
+
+    public static function createEnrollment(array $body): array
+    {
+        $user = self::parentUser();
+        $data = ParentsValidator::enrollment($body);
+        return ParentsRepository::createEnrollment((int)$user['userId'], $data);
     }
 
     public static function createLeaveRequest(array $body): array

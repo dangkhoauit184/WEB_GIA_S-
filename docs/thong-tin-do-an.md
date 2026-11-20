@@ -324,7 +324,7 @@ Action check đọc số object/version và dữ liệu vi phạm: lệch số d
 | Nhóm | Route/thao tác đang có |
 | --- | --- |
 | Health/manifest | GET /api/health, /health, /api |
-| Auth | /api/auth hoặc /api/administration/auth: POST login/logout, GET me, PUT/POST change-password |
+| Auth | /api/auth hoặc /api/administration/auth: POST login/logout, GET me, GET/PUT me/profile, PUT/POST change-password |
 | Phụ huynh | /api/people/parents: GET/POST, GET/PUT /:id |
 | Học viên | /api/people/students: GET/POST, GET/PUT/DELETE /:id; DELETE soft delete |
 | Người dạy | /api/people/teachers, /api/people/tutors: GET/POST, GET/PUT /:id, GET /match |
@@ -335,7 +335,7 @@ Action check đọc số object/version và dữ liệu vi phạm: lệch số d
 
 API nghiệp vụ dùng Authorization: Bearer, ngoại trừ login/health/manifest/status và route public được khai báo rõ. Thành công `{success:true,data:...}`, tên trường camelCase; lỗi success=false, code/message; 401 phiên sai,403 thiếu quyền,404 không thấy/ngoài scope,409 trùng/xung đột,400 vi phạm nghiệp vụ. SQL SIGNAL45000 được ánh xạ BUSINESS_RULE_VIOLATION, lỗi server không trả SQL/password cho client.
 
-Routes.php/module và app/Config/Routes.php mới là căn cứ route đã triển khai. Word có endpoint minh họa và tên controller cũ; không dùng chúng như tài liệu API chạy được. Các API mới của Admin, Giáo vụ, Phụ huynh và Giáo viên được liệt kê tại mục 12. Checkout/gateway thật, worker email và cổng Gia sư/Trợ giảng tiếp tục cần triển khai. status planned không phải chức năng đã xong; health200 chỉ xác nhận PHP/MySQL.
+Routes.php/module và app/Config/Routes.php mới là căn cứ route đã triển khai. Word có endpoint minh họa và tên controller cũ; không dùng chúng như tài liệu API chạy được. Các API mới của Admin, Giáo vụ, Phụ huynh và Giáo viên được liệt kê tại mục 12. Adapter checkout/webhook payOS đã có mã và kiểm thử giả lập; cần cấu hình kênh và nghiệm thu thực tế. Worker email và cổng Gia sư/Trợ giảng tiếp tục cần triển khai. status planned không phải chức năng đã xong; health200 chỉ xác nhận PHP/MySQL.
 
 <a id="figma"></a>
 ## 9. Figma và giao diện
@@ -361,6 +361,8 @@ Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí;
 
 Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Ngày 17/11/2026 bổ sung cổng Giáo viên theo tám màn trong index, chi tiết tại mục 12.6. Gia sư/Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ tiếp tục ở trạng thái đang triển khai. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
 
+Ngày 18/11/2026 bổ sung và đồng bộ menu hồ sơ, sửa thông tin cá nhân, đổi mật khẩu cho Giáo vụ, Giáo viên, Gia sư, Trợ giảng và Phụ huynh. Đây là phần tài khoản cá nhân, không đánh dấu hoàn tất các màn nghiệp vụ Gia sư/Trợ giảng còn planned.
+
 | Phần | Đã có | Còn phải làm |
 | --- | --- | --- |
 | DB/server | Schema005, migration/seed/check, Docker PHP/MySQL, SMTP local, backup/restore, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
@@ -368,14 +370,14 @@ Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa 
 | Administration | Cổng Admin 10 màn theo prototype đã chốt, khóa/cấu hình, tài khoản/quyền, nhân sự/hồ sơ, audit | Nghiệm thu cùng chủ đồ án và tích hợp các cổng của đồng đội |
 | Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp lớp độc lập tiền; Admissions tiếp nhận, ghép, đề xuất, API phản hồi theo người và bàn giao Admin | Tiếp tục đăng ký khóa theo phạm vi Phụ huynh và tích hợp cổng Gia sư/Trợ giảng |
 | Học vụ/nghỉ/bù | Admin giám sát và duyệt nghỉ cả lớp; Giáo vụ xem lịch/lớp/sĩ số, xếp/sửa ca, duyệt nghỉ cá nhân và lưu bù theo thỏa thuận | Cổng Gia sư/Trợ giảng và kiểm thử liên thông học vụ |
-| Tài chính/công | Giáo vụ tạo/phát hành hóa đơn trọn khóa, tra công nợ và phiếu thu; Admin xác nhận tiền, duyệt điều chỉnh công, đơn giá, chốt/trả/mở khóa, in phiếu | Checkout/gateway/webhook thật; cổng Gia sư/Trợ giảng |
+| Tài chính/công | Hóa đơn trọn khóa, công nợ/phiếu thu; Admin đối soát thủ công, cấu hình QR mặc định; adapter checkout/webhook payOS có kiểm chứng; công/đơn giá/chốt/trả/mở khóa | Cấp credentials và nghiệm thu payOS thực tế; cổng Gia sư/Trợ giảng |
 | Thông báo | Dữ liệu, trigger học phí, SMTP thử, tổng việc chờ Admin | API thông báo đầy đủ, worker/retry/template/mail thật |
 | FE | Cổng Admin, Giáo vụ, Phụ huynh và 8 màn Giáo viên dùng API PHP/MySQL; giao diện gốc ở docs/demo/index.html | Cổng Gia sư/Trợ giảng, kiểm thử nghiệm thu và liên thông |
 | Báo cáo/nộp bài | Dashboard Admin, in phiếu công/lương và lịch đang lọc | Báo cáo khác, xuất dữ liệu, báo cáo môn học, kịch bản trình diễn |
 
 Phạm vi local ngày 11/11/2026 theo mục 12.1. Phần Admin đã nối API thật gồm xếp lớp, đối soát tiền, công/lương và lịch. Các feature có nhiều cổng tiếp tục giữ `planned` cho luồng còn thiếu trong manifest. Các số liệu trên dashboard lấy DB của máy đang chạy.
 
-Các việc tiếp theo đi theo phân công nhóm gồm hoàn thiện đăng ký khóa, thanh toán và webhook xác minh, cổng Gia sư/Trợ giảng, báo cáo/mail và kiểm thử liên thông trước triển khai public. Tiến độ Giáo vụ ngày 12/11 nằm tại mục 12.3. Chỉ triển khai tiếp trong phạm vi được giao.
+Các việc tiếp theo đi theo phân công nhóm gồm nghiệm thu đăng ký khóa và tích hợp payOS thực tế, cổng Gia sư/Trợ giảng, báo cáo/mail và kiểm thử liên thông trước triển khai public. Tiến độ Giáo vụ ngày 12/11 nằm tại mục 12.3. Chỉ triển khai tiếp trong phạm vi được giao.
 
 Kết quả đã ghi nhận08/11/2026 trên nền005:
 
@@ -459,7 +461,43 @@ Nguồn giữ nguyên byte:
 
 Các route cần `Authorization: Bearer <token>`. Response dùng `{success:true,data:...}`; lỗi có `code` và `message`. Mô tả API hiện có trên nền PHP/CodeIgniter và schema 005.
 
-### Danh mục
+### Hồ sơ và mật khẩu cá nhân
+
+Ngày 19/11/2026, hộp thoại hồ sơ dùng `margin:auto` cùng bố cục dùng chung cho mọi vai trò. Giáo viên hiển thị chuyên môn và lịch rảnh bằng phần mở rộng trong cùng thành phần hồ sơ, giữ thao tác tuần/tháng và CRUD lịch rảnh.
+
+### QR ngân hàng và tài khoản nhận học phí
+
+Ngày 19/11/2026 tích hợp commit QR/đăng ký khóa từ develop và sửa luồng xác nhận. Xóa QR giả dự phòng, số tài khoản viết cứng, tùy chọn cổng chưa tích hợp và nhánh để Phụ huynh tự mượn quyền Admin xác nhận tiền. Trang công khai đăng ký xong chuyển đến hóa đơn trong cổng Phụ huynh để dùng một luồng thanh toán.
+
+- `GET/POST /api/finance/tuition/bank-accounts`, `PUT /:id`, `POST /:id/default` chỉ Admin. Dữ liệu lưu trong `cau_hinh` namespace `payment.bank.*` trên schema 005, có audit và khóa giao dịch. Một khóa mặc định duy nhất; không ngừng dùng tài khoản mặc định trước khi chọn tài khoản khác. Không cần DDL mới.
+- `GET /api/people/parents/invoices/:id/payment-qr` kiểm tra sở hữu hóa đơn, trạng thái phát hành và số dư. Payload NAPAS gồm BIN, số tài khoản, VND, số dư và nội dung `EDUHD<id>`, CRC-16/CCITT-FALSE. Ảnh SVG tạo offline bằng [Endroid QR Code](https://github.com/endroid/qr-code), không gửi thông tin tài khoản sang dịch vụ ảnh QR ngoài. Đối chiếu payload với [vector của thư viện VietQR](https://github.com/xuannghia/vietnam-qr-pay).
+- Phiếu QR có chữ ký HMAC để ràng buộc phụ huynh, hóa đơn, số tiền và tài khoản nhận. `POST /api/people/parents/payments` chỉ nhận kênh VIETQR_NAPAS, số tiền đúng và paymentToken hợp lệ. Thông tin nhận tiền lúc mở QR được lưu trong audit của giao dịch để đối soát nếu tài khoản mặc định thay đổi. Gửi lặp trả cùng thông báo đang chờ; Phụ huynh không thể tự xác nhận thu.
+- Khi chưa bật payOS, Admin đối chiếu ngân hàng và dùng API xác nhận hiện có để lập phiếu thu, cập nhật công nợ/thông báo. QR không tự chứng minh tài khoản thật thuộc Trung tâm; Admin phải xác minh người nhận trước khi dùng. Tài khoản DEMO có nhãn rõ và không sinh QR chuyển tiền.
+
+#### Tải QR và đối soát payOS (19/11/2026)
+
+- Admin tải PNG/JPG tại `POST /api/finance/tuition/qr-images`. BE kiểm tra định dạng/kích thước, đọc VietQR NAPAS, xác minh CRC/currency/tài khoản, chuẩn hóa PNG và lưu ngoài public. Ảnh tham chiếu bằng SHA256 tại `payment.qr.<id>`, không lưu blob trong `cau_hinh.gia_tri`. Sửa tài khoản không khớp ảnh bị từ chối. `GET /bank-accounts/:id/qr-image` chỉ Admin; ảnh gốc không được dùng làm bằng chứng giao dịch.
+- `POST /api/people/parents/invoices/:id/checkout` chỉ nhận hóa đơn thuộc phụ huynh đang đăng nhập, lấy số dư từ DB, dành một orderCode ổn định và gọi SDK payOS chính thức. QR trả về phải khớp ngân hàng/tài khoản mặc định, VND, số tiền và mã nội dung. Mã động theo hóa đơn là mã thanh toán chính; ảnh tĩnh được quản lý để lựa chọn tài khoản. Không thể ép số tiền hóa đơn vào một ảnh QR tĩnh có sẵn.
+- Admin có thể hủy yêu cầu chưa nhận tiền qua `POST /transactions/:id/cancel-payos` sau khi payOS xác minh hủy và số tiền nhận bằng 0; yêu cầu đã nhận tiền không được hủy bằng luồng này. Cùng hóa đơn đang chờ dùng lại một intent; snapshot tài khoản không đổi khi Admin thay QR mặc định. Các API ngoài mạng chạy ngoài transaction DB, có timeout và không đổi orderCode sau lỗi. Khi tạo link thất bại hoặc kết quả không khớp, không tạo QR thanh toán dự phòng khác hoặc tự ghi nhận thu; cần kiểm tra lại/kênh payOS.
+- Webhook `POST /api/finance/tuition/payos/webhook` xác minh chữ ký HMAC bằng SDK rồi gọi lại API payOS có xác minh chữ ký phản hồi. Kiểm tra orderCode/paymentLinkId, trạng thái PAID, số tiền nhận đúng đủ, VND, số tài khoản, nội dung và reference ngân hàng. Chỉ tự xác nhận một giao dịch khớp toàn bộ số dư. Khoản thiếu/thừa, nhiều lần chuyển hoặc không khớp chuyển sang chờ đối soát; không tự gộp hoặc hoàn tiền.
+- Trên DB 005, khóa Admin hiện hành → hóa đơn → intent → event; dedupe reference toàn cổng. Event + phiếu thu + intent thành công + audit nằm trong một transaction. Trigger hiện hành cập nhật công nợ và thông báo. Gửi lại webhook, kiểm tra lại từ giao diện và chạy đồng thời không sinh thêm phiếu thu; hóa đơn đã được thu qua kênh khác không bị thu chồng. Không thay DDL, không sửa chứng từ đã kết thúc.
+- Phụ huynh dùng `GET /invoices/:id/payment-status` để xem DB và `POST /invoices/:id/check-payment` để yêu cầu BE đọc lại payOS. Đổi URL quay về, gửi ảnh hay bấm nút không xác nhận thanh toán. Admin dùng `POST /transactions/:id/check-payos`; route xác nhận thủ công cũ từ chối intent PAYOS, tránh vô tình bỏ qua kiểm chứng.
+- Admin xem kết nối qua `GET /api/finance/tuition/payos/status`, đăng ký/xác minh webhook bằng `POST /payos/connect`. Client ID/API Key/Checksum Key chỉ nằm env riêng; frontend chỉ nhận trạng thái và trường cấu hình còn thiếu. Cấu hình đổi phải xác minh webhook lại. `PAYOS_RECONCILE_USER_ID` chỉ định Admin đang hoạt động chịu trách nhiệm phiếu thu, audit phân biệt `signed_webhook_and_api`/`signed_api` với thao tác thủ công.
+- **Chưa kích hoạt tiền thật:** repo có mã tích hợp và kiểm thử giả lập có chữ ký, chưa được cung cấp credentials kênh payOS, tên miền/webhook công khai hoặc nghiệm thu khoản thật. Gia sư/Trợ giảng vẫn giữ tiến độ planned của cổng nghiệp vụ; thay đổi này không biến các cổng đó thành hoàn tất.
+
+Quy trình: **Chọn QR mặc định → Mở hóa đơn → Tạo intent/QR payOS → Chờ chuyển khoản → Kiểm chứng webhook và API → Lập phiếu thu/cập nhật Đã thanh toán**. Nhánh không khớp giữ công nợ và hiển thị lý do cho Admin kiểm tra.
+
+Nguồn giao thức: [SDK PHP payOS](https://payos.vn/docs/sdks/back-end/php/), [API payOS](https://payos.vn/docs/api/), [chữ ký webhook](https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature/). Cách cấu hình cụ thể nằm tại mục 11.1 của hướng dẫn cài đặt.
+
+### Chi tiết hồ sơ cá nhân
+
+Ngày 18/11/2026, menu tài khoản của Giáo vụ, Giáo viên, Gia sư, Trợ giảng, Phụ huynh có xem/sửa hồ sơ, đổi mật khẩu và đăng xuất. Admin sử dụng cùng biểu mẫu hồ sơ cơ bản và đổi mật khẩu. Gia sư/Trợ giảng mới có phần tài khoản và hồ sơ, cổng nghiệp vụ riêng vẫn planned.
+
+`GET /api/auth/me/profile` trả thông tin cá nhân theo user từ phiên đăng nhập, kèm thông tin công tác cho Giáo vụ, chuyên môn cho ba vai trò người dạy, các con thuộc phụ huynh cho Phụ huynh. Response không chứa mật khẩu, đơn giá, lương hoặc tài khoản ngân hàng. `PUT` cùng route chỉ nhận trường cá nhân được phép theo vai trò. Mọi trường userId/role/quyền/cơ sở/trạng thái/đơn giá bị từ chối. Người dạy dùng lại luồng cập nhật hồ sơ có audit. Quyền này không mở rộng check-in/out hoặc nghiệp vụ vốn chỉ dành cho Giáo viên.
+
+`PUT /api/auth/change-password` kiểm tra mật khẩu hiện tại dưới khóa account, giữ nguyên byte mật khẩu và xác nhận mật khẩu nếu được gửi. FE luôn gửi đủ ba trường, kiểm tra ngay độ dài 6–72 byte và xác nhận khớp. Đổi thành công xóa cookie phiên và bắt đăng nhập lại. Các JWT cũ hết hiệu lực qua fingerprint mật khẩu. Hai route hồ sơ cũng có alias `/api/administration/auth/me/profile`. Bộ kiểm thử HTTP/MySQL kiểm tra đủ vai trò trên CSDL `_test`, quyền sở hữu hồ sơ, trường bị cấm, trùng email, dữ liệu cá nhân không hợp lệ, mật khẩu sai, xác nhận không khớp và thu hồi phiên cũ.
+
+### Danh mục quản trị
 
 Prefix: `/api/administration/catalog`.
 
@@ -567,7 +605,7 @@ Các phần dưới đây được triển khai trong bản làm việc local ch
 
 Các card quyền lấy đúng 8 function hiện có trong DB gồm QuanLyTaiKhoan, QuanLyNhanSu, TiepNhanYeuCau, QuanLyLopHoc, VanHanhBuoiHoc, ChamCongLuong, HocPhiThanhToan và BaoCaoThongKe. Nhãn tổng quát system_admin/catalog_management/... trong dữ liệu mẫu prototype được thay bằng tên quyền thực tương ứng trên màn chạy thật. Các nhóm ngoài Admin giữ ràng buộc riêng cho lương.
 
-Response nghiệp vụ mới dùng camelCase theo hợp đồng API. JSON dữ liệu trước/sau trong Audit giữ tên cột gốc và được che secret. DB 005 giữ 43 bảng. Nhãn phòng được lưu trong `cau_hinh` theo khóa `phong_hoc.<hash>` do schema hiện hành chưa có bảng phòng riêng. Buổi online dùng nhãn Online, liên kết học lưu ở `lop_hoc.link_hoc` dùng chung cho lớp. Việc đối soát Admin và ghi nhận chi trả lương dùng dữ liệu nội bộ, phần tích hợp ngân hàng/gateway/webhook/worker thực tế tiếp tục theo tiến độ riêng.
+Response nghiệp vụ mới dùng camelCase theo hợp đồng API. JSON dữ liệu trước/sau trong Audit giữ tên cột gốc và được che secret. DB 005 giữ 43 bảng. Nhãn phòng được lưu trong `cau_hinh` theo khóa `phong_hoc.<hash>` do schema hiện hành chưa có bảng phòng riêng. Buổi online dùng nhãn Online, liên kết học lưu ở `lop_hoc.link_hoc` dùng chung cho lớp. Đối soát thủ công và chi trả lương dùng chứng từ nội bộ. Thu học phí có adapter payOS và webhook xác thực ở mục QR/payOS; chưa kích hoạt credentials public. Worker email và tích hợp chi lương qua ngân hàng tiếp tục theo tiến độ riêng.
 
 Khóa/mở tài khoản và đổi nhóm được tuần tự hóa qua khóa nhóm Admin, quyền người thao tác được kiểm tra lại trước khi ghi. Thay đổi trạng thái account ghi mốc phiên trong audit; JWT cũ không có hiệu lực trở lại sau khi mở khóa. Password/hash/token gốc không được trả qua API quản trị hoặc đưa vào audit mới. Thao tác tạo/sửa tài khoản, khóa học, danh mục/cấu hình và ma trận quyền ghi nhật ký trong transaction.
 
@@ -649,7 +687,7 @@ API bổ sung trong prefix `/api/academic/academic-affairs` gồm GET `/dashboar
 
 POST `/api/academic/scheduling/operations-sessions` và PUT cùng đường dẫn `/{id}` dùng chung bộ lưu lịch của Admin, kiểm quyền vận hành. Kiểm chuyên môn và lịch rảnh người dạy, phạm vi cơ sở, xung đột người/phòng, vai trò trợ giảng và buổi đã check-in/chốt công. Lặp tuần lưu nguyên khối, lỗi một ca rollback cả khối. Bù cá nhân lưu liên kết học viên/buổi gốc và người xếp, đơn nghỉ tùy chọn. Giáo vụ duyệt cá nhân tại POST `/api/academic/leave-requests/personal/{id}/decide`; GET `/personal` và `/class-overview` phục vụ danh sách. Duyệt cá nhân giữ trạng thái lớp, Giáo vụ cập nhật lịch đã thỏa thuận qua bộ lịch. Chỉ Admin xử lý nghỉ cả lớp và điều chỉnh công.
 
-GET/POST `/api/finance/tuition/invoices`, GET `/invoices/{id}`, POST `/invoices/{id}/publish` xử lý hóa đơn từ đăng ký trọn khóa. Tổng tiền lấy snapshot, phát hành lưu actor/giờ server và thông báo DB. API tạo và phát hành gọi lặp an toàn. POST `/invoices/{id}/receipts` chỉ Admin, yêu cầu mã chứng từ, kiểm số dư và chống lặp phiếu. Trang Giáo vụ xem kết quả thu. Cổng thanh toán ngoài, webhook và worker email tiếp tục theo tiến độ tích hợp chung.
+GET/POST `/api/finance/tuition/invoices`, GET `/invoices/{id}`, POST `/invoices/{id}/publish` xử lý hóa đơn từ đăng ký trọn khóa. Tổng tiền lấy snapshot, phát hành lưu actor/giờ server và thông báo DB. API tạo và phát hành gọi lặp an toàn. POST `/invoices/{id}/receipts` chỉ Admin, yêu cầu mã chứng từ, kiểm số dư và chống lặp phiếu. Trang Giáo vụ xem kết quả thu. Adapter payOS và webhook được mô tả ở mục QR/payOS; chưa kích hoạt credentials/kênh public. Worker email tiếp tục theo tiến độ riêng.
 
 Chuông thông báo tại `/staff` lấy bản ghi của tài khoản hiện tại, đánh dấu đọc bằng API sở hữu. Hồ sơ phụ huynh mới vẫn được tìm thấy trước khi liên kết con/cấp tài khoản. Học viên và hóa đơn được giới hạn theo cơ sở phụ trách. Source tham chiếu giữ nguyên hash, sử dụng schema 005 hiện hành.
 
@@ -666,7 +704,7 @@ Cổng Phụ huynh dùng cùng `/login` và `/app`, lấy bố cục từ năm m
 - Đơn nghỉ hiển thị lịch sử và lý do từ chối của Giáo vụ. Backend giữ phạm vi học viên/phụ huynh, lịch bù cá nhân và khóa học viên khi nhận yêu cầu để ngăn tạo đơn trùng đồng thời.
 - Đề xuất người dạy có hộp xác nhận đồng ý/từ chối và nhập lý do. Chuông thông báo có bảng xem nhanh, đánh dấu đã đọc và trang xem tất cả. Đổi mật khẩu, đăng xuất tiếp tục dùng API xác thực chung.
 
-Các thao tác gọi API hiện có, lỗi kết nối hiển thị thông báo để thử lại. Dữ liệu mẫu và nhánh ghi giả cục bộ của cổng Phụ huynh đã được gỡ. Payment API ở bước thông báo/chờ đối soát, tích hợp gateway thật tiếp tục là phần việc riêng.
+Các thao tác gọi API hiện có, lỗi kết nối hiển thị thông báo để thử lại. Dữ liệu mẫu và nhánh ghi giả cục bộ của cổng Phụ huynh đã được gỡ. Payment API giữ luồng thông báo/chờ đối soát khi chưa cấu hình cổng; adapter payOS đã có mã kiểm chứng giao dịch, chỉ kích hoạt sau cấu hình kênh và webhook công khai theo mục QR/payOS.
 
 ### 12.5. Khôi phục tài khoản qua email
 

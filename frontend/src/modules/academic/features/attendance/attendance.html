@@ -6,36 +6,41 @@
   <title>Không gian người dạy · EduCenter ERP</title>
   <link rel="stylesheet" href="../../../../shared/styles/common.css">
 </head>
-<body>
-  <main class="login-wrap">
-    <section class="card login-card">
+<body class="teaching-account-portal">
+  <header class="topbar">
+    <a class="btn sm" href="/">Website Trung tâm</a>
+    <details class="parent-account">
+      <summary class="btn" aria-label="Menu tài khoản"><span id="account-avatar">T</span><span id="accountName"></span></summary>
+      <div class="card account-portal-menu">
+        <button class="btn" type="button" data-account-action="view">Hồ sơ cá nhân</button>
+        <button class="btn" type="button" data-account-action="edit">Chỉnh sửa hồ sơ cá nhân</button>
+        <button class="btn" type="button" data-account-action="password">Đổi mật khẩu</button>
+        <button class="btn" type="button" data-account-action="logout">Đăng xuất</button>
+      </div>
+    </details>
+  </header>
+  <main class="main">
+    <section class="card">
       <h1 id="portalTitle">Không gian người dạy</h1>
-      <p id="accountName"></p>
+      <p>Xem thông tin cá nhân, hồ sơ chuyên môn và cập nhật mật khẩu từ menu tài khoản.</p>
+      <div class="row">
+        <button class="btn p" type="button" data-account-action="view">Xem hồ sơ cá nhân</button>
+        <button class="btn" type="button" data-account-action="password">Đổi mật khẩu</button>
+      </div>
       <p>Giao diện nghiệp vụ của vai trò này đang được triển khai.</p>
-      <p id="logoutError" role="alert"></p>
-      <button id="logout" class="btn p" type="button">Đăng xuất</button>
     </section>
   </main>
   <script src="../../../../config/app.config.js"></script>
   <script src="../../../../shared/permissions/access.js"></script>
   <script src="../../../../shared/services/http.js"></script>
+  <script src="../../../../shared/utils/helpers.js"></script>
   <script>
     if (AccessService.requireAuth(['GIAO_VIEN', 'GIA_SU', 'TRO_GIANG'])) {
       const account = AccessService.getCurrentUser();
       const labels = {GIAO_VIEN:'Giáo viên', GIA_SU:'Gia sư', TRO_GIANG:'Trợ giảng'};
       document.getElementById('portalTitle').textContent = labels[account.role];
       document.getElementById('accountName').textContent = account.hoTen || account.username;
-      document.getElementById('logout').addEventListener('click', async event => {
-        event.currentTarget.disabled = true;
-        try {
-          await HttpService.post('/auth/logout', {});
-          AccessService.clearSession();
-          window.location.replace(AppConfig.AUTH_PAGE);
-        } catch (error) {
-          document.getElementById('logoutError').textContent = error.message;
-          document.getElementById('logout').disabled = false;
-        }
-      });
+      document.getElementById('account-avatar').textContent = AccountUI.initial(account.hoTen || account.username);
     }
   </script>
 </body>

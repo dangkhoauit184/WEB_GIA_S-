@@ -37,6 +37,7 @@
     const dialog = $("parent-dialog");
     let data = {
       students: [],
+      courses: [],
       schedules: {},
       learningNotes: {},
       invoices: {},
@@ -156,11 +157,7 @@
 
     $("currentUserName").textContent = account.hoTen || account.username;
     $("accountMenuName").textContent = account.hoTen || account.username;
-    $("parentAvatar").textContent = (account.hoTen || account.username)
-      .trim()
-      .split(/\s+/)
-      .pop()[0]
-      .toUpperCase();
+    $("parentAvatar").textContent = AccountUI.initial(account.hoTen || account.username);
 
     async function loadData() {
       if (loading) return;
@@ -441,8 +438,8 @@
                     "w",
                   );
             const pay =
-              loaded && remaining > 0 && !pending
-                ? button("Thanh toán", "pay", row.id, "p")
+              loaded && remaining > 0
+                ? button("💳 Thanh toán QR", "pay", row.id, "p")
                 : "";
             return `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(row.course)}</td><td class="parent-money">${money(row.must)}</td><td class="parent-money">${money(row.paid)}</td><td class="parent-money ${remaining ? "parent-due" : ""}">${money(remaining)}</td><td>${esc(row.deadline)}</td><td>${status}</td><td><div class="parent-table-actions">${button("Chi tiết", "invoice", row.id)}${pay}</div></td></tr>`;
           })
@@ -698,7 +695,87 @@
       fillSessions();
       if (sessionId) $("leaveSession").value = sessionId;
     }
-    function openInvoice(id, payment = false) {
+    function buildQrPaymentCard(quote) {
+      const bank = quote.bank;
+      return `<div class="parent-qr-card"><div class="parent-qr-frame"><span class="parent-qr-badge">${bank.isDemo ? "DEMO · KHÔNG CHUYỂN TIỀN" : "VIETQR · NAPAS 247"}</span><div class="parent-qr-visual">${quote.qrDataUrl ? `<img src="${esc(quote.qrDataUrl)}" alt="Mã chuyển khoản học phí">` : '<p>Tài khoản minh họa. Admin cần chọn tài khoản ngân hàng thật để tạo mã chuyển tiền.</p>'}</div></div><div class="parent-qr-meta"><div class="parent-qr-meta-title">Thông tin nhận học phí</div>${item("Ngân hàng",esc(bank.bankName))}${item("Số tài khoản",esc(bank.accountNo))}${item("Chủ tài khoản",esc(bank.accountName))}${item("Số tiền",money(quote.amount))}${item("Nội dung chuyển khoản",`<b>${esc(quote.memo)}</b>`)}</div></div>`;
+    }
+    let paymentPoll;
+    async function showPayos(invoiceId, summary) {
+      clearInterval(paymentPoll);
+      const quote=(await HttpService.post(`/people/parents/invoices/${invoiceId}/checkout`,{})).data;
+      openDialog('Thanh toán học phí qua payOS',`<div class="parent-summary">${summary}</div><div id="payosQr">${buildQrPaymentCard(quote)}<p class="parent-payment-note">Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống chỉ xác nhận khi đối soát được giao dịch thực tế từ payOS.</p><a class="btn p" href="${esc(quote.checkoutUrl)}" target="_blank" rel="noopener noreferrer">Mở cổng payOS</a></div><p id="payosState" role="status">Đang chờ ngân hàng xác nhận khoản thu…</p><button class="btn" type="button" id="payosCheck">Kiểm tra giao dịch</button>`,null);
+      let checking=false;
+      const update=async(actual=false)=>{
+        if(checking||!dialog.open||!$('payosState'))return;
+        checking=true;
+        const label=$('payosState'),control=$('payosCheck');
+        if(actual)control.disabled=true;
+        try {
+          const state=(await (actual?HttpService.post(`/people/parents/invoices/${invoiceId}/check-payment`,{}):HttpService.get(`/people/parents/invoices/${invoiceId}/payment-status`))).data;
+          if(!label.isConnected)return;
+          label.textContent=state.paid?'Đã thanh toán · Trung tâm đã xác nhận khoản thu.':state.review||'Đang chờ ngân hàng xác nhận khoản thu. Không chuyển thêm nếu đã chuyển tiền.';
+          if(state.paid){
+            clearInterval(paymentPoll);$('payosQr').hidden=true;control.hidden=true;
+            $('payosState').closest('.parent-dialog-body').querySelector('.parent-summary').innerHTML=item('Hóa đơn',`#${invoiceId}`)+item('Trạng thái','Đã thanh toán')+item('Còn phải thu',money(state.remaining));
+            await loadData();
+          }
+          else if(['huy','het_han','that_bai'].includes(state.status)) {
+            clearInterval(paymentPoll);$('payosQr').hidden=true;control.hidden=true;
+            label.textContent='Yêu cầu đã hủy hoặc hết hiệu lực. Không dùng QR cũ; hãy đóng và mở lại hóa đơn để lấy thông tin mới.';
+            await loadData();
+          }
+        }catch(error){if(label.isConnected)label.textContent=error.message;}
+        finally{checking=false;if(control.isConnected)control.disabled=false;}
+      };
+      $('payosCheck').addEventListener('click',()=>update(true));
+      dialog.addEventListener('close',()=>clearInterval(paymentPoll),{once:true});
+      paymentPoll=setInterval(()=>{if(!dialog.open||!$('payosState'))clearInterval(paymentPoll);else update();},5000);
+      await update();
+    }
+
+    function openEnrollCourse() {
+      if (!loaded) return;
+      const courses = Array.isArray(data.courses) ? data.courses : [];
+      if (!courses.length) {
+        notify("Hiện chưa có khóa học nào đang mở đăng ký.", true);
+        return;
+      }
+      const studentOptions = data.students
+        .map(
+          (row) =>
+            `<option value="${esc(row.id)}" ${String(row.id) === childId ? "selected" : ""}>${esc(row.hoTen)} (${esc(row.maHv)})</option>`,
+        )
+        .join("");
+      const courseOptions = courses
+        .map(
+          (c) =>
+            `<option value="${esc(c.id)}">${esc(c.ten)} — ${esc(money(c.hocPhi))} / trọn khóa</option>`,
+        )
+        .join("");
+      openDialog(
+        "Đăng ký Khóa học & Thanh toán QR",
+        `<label>Học viên đăng ký<select name="hocVienId" required>${studentOptions}</select></label><label>Chọn Khóa học trọn gói<select name="khoaHocId" required>${courseOptions}</select></label><p class="parent-payment-note">Sau khi xác nhận đăng ký, hệ thống sẽ phát hành Hóa đơn học phí trọn khóa và mở ngay mã QR để Phụ huynh thanh toán.</p>`,
+        async (values) => {
+          const res = await HttpService.post("/people/parents/enrollments", {
+            hocVienId: Number(values.hocVienId),
+            khoaHocId: Number(values.khoaHocId),
+          });
+          await loadData();
+          selectChild(values.hocVienId);
+          location.hash = "/parent/parent-billing";
+          showScreen();
+          const newInvId = res?.data?.hoaDon?.id;
+          if (newInvId) {
+            setTimeout(() => openInvoice(newInvId, true), 60);
+          } else {
+            notify("Đã đăng ký khóa học và tạo hóa đơn thành công.");
+          }
+        },
+        "Tiếp tục & Mở mã QR thanh toán →",
+      );
+    }
+
+    async function openInvoice(id, payment = false) {
       const invoice = invoices().find((row) => String(row.id) === String(id));
       if (!invoice) return;
       const remaining = Math.max(
@@ -715,31 +792,33 @@
           "Còn lại",
           `<strong class="parent-due">${money(remaining)}</strong>`,
         );
-      if (!payment || !remaining || pendingPayment(invoice)) {
+      const pending=pendingPayment(invoice);
+      if (!payment || !remaining || (pending && pending.channel!=='PAYOS')) {
         openDialog(
           "Chi tiết hóa đơn",
-          `<div class="parent-summary">${summary}</div>`,
+          `<div class="parent-summary">${summary}</div>${pendingPayment(invoice) ? '<p class="parent-payment-note">Đã gửi thông báo chuyển khoản. Trung tâm đang đối soát, bạn không cần chuyển thêm tiền.</p>' : ""}`,
           null,
           "",
           button("In hóa đơn", "print"),
         );
         return;
       }
-      openDialog(
-        "Thông báo thanh toán học phí",
-        `<div class="parent-summary">${summary}</div><label>Kênh thanh toán<select name="nhaCungCap"><option value="VIETQR_NAPAS">Chuyển khoản ngân hàng</option><option value="VNPAY_GATEWAY">VNPay</option><option value="MOMO_BUSINESS">MoMo</option></select></label><label>Số tiền thông báo (VNĐ)<input type="text" value="${esc(money(remaining))}" readonly></label><p class="parent-payment-note">Sau khi chuyển tiền theo thông tin Trung tâm đã cung cấp, gửi thông báo để Trung tâm kiểm tra và xác nhận khoản thu.</p>`,
-        async (values) => {
+      openDialog("Chuyển khoản học phí", '<p role="status">Đang tải thông tin ngân hàng…</p>', null);
+      try {
+        const quote = (await HttpService.get(`/people/parents/invoices/${Number(id)}/payment-qr`)).data;
+        if(quote.automaticAvailable||pending?.channel==='PAYOS') { await showPayos(Number(id),summary); return; }
+        openDialog("Chuyển khoản học phí", `<div class="parent-summary">${summary}</div>${buildQrPaymentCard(quote)}<p class="parent-payment-note">Kiểm tra tên người nhận trên ứng dụng ngân hàng trước khi xác nhận chuyển tiền. Sau đó gửi thông báo để Admin đối soát khoản thu.</p>`, async () => {
           await HttpService.post("/people/parents/payments", {
-            hoaDonId: Number(invoice.id),
-            nhaCungCap: values.nhaCungCap,
-            soTien: remaining,
+            hoaDonId: Number(invoice.id), nhaCungCap: "VIETQR_NAPAS", soTien: quote.amount, paymentToken: quote.paymentToken,
           });
           await loadData();
-          notify("Đã gửi thông báo thanh toán. Khoản thu đang chờ đối soát.");
-        },
-        "Tôi đã chuyển khoản",
-      );
+          notify(quote.bank.isDemo ? "Đã gửi thông báo demo, chờ Admin đối soát." : "Đã gửi thông báo chuyển khoản, chờ Admin xác nhận tiền vào.");
+        }, quote.bank.isDemo ? "Gửi thông báo demo" : "Tôi đã chuyển tiền · Gửi thông báo");
+      } catch (error) {
+        openDialog("Chuyển khoản học phí", `<p class="parent-dialog-error" role="alert">${esc(error.message)}</p>`, null);
+      }
     }
+
     function respondToProposal(id, accepted) {
       const proposal = proposals.find((row) => String(row.id) === String(id));
       if (!proposal) return;
@@ -760,24 +839,7 @@
         },
       );
     }
-    function openPassword() {
-      $("parentAccountMenu").open = false;
-      openDialog(
-        "Đổi mật khẩu",
-        '<label>Mật khẩu hiện tại<input type="password" name="currentPassword" autocomplete="current-password" required maxlength="72"></label><label>Mật khẩu mới<input type="password" name="newPassword" autocomplete="new-password" required minlength="6" maxlength="72"></label><label>Xác nhận mật khẩu mới<input type="password" name="confirmPassword" autocomplete="new-password" required minlength="6" maxlength="72"></label>',
-        async (values) => {
-          if (values.newPassword !== values.confirmPassword)
-            throw new Error("Mật khẩu xác nhận chưa khớp.");
-          await HttpService.put("/auth/change-password", {
-            currentPassword: values.currentPassword,
-            newPassword: values.newPassword,
-          });
-          AccessService.clearSession();
-          window.location.replace(AppConfig.AUTH_PAGE);
-        },
-        "Cập nhật mật khẩu",
-      );
-    }
+    function openPassword() { AccountUI.password(); }
 
     document.addEventListener("click", async (event) => {
       if (
@@ -848,6 +910,9 @@
         case "pay":
           openInvoice(id, true);
           break;
+        case "enroll-course":
+          openEnrollCourse();
+          break;
         case "invoice":
           openInvoice(id);
           break;
@@ -917,6 +982,7 @@
     dialog.addEventListener("cancel", (event) => {
       if (dialog.dataset.busy === "true") event.preventDefault();
     });
+    window.addEventListener("account-profile-updated", () => loadData());
     window.addEventListener("hashchange", showScreen);
     showScreen();
     render();

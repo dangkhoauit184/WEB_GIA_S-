@@ -6,7 +6,7 @@ MySQL 8.4 / InnoDB / utf8mb4 / giờ+07:00 / READ COMMITTED. Phiên bản **005_
 - [Nâng DB đang có dữ liệu](../docs/huong-dan-cai-dat-va-su-dung.md#db-cu).
 - [Chia sẻ, backup và restore](../docs/huong-dan-cai-dat-va-su-dung.md#chia-se).
 - [Kiểm thử](../docs/huong-dan-cai-dat-va-su-dung.md#kiem-thu).
-- [SQL thêm/xóa dữ liệu demo thủ công](seeders/demo-thu-cong.sql), gồm lệnh THÊM, XEM và XÓA cho toàn bộ vai trò. XÓA dọn nghiệp vụ demo và giữ tài khoản/mật khẩu, THÊM dùng lại các tài khoản đã giữ.
+- [SQL thêm/xóa dữ liệu demo thủ công](seeders/demo-thu-cong.sql), gồm THÊM, XEM và XÓA cho toàn bộ vai trò. THÊM bổ sung bộ SQLDEMO01 và giữ mật khẩu. XÓA dọn **toàn bộ nghiệp vụ của DB local demo**, kể cả dòng nhập tay, giữ tài khoản/mật khẩu; phải sao lưu trước.
 - [Thiết kế/quan hệ DB](../docs/thong-tin-do-an.md#database), [luồng cài và xử lý SQL](../docs/thong-tin-do-an.md#sql-lifecycle).
 - [Toàn bộ cột/khóa/ràng buộc](../docs/thong-tin-do-an.md#tu-dien-du-lieu), [routine/trigger](../docs/thong-tin-do-an.md#routine-trigger).
 

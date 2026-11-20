@@ -105,6 +105,7 @@
 }
 .parent-account-pop .btn {
   width: 100%;
+  margin-top: 6px;
 }
 .parent-child-bar {
   display: flex;
@@ -538,4 +539,99 @@
 .parent-month-scroll .cal-month-head,
 .parent-month-scroll .cal-month-grid {
   min-width: 670px;
+}
+
+.parent-qr-card {
+  display: grid;
+  grid-template-columns: 188px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  margin: 14px 0;
+  background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 100%);
+  border: 1.5px dashed var(--pri);
+  border-radius: 12px;
+}
+.parent-qr-frame {
+  background: #fff;
+  border: 1px solid var(--g200);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+.parent-qr-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+  border-radius: 99px;
+  background: var(--pri-ll);
+  color: var(--pri-d);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.parent-qr-visual {
+  width: 152px;
+  height: 152px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.parent-qr-visual img {
+  width: 152px;
+  height: 152px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.parent-qr-visual svg {
+  width: 148px;
+  height: 148px;
+}
+.parent-qr-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.parent-qr-meta-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--pri-d);
+  margin-bottom: 2px;
+}
+.parent-qr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--g200);
+}
+.parent-qr-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.parent-qr-row span {
+  color: var(--g500);
+  font-size: 12px;
+}
+.parent-qr-row b {
+  color: var(--g900);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+.parent-qr-row b.parent-qr-amount {
+  color: var(--err);
+  font-size: 14px;
+}
+@media (max-width: 560px) {
+  .parent-qr-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .parent-qr-meta {
+    width: 100%;
+  }
 }

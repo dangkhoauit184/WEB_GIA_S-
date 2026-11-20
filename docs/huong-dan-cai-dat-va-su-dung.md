@@ -254,7 +254,27 @@ Mọi vai trò đăng nhập tại **http://localhost:5000/login**. Sau khi đă
 - Giáo vụ dùng cổng tuyển sinh/điều phối.
 - Phụ huynh dùng cổng quản lý thông tin các con.
 - Giáo viên dùng cổng lịch dạy, check-in/out, sổ buổi học, đề xuất lớp và đơn từ.
-- Gia sư và Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ đang triển khai.
+- Gia sư và Trợ giảng có hồ sơ cá nhân, chuyên môn và đổi mật khẩu. Giao diện nghiệp vụ riêng đang triển khai.
+
+**Hồ sơ và mật khẩu**
+
+Bấm avatar ở góc trên bên phải để chọn **Hồ sơ cá nhân**, **Chỉnh sửa hồ sơ cá nhân**, **Đổi mật khẩu** hoặc **Đăng xuất**.
+
+- Giáo vụ xem mã nhân viên, chức vụ, cơ sở và ngày vào làm. Chỉ sửa thông tin cá nhân và liên hệ.
+- Giáo viên, Gia sư, Trợ giảng xem hồ sơ chuyên môn đúng tài khoản. Được sửa thông tin cá nhân, giới tính, đơn vị công tác và giới thiệu. Chuyên môn được phân công, trạng thái hợp tác, quyền và đơn giá do Admin quản lý. Hồ sơ Giáo viên giữ thời khóa biểu lịch rảnh tuần/tháng cùng các thao tác thêm, sửa, xóa đã có.
+- Phụ huynh xem các con đã liên kết, sửa thông tin liên hệ và nghề nghiệp của mình.
+
+Đổi mật khẩu cần mật khẩu hiện tại, mật khẩu mới và xác nhận khớp nhau. Mật khẩu mới từ 6 đến 72 byte theo giới hạn bcrypt, giữ nguyên khoảng trắng. Biểu mẫu báo lỗi tại trường nhập. Đổi thành công sẽ quay về trang đăng nhập và thu hồi các phiên cũ. Mật khẩu không thay đổi khi chỉ sửa hồ sơ.
+
+**QR chuyển khoản ngân hàng và demo ngày 19/11/2026**
+
+Admin mở **Đối soát Thanh toán Web → Tài khoản ngân hàng nhận học phí**. Thêm tên ngân hàng, mã BIN 6 số theo VietQR của ngân hàng, số tài khoản và tên chủ tài khoản. Chọn loại **Tài khoản ngân hàng thật đã kiểm tra thông tin**, lưu rồi bấm **Chọn mặc định**. Chỉ Admin quản lý thông tin này. Có thể lưu nhiều tài khoản; hệ thống có một tài khoản mặc định cho các QR mới.
+
+Phụ huynh mở **Học phí & Thanh toán → Thanh toán** trên hóa đơn đã phát hành. QR lấy số dư hóa đơn và nội dung chuyển khoản từ server. Kiểm tra tên người nhận trên ứng dụng ngân hàng rồi tự xác nhận chuyển tiền tại ngân hàng. Sau đó bấm **Tôi đã chuyển tiền · Gửi thông báo**. Admin đối chiếu tiền vào, số tiền, tài khoản nhận và nội dung chuyển khoản rồi xác nhận lập phiếu thu. Nút của Phụ huynh không tự gạch nợ. Chưa có kết nối thông báo số dư/webhook ngân hàng nên chưa tự xác nhận tiền vào.
+
+File `database/seeders/demo-thu-cong.sql` tạo dữ liệu sáu vai trò và hai tài khoản ngân hàng minh họa. Các tài khoản DEMO không tạo QR chuyển tiền; nút **Gửi thông báo demo** dùng thử luồng đối soát trên dữ liệu demo. Tài khoản ngân hàng thật đã lưu được giữ nguyên khi chạy lại file. Mật khẩu demo **Demo@123**, tài khoản `demo_admin`, `demo_giaovu`, `demo_giaovien`, `demo_giasu`, `demo_trogiang`, `demo_phuhuynh`. Dữ liệu chung còn có nhiều người dạy, phụ huynh và học viên để thử lịch/lớp.
+
+Phần THÊM bổ sung namespace SQLDEMO01, giữ các phiếu tư vấn và dữ liệu đang có. Không cần chạy XÓA trước. Lệnh `CALL sp_demo_educenter('XOA')` dành riêng cho DB local demo, xóa toàn bộ nghiệp vụ kể cả dòng nhập tay, giữ tài khoản/mật khẩu; phải sao lưu trước khi dùng.
 
 Đăng xuất quay về trang đăng nhập. F5 tại `/app` kiểm tra lại phiên. Phiên hết hạn hoặc đã thu hồi sẽ chuyển về `/login`. PHP phục vụ giao diện và API cùng cổng 5000. Các liên kết cũ `/admin`, `/staff` chuyển về `/app`; giao diện được chọn theo vai trò của tài khoản. Cookie phiên có HttpOnly, SameSite=Lax và Secure khi chạy HTTPS. API nghiệp vụ dùng Bearer JWT và kiểm tra quyền ở backend.
 
@@ -581,7 +601,7 @@ Init vẫn chỉ DB rỗng; DB cũ dùng preflight/migrate/check. MYSQL_BIN có 
 
 ### 10.3. PHP cài trực tiếp — tùy chọn
 
-Cần PHP>=8.2, khuyên8.4, Composer và intl/mbstring/mysqli/zip. Env DB_HOST/PORT phải gọi được MySQL từ máy chạy PHP, SMTP cũng phải đổi host/port phù hợp; hostname mailpit chỉ hoạt động trong mạng Docker. Từ thư mục gốc repo, chạy các lệnh sau.
+Cần PHP 8.4, Composer và intl/mbstring/mysqli/zip/GD (PNG/JPEG). Env DB_HOST/PORT phải gọi được MySQL từ máy chạy PHP, SMTP cũng phải đổi host/port phù hợp; hostname mailpit chỉ hoạt động trong mạng Docker. Từ thư mục gốc repo, chạy các lệnh sau.
 
 ```powershell
 cd backend
@@ -614,7 +634,43 @@ Image application chứa source/vendor từ composer.lock; document root backend
 
 PHP cấu hình timezone Việt Nam, tắt display_errors/expose_php; Apache tắt directory listing, có HTTP headers; Docker log tối đa3 file×10MB mỗi service được cấu hình. Sao lưu cả DB và writable nếu có tài liệu upload. Không chạy down -v trên stack có dữ liệu/certificate cần giữ.
 
-SMTP thật dùng MAIL_HOST/PORT/USERNAME/PASSWORD/ENCRYPTION/FROM_EMAIL/FROM_NAME; adapter gateway và webhook xác thực sẽ cài ở bước BE. [Email CodeIgniter](https://codeigniter.com/user_guide/libraries/email.html), [Mailpit Docker](https://mailpit.axllent.org/docs/install/docker/).
+SMTP thật dùng MAIL_HOST/PORT/USERNAME/PASSWORD/ENCRYPTION/FROM_EMAIL/FROM_NAME. Thanh toán payOS cấu hình theo mục bên dưới. [Email CodeIgniter](https://codeigniter.com/user_guide/libraries/email.html), [Mailpit Docker](https://mailpit.axllent.org/docs/install/docker/).
+
+### 11.1. Cấu hình QR ngân hàng và payOS
+
+1. Vào **Admin → Đối soát Thanh toán Web → Tải QR / Thêm tài khoản**. Chọn ảnh VietQR PNG/JPG dưới 750 KB lấy từ ứng dụng ngân hàng. Hệ thống đọc BIN và số tài khoản từ ảnh; nhập tên ngân hàng và chủ tài khoản, chọn loại tài khoản thật sau khi đã kiểm tra người nhận. Bấm lưu, sau đó **Chọn mặc định**. Tài khoản DEMO không tạo mã chuyển tiền thật.
+2. Tạo kênh thanh toán tại payOS, liên kết đúng ngân hàng/số tài khoản đã chọn. Một cấu hình payOS hiện kết nối một kênh; chọn QR của tài khoản khác sẽ bị chặn khi tạo thanh toán nếu không khớp kênh đó. Trước khi đổi sang kênh khác, đối soát các yêu cầu cũ và hủy các yêu cầu chưa nhận tiền; chưa hỗ trợ nhiều kênh hoạt động đồng thời. Ảnh tĩnh là thông tin tài khoản; mã thanh toán từng hóa đơn được tạo lại bằng payOS để chứa số tiền và nội dung riêng.
+3. Trong **config/server.env riêng trên máy chủ**, bổ sung các khóa sau. Không đưa khóa vào GitHub, ảnh chụp hoặc mã frontend.
+
+```dotenv
+PAYOS_ENABLED=true
+PAYOS_CLIENT_ID=<client-id-cua-kenh>
+PAYOS_API_KEY=<api-key-cua-kenh>
+PAYOS_CHECKSUM_KEY=<checksum-key-cua-kenh>
+PAYOS_PUBLIC_URL=https://ten-mien-cua-ban
+PAYOS_RECONCILE_USER_ID=<user_id-admin-dang-hoat-dong>
+```
+
+`PAYOS_RECONCILE_USER_ID` là ID hồ sơ người dùng Admin, không phải account_id. Hệ thống ghi rõ nguồn xác minh tự động trong audit và dùng Admin này làm người chịu trách nhiệm phiếu thu theo ràng buộc DB 005. Không tự chọn Admin đầu tiên.
+
+Tìm user_id trong cửa sổ SQL bằng truy vấn chỉ đọc:
+
+```sql
+SELECT a.username, u.user_id, u.hoten
+FROM account a JOIN users u ON u.user_id = a.user_id
+JOIN role_group g ON g.group_id = a.group_id
+WHERE g.group_name = 'Admin' AND a.status = 'active'
+  AND a.is_deleted = 0 AND u.is_deleted = 0 AND g.is_deleted = 0;
+```
+
+4. Khởi động lại backend để nhận env. Với Docker local dùng `docker compose up -d --force-recreate backend`; máy chủ public dùng cấu hình compose production ở mục 11. URL phải có HTTPS công khai để payOS gọi tới; localhost riêng không nhận được webhook từ payOS.
+5. Trở lại **Đối soát Thanh toán Web → Kiểm tra kết nối webhook**. payOS gửi mẫu có chữ ký tới `/api/finance/tuition/payos/webhook`. Chỉ khi xác minh thành công mới bật tạo thanh toán tự động. Thay khóa, tên miền hoặc Admin đối soát cần xác minh lại. Mẫu kiểm tra không tạo hóa đơn/phiếu thu.
+6. Phụ huynh chọn hóa đơn → **Thanh toán QR**. Mã thể hiện đúng số dư trọn khóa và mã chuyển khoản riêng; có thể mở cổng payOS. Sau khi chuyển, màn hình kiểm tra trạng thái định kỳ. **Kiểm tra giao dịch** đọc lại dữ liệu thực tế từ payOS; nút này không tự ghi nhận đã trả tiền.
+7. Admin có thể bấm **Kiểm tra payOS** khi webhook bị gián đoạn. Thiếu/thừa tiền, nhiều lần chuyển, sai tài khoản/nội dung, hoặc công nợ đã thay đổi đều chờ đối soát và hiển thị lý do. Không yêu cầu phụ huynh chuyển thêm khi chưa kiểm tra. Nếu yêu cầu sai tài khoản hoặc cần tạo lại QR, dùng **Hủy yêu cầu**; chỉ hủy khi payOS xác nhận chưa nhận tiền. Xử lý hoàn tiền ngoài hệ thống nếu cần, theo chứng từ ngân hàng; chưa có API hoàn tiền tự động.
+
+Ảnh QR được lưu ngoài thư mục public tại `backend/writable/uploads/payment-qr`; cần sao lưu/giữ volume writable cùng DB. Cài GD khi chạy PHP trực tiếp; Docker đã có GD. Khi chưa có credentials/webhook công khai, giao diện thông báo payOS chưa sẵn sàng và luồng VietQR hiện có chỉ gửi thông báo để Admin đối chiếu thực tế. Không xem kết quả quay về từ cổng, ảnh chuyển khoản hay nút bấm phụ huynh là bằng chứng đã nhận tiền.
+
+Bộ test tự động chỉ dùng DB `_test` và phản hồi SDK có chữ ký giả lập; không thực hiện chuyển khoản thật. [payOS hiện không có sandbox riêng](https://payos.vn/docs/moi-truong-test/). Khi chủ tài khoản nghiệm thu kết nối thật, họ thực hiện và đối chiếu một khoản nhỏ có kiểm soát trên kênh production. Tham khảo [SDK PHP chính thức payOS](https://payos.vn/docs/sdks/back-end/php/) và [xác minh chữ ký webhook](https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature/).
 
 <a id="xu-ly-loi"></a>
 ## 12. Xử lý lỗi thường gặp
