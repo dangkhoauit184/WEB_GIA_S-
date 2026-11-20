@@ -409,7 +409,16 @@ Mở Docker Desktop, đợi **Engine running**, vào thư mục gốc dự án r
 pwsh -File backend/scripts/start.ps1
 ```
 
-Mở **http://localhost:5000/login**. Giữ Docker Desktop chạy trong lúc sử dụng web. Nếu source, image, dependency và cấu hình vẫn như lần chạy trước, có thể bật nhanh bằng các lệnh sau.
+Mở **http://localhost:5000/login**. Giữ Docker Desktop chạy trong lúc sử dụng web.
+
+> **Lưu ý hiệu năng Docker local (từ 20/11/2026):** `compose.yaml` mount riêng `backend/vendor` (`backend_vendor`) và `backend/writable` (`backend_writable`) vào volume Linux để tránh trễ I/O từ ổ Windows, kết hợp cấu hình OPcache (`revalidate_freq = 5`, `enable_file_override = 1`) trong `config/php.ini`. Source code trong `backend/app/`, `backend/public/`, `frontend/` vẫn sửa nóng bình thường (file PHP tự nhận sau tối đa 5 giây). Khi có thay đổi `composer.json`/`composer.lock`, chạy lại `pwsh -File backend/scripts/start.ps1` hoặc:
+> ```powershell
+> docker compose exec backend composer install --no-interaction --prefer-dist --optimize-autoloader
+> docker compose restart backend
+> ```
+> Nếu trước đó máy bạn đã tải ảnh QR ngân hàng vào `backend/writable/uploads/payment-qr/` trên ổ Windows, cần sao chép vào container một lần (`docker cp backend/writable/uploads/payment-qr/. educenter-backend-1:/var/www/educenter/backend/writable/uploads/payment-qr/` rồi cấp quyền `www-data`).
+
+Nếu source, image, dependency và cấu hình vẫn như lần chạy trước, có thể bật nhanh bằng các lệnh sau.
 
 ```powershell
 docker start educenter-mysql

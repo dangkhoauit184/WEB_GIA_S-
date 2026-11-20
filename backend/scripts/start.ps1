@@ -25,7 +25,7 @@ try {
     $env:EDUCENTER_HTTP_PORT = [string]$Port
     $env:EDUCENTER_DB_CONTAINER = $DatabaseContainer
     Invoke-Docker compose build backend
-    Invoke-Docker compose run --rm --no-deps backend composer install --no-interaction --prefer-dist
+    Invoke-Docker compose run --rm --no-deps backend sh -c 'composer install --no-interaction --prefer-dist --optimize-autoloader && mkdir -p writable/cache writable/logs writable/session writable/uploads && chown -R www-data:www-data writable && chmod -R ug+rwX writable'
     Invoke-Docker compose --profile tools up -d backend mailpit
     $healthy = $false
     for ($attempt=0; $attempt -lt 15; $attempt++) {
