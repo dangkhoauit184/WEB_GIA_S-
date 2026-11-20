@@ -158,9 +158,12 @@
               </summary>
               <div class="parent-account-pop">
                 <strong id="accountMenuName"></strong>
-                <button class="btn" type="button" data-action="password">
+                <button class="btn" type="button" data-account-action="view">Hồ sơ cá nhân</button>
+                <button class="btn" type="button" data-account-action="edit">Chỉnh sửa hồ sơ cá nhân</button>
+                <button class="btn" type="button" data-account-action="password">
                   Đổi mật khẩu
                 </button>
+                <button class="btn" type="button" data-account-action="logout">Đăng xuất</button>
               </div>
             </details>
           </div>
@@ -496,6 +499,7 @@
     <script src="../../../../config/app.config.js"></script>
     <script src="../../../../shared/permissions/access.js"></script>
     <script src="../../../../shared/services/http.js"></script>
+    <script src="../../../../shared/utils/helpers.js"></script>
     <script src="parents.js"></script>
   </body>
 </html>

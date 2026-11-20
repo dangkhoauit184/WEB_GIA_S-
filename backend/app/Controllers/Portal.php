@@ -63,7 +63,9 @@ final class Portal extends \CodeIgniter\Controller
                     'portal'=>$user['role'] === 'ADMIN' ? 'admin' : 'admissions',
                 ]);
                 $scripts = '<script src="/frontend/src/config/app.config.js"></script>'
-                    .'<script src="/frontend/src/shared/permissions/access.js"></script>';
+                    .'<script src="/frontend/src/shared/permissions/access.js"></script>'
+                    .'<script src="/frontend/src/shared/services/http.js"></script>'
+                    .'<script src="/frontend/src/shared/utils/helpers.js"></script>';
                 $html = str_replace('</head>', $scripts.'</head>', $html);
             } elseif ($user['role'] === 'PHU_HUYNH') {
                 $html = $this->frontendPage('src/modules/people/features/parents/parents.html');

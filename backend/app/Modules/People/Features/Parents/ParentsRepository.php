@@ -355,33 +355,6 @@ final class ParentsRepository
                 ? Store::one('SELECT * FROM khoa_hoc WHERE id=? AND is_active=1 FOR UPDATE', [$data['khoaHocId']])
                 : Store::one('SELECT * FROM khoa_hoc WHERE ma=? AND is_active=1 FOR UPDATE', [$data['maKhoa']]);
 
-            if (!$course && !empty($data['maKhoa'])) {
-                $defaultCourses = [
-                    'KHOA-GS-1KEM1' => [
-                        'ma' => 'KHOA-GS-1KEM1',
-                        'ten' => 'Gia sư Toán - Lý - Hóa cá nhân hóa',
-                        'mo_ta' => 'Giáo án thiết kế riêng bám sát năng lực học sinh. Phụ huynh duyệt hồ sơ người dạy trước khi bắt đầu.',
-                        'hoc_phi' => 3500000,
-                    ],
-                    'KHOA-NHOM-THCS' => [
-                        'ma' => 'KHOA-NHOM-THCS',
-                        'ten' => 'Bồi dưỡng Văn hóa THCS & Ôn thi vào 10',
-                        'mo_ta' => 'Quy mô lớp nhỏ dưới 10 học sinh, có trợ giảng theo sát kiểm tra bài tập và hỗ trợ từng buổi học.',
-                        'hoc_phi' => 2800000,
-                    ],
-                    'KHOA-CHUYEN-THPT' => [
-                        'ma' => 'KHOA-CHUYEN-THPT',
-                        'ten' => 'Luyện thi Chuyên & Đánh giá Năng lực THPT',
-                        'mo_ta' => 'Rèn luyện tư duy phản biện, giải đề thi thử chuẩn cấu trúc đề với đội ngũ giáo viên giàu kinh nghiệm.',
-                        'hoc_phi' => 4200000,
-                    ],
-                ];
-                if (isset($defaultCourses[$data['maKhoa']])) {
-                    $cid = Store::insert('khoa_hoc', $defaultCourses[$data['maKhoa']] + ['is_active' => 1]);
-                    $course = Store::one('SELECT * FROM khoa_hoc WHERE id=? FOR UPDATE', [$cid]);
-                }
-            }
-
             if (!$course) {
                 throw new \App\Shared\ApiException(404, 'Khóa học không tồn tại hoặc đã ngừng nhận đăng ký.', 'COURSE_NOT_FOUND');
             }
@@ -576,10 +549,13 @@ final class ParentsRepository
                 throw new \App\Shared\ApiException(400, 'Số tiền thanh toán phải đúng bằng số dư còn phải thu của hóa đơn (' . number_format($remaining) . ' đ).');
             }
 
+            $quote = \App\Modules\Finance\Features\Tuition\TuitionService::verifyPaymentToken($data['paymentToken'], (int)$invoice['id'], $parentUserId, $remaining);
+
             $pending = Store::one("SELECT id,ma_yeu_cau,nha_cung_cap,ma_giao_dich_cong,so_tien,created_at
-                FROM giao_dich_truc_tuyen WHERE hoa_don_id=? AND phu_huynh_id=? AND trang_thai='cho_xac_nhan'
+                FROM giao_dich_truc_tuyen WHERE hoa_don_id=? AND phu_huynh_id=? AND trang_thai IN ('khoi_tao','cho_xac_nhan')
                 ORDER BY id DESC LIMIT 1", [$invoice['id'], $parentUserId]);
             if ($pending) {
+                if ($pending['nha_cung_cap']==='PAYOS') throw new \App\Shared\ApiException(409,'Hóa đơn có yêu cầu payOS. Hãy mở lại mã QR và kiểm tra giao dịch, không gửi thêm thông báo chuyển khoản.');
                 return ['id'=>(int)$pending['id'], 'code'=>$pending['ma_yeu_cau'], 'invCode'=>$invoice['ma_hd'],
                     'channel'=>$pending['nha_cung_cap'], 'amount'=>(int)$pending['so_tien'],
                     'ref'=>$pending['ma_giao_dich_cong'], 'time'=>date('d/m/Y H:i', strtotime($pending['created_at'])),
@@ -601,6 +577,8 @@ final class ParentsRepository
                 'tien_te' => 'VND',
                 'trang_thai' => 'khoi_tao',
             ]);
+
+            Store::recordAudit($parentUserId, 'them', 'giao_dich_truc_tuyen', $txId, null, ['action'=>'bank_transfer_reported','receivingAccount'=>$quote['bank'],'memo'=>$quote['memo']]);
 
             // Bước 2: Chuyển sang cho_xac_nhan và ghi su_kien_thanh_toan để Admin đối soát
             Store::execute("UPDATE giao_dich_truc_tuyen SET trang_thai='cho_xac_nhan' WHERE id=?", [$txId]);
@@ -633,22 +611,6 @@ final class ParentsRepository
                 'status' => 'cho_xac_nhan',
             ];
         });
-
-        if (!empty($data['xacNhanQr']) && !empty($result['id'])) {
-            $admin = Store::one("SELECT a.user_id FROM account a
-                JOIN users u ON u.user_id=a.user_id
-                JOIN role_group g ON g.group_id=a.group_id
-                WHERE g.group_name='Admin' AND a.status='active' AND a.is_deleted=0 AND u.is_deleted=0 AND g.is_deleted=0
-                ORDER BY a.account_id ASC LIMIT 1");
-            if ($admin) {
-                Store::call('CALL sp_xac_nhan_giao_dich(?,?)', [(int)$result['id'], (int)$admin['user_id']]);
-                Store::execute(
-                    "UPDATE su_kien_thanh_toan SET trang_thai='da_xu_ly', xu_ly_luc=NOW() WHERE giao_dich_id=? AND trang_thai='cho_xu_ly'",
-                    [(int)$result['id']]
-                );
-                $result['status'] = 'da_xac_nhan';
-            }
-        }
 
         return $result;
     }

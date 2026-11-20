@@ -6,7 +6,11 @@ use App\Shared\{ApiException,Store};
 final class TuitionRepository
 {
     private const SELECT="SELECT gd.*,hd.ma_hd,ph.hoten AS ten_phu_huynh,hv.ho_ten AS ten_hoc_vien,
-        ad.hoten AS ten_admin,(SELECT MAX(sk.payload_sha256) FROM su_kien_thanh_toan sk WHERE sk.giao_dich_id=gd.id) AS webhook_hash
+        ad.hoten AS ten_admin,(SELECT MAX(sk.payload_sha256) FROM su_kien_thanh_toan sk WHERE sk.giao_dich_id=gd.id) AS webhook_hash,
+        (SELECT al.du_lieu_moi FROM audit_log al WHERE al.bang='giao_dich_truc_tuyen' AND al.ban_ghi_id=gd.id
+            AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action')) IN ('bank_transfer_reported','payos_link') ORDER BY al.id DESC LIMIT 1) AS transfer_details,
+        (SELECT JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.reason')) FROM audit_log al WHERE al.bang='giao_dich_truc_tuyen' AND al.ban_ghi_id=gd.id
+            AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action'))='payos_review' ORDER BY al.id DESC LIMIT 1) AS payment_review
         FROM giao_dich_truc_tuyen gd JOIN hoa_don hd ON hd.id=gd.hoa_don_id
         JOIN users ph ON ph.user_id=gd.phu_huynh_id
         LEFT JOIN dang_ky_khoa_hoc dk ON dk.id=hd.dang_ky_khoa_hoc_id

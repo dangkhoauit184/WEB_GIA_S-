@@ -33,6 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loginAlert.textContent = '';
   }
 
+  if (new URLSearchParams(window.location.search).get('passwordChanged') === '1') {
+    showAlert('Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.', 'success');
+    history.replaceState(null, '', AppConfig.AUTH_PAGE);
+  }
+
   // Submit login
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();

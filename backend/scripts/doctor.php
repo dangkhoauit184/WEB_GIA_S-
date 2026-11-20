@@ -15,7 +15,7 @@ $check = static function (bool $ok, string $name) use (&$failed): void {
 $check(PHP_VERSION_ID >= 80200, 'PHP version');
 $check(getenv('CI_ENVIRONMENT') === 'production', 'production environment');
 $check(!filter_var(ini_get('display_errors'), FILTER_VALIDATE_BOOLEAN) && !filter_var(ini_get('expose_php'), FILTER_VALIDATE_BOOLEAN), 'PHP error/version disclosure disabled');
-foreach (['intl', 'mbstring', 'mysqli', 'zip'] as $extension) $check(extension_loaded($extension), 'extension ' . $extension);
+foreach (['intl', 'mbstring', 'mysqli', 'zip', 'gd'] as $extension) $check(extension_loaded($extension), 'extension ' . $extension);
 $check(strlen(getenv('JWT_SECRET') ?: '') >= 32, 'private JWT secret configured');
 $check((getenv('DB_USER') ?: '') !== 'root', 'application uses a non-root database account');
 $check(is_writable(WRITEPATH), 'writable storage');

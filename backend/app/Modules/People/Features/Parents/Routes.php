@@ -1,6 +1,10 @@
 <?php
 
 /** @var \CodeIgniter\Router\RouteCollection $routes */
+$routes->post('api/people/parents/invoices/(:num)/checkout', '\App\Modules\People\Features\Parents\ParentsController::checkout/$1');
+$routes->get('api/people/parents/invoices/(:num)/payment-status', '\App\Modules\People\Features\Parents\ParentsController::paymentStatus/$1');
+$routes->post('api/people/parents/invoices/(:num)/check-payment', '\App\Modules\People\Features\Parents\ParentsController::checkPayment/$1');
+$routes->get('api/people/parents/invoices/(:num)/payment-qr', '\App\Modules\People\Features\Parents\ParentsController::paymentQr/$1');
 $routes->get('api/people/parents/public/landing', '\App\Modules\People\Features\Parents\ParentsController::publicLanding');
 $routes->post('api/people/parents/public/consultations', '\App\Modules\People\Features\Parents\ParentsController::createPublicConsultation');
 $routes->get('api/people/parents/portal', '\App\Modules\People\Features\Parents\ParentsController::portal');

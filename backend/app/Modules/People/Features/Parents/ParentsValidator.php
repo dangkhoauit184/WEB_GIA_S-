@@ -40,11 +40,12 @@ final class ParentsValidator
 
     public static function onlinePayment(array $input): array
     {
+        if (array_diff(array_keys($input),['hoaDonId','nhaCungCap','soTien','paymentToken'])) throw new \App\Shared\ApiException(400,'Chỉ được gửi thông báo chuyển khoản, không được tự xác nhận thanh toán.');
         return Input::validate($input, [
             'hoaDonId' => ['id', true],
-            'nhaCungCap' => ['string', true],
+            'nhaCungCap' => [['VIETQR_NAPAS'], true],
             'soTien' => ['integer', true],
-            'xacNhanQr' => ['bool', false],
+            'paymentToken' => ['string', true],
         ]);
     }
 

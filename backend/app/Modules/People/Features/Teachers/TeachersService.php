@@ -23,9 +23,11 @@ final class TeachersService
 
     public static function updateProfile(array $body): array
     {
-        $actor = AttendanceFilter::teacher();
+        $actor = TeachersFilter::selfProfile();
         AttendanceValidator::fields($body, ['hoTen','email','ngaySinh','gioiTinh','sdt','diaChi','donViCongTac','gioiThieu','lichRanhs']);
-        foreach (['hoTen'=>150,'email'=>150,'sdt'=>20,'diaChi'=>255,'donViCongTac'=>255,'gioiThieu'=>10000] as $field=>$limit) {
+        $personal = array_diff_key($body, ['lichRanhs'=>true]);
+        if ($personal) $body = array_replace($body, \App\Modules\Administration\Features\Auth\AuthValidator::profile($personal, $actor['role']));
+        foreach (['hoTen'=>150,'email'=>150,'sdt'=>20,'diaChi'=>255,'donViCongTac'=>150,'gioiThieu'=>10000] as $field=>$limit) {
             if (array_key_exists($field, $body)) $body[$field] = AttendanceValidator::text($body[$field], $limit);
         }
         if (isset($body['lichRanhs']) && (!is_array($body['lichRanhs']) || count($body['lichRanhs']) > 100)) throw new ApiException(400, 'Lịch rảnh không hợp lệ.');
@@ -39,7 +41,9 @@ final class TeachersService
             }
         }
         TeachersRepository::update($actor['teacherId'], $actor['userId'], $data, $actor['userId']);
-        return self::detail($actor['teacherId']);
+        $row = TeachersRepository::all([], $actor, $actor['teacherId'])[0] ?? null;
+        if (!$row) throw new ApiException(404, 'Không tìm thấy hồ sơ chuyên môn.');
+        return TeachersModel::map($row, TeachersRepository::extras($actor['teacherId']));
     }
 
     private static function candidate(array $request, array $actor): ?array

@@ -59,13 +59,15 @@
       <b id="nCount" style="display:none">—</b>
     </button>
     <div style="position:relative">
-      <button class="acct-btn" id="admin-avatar" onclick="toggleUserDropdown()" title="Menu tài khoản">H</button>
+      <button class="acct-btn" id="admin-avatar" onclick="toggleUserDropdown()" title="Menu tài khoản" aria-label="Menu tài khoản" aria-controls="userDropdown" aria-expanded="false">H</button>
       <div class="user-dropdown" id="userDropdown">
         <div class="ud-info">
           <b id="udName">Trần Quang Huy</b>
           <span id="udRole" style="font-size:11px;color:var(--pri-d);font-weight:600;display:block;margin-top:2px">Quản trị viên</span>
         </div>
-        <button class="ud-item" onclick="openChangePwdModal();toggleUserDropdown()">Đổi mật khẩu &amp; Hồ sơ</button>
+        <button class="ud-item" data-account-action="view">Hồ sơ cá nhân</button>
+        <button class="ud-item" data-account-action="edit">Chỉnh sửa hồ sơ cá nhân</button>
+        <button class="ud-item" data-account-action="password">Đổi mật khẩu</button>
         <?php if (!$isAdmissions): ?><button class="ud-item" onclick="openAccountManagement();toggleUserDropdown()">Quản lý tài khoản</button><?php endif; ?>
         <div style="border-top:1px solid var(--g200);margin:4px 0"></div>
         <button class="ud-item danger" onclick="handleLogout();toggleUserDropdown()">Đăng xuất</button>

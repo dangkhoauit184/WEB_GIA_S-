@@ -113,6 +113,35 @@ try {
         preg_match('/educenter_session=([^;]+)/',$setCookie,$cookieMatch);
         check(isset($cookieMatch[1]),'browser session cookie '.$role);
         $cookie='Cookie: educenter_session='.$cookieMatch[1];
+        $ownToken=$body['data']['token'];
+        $profile=requestOk('/api/auth/me/profile','GET',null,$ownToken);
+        check($profile['role']===$role && $profile['username']===$portalUsername,'self profile follows authenticated identity '.$role);
+        check(!preg_match('/password|donGia|nganHang|soTaiKhoan|hocPhiBuoiDeXuat/i',json_encode($profile)),'self profile excludes secrets and rates '.$role);
+        $oldOther=Store::one('SELECT hoten,diachi FROM users WHERE user_id=?',[$parent2['userId']]);
+        check(http('/api/auth/me/profile','PUT',['userId'=>$parent2['userId'],'hoTen'=>'Giả danh'],$ownToken)[0]===400,'self profile rejects another identity '.$role);
+        check(http('/api/auth/me/profile','PUT',['role'=>'ADMIN'],$ownToken)[0]===400,'self profile rejects privilege changes '.$role);
+        check(http('/api/auth/me/profile','PUT',['email'=>'invalid'],$ownToken)[0]===400,'self profile validates email '.$role);
+        check(http('/api/auth/me/profile','PUT',['email'=>$parent2['email']],$ownToken)[0]===409,'self profile identifies duplicate email '.$role);
+        check(http('/api/auth/me/profile','PUT',['ngaySinh'=>'2099-01-01'],$ownToken)[0]===400,'self profile rejects future birth date '.$role);
+        $savedProfile=requestOk('/api/auth/me/profile','PUT',['diaChi'=>'Hồ sơ cá nhân '.$role],$ownToken);
+        check($savedProfile['diaChi']==='Hồ sơ cá nhân '.$role,'self profile saves and reloads '.$role);
+        check(Store::one('SELECT hoten,diachi FROM users WHERE user_id=?',[$parent2['userId']])===$oldOther,'self edit leaves other users intact '.$role);
+        if ($role === 'GIAO_VU') {
+            check(isset($profile['staff']['maNv']),'staff profile includes employment details');
+            check(http('/api/auth/me/profile','PUT',['coSoId'=>1],$ownToken)[0]===400,'staff cannot reassign own campus');
+        }
+        if (in_array($role,['GIAO_VIEN','GIA_SU','TRO_GIANG'],true)) {
+            check(isset($profile['professional']['maNs']),'professional profile for '.$role);
+            $savedProfile=requestOk('/api/auth/me/profile','PUT',['gioiThieu'=>'Chuyên môn '.$role,'donViCongTac'=>'EduCenter'], $ownToken);
+            check($savedProfile['professional']['gioiThieu']==='Chuyên môn '.$role,'professional self edit '.$role);
+            check(http('/api/auth/me/profile','PUT',['donGiaGioChuan'=>1],$ownToken)[0]===400,'professional rate protected '.$role);
+            check(http('/api/auth/me/profile','PUT',['phanLoai'=>['giao_vien']],$ownToken)[0]===400,'professional classification protected '.$role);
+        }
+        if ($role === 'PHU_HUYNH') {
+            check(count($profile['children'])===2,'parent profile lists only own children');
+            $savedProfile=requestOk('/api/auth/me/profile','PUT',['ngheNghiep'=>'Kỹ sư'], $ownToken);
+            check($savedProfile['ngheNghiep']==='Kỹ sư','parent can edit occupation');
+        }
         foreach([1,2] as $load) {
             [$status,,$html]=http('/app','GET',null,null,null,[$cookie]);
             check($status===200 && str_contains($html,$marker) && str_contains($html,'id="portal-session"'),'role page and refresh '.$role.' '.$load);
@@ -159,14 +188,44 @@ try {
     $registrationId=Store::insert('dang_ky_khoa_hoc',['khoa_hoc_id'=>$courseId,'hoc_vien_id'=>$student['id']]);
     $parentInvoice=requestOk('/api/finance/tuition/invoices','POST',['dangKyKhoaHocId'=>$registrationId],$token,201);
     requestOk('/api/finance/tuition/invoices/'.$parentInvoice['id'].'/publish','POST',[],$token);
+    $enrolled=requestOk('/api/people/parents/enrollments','POST',['khoaHocId'=>$courseId,'hocVienId'=>$student['id'],'hocPhi'=>1],$parentToken,201);
+    check($enrolled['hoaDon']['id']===(int)$parentInvoice['id'] && $enrolled['hoaDon']['must']===2500000,'parent enrollment reuses invoice and authoritative course price');
+    check(http('/api/people/parents/enrollments','POST',['khoaHocId'=>$courseId,'hocVienId'=>$student['id']],$otherToken)[0]===403,'parent enrollment cannot target another family');
+    $courseCount=Store::one('SELECT COUNT(*) AS n FROM khoa_hoc')['n'];
+    check(http('/api/people/parents/enrollments','POST',['maKhoa'=>'KHOA-GS-1KEM1','hocVienId'=>$student['id']],$parentToken)[0]===404,'parent cannot create a hardcoded catalog course');
+    check(Store::one('SELECT COUNT(*) AS n FROM khoa_hoc')['n']===$courseCount,'rejected enrollment leaves catalog unchanged');
     $paymentBody=['hoaDonId'=>$parentInvoice['id'],'nhaCungCap'=>'VIETQR_NAPAS','soTien'=>2500000];
+    check(http('/api/people/parents/invoices/'.$parentInvoice['id'].'/payment-qr','GET',null,$parentToken)[0]===409,'QR requires configured bank');
+    $bankBody=['bankBin'=>'970436','bankName'=>'Vietcombank','accountNo'=>'1234567890','accountName'=>'TEST ONLY','active'=>true,'isDemo'=>false];
+    check(http('/api/finance/tuition/bank-accounts','POST',$bankBody,$parentToken)[0]===403,'parent cannot change receiving account');
+    check(http('/api/finance/tuition/bank-accounts','POST',$bankBody,$staffToken)[0]===403,'staff cannot change receiving account');
+    $bank=requestOk('/api/finance/tuition/bank-accounts','POST',$bankBody,$token);
+    requestOk('/api/finance/tuition/bank-accounts/'.$bank['id'].'/default','POST',[],$token);
+    check(http('/api/finance/tuition/bank-accounts/'.$bank['id'],'PUT',array_replace($bankBody,['active'=>false]),$token)[0]===409,'default must stay active');
+    check(http('/api/finance/tuition/bank-accounts/default','PUT',$bankBody,$token)[0]===400,'reserved configuration key protected');
+    check(http('/api/people/parents/invoices/'.$parentInvoice['id'].'/payment-qr','GET',null,$otherToken)[0]===404,'QR invoice ownership');
+    $qr=requestOk('/api/people/parents/invoices/'.$parentInvoice['id'].'/payment-qr','GET',null,$parentToken);
+    check($qr['amount']===2500000 && $qr['bank']['id']===$bank['id'] && str_starts_with($qr['qrDataUrl'],'data:image/svg+xml;base64,'),'QR carries canonical amount and default bank');
+    $paymentBody['paymentToken']=$qr['paymentToken'];
+    check(http('/api/people/parents/payments','POST',$paymentBody+['xacNhanQr'=>true],$parentToken)[0]===400,'parent cannot impersonate Admin confirmation');
+    check(http('/api/people/parents/payments','POST',array_replace($paymentBody,['paymentToken'=>'forged']),$parentToken)[0]===400,'tampered QR quote refused');
+    check(http('/api/people/parents/payments','POST',array_replace($paymentBody,['soTien'=>1]),$parentToken)[0]===400,'QR amount tampering refused');
+    $secondBank=requestOk('/api/finance/tuition/bank-accounts','POST',array_replace($bankBody,['accountNo'=>'0987654321','isDemo'=>true]),$token);
+    requestOk('/api/finance/tuition/bank-accounts/'.$secondBank['id'].'/default','POST',[],$token);
+    $newQr=requestOk('/api/people/parents/invoices/'.$parentInvoice['id'].'/payment-qr','GET',null,$parentToken);
+    check($newQr['bank']['id']===$secondBank['id'] && $newQr['qrDataUrl']===null,'changing default updates new QR and demo never renders bank-transfer QR');
     $firstPayment=requestOk('/api/people/parents/payments','POST',$paymentBody,$parentToken,201);
     $retryPayment=requestOk('/api/people/parents/payments','POST',$paymentBody,$parentToken,201);
     check($firstPayment['id']===$retryPayment['id'],'payment retry reuses the pending notification');
+    $tx=requestOk('/api/finance/tuition/transactions','GET',null,$token);
+    $tx=array_values(array_filter($tx,fn($item)=>(int)$item['id']===(int)$firstPayment['id']))[0];
+    check(json_decode($tx['transferDetails'],true)['receivingAccount']['id']===$bank['id'],'transfer retains quoted bank after default changes');
     check(http('/api/people/parents/payments','POST',$paymentBody,$otherToken)[0]===403,'another parent cannot report payment for this invoice');
     $portal=requestOk('/api/people/parents/portal','GET',null,$parentToken);
     check($portal['transactions'][0]['studentId']===(string)$student['id'],'transactions follow the selected child');
     check((int)$portal['invoices'][$student['id']][0]['paid']===0,'reporting a transfer never confirms receipt');
+    require __DIR__.'/payos.php';
+    testPayos(compact('parent','parent2','student','login','token','parentToken','otherToken','bank','secondBank','bankBody','suffix'));
     // Teacher portal operations stay scoped and never accept client clock/pay data.
     $teacherToken=requestOk('/api/auth/login','POST',['username'=>'gv_'.$suffix,'password'=>'Teacher@123'])['token'];
     $work=requestOk('/api/academic/attendance/workspace','GET',null,$teacherToken);
@@ -354,6 +413,23 @@ try {
     }
     check(http('/api/auth/forgot-password/reset','POST',['identifier'=>$username,'otp'=>$otpMatch[0],'newPassword'=>'Another@789','confirmPassword'=>'Another@789'])[0]===429, 'guessing lock also blocks the correct OTP');
     \Config\Services::resetSingle('email');
+    // Password tests use only the disposable database. Developer credentials stay unchanged.
+    foreach (array_slice($portalAccounts,1) as [$portalUsername,$portalPassword,$role]) {
+        $first=requestOk('/api/auth/login','POST',['username'=>$portalUsername,'password'=>$portalPassword]);
+        $second=requestOk('/api/auth/login','POST',['username'=>$portalUsername,'password'=>$portalPassword]);
+        $ownToken=$first['token'];
+        check(http('/api/auth/change-password','PUT',['currentPassword'=>'wrong','newPassword'=>'Changed@789','confirmPassword'=>'Changed@789'],$ownToken)[1]['code']==='INVALID_CURRENT_PASSWORD','wrong current password identified '.$role);
+        check(http('/api/auth/change-password','PUT',['currentPassword'=>$portalPassword,'newPassword'=>'Changed@789','confirmPassword'=>'Mismatch@789'],$ownToken)[1]['code']==='PASSWORD_MISMATCH','password confirmation enforced '.$role);
+        check(http('/api/auth/change-password','PUT',['currentPassword'=>$portalPassword,'newPassword'=>str_repeat('á',37)],$ownToken)[0]===400,'bcrypt byte limit enforced '.$role);
+        check(http('/api/auth/change-password','PUT',['currentPassword'=>$portalPassword,'newPassword'=>"Valid\0Password"],$ownToken)[0]===400,'null byte password refused '.$role);
+        $newPassword='  MậtKhẩu@789  ';
+        [$status,$result,,$headers]=http('/api/auth/change-password','PUT',['currentPassword'=>$portalPassword,'newPassword'=>$newPassword,'confirmPassword'=>$newPassword],$ownToken);
+        check($status===200 && $result['data']['requiresLogin']===true,'password changes for '.$role);
+        check(str_contains(implode("\n",$headers),'educenter_session='),'password change clears browser cookie '.$role);
+        check(http('/api/auth/me','GET',null,$ownToken)[0]===401 && http('/api/auth/me','GET',null,$second['token'])[0]===401,'all prior sessions invalidated '.$role);
+        check(http('/api/auth/login','POST',['username'=>$portalUsername,'password'=>$portalPassword])[0]===401,'old password refused '.$role);
+        check(requestOk('/api/auth/login','POST',['username'=>$portalUsername,'password'=>$newPassword])['user']['role']===$role,'new password preserves spaces and role '.$role);
+    }
     echo "PASS: $assertions HTTP/MySQL integration assertions on isolated test database.\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); $failed=true; }
 finally { if(is_resource($server)) { proc_terminate($server);proc_close($server); } }

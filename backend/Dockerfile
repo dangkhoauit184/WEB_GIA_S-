@@ -1,8 +1,9 @@
 FROM composer:2 AS composer-bin
 
 FROM php:8.4-apache-bookworm AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends libicu-dev libonig-dev libzip-dev unzip git \
-    && docker-php-ext-install intl mbstring mysqli zip \
+RUN apt-get update && apt-get install -y --no-install-recommends libicu-dev libonig-dev libzip-dev libpng-dev libjpeg62-turbo-dev unzip git \
+    && docker-php-ext-configure gd --with-jpeg \
+    && docker-php-ext-install intl mbstring mysqli zip gd \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=composer-bin /usr/bin/composer /usr/local/bin/composer

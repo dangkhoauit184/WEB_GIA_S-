@@ -10,6 +10,10 @@ final class ParentsController extends \App\Shared\ApiController
     public function publicLanding() { return $this->respond(fn()=>ParentsService::publicLanding()); }
     public function createPublicConsultation() { return $this->respond(fn()=>ParentsService::createPublicConsultation($this->input()),201); }
     public function portal() { return $this->respond(fn()=>ParentsService::portal()); }
+    public function paymentQr($id) { return $this->respond(fn()=>\App\Modules\Finance\Features\Tuition\TuitionService::paymentQr((int)$id,ParentsService::parentUser())); }
+    public function checkout($id) { return $this->respond(fn()=>\App\Modules\Finance\Features\Tuition\PayOsPayments::checkout((int)$id,ParentsService::parentUser())); }
+    public function paymentStatus($id) { return $this->respond(fn()=>\App\Modules\Finance\Features\Tuition\PayOsPayments::paymentStatus((int)$id,ParentsService::parentUser())); }
+    public function checkPayment($id) { return $this->respond(fn()=>\App\Modules\Finance\Features\Tuition\PayOsPayments::checkInvoice((int)$id,ParentsService::parentUser())); }
     public function createEnrollment() { return $this->respond(fn()=>ParentsService::createEnrollment($this->input()),201); }
     public function createLeaveRequest() { return $this->respond(fn()=>ParentsService::createLeaveRequest($this->input()),201); }
     public function createOnlinePayment() { return $this->respond(fn()=>ParentsService::createOnlinePayment($this->input()),201); }

@@ -45,7 +45,7 @@ final class ParentsService
         return ParentsRepository::createPublicConsultation($data);
     }
 
-    private static function parentUser(): array
+    public static function parentUser(): array
     {
         $user = Access::user();
         if (!in_array($user['role'] ?? '', ['PHU_HUYNH', 'ADMIN'], true)) {

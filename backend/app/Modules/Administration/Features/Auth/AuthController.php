@@ -18,7 +18,16 @@ final class AuthController extends \App\Shared\ApiController
     public function sendOtp() { return $this->respond(fn()=>AuthService::sendOtp(AuthValidator::sendOtp($this->input()))); }
     public function resetPassword() { return $this->respond(fn()=>AuthService::resetPassword(AuthValidator::resetPassword($this->input()))); }
     public function me() { return $this->respond(fn()=>['user'=>AuthFilter::user()]); }
-    public function changePassword() { return $this->respond(fn()=>AuthService::changePassword(AuthValidator::password($this->input()))); }
+    public function profile() { return $this->respond(fn()=>AuthService::profile()); }
+    public function updateProfile() { return $this->respond(fn()=>AuthService::updateProfile($this->input())); }
+    public function changePassword()
+    {
+        return $this->respond(function () {
+            $result = AuthService::changePassword(AuthValidator::password($this->input()));
+            $this->response->deleteCookie('educenter_session');
+            return $result;
+        });
+    }
     public function logout()
     {
         $this->response->deleteCookie('educenter_session');

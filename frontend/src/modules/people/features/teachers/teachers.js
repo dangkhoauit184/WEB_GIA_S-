@@ -45,6 +45,7 @@
   let toastTimer;
   let renderVersion = 0;
   let availabilityInProfile = false;
+  let profileUpdate = Promise.resolve();
   const escape = (value) =>
     String(value ?? "").replace(
       /[&<>"']/g,
@@ -334,11 +335,7 @@
     }
     const profile = state.workspace.profile;
     document.getElementById("teacher-name").textContent = profile.hoTen;
-    document.getElementById("teacher-avatar").textContent = profile.hoTen
-      .replace(/\s*\[[^\]]*\]$/, "")
-      .trim()
-      .split(/\s+/)
-      .at(-1)[0];
+    document.getElementById("teacher-avatar").textContent = AccountUI.initial(profile.hoTen);
     document.getElementById("teacher-date").textContent =
       new Intl.DateTimeFormat("vi-VN", {
         dateStyle: "full",
@@ -1024,41 +1021,8 @@
       .setAttribute("aria-expanded", String(open));
   }
   function viewProfile() {
-    const profile = state.workspace.profile;
-    const subjectNames = profile.monDays
-      .map(
-        (subject) =>
-          `${subject.tenMon} · Khối ${subject.capLopTu}–${subject.capLopDen}`,
-      )
-      .join(", ");
-    const rows = [
-      ["Họ và tên", profile.hoTen],
-      ["Email", profile.email],
-      ["Số điện thoại", profile.sdt],
-      ["Ngày sinh", date(profile.ngaySinh)],
-      ["Địa chỉ", profile.diaChi],
-      ["Đơn vị công tác", profile.donViCongTac],
-      ["Kinh nghiệm", profile.kinhNghiemNam + " năm"],
-      ["Môn và khối giảng dạy", subjectNames],
-      [
-        "Hình thức dạy",
-        (profile.hinhThucDay || [])
-          .map((value) => (value === "online" ? "Trực tuyến" : "Trực tiếp"))
-          .join(", "),
-      ],
-    ];
-    modal(
-      "Hồ sơ cá nhân & Chuyên môn",
-      `<details class="teacher-profile-details"><summary>${escape(profile.hoTen)} · Thông tin cá nhân & Chuyên môn</summary><div>${rows.map(([label, value]) => `<div class="teacher-row"><span class="teacher-muted">${escape(label)}</span><b>${escape(value || "Chưa cập nhật")}</b></div>`).join("")}<p class="teacher-profile-intro">${escape(profile.gioiThieu || "")}</p></div></details><div class="teacher-dialog-foot">${button("Chỉnh sửa hồ sơ cá nhân", "profile", "", "p")}</div>${availabilityCalendar()}`,
-    );
-    dialog.classList.add("teacher-profile-dialog");
-  }
-  function profileModal() {
-    const profile = state.workspace.profile;
-    modal(
-      "Chỉnh sửa hồ sơ cá nhân",
-      `<form id="teacher-profile-form"><div class="teacher-form-grid">${field("Họ và tên *", "hoTen", profile.hoTen, "text", 'required maxlength="150"')}${field("Email *", "email", profile.email, "email", 'required maxlength="150"')}${field("Ngày sinh", "ngaySinh", profile.ngaySinh || "", "date")}${select("Giới tính", "gioiTinh", { "": "Chưa cập nhật", nam: "Nam", nu: "Nữ", khac: "Khác" }, profile.gioiTinh)}${field("Số điện thoại", "sdt", profile.sdt || "", "tel", 'maxlength="20"')}${field("Đơn vị công tác", "donViCongTac", profile.donViCongTac || "", "text", 'maxlength="255"')}<div class="full">${field("Địa chỉ", "diaChi", profile.diaChi || "", "text", 'maxlength="255"')}${textarea("Giới thiệu chuyên môn", "gioiThieu", profile.gioiThieu || "")}</div></div>${formFoot("Lưu hồ sơ")}</form>`,
-    );
+    if (dialog.open) dialog.close();
+    AccountUI.view();
   }
   function notificationsModal() {
     modal(
@@ -1102,11 +1066,13 @@
         return;
       case "profile-view":
         accountMenu(false);
+        await profileUpdate;
         viewProfile();
         return;
       case "profile":
         accountMenu(false);
-        profileModal();
+        dialog.close();
+        AccountUI.edit();
         return;
       case "week-schedule":
         state.calendarMode = "week";
@@ -1128,7 +1094,8 @@
       case "add-availability":
       case "edit-availability":
         if (element.closest("[data-availability-calendar]"))
-          availabilityInProfile = Boolean(element.closest("#teacher-dialog"));
+          availabilityInProfile = Boolean(element.closest("#teacher-dialog,.account-dialog"));
+        if (element.closest(".account-dialog")) AccountUI.close();
         availabilityModal(
           action === "edit-availability" ? id : "",
           action === "add-availability" ? id : "",
@@ -1381,9 +1348,6 @@
         }
         body.buoiHocId = Number(body.buoiHocId);
         await api(attendance + "/requests", "post", body);
-      } else if (form.id === "teacher-profile-form") {
-        const body = Object.fromEntries(values);
-        await api("/people/teachers/me/profile", "put", body);
       } else if (form.id === "teacher-availability-form") {
         await api(
           "/people/teachers/me/availability" +
@@ -1460,10 +1424,7 @@
       await load();
       dialog.close();
       await render();
-      if (
-        form.id === "teacher-profile-form" ||
-        (form.id.startsWith("teacher-availability-") && availabilityInProfile)
-      )
+      if (form.id.startsWith("teacher-availability-") && availabilityInProfile)
         viewProfile();
       toast(
         form.id === "teacher-availability-delete-form"
@@ -1518,6 +1479,10 @@
         : `<button type="button" data-action="tab" data-id="${key}"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24">${icons[index]}</svg></span>${label}</button>`,
     )
     .join("");
+  window.addEventListener("account-profile-updated", () => {
+    profileUpdate = load().catch(error => toast(error.message));
+  });
+  AccountUI.setProfileView(async () => { await profileUpdate; return availabilityCalendar(); });
   load()
     .then(() =>
       navigate(location.hash.split("teach-")[1] || "dash", null, false),
