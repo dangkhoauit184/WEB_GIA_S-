@@ -1,28 +1,33 @@
 /**
  * EduCenter ERP - Access & Session Management
- * Phụ trách lưu trữ JWT token, kiểm tra phiên làm việc và phân quyền vai trò.
+ * Quản lý thông tin hiển thị người dùng ở client và điều hướng vai trò.
+ * Access token (JWT) chỉ nằm trong HttpOnly cookie `educenter_session`, KHÔNG lưu vào localStorage.
  */
 const AccessService = {
+  _user: null,
+
   /**
-   * Lưu phiên đăng nhập
-   * @param {string} token - Chuỗi JWT token từ backend
-   * @param {object} user - Thông tin tài khoản người dùng
+   * Lưu thông tin hiển thị người dùng hiện tại (không lưu access token vào localStorage)
+   * @param {string|null} _token - Không lưu ở trình duyệt (đã nằm trong HttpOnly cookie)
+   * @param {object} user - Thông tin tài khoản người dùng (không nhạy cảm)
    */
-  setSession(token, user) {
-    if (token) {
-      localStorage.setItem(AppConfig.STORAGE_KEYS.TOKEN, token);
-    }
+  setSession(_token, user) {
+    // Dọn token cũ nếu phiên bản trước từng ghi vào localStorage
+    localStorage.removeItem(AppConfig.STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(AppConfig.STORAGE_KEYS.USER);
     if (user) {
-      localStorage.setItem(AppConfig.STORAGE_KEYS.USER, JSON.stringify(user));
+      this._user = user;
+      sessionStorage.setItem(AppConfig.STORAGE_KEYS.USER, JSON.stringify(user));
+      sessionStorage.removeItem('educenter_disable_onetap');
     }
   },
 
   /**
-   * Lấy JWT token hiện tại
-   * @returns {string|null}
+   * Access token chỉ nằm trong HttpOnly cookie, không đọc từ JS trình duyệt.
+   * @returns {null}
    */
   getToken() {
-    return localStorage.getItem(AppConfig.STORAGE_KEYS.TOKEN);
+    return null;
   },
 
   /**
@@ -30,21 +35,23 @@ const AccessService = {
    * @returns {object|null}
    */
   getCurrentUser() {
-    const raw = localStorage.getItem(AppConfig.STORAGE_KEYS.USER);
+    if (this._user) return this._user;
+    const raw = sessionStorage.getItem(AppConfig.STORAGE_KEYS.USER);
     if (!raw) return null;
     try {
-      return JSON.parse(raw);
+      this._user = JSON.parse(raw);
+      return this._user;
     } catch (e) {
       return null;
     }
   },
 
   /**
-   * Kiểm tra người dùng đã đăng nhập chưa
+   * Kiểm tra người dùng đã có thông tin phiên hợp lệ hay chưa
    * @returns {boolean}
    */
   isAuthenticated() {
-    return Boolean(this.getToken() && this.getCurrentUser());
+    return Boolean(this.getCurrentUser());
   },
 
   /**
@@ -57,12 +64,25 @@ const AccessService = {
   },
 
   /**
-   * Xóa phiên làm việc khi đăng xuất
+   * Xóa trạng thái phiên ở client
    */
   clearSession() {
+    this._user = null;
     localStorage.removeItem(AppConfig.STORAGE_KEYS.TOKEN);
     localStorage.removeItem(AppConfig.STORAGE_KEYS.USER);
     localStorage.removeItem(AppConfig.STORAGE_KEYS.CURRENT_STUDENT_ID);
+    sessionStorage.removeItem(AppConfig.STORAGE_KEYS.USER);
+  },
+
+  /**
+   * Xóa phiên và ngăn Google One Tap tự đăng nhập lại ngay sau khi người dùng chủ động đăng xuất
+   */
+  markLoggedOut() {
+    this.clearSession();
+    sessionStorage.setItem('educenter_disable_onetap', '1');
+    try {
+      window.google?.accounts?.id?.disableAutoSelect?.();
+    } catch {}
   },
 
   /**
@@ -103,10 +123,11 @@ const AccessService = {
 
 if (typeof window !== 'undefined') {
   window.AccessService = AccessService;
+  localStorage.removeItem(AppConfig.STORAGE_KEYS.TOKEN);
   const sessionElement = document.getElementById('portal-session');
   if (sessionElement) {
     const session = JSON.parse(sessionElement.textContent);
-    AccessService.setSession(session.token, session.user);
+    AccessService.setSession(null, session.user);
     sessionElement.remove();
   }
 }

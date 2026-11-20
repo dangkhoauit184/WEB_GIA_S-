@@ -7,13 +7,33 @@ final class AuthValidator
 {
     public static function login(array $body): array
     {
-        $data = Input::validate($body, ['username'=>['string',true]]);
+        $data = Input::validate($body, ['username'=>['string',true], 'rememberMe'=>['bool',false,false]]);
         if (!is_string($body['password'] ?? null) || $body['password'] === '') {
             throw new ApiException(400, 'Vui lòng nhập mật khẩu.');
         }
         // Password bytes are significant, including spaces.
         $data['password'] = $body['password'];
+        $data['rememberMe'] = (bool)($data['rememberMe'] ?? false);
         return $data;
+    }
+
+    public static function googleLogin(array $body): array
+    {
+        if (array_diff(array_keys($body), ['credential', 'rememberMe'])) {
+            throw new ApiException(400, 'Chỉ chấp nhận mã xác thực Google (credential) và tùy chọn ghi nhớ đăng nhập.');
+        }
+        $credential = $body['credential'] ?? null;
+        if (!is_string($credential) || trim($credential) === '' || strlen($credential) > 16384) {
+            throw new ApiException(400, 'Thiếu mã xác thực Google hợp lệ.', 'INVALID_GOOGLE_TOKEN');
+        }
+        $rememberMe = false;
+        if (array_key_exists('rememberMe', $body)) {
+            if (!is_bool($body['rememberMe']) && $body['rememberMe'] !== 0 && $body['rememberMe'] !== 1) {
+                throw new ApiException(400, 'Tùy chọn ghi nhớ đăng nhập không hợp lệ.');
+            }
+            $rememberMe = (bool)$body['rememberMe'];
+        }
+        return ['credential' => trim($credential), 'rememberMe' => $rememberMe];
     }
 
     public static function password(array $body): array

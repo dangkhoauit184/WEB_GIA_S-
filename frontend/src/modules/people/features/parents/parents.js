@@ -955,8 +955,8 @@
     $("btnLogout").addEventListener("click", (event) =>
       busy(event.currentTarget, async () => {
         await HttpService.post("/auth/logout", {});
-        AccessService.clearSession();
-        window.location.replace(AppConfig.AUTH_PAGE);
+        AccessService.markLoggedOut();
+        window.location.replace(AppConfig.AUTH_PAGE + "?loggedOut=1");
       }),
     );
     $("parent-menu").addEventListener("click", () => {

@@ -19,16 +19,12 @@ const HttpService = {
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
       ...(options.headers || {}),
     };
 
-    // Đính kèm JWT token nếu đã đăng nhập
-    const token = AccessService.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const config = {
+      credentials: 'same-origin',
       ...options,
       headers,
     };

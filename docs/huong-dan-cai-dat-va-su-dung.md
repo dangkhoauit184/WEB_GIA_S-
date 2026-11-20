@@ -400,6 +400,30 @@ Tại trang đăng nhập chung, chọn **Quên mật khẩu**, nhập tên đă
 
 Khi chạy local bằng bộ server của dự án, mở **http://localhost:8025/** để đọc thư trong Mailpit và lấy OTP. Mailpit chỉ dùng thử, không chuyển email ra hộp thư thật. Nếu SMTP không chạy, hệ thống báo chưa gửi được mã và không cấp OTP mới. Khi triển khai, cấu hình SMTP thật bằng các biến `MAIL_*` trong `config/server.env` riêng, sau đó khởi động lại backend. Đặt lại mật khẩu thành công sẽ thu hồi các phiên đăng nhập cũ.
 
+### 7.6. Đăng nhập Google (Google Identity Services / One Tap) & Ghi nhớ đăng nhập
+
+1. **Tùy chọn "Ghi nhớ đăng nhập" trên `/login`:**
+   - Khi **không chọn**: phiên dùng thời hạn `JWT_EXPIRES_IN` (mặc định `8h`) và cookie phiên (`expire=0`, tự xóa khi đóng trình duyệt).
+   - Khi **chọn**: JWT và cookie `HttpOnly` (`educenter_session`, `SameSite=Lax`, bật `Secure` khi chạy HTTPS) đều đồng bộ thời hạn theo `JWT_REMEMBER_EXPIRES_IN` (mặc định `7d`, giới hạn tối đa **7 ngày**). Access token không lưu trong `localStorage`.
+   - Khi đăng xuất hoặc đổi mật khẩu, token bị thu hồi ngay ở backend (`audit_log`) và cookie bị xóa.
+
+2. **Bật đăng nhập Google (tùy chọn — không bắt buộc khi chạy demo mật khẩu):**
+   - Vào **Google Cloud Console → APIs & Services → Credentials → Create Credentials → OAuth client ID (Web application)**.
+   - Tại **Authorized JavaScript origins**, khai báo đúng origin chạy web:
+     - Local: `http://localhost:5000` (và `http://127.0.0.1:5000` nếu truy cập bằng IP này; lưu ý Google ưu tiên `http://localhost:5000`).
+     - Production: `https://<ten-mien-cua-ban>`.
+   - *Không cần* khai báo Redirect URI và *không cần* Client Secret vì EduCenter dùng luồng Google Identity Services ID Token xác minh chữ ký RS256 trực tiếp với JWKS của Google ở backend PHP (`POST /api/auth/google`).
+   - Dán Client ID vào file riêng `config/server.env` (không commit lên Git):
+     ```dotenv
+     JWT_REMEMBER_EXPIRES_IN=7d
+     GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+     ```
+   - Khởi động lại backend (`docker compose up -d --force-recreate backend`), sau đó mở `/login` và nhấn `Ctrl + F5`.
+
+3. **Quy tắc liên kết tài khoản & hành vi thực tế của One Tap:**
+   - Backend chỉ đăng nhập vào tài khoản đang `active` có `users.email` khớp chính xác với email đã được Google xác minh (`email_verified=true`); vai trò lấy 100% từ DB. Hệ thống **không tự tạo tài khoản hoặc tự cấp vai trò** nếu email Google chưa tồn tại trong DB (màn hình sẽ hướng dẫn liên hệ trung tâm hoặc dùng tài khoản/mật khẩu).
+   - **Giới hạn trình duyệt của Google One Tap:** One Tap có thể không tự động đăng nhập hoặc bị ẩn khi người dùng đang bật chế độ ẩn danh, trình duyệt chặn cookie/FedCM (Safari, Brave, trình chặn quảng cáo), trong thời gian cooldown sau khi đóng hộp One Tap, hoặc ngay sau khi bấm **Đăng xuất** (hệ thống chủ động gọi `disableAutoSelect()` để tránh tự đăng nhập ngược lại khi muốn đổi tài khoản). Khi đó người dùng vẫn dùng bình thường nút **"Đăng nhập bằng Google"** hoặc form tên tài khoản/mật khẩu.
+
 <a id="hang-ngay"></a>
 ## 8. Chạy hằng ngày và cập nhật mã nguồn
 

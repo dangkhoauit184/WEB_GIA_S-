@@ -78,6 +78,48 @@ try {
         $response=ApiController::error(new \RuntimeException('test',$number));
         check($response->getStatusCode()===$status && json_decode($response->getBody(),true)['code']===$code,'SQL error mapping '.$number);
     }
+    // Google Identity Services RS256 ID token & validator checks (pure local crypto, no network).
+    rejects(fn()=>AuthValidator::googleLogin(['credential'=>'abc','email'=>'spoof@example.com']),'google login rejects client email field');
+    rejects(fn()=>AuthValidator::googleLogin(['credential'=>'abc','role'=>'ADMIN']),'google login rejects client role field');
+    check(AuthValidator::googleLogin(['credential'=>'a.b.c','rememberMe'=>true])===['credential'=>'a.b.c','rememberMe'=>true],'google login accepts credential + rememberMe');
+    check(AuthValidator::login(['username'=>'demo','password'=>'secret','rememberMe'=>true])['rememberMe']===true,'password login accepts rememberMe');
+    $rejectsStatus=static function(callable $work,int $status,string $label): void {
+        try { $work(); } catch(\App\Shared\ApiException $error) {
+            check($error->status===$status,$label); return;
+        }
+        check(false,$label);
+    };
+    $prevGoogleClient=getenv('GOOGLE_CLIENT_ID');
+    putenv('GOOGLE_CLIENT_ID=');
+    check(\App\Modules\Administration\Features\Auth\GoogleIdentity::config()===['enabled'=>false,'clientId'=>null],'google disabled when GOOGLE_CLIENT_ID empty');
+    $rejectsStatus(fn()=>\App\Modules\Administration\Features\Auth\GoogleIdentity::verify('a.b.c'),503,'google verify fails cleanly with 503 when unconfigured');
+    $rsa=openssl_pkey_new(['private_key_bits'=>2048,'private_key_type'=>OPENSSL_KEYTYPE_RSA]);
+    openssl_pkey_export($rsa,$privatePem);
+    $rsaDetails=openssl_pkey_get_details($rsa)['rsa'];
+    $b64u=static fn(string $bin)=>rtrim(strtr(base64_encode($bin),'+/','-_'),'=');
+    $testJwks=['keys'=>[['kty'=>'RSA','alg'=>'RS256','use'=>'sig','kid'=>'test-kid-1','n'=>$b64u($rsaDetails['n']),'e'=>$b64u($rsaDetails['e'])]]];
+    $loaderProp=new ReflectionProperty(\App\Modules\Administration\Features\Auth\GoogleIdentity::class,'jwksLoader');
+    $loaderProp->setValue(null,static fn(bool $refresh)=>$testJwks);
+    putenv('GOOGLE_CLIENT_ID=test-google-client-id.apps.googleusercontent.com');
+    try {
+        $signGoogle=static fn(array $claims)=>\Firebase\JWT\JWT::encode($claims,$privatePem,'RS256','test-kid-1');
+        $validToken=$signGoogle(['iss'=>'https://accounts.google.com','aud'=>'test-google-client-id.apps.googleusercontent.com','sub'=>'g-sub-1','email'=>'User.Test@Gmail.com','email_verified'=>true,'name'=>'Test User','iat'=>time(),'exp'=>time()+600]);
+        $verified=\App\Modules\Administration\Features\Auth\GoogleIdentity::verify($validToken);
+        check($verified['email']==='user.test@gmail.com' && $verified['sub']==='g-sub-1' && $verified['emailVerified']===true,'valid RS256 Google token verified');
+        $wrongAud=$signGoogle(['iss'=>'https://accounts.google.com','aud'=>'other-client.apps.googleusercontent.com','sub'=>'g-sub-1','email'=>'a@gmail.com','email_verified'=>true,'iat'=>time(),'exp'=>time()+600]);
+        $rejectsStatus(fn()=>\App\Modules\Administration\Features\Auth\GoogleIdentity::verify($wrongAud),401,'wrong Google audience rejected');
+        $wrongIss=$signGoogle(['iss'=>'https://evil.example','aud'=>'test-google-client-id.apps.googleusercontent.com','sub'=>'g-sub-1','email'=>'a@gmail.com','email_verified'=>true,'iat'=>time(),'exp'=>time()+600]);
+        $rejectsStatus(fn()=>\App\Modules\Administration\Features\Auth\GoogleIdentity::verify($wrongIss),401,'wrong Google issuer rejected');
+        $expired=$signGoogle(['iss'=>'https://accounts.google.com','aud'=>'test-google-client-id.apps.googleusercontent.com','sub'=>'g-sub-1','email'=>'a@gmail.com','email_verified'=>true,'iat'=>time()-900,'exp'=>time()-120]);
+        $rejectsStatus(fn()=>\App\Modules\Administration\Features\Auth\GoogleIdentity::verify($expired),401,'expired Google token rejected');
+        $unverified=$signGoogle(['iss'=>'https://accounts.google.com','aud'=>'test-google-client-id.apps.googleusercontent.com','sub'=>'g-sub-1','email'=>'a@gmail.com','email_verified'=>false,'iat'=>time(),'exp'=>time()+600]);
+        $rejectsStatus(fn()=>\App\Modules\Administration\Features\Auth\GoogleIdentity::verify($unverified),403,'unverified Google email rejected');
+        $hs256Fake=\Firebase\JWT\JWT::encode(['iss'=>'https://accounts.google.com','aud'=>'test-google-client-id.apps.googleusercontent.com','sub'=>'g-sub-1','email'=>'a@gmail.com','email_verified'=>true,'iat'=>time(),'exp'=>time()+600],'secret-key-for-hs256-attack-123456','HS256');
+        $rejectsStatus(fn()=>\App\Modules\Administration\Features\Auth\GoogleIdentity::verify($hs256Fake),401,'HS256 algorithm confusion rejected');
+    } finally {
+        $loaderProp->setValue(null,null);
+        putenv($prevGoogleClient===false?'GOOGLE_CLIENT_ID':'GOOGLE_CLIENT_ID='.$prevGoogleClient);
+    }
     [$server]=startServer();
     try {
         $modules=json_decode(file_get_contents(ROOTPATH.'../shared/modules.json'),true);
@@ -85,6 +127,8 @@ try {
             $data=requestOk("/api/$module/$feature/status");
             check($data['module']===$module && $data['feature']===$feature,'feature route');
         }
+        $googleCfg=requestOk('/api/auth/google/config');
+        check(is_bool($googleCfg['enabled']) && array_key_exists('clientId',$googleCfg),'google config endpoint');
         check(http('/api/not-found')[0]===404,'API 404');
         check(http('/api/auth/me')[0]===401,'missing bearer');
         check(http('/api/auth/me','GET',null,'invalid.jwt.token')[0]===401,'invalid bearer');
@@ -92,7 +136,7 @@ try {
         [$status,,$html]=http('/');
         check($status===200 && str_contains($html,'EduCenter'),'public MVC page');
         [$status,,$html]=http('/login');
-        check($status===200 && str_contains($html,'id="loginForm"'),'shared original login page');
+        check($status===200 && str_contains($html,'id="loginForm"') && str_contains($html,'id="googleBtnContainer"') && str_contains($html,'id="rememberMe"'),'shared login page includes Google and rememberMe');
     } finally { proc_terminate($server); proc_close($server); }
     echo "PASS: $assertions PHP core assertions (no database writes).\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); exit(1); }

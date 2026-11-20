@@ -29,13 +29,40 @@ final class Portal extends \CodeIgniter\Controller
         'classes.js'=>'modules/academic/features/classes/classes.js',
     ];
 
-    public function index(): string
+    private function authenticatedCookieUser(): ?array
     {
-        return $this->frontendPage('index.html');
+        $token = $this->request->getCookie('educenter_session');
+        if (!is_string($token) || $token === '' || strlen($token) > 16384) return null;
+        try {
+            return \App\Shared\Access::user();
+        } catch (\App\Shared\ApiException) {
+            return null;
+        }
     }
 
-    public function login(): string
+    private function injectPortalSession(string $html, array $user): string
     {
+        // Only expose non-sensitive UI user metadata; the JWT stays exclusively in the HttpOnly cookie.
+        $session = json_encode(['user' => $user], JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_THROW_ON_ERROR);
+        $script = '<script type="application/json" id="portal-session">'.$session.'</script>';
+        return str_replace('<head>', '<head>'.$script, $html);
+    }
+
+    public function index(): string
+    {
+        $html = $this->frontendPage('index.html');
+        $user = $this->authenticatedCookieUser();
+        return $user ? $this->injectPortalSession($html, $user) : $html;
+    }
+
+    public function login()
+    {
+        $allowStay = $this->request->getGet('loggedOut') === '1'
+            || $this->request->getGet('passwordChanged') === '1'
+            || $this->request->getGet('switch') === '1';
+        if (!$allowStay && $this->authenticatedCookieUser() !== null) {
+            return redirect()->to('/app', 303);
+        }
         return $this->frontendPage('src/modules/administration/features/auth/auth.html');
     }
 
@@ -56,7 +83,6 @@ final class Portal extends \CodeIgniter\Controller
             if (!is_string($token) || $token === '' || strlen($token) > 16384) {
                 throw new \App\Shared\ApiException(401, 'Vui lòng đăng nhập lại.', 'UNAUTHORIZED');
             }
-            $this->request->setHeader('Authorization', 'Bearer '.$token);
             $user = \App\Shared\Access::user();
             if (in_array($user['role'], ['ADMIN', 'GIAO_VU'], true)) {
                 $html = view('App\Modules\Administration\Features\Permissions\Views\administration', [
@@ -74,11 +100,13 @@ final class Portal extends \CodeIgniter\Controller
             } else {
                 $html = $this->frontendPage('src/modules/academic/features/attendance/attendance.html');
             }
-            $session = json_encode(['token'=>$token, 'user'=>$user], JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_THROW_ON_ERROR);
-            $script = '<script type="application/json" id="portal-session">'.$session.'</script>';
-            return str_replace('<head>', '<head>'.$script, $html);
+            return $this->injectPortalSession($html, $user);
         } catch (\App\Shared\ApiException) {
-            return redirect()->to('/login', 303)->deleteCookie('educenter_session');
+            return redirect()->to('/login', 303)->setCookie([
+                'name' => 'educenter_session', 'value' => '', 'expire' => time() - 3600,
+                'path' => '/', 'secure' => \App\Shared\Access::isSecureRequest($this->request),
+                'httponly' => true, 'samesite' => 'Lax',
+            ]);
         }
     }
 

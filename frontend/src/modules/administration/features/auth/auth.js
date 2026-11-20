@@ -10,9 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
   const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
+  const rememberMeInput = document.getElementById('rememberMe');
   const togglePasswordBtn = document.getElementById('togglePassword');
   const loginAlert = document.getElementById('loginAlert');
   const btnSubmit = document.getElementById('btnSubmit');
+  const googleBtnContainer = document.getElementById('googleBtnContainer');
+  const btnGoogleFallback = document.getElementById('btnGoogleFallback');
+  const googleStatusNote = document.getElementById('googleStatusNote');
+  let googleAuthBusy = false;
 
   // Toggle ẩn/hiện mật khẩu
   if (togglePasswordBtn) {
@@ -33,10 +38,134 @@ document.addEventListener('DOMContentLoaded', () => {
     loginAlert.textContent = '';
   }
 
-  if (new URLSearchParams(window.location.search).get('passwordChanged') === '1') {
+  const params = new URLSearchParams(window.location.search);
+  const justLoggedOut = params.get('loggedOut') === '1' || sessionStorage.getItem('educenter_disable_onetap') === '1';
+  const passwordChanged = params.get('passwordChanged') === '1';
+  if (passwordChanged) {
     showAlert('Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.', 'success');
     history.replaceState(null, '', AppConfig.AUTH_PAGE);
+  } else if (params.get('loggedOut') === '1') {
+    history.replaceState(null, '', AppConfig.AUTH_PAGE);
   }
+
+  function setGoogleNote(message) {
+    if (!googleStatusNote) return;
+    googleStatusNote.textContent = message || '';
+    googleStatusNote.hidden = !message;
+  }
+
+  async function handleGoogleCredential(response) {
+    if (googleAuthBusy) return;
+    const credential = response && typeof response.credential === 'string' ? response.credential : '';
+    if (!credential) {
+      showAlert('Không nhận được mã xác thực từ Google. Vui lòng thử lại hoặc đăng nhập bằng mật khẩu.');
+      return;
+    }
+    googleAuthBusy = true;
+    hideAlert();
+    btnSubmit.disabled = true;
+    try {
+      const apiRes = await HttpService.post('/auth/google', {
+        credential,
+        rememberMe: Boolean(rememberMeInput && rememberMeInput.checked),
+      });
+      const authResult = apiRes.data || apiRes;
+      AccessService.setSession(null, authResult.user);
+      showAlert('Đăng nhập thành công.', 'success');
+      AccessService.redirectByRole();
+    } catch (err) {
+      console.error('[Google Auth Error]', err);
+      const code = err?.data?.code;
+      if (code === 'GOOGLE_ACCOUNT_NOT_LINKED' || code === 'ACCOUNT_INACTIVE' || code === 'GOOGLE_EMAIL_UNVERIFIED') {
+        try { window.google?.accounts?.id?.disableAutoSelect?.(); } catch {}
+      }
+      showAlert(err.message || 'Đăng nhập bằng Google không thành công.');
+    } finally {
+      googleAuthBusy = false;
+      btnSubmit.disabled = false;
+    }
+  }
+
+  function loadGoogleIdentityScript() {
+    if (window.google?.accounts?.id) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      const timer = setTimeout(() => reject(new Error('GOOGLE_SCRIPT_TIMEOUT')), 8000);
+      script.onload = () => {
+        clearTimeout(timer);
+        if (window.google?.accounts?.id) resolve();
+        else reject(new Error('GOOGLE_SCRIPT_INVALID'));
+      };
+      script.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error('GOOGLE_SCRIPT_FAILED'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function initGoogleSignIn() {
+    if (!googleBtnContainer) return;
+    try {
+      const res = await HttpService.get('/auth/google/config');
+      const cfg = res?.data || res || {};
+      if (!cfg.enabled || !cfg.clientId) {
+        if (btnGoogleFallback) {
+          btnGoogleFallback.disabled = true;
+          btnGoogleFallback.title = 'Máy chủ chưa cấu hình GOOGLE_CLIENT_ID';
+        }
+        setGoogleNote('Đăng nhập Google chưa được cấu hình trên máy chủ.');
+        return;
+      }
+
+      await loadGoogleIdentityScript();
+
+      const disableAuto = justLoggedOut || passwordChanged;
+      window.google.accounts.id.initialize({
+        client_id: cfg.clientId,
+        callback: handleGoogleCredential,
+        auto_select: !disableAuto,
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true,
+      });
+
+      if (disableAuto) {
+        try { window.google.accounts.id.disableAutoSelect(); } catch {}
+      }
+
+      googleBtnContainer.innerHTML = '';
+      const width = Math.min(400, Math.max(240, Math.floor(googleBtnContainer.clientWidth || 380)));
+      window.google.accounts.id.renderButton(googleBtnContainer, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        locale: 'vi',
+        width,
+      });
+      setGoogleNote('');
+
+      if (!disableAuto) {
+        window.google.accounts.id.prompt();
+      }
+    } catch (err) {
+      console.warn('[Google Sign-In Init]', err);
+      if (btnGoogleFallback) {
+        btnGoogleFallback.disabled = false;
+        btnGoogleFallback.onclick = () => {
+          showAlert('Không tải được dịch vụ Google. Vui lòng kiểm tra kết nối mạng hoặc đăng nhập bằng mật khẩu.');
+        };
+      }
+      setGoogleNote('Không tải được dịch vụ Google.');
+    }
+  }
+
+  initGoogleSignIn();
 
   // Submit login
   loginForm.addEventListener('submit', async (e) => {
@@ -45,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const username = usernameInput.value.trim();
     const password = passwordInput.value;
+    const rememberMe = Boolean(rememberMeInput && rememberMeInput.checked);
 
     if (!username || !password) {
       showAlert('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
@@ -55,15 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSubmit.textContent = 'Đang đăng nhập...';
 
     try {
-      const response = await HttpService.post('/auth/login', { username, password });
+      const response = await HttpService.post('/auth/login', { username, password, rememberMe });
       const authResult = response.data || response;
 
-      AccessService.setSession(authResult.token, authResult.user);
-      showAlert(`Đăng nhập thành công! Đang chuyển hướng...`, 'success');
-
-      setTimeout(() => {
-        AccessService.redirectByRole();
-      }, 600);
+      AccessService.setSession(null, authResult.user);
+      showAlert('Đăng nhập thành công.', 'success');
+      AccessService.redirectByRole();
 
     } catch (err) {
       console.error('[Auth Error]', err);

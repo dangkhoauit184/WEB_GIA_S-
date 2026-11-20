@@ -25,7 +25,7 @@ final class ApiFilter implements FilterInterface
         $allowed = array_filter(array_map('trim', explode(',', getenv('CORS_ORIGINS') ?: 'http://localhost:5000,http://127.0.0.1:5000')));
         if ($origin !== '' && in_array($origin, $allowed, true)) {
             $response->setHeader('Access-Control-Allow-Origin', $origin)->setHeader('Vary', 'Origin');
-            $response->setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+            $response->setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With');
             $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         }
         $response->setHeader('Cache-Control', 'no-store');
