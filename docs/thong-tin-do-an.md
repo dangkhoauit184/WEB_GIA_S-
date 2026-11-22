@@ -197,12 +197,12 @@ audit_log ghi actor, hành động, bảng/id, dữ liệu trước/sau, metadat
 <a id="kien-truc"></a>
 ## 5. Cấu trúc mã nguồn và MVC
 
-Manifest [shared/modules.json](../shared/modules.json) là danh sách chuẩn6 module/21 feature:
+Manifest [shared/modules.json](../shared/modules.json) là danh sách chuẩn 6 module / 22 feature:
 
 | Module | Feature |
 | --- | --- |
 | Administration | Auth, Permissions, Staff, Catalog, Audit |
-| People | Students, Teachers, Tutors, Parents |
+| People | Students, Teachers, Tutors, Parents, Assistants |
 | Academic | Admissions, AcademicAffairs, Classes, Scheduling, Attendance, LeaveRequests, MakeupClasses |
 | Finance | Tuition, Timekeeping, Payroll |
 | Communication | Notifications |
@@ -359,7 +359,7 @@ Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí;
 <a id="tien-do"></a>
 ## 10. Tiến độ, kiểm chứng và phần tiếp theo
 
-Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Ngày 17/11/2026 bổ sung cổng Giáo viên theo tám màn trong index, chi tiết tại mục 12.6. Gia sư/Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ tiếp tục ở trạng thái đang triển khai. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
+Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Ngày 17/11/2026 bổ sung cổng Giáo viên theo tám màn trong index, chi tiết tại mục 12.6. Ngày 22/11/2026 bổ sung cổng Trợ giảng (vai trò `TRO_GIANG`) với feature `assistants` độc lập, 7 màn theo giao diện và bám chặt DB 005 (chi tiết tại mục 12.7). Gia sư có màn xác nhận vai trò, giao diện nghiệp vụ tiếp tục ở trạng thái đang triển khai. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
 
 Ngày 18/11/2026 bổ sung và đồng bộ menu hồ sơ, sửa thông tin cá nhân, đổi mật khẩu cho Giáo vụ, Giáo viên, Gia sư, Trợ giảng và Phụ huynh. Đây là phần tài khoản cá nhân, không đánh dấu hoàn tất các màn nghiệp vụ Gia sư/Trợ giảng còn planned.
 
@@ -751,7 +751,35 @@ Sổ buổi học yêu cầu đã check-in. Backend kiểm tra danh sách học 
 
 Ứng tuyển kiểm tra lại chuyên môn, khu vực, lịch rảnh, xung đột lịch và trạng thái yêu cầu trước khi tạo `de_xuat_nhan_su`. Giáo viên ứng tuyển có phản hồi `dong_y`, phụ huynh tiếp tục ở `cho`. Cả hai đồng ý mới bàn giao Admin xếp lớp. Gọi lại cùng ứng tuyển trả đề xuất đã có. Danh sách cơ hội chỉ trả nhu cầu, môn/khối, hình thức và lịch, giữ thông tin liên hệ gia đình trong các luồng có quyền. Các thao tác ghi có audit. Hồ sơ cá nhân chỉ nhận các trường được phép, quyền tài khoản, trạng thái hợp tác và đơn giá tiếp tục do Admin quản lý.
 
-Bộ kiểm thử chạy trên DB `_test` gồm quyền theo người/ca, chống giả giờ và sửa đơn giá, ghi sổ trước check-in, revision cũ, học viên ngoài ca, lặp check-in/out, khóa kỳ, ba loại đơn/đúng người duyệt, điều chỉnh 18:10–19:30 thành 80 phút/trễ và ứng tuyển → phản hồi phụ huynh. Kiểm tra giao diện trên trình duyệt có lưu sổ/tải lại, đơn từ, phản hồi/ứng tuyển, hồ sơ/lịch rảnh và responsive. Gia sư/Trợ giảng vẫn chờ triển khai cổng riêng theo phân công nhóm.
+Bộ kiểm thử chạy trên DB `_test` gồm quyền theo người/ca, chống giả giờ và sửa đơn giá, ghi sổ trước check-in, revision cũ, học viên ngoài ca, lặp check-in/out, khóa kỳ, ba loại đơn/đúng người duyệt, điều chỉnh 18:10–19:30 thành 80 phút/trễ và ứng tuyển → phản hồi phụ huynh. Kiểm tra giao diện trên trình duyệt có lưu sổ/tải lại, đơn từ, phản hồi/ứng tuyển, hồ sơ/lịch rảnh và responsive. Gia sư vẫn chờ triển khai cổng riêng theo phân công nhóm.
+
+### 12.7. Cổng Trợ giảng ngày 22/11/2026
+
+Cổng Trợ giảng xây dựng riêng cho vai trò `TRO_GIANG`, mã nguồn backend đặt tại `backend/app/Modules/People/Features/Assistants/` (Controller, Filter, Service, Repository, Validator, Model, Routes) và frontend tại `frontend/src/modules/people/features/assistants/assistants.html`, `assistants.css`, `assistants.js`. Đăng nhập chung tại `/login`, PHP `Portal.php` chọn giao diện tại `/app` theo vai trò `TRO_GIANG`.
+
+Giao diện SPA gồm sidebar tối 7 màn bám sát thiết kế:
+1. **Tổng quan hỗ trợ:** Xin chào, breadcrumbs, banner "Ca dạy sắp diễn ra hôm nay" với nút "Check-in 1 chạm", 4 thẻ thống kê (Ca hôm nay, Lớp phụ trách, Phút tính công tháng giao khung lịch, Số ca đã check-out trong tháng — tuyệt đối không hiển thị tiền/thù lao), bảng phân công trong tuần Thứ 2 – Chủ nhật, thao tác nhanh và thẻ hồ sơ chuyên môn (trạng thái hoạt động, không hiển thị lương/đơn giá).
+2. **Lịch ca trợ giảng:** Lưới tuần / tháng đồng bộ CSS với các cổng khác, bộ lọc ca và lớp, hiển thị chi tiết ca phân công.
+3. **Ca học & Check-in (005):** Danh sách ca được phân công làm trợ giảng, nút Check-in / Check-out 1 chạm gọi giờ thực tế máy chủ `NOW()`. Check-in/out của trợ giảng là thao tác độc lập, không thay đổi trạng thái buổi học `buoi_hoc.trang_thai` (chỉ giáo viên dạy chính mới chuyển trạng thái buổi học).
+4. **Hỗ trợ điểm danh:** Mở từ ca học đã phân công, hỗ trợ giáo viên điểm danh nhanh 4 trạng thái (`co_mat`, `di_tre`, `vang_co_phep`, `vang_khong_phep`). Trợ giảng không chấm điểm, không giao bài tập và không kích hoạt gửi thông báo nhận xét cho phụ huynh (giữ quyền cho giáo viên chính). Có cơ chế kiểm tra `revision` chống ghi đè sổ.
+5. **Lớp hỗ trợ:** Danh sách các lớp trợ giảng được phân công kèm thời khóa biểu tuần và danh sách học viên trong lớp (chỉ xem họ tên, ngày sinh, giới tính; che thông tin liên hệ phụ huynh và tài chính).
+6. **Đơn từ & Báo bận:** Gửi 3 loại đơn: Báo bận (`bao_ban` ghi `don_xin_nghi` với đối tượng `tro_giang`, mã `BB-`), Đổi giờ hỗ trợ (`doi_gio` ghi mã `DG-`), và Điều chỉnh công (`dieu_chinh_cong` ghi `dieu_chinh_cong`, mã `DC-`). Giáo vụ duyệt đơn báo bận/đổi giờ, Admin duyệt điều chỉnh công.
+7. **Bảng công trợ giảng:** Xem chi tiết các ca đã check-in/out trong tháng chọn lọc, số phút hiện diện, số phút tính công (giao thời gian check-in/out với khung lịch ca), cờ đi trễ, trạng thái duyệt. Tuyệt đối không hiển thị đơn giá, mức thù lao, tổng tiền hay tài khoản ngân hàng.
+
+| API | Phương thức | Mô tả và quyền |
+| --- | --- | --- |
+| `/api/people/assistants/workspace` | GET | Tải dữ liệu tổng quan, ca hôm nay, phân công tuần, tháng hiện tại, hồ sơ chuyên môn và tóm tắt công (không tiền) |
+| `/api/people/assistants/sessions/:id` | GET | Chi tiết ca học, danh sách học viên, sổ theo dõi hiện tại và mã revision |
+| `/api/people/assistants/sessions/:id/checkin` | POST | Trợ giảng check-in ca học phân công; body rỗng; lấy giờ máy chủ; không đổi trạng thái lớp |
+| `/api/people/assistants/sessions/:id/checkout` | POST | Trợ giảng check-out ca học phân công; body rỗng; lấy giờ máy chủ; cập nhật phút tính công |
+| `/api/people/assistants/sessions/:id/attendance` | PUT | Lưu điểm danh học viên; kiểm tra revision; ghi audit; không gửi thông báo phụ huynh |
+| `/api/people/assistants/requests` | POST | Gửi đơn báo bận (`bao_ban`), đổi giờ (`doi_gio`) hoặc điều chỉnh công (`dieu_chinh_cong`) |
+
+Ràng buộc bảo mật & nghiệp vụ:
+- Quyền: Nhóm vai trò `TRO_GIANG` chỉ sở hữu quyền `VanHanhBuoiHoc` (view + edit) và `ChamCongLuong = 0`.
+- Che dữ liệu nhạy cảm: `AssistantsModel::stripMoney` đệ quy loại bỏ tất cả các khóa liên quan đến tiền tệ, đơn giá, thù lao, học phí (`donGia`, `don_gia`, `mucTra`, `thuLao`, `hocPhi`, `tien`, `soTaiKhoan`, `nganHang`, v.v.).
+- Chấm công: Chỉ bấm nút / giờ server, không GPS/ảnh. Phút công là giao thời gian có mặt với lịch; không cộng giờ ngoài lịch. Kỳ công đã chốt/khóa chặn check-in/out mới.
+- Khả năng tương thích: Phục vụ tại `/app` khi đăng nhập tài khoản trợ giảng (ví dụ `demo_trogiang`), tương thích hoàn toàn với session cookie, JWT Bearer token và bộ test integration của hệ thống.
 
 <a id="tu-dien-du-lieu"></a>
 ## 13. Từ điển dữ liệu toàn bộ 43 bảng

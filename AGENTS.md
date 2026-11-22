@@ -1,7 +1,7 @@
 # Quy ước làm việc với EduCenter ERP
 
 - Backend **PHP 8.4 / CodeIgniter 4**, MVC/Ajax, MySQL 8.4; không thêm Node backend song song. Lựa chọn bám đề cương IS207: PHP/MySQL/MVC/CodeIgniter, yêu cầu đồ án A1.
-- Source BE tại backend/app/Modules/Module/Features/Feature, FE tại frontend/src/modules/module/features/feature; manifest shared/modules.json có 6 module/21 feature. Feature chưa làm giữ TODO/status planned, không báo hoàn tất.
+- Source BE tại backend/app/Modules/Module/Features/Feature, FE tại frontend/src/modules/module/features/feature; manifest shared/modules.json có 6 module/22 feature. Feature chưa làm giữ TODO/status planned, không báo hoàn tất.
 - `docs` chỉ có **2 file chính thức** theo yêu cầu09/11/2026: [hướng dẫn cài/chạy cho đồng đội](docs/huong-dan-cai-dat-va-su-dung.md) và [thông tin/đặc tả đồ án](docs/thong-tin-do-an.md). Mọi cập nhật tài liệu thêm vào đúng file, không tạo Markdown thứ ba trong docs.
 - Giữ4 README (gốc/backend/frontend/database) làm chỉ dẫn ngắn và 1 mẫu PR. Word/SQL gốc nằm tại reference/, giao diện gốc giữ tại docs/demo/index.html theo yêu cầu mới ngày 12/11/2026, bảo toàn nội dung/hash theo reference/preserved-files.json; bản cũ chỉ tham khảo khi khác đặc tả hiện hành.
 - Quyết định trực tiếp mới của người dùng ưu tiên hơn Word/Figma/tài liệu lịch sử. Không tự biến đề xuất/câu hỏi thành quy tắc hoặc áp migration chỉ vì có bản rà soát.

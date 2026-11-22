@@ -15,7 +15,7 @@ $routes->get('health', '\App\Controllers\Health::index');
 $routes->get('api', '\App\Controllers\Health::manifest');
 $routes->options('(:any)', static fn()=>service('response')->setStatusCode(204));
 $modules=json_decode(file_get_contents(ROOTPATH.'../shared/modules.json'),true,512,JSON_THROW_ON_ERROR);
-$ready=['auth','parents','students','teachers','tutors','classes','scheduling','catalog','permissions','audit','admissions','academic-affairs'];
+$ready=['auth','parents','students','teachers','tutors','assistants','classes','scheduling','catalog','permissions','audit','admissions','academic-affairs'];
 $pascal=static fn($name)=>str_replace(' ','',ucwords(str_replace('-',' ',$name)));
 foreach($modules as $module=>$features) {
     foreach($features as $feature) {

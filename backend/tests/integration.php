@@ -355,6 +355,152 @@ try {
     check((int)$replay['id']===(int)$application['id'],'application replay does not duplicate proposal');
     requestOk('/api/academic/admissions/proposals/'.$application['id'].'/respond','POST',['trangThai'=>'dong_y','lyDo'=>null],$parentToken);
     check(Store::one('SELECT trang_thai FROM yeu_cau_hoc WHERE id=?',[$opportunityId])['trang_thai']==='da_chot','application follows normal parent confirmation workflow');
+
+    // ==========================================
+    // Assistants (TRO_GIANG) Integration Suite
+    // ==========================================
+    $assistantToken = requestOk('/api/auth/login', 'POST', ['username'=>'ta_'.$suffix, 'password'=>'Assistant@123'])['token'];
+
+    // 1. Quyền (Permissions)
+    check(http('/api/academic/attendance/workspace', 'GET', null, $assistantToken)[0] === 403, 'assistant cannot access teacher attendance workspace');
+    check(http('/api/academic/attendance/sessions/'.$sessions[0]['id'].'/log', 'PUT', ['revision'=>'test'], $assistantToken)[0] === 403, 'assistant cannot call teacher attendance log');
+    check(http('/api/people/assistants/workspace', 'GET', null, $teacherToken)[0] === 403, 'teacher cannot call assistant workspace');
+    check(http('/api/people/assistants/workspace', 'GET', null, $parentToken)[0] === 403, 'parent cannot call assistant workspace');
+    check(http('/api/people/assistants/workspace', 'GET', null, $staffToken)[0] === 403, 'staff cannot call assistant workspace');
+
+    $taWork = requestOk('/api/people/assistants/workspace', 'GET', null, $assistantToken);
+    check(isset($taWork['sessions']) && isset($taWork['classes']) && isset($taWork['monthSummary']), 'assistant workspace structure');
+
+    // 5. Không rò rỉ tiền/lương/đơn giá trong toàn bộ JSON response của feature
+    $taWorkJson = json_encode($taWork);
+    check(!preg_match('/donGia|don_gia|mucTra|muc_tra|tongLuong|tong_luong|thuLao|thu_lao|hocPhi|hoc_phi/i', $taWorkJson), 'assistant workspace excludes all salary and rate keys');
+
+    // Scoping check: Assistant 2
+    $taUser2 = Store::insert('users', ['hoten'=>'Trợ giảng 2 '.$suffix, 'email'=>'ta2.'.$suffix.'@example.test', 'vai_tro'=>'tro_giang']);
+    Store::insert('account', ['user_id'=>$taUser2, 'group_id'=>4, 'username'=>'ta2_'.$suffix, 'password_hash'=>password_hash('Assistant@123', PASSWORD_BCRYPT), 'status'=>'active']);
+    Store::insert('nhan_su_chuyen_mon', ['user_id'=>$taUser2, 'ma_ns'=>'TA2-'.$suffix, 'phan_loai'=>'tro_giang', 'trang_thai'=>'hoat_dong']);
+    $assistant2Token = requestOk('/api/auth/login', 'POST', ['username'=>'ta2_'.$suffix, 'password'=>'Assistant@123'])['token'];
+
+    $taSession = (int)$sessions[0]['id'];
+    check(http('/api/people/assistants/sessions/'.$taSession, 'GET', null, $assistant2Token)[0] === 404, 'assistant 2 cannot see session of assistant 1');
+    check(http('/api/people/assistants/sessions/'.$taSession.'/checkin', 'POST', [], $assistant2Token)[0] === 404, 'assistant 2 cannot checkin session of assistant 1');
+
+    // 2. Check-in / Check-out
+    check(http('/api/people/assistants/sessions/'.$taSession.'/checkin', 'POST', ['time'=>'now'], $assistantToken)[0] === 400, 'assistant checkin rejects client time');
+    check(http('/api/people/assistants/sessions/'.$taSession.'/checkout', 'POST', [], $assistantToken)[0] === 409, 'checkout before checkin rejected');
+
+    $taSessionOldStatus = Store::one('SELECT trang_thai FROM buoi_hoc WHERE id=?', [$taSession])['trang_thai'];
+    $taClockIn = requestOk('/api/people/assistants/sessions/'.$taSession.'/checkin', 'POST', [], $assistantToken);
+    check($taClockIn['checkinLuc'] !== null, 'assistant checkin persists timestamp');
+    $taSessionNewStatus = Store::one('SELECT trang_thai FROM buoi_hoc WHERE id=?', [$taSession])['trang_thai'];
+    check($taSessionOldStatus === $taSessionNewStatus, 'assistant checkin does NOT alter buoi_hoc.trang_thai');
+
+    $taReplay = requestOk('/api/people/assistants/sessions/'.$taSession.'/checkin', 'POST', [], $assistantToken);
+    check($taReplay['checkinLuc'] === $taClockIn['checkinLuc'], 'assistant checkin replay is idempotent');
+
+    // 3. Điểm danh (Attendance)
+    $taDetail = requestOk('/api/people/assistants/sessions/'.$taSession, 'GET', null, $assistantToken);
+    check(!preg_match('/diemBaiTapGiay|nhanXetBuoiHoc|baiTap/i', json_encode($taDetail['hocViens'])), 'assistant session excludes homework grades and notes');
+
+    check(http('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
+        'revision' => $taDetail['revision'],
+        'hocViens' => [['hocVienId'=>$student['id'], 'trangThaiDiemDanh'=>'co_mat', 'diemBaiTapGiay'=>9]]
+    ], $assistantToken)[0] === 400, 'assistant attendance rejects extra fields like diemBaiTapGiay');
+
+    check(http('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
+        'revision' => 'wrong_revision',
+        'hocViens' => [['hocVienId'=>$student['id'], 'trangThaiDiemDanh'=>'co_mat']]
+    ], $assistantToken)[0] === 409, 'stale revision rejected');
+
+    check(http('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
+        'revision' => $taDetail['revision'],
+        'hocViens' => [['hocVienId'=>$student2['id'], 'trangThaiDiemDanh'=>'co_mat']]
+    ], $assistantToken)[0] === 409, 'mismatched student roster rejected');
+
+    $studentLogBefore = Store::one('SELECT diem_bai_tap_giay, nhan_xet_buoi_hoc FROM so_theo_doi_buoi_hoc WHERE buoi_hoc_id=? AND hoc_vien_id=?', [$taSession, $student['id']]);
+    $taAttRes = requestOk('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
+        'revision' => $taDetail['revision'],
+        'hocViens' => [['hocVienId'=>$student['id'], 'trangThaiDiemDanh'=>'di_tre']]
+    ], $assistantToken);
+    $studentLogAfter = Store::one('SELECT trang_thai_diem_danh, diem_bai_tap_giay, nhan_xet_buoi_hoc FROM so_theo_doi_buoi_hoc WHERE buoi_hoc_id=? AND hoc_vien_id=?', [$taSession, $student['id']]);
+    check($studentLogAfter['trang_thai_diem_danh'] === 'di_tre', 'assistant attendance updated to di_tre');
+    check($studentLogAfter['diem_bai_tap_giay'] === $studentLogBefore['diem_bai_tap_giay'] && $studentLogAfter['nhan_xet_buoi_hoc'] === $studentLogBefore['nhan_xet_buoi_hoc'], 'assistant attendance does not overwrite teacher grade or note');
+
+    // Check-out
+    Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE buoi_hoc_id=? AND user_id=?', [$taSession, $taUser]);
+    $taClockOut = requestOk('/api/people/assistants/sessions/'.$taSession.'/checkout', 'POST', [], $assistantToken);
+    check($taClockOut['checkoutLuc'] !== null, 'assistant checkout persists');
+    $taSessionFinalStatus = Store::one('SELECT trang_thai FROM buoi_hoc WHERE id=?', [$taSession])['trang_thai'];
+    check($taSessionFinalStatus === $taSessionOldStatus, 'assistant checkout does NOT alter buoi_hoc.trang_thai');
+    check(requestOk('/api/people/assistants/sessions/'.$taSession.'/checkout', 'POST', [], $assistantToken)['checkoutLuc'] === $taClockOut['checkoutLuc'], 'assistant checkout replay idempotent');
+
+    // Timekeeping calculation: 18:10 -> 19:30 => 80 minutes + late; 17:50 -> 20:10 => 120 minutes + no late
+    $schedDay = date('Y-m-d', strtotime('+3 days'));
+    $testBuoi1 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>$schedDay, 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    $pcTest1 = Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$testBuoi1, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
+    Store::execute("UPDATE phan_cong_buoi_hoc SET checkin_luc=?, checkout_luc=? WHERE id=?", [$schedDay.' 18:10:00', $schedDay.' 19:30:00', $pcTest1]);
+    $pcRes1 = Store::one('SELECT so_phut_tinh_cong, checkin_tre FROM phan_cong_buoi_hoc WHERE id=?', [$pcTest1]);
+    check((int)$pcRes1['so_phut_tinh_cong'] === 80 && (int)$pcRes1['checkin_tre'] === 1, '18:10 to 19:30 yields 80 minutes and late flag');
+
+    $testBuoi2 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>$schedDay, 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    $pcTest2 = Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$testBuoi2, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
+    Store::execute("UPDATE phan_cong_buoi_hoc SET checkin_luc=?, checkout_luc=? WHERE id=?", [$schedDay.' 17:50:00', $schedDay.' 20:10:00', $pcTest2]);
+    $pcRes2 = Store::one('SELECT so_phut_tinh_cong, checkin_tre FROM phan_cong_buoi_hoc WHERE id=?', [$pcTest2]);
+    check((int)$pcRes2['so_phut_tinh_cong'] === 120 && (int)$pcRes2['checkin_tre'] === 0, '17:50 to 20:10 yields 120 minutes and not late');
+
+    // 4. Requests (bao_ban, doi_gio, dieu_chinh_cong)
+    $futureAssignedSession = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>date('Y-m-d', strtotime('+4 days')), 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$futureAssignedSession, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
+
+    $bbReq = requestOk('/api/people/assistants/requests', 'POST', [
+        'loai' => 'bao_ban',
+        'buoiHocId' => $futureAssignedSession,
+        'lyDo' => 'Bận thi học kỳ'
+    ], $assistantToken, 201);
+    check(str_starts_with($bbReq['ma'], 'BB-'), 'bao_ban returns BB- code');
+    check(Store::one("SELECT doi_tuong FROM don_xin_nghi WHERE id=?", [$bbReq['id']])['doi_tuong'] === 'tro_giang', 'bao_ban stores doi_tuong tro_giang');
+
+    check(http('/api/people/assistants/requests', 'POST', [
+        'loai' => 'bao_ban',
+        'buoiHocId' => $futureAssignedSession,
+        'lyDo' => 'Gửi đơn trùng'
+    ], $assistantToken)[0] === 409, 'duplicate pending bao_ban rejected');
+
+    $futureAssignedSession2 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>date('Y-m-d', strtotime('+5 days')), 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$futureAssignedSession2, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
+    check(http('/api/people/assistants/requests', 'POST', [
+        'loai' => 'doi_gio',
+        'buoiHocId' => $futureAssignedSession2,
+        'lyDo' => 'Đổi giờ',
+        'ngayMoi' => date('Y-m-d', strtotime('+6 days')),
+        'gioBatDau' => '20:00',
+        'gioKetThuc' => '18:00'
+    ], $assistantToken)[0] === 400, 'doi_gio end time before start time rejected');
+
+    $dgReq = requestOk('/api/people/assistants/requests', 'POST', [
+        'loai' => 'doi_gio',
+        'buoiHocId' => $futureAssignedSession2,
+        'lyDo' => 'Đổi giờ dạy',
+        'ngayMoi' => date('Y-m-d', strtotime('+6 days')),
+        'gioBatDau' => '18:00',
+        'gioKetThuc' => '20:00'
+    ], $assistantToken, 201);
+    check(str_starts_with($dgReq['ma'], 'DG-'), 'doi_gio returns DG- code');
+
+    $dcReq = requestOk('/api/people/assistants/requests', 'POST', [
+        'loai' => 'dieu_chinh_cong',
+        'buoiHocId' => $taSession,
+        'lyDo' => 'Quên check-in đầu giờ',
+        'checkinMoi' => $schedDay.'T18:00',
+        'checkoutMoi' => $schedDay.'T20:00'
+    ], $assistantToken, 201);
+    check(str_starts_with($dcReq['ma'], 'DC-'), 'dieu_chinh_cong returns DC- code');
+
+    $bbNotif = Store::one("SELECT user_id FROM thong_bao WHERE doi_tuong_loai='bao_ban' AND doi_tuong_id=?", [$bbReq['id']]);
+    $dcNotif = Store::one("SELECT user_id FROM thong_bao WHERE doi_tuong_loai='dieu_chinh_cong' AND doi_tuong_id=?", [$dcReq['id']]);
+    check(Store::one("SELECT group_name FROM role_group g JOIN account a ON a.group_id=g.group_id WHERE a.user_id=?", [$bbNotif['user_id']])['group_name'] === 'NhanVien', 'bao_ban notifies branch staff');
+    check(Store::one("SELECT group_name FROM role_group g JOIN account a ON a.group_id=g.group_id WHERE a.user_id=?", [$dcNotif['user_id']])['group_name'] === 'Admin', 'dieu_chinh_cong notifies admin');
+
     // The administration suite shares this disposable DB and asserts its own handoff totals.
     Store::execute('DELETE FROM yeu_cau_hoc WHERE id=?',[$opportunityId]);
     requestOk('/api/auth/logout','POST',[],$parentToken);

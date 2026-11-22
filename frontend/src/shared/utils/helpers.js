@@ -15,6 +15,9 @@ window.AccountUI = (() => {
     const menu = document.getElementById("teacher-account-menu");
     if (menu) menu.hidden = true;
     document.getElementById("teacher-avatar")?.setAttribute("aria-expanded", "false");
+    const assistantMenu = document.getElementById("assistant-account-menu");
+    if (assistantMenu) assistantMenu.hidden = true;
+    document.getElementById("assistant-avatar")?.setAttribute("aria-expanded", "false");
   }
   function open(title, body) {
     closeMenus();
@@ -108,8 +111,8 @@ window.AccountUI = (() => {
         const saved = await api("/auth/me/profile","put",body);
         const me = await api("/auth/me");
         AccessService.setSession(null,me.user);
-        document.querySelectorAll("#currentUserName,#accountMenuName,#udName,#admin-name,#teacher-name,#accountName").forEach(el=>{ el.textContent = saved.hoTen; });
-        document.querySelectorAll("#parentAvatar,#admin-avatar,#teacher-avatar,#account-avatar").forEach(el=>{ el.textContent = initial(saved.hoTen); });
+        document.querySelectorAll("#currentUserName,#accountMenuName,#udName,#admin-name,#teacher-name,#assistant-name,#accountName").forEach(el=>{ el.textContent = saved.hoTen; });
+        document.querySelectorAll("#parentAvatar,#admin-avatar,#teacher-avatar,#assistant-avatar,#account-avatar").forEach(el=>{ el.textContent = initial(saved.hoTen); });
         window.dispatchEvent(new CustomEvent("account-profile-updated"));
         open("Đã cập nhật hồ sơ", `<p role="status">Thông tin cá nhân đã được lưu.</p><footer><button class="btn p" type="button" data-account-action="view">Xem hồ sơ</button></footer>`);
       }, body => {
@@ -147,7 +150,7 @@ window.AccountUI = (() => {
     finally { pending = false; }
   }
   document.addEventListener("click", event => {
-    if (!event.target.closest("details.parent-account,.teacher-account,#userDropdown,#admin-avatar")) closeMenus();
+    if (!event.target.closest("details.parent-account,.teacher-account,.assistant-account,#userDropdown,#admin-avatar,#assistant-avatar")) closeMenus();
     const control = event.target.closest("[data-account-action]");
     if (!control || control.disabled || pending) return;
     ({view,edit,password,logout})[control.dataset.accountAction]?.();
