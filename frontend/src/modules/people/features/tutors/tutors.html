@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cổng Gia sư · EduCenter ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared/styles/common.css" />
+    <link rel="stylesheet" href="tutors.css" />
+  </head>
+  <body class="tutor-portal">
+    <div class="app">
+      <aside
+        class="side"
+        id="tutor-sidebar"
+        aria-label="Điều hướng Gia sư"
+      >
+        <a class="brand" href="/"
+          ><span class="brand-icon">E</span
+          ><span
+            ><b>EduCenter ERP</b><small>Quản trị Trung tâm Gia sư</small></span
+          ></a
+        >
+        <div class="side-user">
+          <span class="su-role">Gia sư</span>
+          <div class="su-name" id="tutor-name">Đang tải tài khoản…</div>
+        </div>
+        <div class="nav-group">Chức năng phân hệ</div>
+        <nav id="tutor-nav"></nav>
+        <div class="side-foot row-b">
+          <a class="btn sm" href="/">Website Công khai</a
+          ><button type="button" class="btn sm" data-action="logout">Đăng xuất</button>
+        </div>
+      </aside>
+      <div id="tutor-backdrop" hidden></div>
+      <div class="main-wrap">
+        <header class="topbar">
+          <div class="row">
+            <button
+              type="button"
+              class="btn sm"
+              id="tutor-menu"
+              aria-label="Mở menu"
+              aria-controls="tutor-sidebar"
+              aria-expanded="false"
+            >
+              ☰</button
+            ><a class="btn sm tutor-website" href="/">◎ Website Trung tâm</a>
+          </div>
+          <div class="row">
+            <span id="tutor-date"></span
+            ><button
+              type="button"
+              class="tutor-bell"
+              data-action="notifications"
+              aria-label="Mở thông báo"
+            >
+              <svg class="svg-ico" viewBox="0 0 24 24">
+                <path
+                  d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
+                /></svg
+              ><span id="tutor-unread" hidden></span>
+            </button>
+            <div class="tutor-account">
+              <button
+                type="button"
+                id="tutor-avatar"
+                data-action="account"
+                aria-label="Menu tài khoản"
+                aria-controls="tutor-account-menu"
+                aria-expanded="false"
+              >
+                G
+              </button>
+              <section
+                id="tutor-account-menu"
+                class="tutor-account-menu"
+                aria-label="Tài khoản cá nhân"
+                hidden
+              >
+                <button type="button" data-action="profile-view">
+                  Hồ sơ cá nhân
+                </button>
+                <button type="button" data-action="profile">
+                  Chỉnh sửa hồ sơ cá nhân
+                </button>
+                <button type="button" data-account-action="password">Đổi mật khẩu</button>
+                <button type="button" data-action="logout">Đăng xuất</button>
+              </section>
+            </div>
+          </div>
+        </header>
+        <main
+          class="main"
+          id="tutor-content"
+          tabindex="-1"
+          aria-live="polite"
+        >
+          <div class="card" id="portalTitle">Đang tải cổng Gia sư…</div>
+        </main>
+      </div>
+    </div>
+    <dialog id="tutor-dialog" aria-labelledby="tutor-dialog-title">
+      <div id="tutor-dialog-content"></div>
+    </dialog>
+    <div id="tutor-toast" role="status" hidden></div>
+    <script src="../../../../config/app.config.js"></script>
+    <script src="../../../../shared/permissions/access.js"></script>
+    <script src="../../../../shared/services/http.js"></script>
+    <script src="../../../../shared/utils/helpers.js"></script>
+    <script src="tutors.js"></script>
+  </body>
+</html>

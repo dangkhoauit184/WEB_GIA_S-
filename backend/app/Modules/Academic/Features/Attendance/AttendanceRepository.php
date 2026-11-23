@@ -9,6 +9,7 @@ final class AttendanceRepository
         b.trang_thai,b.chu_de_bai_hoc,b.noi_dung_bai_hoc,b.file_bai_giang_url,b.updated_at,
         l.ma_lop,l.ten_lop,l.hinh_thuc,l.dia_diem,l.link_hoc,COALESCE(b.phong_hoc,l.phong_hoc) AS phong_hoc,
         cs.ten_co_so,m.ten AS ten_mon,cl.ten AS ten_cap_lop,pc.id AS phan_cong_id,pc.vai_tro,
+        pc.trang_thai AS phan_cong_trang_thai,
         pc.checkin_luc,pc.checkout_luc,pc.checkin_tre,pc.so_phut_thuc_te,pc.so_phut_tinh_cong,pc.trang_thai_cong,
         pc.gio_lich_bat_dau,pc.gio_lich_ket_thuc,
         COALESCE((SELECT bc.trang_thai FROM bang_cong_thang bc WHERE bc.user_id=pc.user_id
@@ -19,9 +20,14 @@ final class AttendanceRepository
         JOIN mon_hoc m ON m.id=l.mon_hoc_id JOIN cap_lop cl ON cl.id=l.cap_lop_id
         WHERE l.deleted_at IS NULL AND pc.user_id=?';
 
-    public static function sessions(int $user): array
+    public static function sessions(int $user, ?string $serverNow = null): array
     {
-        return Store::rows(self::SESSION_SELECT.' ORDER BY b.ngay,b.gio_bat_dau,b.id', [$user]);
+        $now = $serverNow ?? Store::one('SELECT NOW() AS now')['now'];
+        $rows = Store::rows(self::SESSION_SELECT.' ORDER BY b.ngay,b.gio_bat_dau,b.id', [$user]);
+        foreach ($rows as &$row) {
+            $row['quyen_yeu_cau'] = ShiftRequestPolicy::capabilities($row, $now, 'day_chinh');
+        }
+        return $rows;
     }
 
     public static function session(int $id, int $user): array
@@ -77,11 +83,17 @@ final class AttendanceRepository
 
     public static function detail(int $id, int $user): array
     {
+        $now = Store::one('SELECT NOW() AS now')['now'];
         $session = self::session($id, $user);
         $students = self::students($session);
         $homework = Store::one('SELECT id,tieu_de,noi_dung,file_de_bai_url,han_nop,updated_at FROM bai_tap WHERE buoi_hoc_id=? ORDER BY id DESC LIMIT 1', [$id]);
+        $prev = SessionMaterialService::previousHomeworks($session);
         $session['hocViens'] = $students;
         $session['baiTap'] = $homework;
+        $session['tai_lieu'] = SessionMaterialService::describe($session, $homework);
+        $session['bai_tap_buoi_truoc'] = $prev['latest'];
+        $session['danh_sach_bai_tap_truoc'] = $prev['items'];
+        $session['quyen_yeu_cau'] = ShiftRequestPolicy::capabilities($session, $now, 'day_chinh');
         $session['revision'] = hash('sha256', json_encode([$session['chu_de_bai_hoc'], $session['noi_dung_bai_hoc'],
             $session['file_bai_giang_url'], $students, $homework], JSON_THROW_ON_ERROR));
         return $session;

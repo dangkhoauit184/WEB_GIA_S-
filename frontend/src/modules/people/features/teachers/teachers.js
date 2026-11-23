@@ -5,10 +5,10 @@
   const screens = {
     dash: "Tổng quan & Đề xuất lớp",
     schedule: "Lịch dạy cá nhân",
-    session: "Check-in / Check-out",
+    session: "Chi tiết ca dạy & Check-in / Check-out",
     log: "Sổ buổi học & Chấm bài",
     myclasses: "Lớp phụ trách & Lịch rảnh",
-    recruit: "Đề xuất ghép lớp & Ứng tuyển",
+    recruit: "Đề xuất & Ứng tuyển lớp",
     requests: "Đơn nghỉ lớp / Đổi lịch / Công",
     paysheet: "Bảng công cá nhân",
   };
@@ -26,11 +26,13 @@
     workspace: null,
     proposals: [],
     opportunities: [],
+    shiftOpenings: [],
     notifications: [],
     tab: "dash",
     sessionId: null,
     detail: null,
     dirty: false,
+    materialDirty: false,
     calendarMode: "week",
     calendarDate: "",
     availabilityMode: "week",
@@ -117,6 +119,9 @@
     da_roi: "Đã rời lớp",
     tam_nghi: "Tạm nghỉ",
     cho_xep_lop: "Chờ xếp lớp",
+    dang_mo: "Đang mở tuyển",
+    da_du_nguoi: "Đã đủ người",
+    da_dong: "Đã đóng",
   };
   function tag(value, fallback) {
     const style = [
@@ -125,11 +130,12 @@
       "dong_y",
       "hop_le",
       "dang_hoc",
+      "da_du_nguoi",
     ].includes(value)
       ? "ok"
-      : ["huy", "tu_choi", "da_huy"].includes(value)
+      : ["huy", "tu_choi", "da_huy", "da_dong"].includes(value)
         ? "r"
-        : ["cho", "cho_duyet", "du_kien"].includes(value)
+        : ["cho", "cho_duyet", "du_kien", "dang_mo"].includes(value)
           ? "w"
           : "i";
     return `<span class="tag ${style}">${escape(labels[value] || fallback || value)}</span>`;
@@ -168,7 +174,6 @@
       .setAttribute("aria-expanded", String(open));
   }
   function modal(title, body) {
-    dialog.classList.remove("teacher-profile-dialog");
     dialogContent.innerHTML = `<div class="teacher-dialog-head"><h2 id="teacher-dialog-title">${escape(title)}</h2>${button("✕", "close", "", "", false)}</div><div class="teacher-dialog-body">${body}</div>`;
     if (!dialog.open) dialog.showModal();
   }
@@ -303,35 +308,29 @@
       api(attendance + "/workspace"),
       allProposals(),
       api("/people/teachers/me/opportunities"),
+      api("/academic/scheduling/openings"),
       api("/communication/notifications"),
     ]);
     [
       state.workspace,
       state.proposals,
       state.opportunities,
+      state.shiftOpenings,
       state.notifications,
     ] = results;
+    state.shiftOpenings = Array.isArray(state.shiftOpenings)
+      ? state.shiftOpenings
+      : [];
     state.calendarDate ||= today();
     state.availabilityDate ||= today();
     state.month ||= today().slice(0, 7);
     if (
+      state.sessionId &&
       !state.workspace.sessions.some(
         (session) => String(session.id) === String(state.sessionId),
       )
     ) {
-      const current = state.workspace.sessions.find(
-        (session) =>
-          session.checkinLuc &&
-          !session.checkoutLuc &&
-          !["huy", "doi"].includes(session.trangThai),
-      );
-      const next = state.workspace.sessions.find(
-        (session) =>
-          session.ngay >= today() &&
-          !["huy", "doi", "da_day"].includes(session.trangThai),
-      );
-      state.sessionId =
-        (current || next || state.workspace.sessions.at(-1))?.id ?? null;
+      state.sessionId = null;
     }
     const profile = state.workspace.profile;
     document.getElementById("teacher-name").textContent = profile.hoTen;
@@ -409,7 +408,7 @@
       <h2>${escape(session.maLop)} — ${escape(session.tenLop)}</h2>
       <p>${escape(session.tenCoSo || session.diaDiem || "Trực tuyến")} ${escape(session.phongHoc || "")}</p>
       <p>Khung giờ lịch <b>${time(session.gioBatDau)}–${time(session.gioKetThuc)} (${duration} phút)</b>${classroom ? ` · Sĩ số lớp ${classroom.siSo} học viên` : ""}</p></div>
-      ${button(session.checkinLuc ? "Xem ca dạy →" : "Check-in →", session.checkinLuc ? "session" : "checkin", session.id, "p", disabledSession(session))}</section>`;
+      ${button("Xem chi tiết ca →", "session", session.id, "p")}</section>`;
   }
   function dashboard() {
     const workspace = state.workspace;
@@ -436,6 +435,9 @@
         proposal.ttNhanSu === "cho" &&
         !["da_chot", "huy"].includes(proposal.trangThaiYeuCau),
     );
+    const openShifts = state.shiftOpenings.filter(
+      (item) => item.trangThai === "dang_mo" && !item.donCuaToi && item.duDieuKien,
+    );
     const monthSessions = workspace.sessions.filter(
       (session) =>
         session.ngay.startsWith(today().slice(0, 7)) &&
@@ -453,7 +455,7 @@
         `Ca dạy hôm nay · ${date(today())}`,
       ],
       [workspace.classes.length, "Lớp được phân công"],
-      [pending.length, "Đề xuất chờ phản hồi"],
+      [pending.length + openShifts.length, "Đề xuất & ca tuyển phù hợp"],
       [minutes, "Phút công tháng này"],
     ];
     return (
@@ -479,21 +481,28 @@
         <td><b>${escape(session.maLop)}</b><br><small>${escape(session.tenMon)} · ${escape(session.tenLop)}</small></td>
         <td>${escape(session.phongHoc || "")}<br><small>${escape(session.tenCoSo || session.diaDiem || "Trực tuyến")}</small></td>
         <td><span class="tag ${session.loai === "bu" ? "purple" : "i"}">${session.loai === "bu" ? "Ca dạy bù" : "Giáo viên"}</span></td>
-        <td>${dashboardStatus(session)}</td><td>${button(session.checkinLuc ? "Xem ca" : "Vào ca", "session", session.id, session.ngay === today() && !session.checkoutLuc ? "p" : "")}${session.checkinLuc ? button("Sổ học vụ", "log", session.id) : ""}</td></tr>`,
+        <td>${dashboardStatus(session)}</td><td>${button(session.checkinLuc ? "Xem ca" : "Chi tiết ca", "session", session.id, session.ngay === today() && !session.checkoutLuc ? "p" : "")}${session.checkinLuc ? button("Sổ học vụ", "log", session.id) : ""}</td></tr>`,
         ),
       )}</div>
-      <div class="card"><h2>Đề xuất lớp cần phản hồi</h2>${
-        pending.length
-          ? pending
-              .slice(0, 5)
+      <div class="card"><h2>Đề xuất tuyển Giáo viên &amp; ghép lớp</h2>${
+        openShifts.length || pending.length
+          ? openShifts
+              .slice(0, 3)
+              .map(
+                (item) =>
+                  `<div class="teacher-row"><div><b>${escape(item.maDeXuat)} · ${escape(item.maLop)}</b><small>${date(item.ngay)} · ${time(item.gioBatDau)}–${time(item.gioKetThuc)} · ${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></div>${button("Ứng tuyển", "tab", "recruit", "p")}</div>`,
+              )
+              .join("") +
+            pending
+              .slice(0, 3)
               .map(
                 (proposal) =>
-                  `<div class="teacher-row"><div><b>${escape(proposal.maYc)}</b><small>${escape(proposal.tenHocVien || proposal.hoTenLienHe || "Yêu cầu học mới")}</small></div>${button("Xem đề xuất", "tab", "recruit", "p")}</div>`,
+                  `<div class="teacher-row"><div><b>${escape(proposal.maYc)}</b><small>${escape(proposal.tenHocVien || proposal.hoTenLienHe || "Yêu cầu học mới")}</small></div>${button("Xem đề xuất", "tab", "recruit")}</div>`,
               )
               .join("")
-          : empty("Bạn đã phản hồi các đề xuất hiện có.")
+          : empty("Chưa có đề xuất mới chờ xử lý.")
       }</div></div>
-      <div><div class="card"><h2>Công việc giảng dạy</h2><div class="teacher-row">${button("Vào ca dạy", "tab", "session", "p")}</div><div class="teacher-row">${button("Hồ sơ & Lịch rảnh", "profile-view")}</div><div class="teacher-row">${button("Gửi đơn từ", "request")}</div><div class="teacher-row">${button("Xem bảng công cá nhân", "tab", "paysheet")}</div></div>
+      <div><div class="card"><h2>Công việc giảng dạy</h2><div class="teacher-row">${button("Mở thời khóa biểu", "tab", "schedule", "p")}</div><div class="teacher-row">${button("Đề xuất & Ứng tuyển lớp", "tab", "recruit")}</div><div class="teacher-row">${button("Hồ sơ & Lịch rảnh", "profile-view")}</div><div class="teacher-row">${button("Gửi đơn từ", "request")}</div><div class="teacher-row">${button("Xem bảng công cá nhân", "tab", "paysheet")}</div></div>
       <div class="card"><h2>Thông báo gần đây</h2>${
         state.notifications
           .slice(0, 4)
@@ -567,7 +576,10 @@
       return `<div class="cal-day-col ${isToday ? "is-today" : ""}"><div class="cal-col-head ${isToday ? "is-today" : ""}"><div class="d-name">${headings[index]}${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div><div class="d-num">${day.slice(8)}/${day.slice(5, 7)}</div></div><div class="cal-col-body">${rows.map((session) => calendarCard(session)).join("") || '<div class="cal-col-empty">—</div>'}</div></div>`;
     }).join("");
     return (
-      head("Thời khóa biểu cá nhân", "Lịch các ca dạy được phân công.") +
+      head(
+        "Thời khóa biểu cá nhân",
+        "Bấm vào một ca trên lịch để xem chi tiết, Check-in / Check-out và ghi sổ buổi học.",
+      ) +
       `<div class="cal-box">
       <div class="cal-bar"><div class="row">${button("‹ Trước", "calendar-prev")}${button("Hôm nay", "calendar-today")}${button("Sau ›", "calendar-next")}</div>
         <div class="teacher-calendar-period"><b class="cal-range-btn">${escape(range)}</b>${field("Chọn tháng", "calendar-month", selected.slice(0, 7), "month", "required")}</div>
@@ -599,15 +611,76 @@
     }
     return `<span class="teacher-work-minutes">${escape(session.soPhutTinhCong)} phút${reason ? `<small>${escape(reason)}</small>` : ""}</span>`;
   }
-  function sessionPicker() {
-    return `<div class="card teacher-toolbar">${select("Chọn ca dạy", "session-picker", Object.fromEntries(state.workspace.sessions.map((session) => [session.id, sessionTitle(session)])), state.sessionId)}${button("Tải lại ca", "reload-session")}</div>`;
+  function formatBytes(bytes) {
+    const size = Number(bytes || 0);
+    if (!size) return "";
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  }
+  function materialSummary(session) {
+    const mat = session.taiLieu || {};
+    if (!mat.coTaiLieu) {
+      return '<p class="teacher-muted">Chưa có tài liệu chuẩn bị trước buổi học.</p>';
+    }
+    const metaParts = [];
+    if (mat.laTepTaiLen && mat.tenTep) {
+      metaParts.push(`${mat.tenTep}${mat.kichThuoc ? " · " + formatBytes(mat.kichThuoc) : ""}`);
+    } else if (mat.url) {
+      metaParts.push(mat.url);
+    }
+    return `<div class="teacher-material-current">
+      <div><b>${escape(mat.tieuDe || mat.tenTep || "Tài liệu chuẩn bị buổi học")}</b>
+      ${metaParts.length ? `<small class="teacher-muted" style="display:block">${escape(metaParts.join(" · "))}</small>` : ""}
+      ${mat.ghiChu ? `<p class="teacher-muted" style="margin:4px 0 0">${escape(mat.ghiChu)}</p>` : ""}</div>
+      <div class="teacher-actions">${link(mat.url, mat.laTepTaiLen ? "Xem / Tải tệp" : "Mở liên kết tài liệu")}</div>
+    </div>`;
+  }
+  function materialCard(session) {
+    const mat = session.taiLieu || {};
+    const editable = !["huy", "doi"].includes(session.trangThai) && session.vaiTro === "day_chinh";
+    return `<div class="card"><h2>Tài liệu &amp; Bài tập chuẩn bị trước buổi học</h2>
+      <p class="teacher-muted" style="margin-top:-6px">Tài liệu được chuẩn bị trước buổi dạy để học viên trong lớp xem trước (tệp có thể bao gồm cả bài giảng và bài tập về nhà).</p>
+      ${materialSummary(session)}
+      ${editable ? `<form id="teacher-material-form" data-session-id="${session.id}" style="margin-top:12px">
+        <div class="teacher-form-grid">
+          <div class="full"><label>Tải tệp từ thiết bị (PDF, Word, PowerPoint, Excel, TXT, PNG, JPG · tối đa 10 MB)<input name="file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"></label><small class="teacher-muted" data-selected-file style="display:block;margin-top:4px"></small></div>
+          ${field("Tiêu đề tài liệu / bài tập xem trước", "tieuDe", mat.tieuDe || "", "text", 'maxlength="255" placeholder="Ví dụ: Bài giảng & BTVN tuần 4"')}
+          ${field("Hoặc liên kết tài liệu xem trước", "fileUrl", !mat.laTepTaiLen ? (mat.url || "") : "", "url", 'maxlength="255" placeholder="https://..."')}
+          <div class="full">${textarea("Hướng dẫn chuẩn bị trước buổi học (tùy chọn)", "ghiChu", mat.ghiChu || "", 15000)}</div>
+        </div>
+        <p class="teacher-error" data-form-error role="alert" hidden></p>
+        <div class="teacher-actions" style="margin-top:10px">
+          <button class="btn p sm" type="submit">Tải lên &amp; Lưu tài liệu</button>
+          ${mat.coTaiLieu ? button("Gỡ tài liệu", "remove-material", session.id, "danger") : ""}
+        </div>
+      </form>` : ""}
+    </div>`;
+  }
+  function shiftRequestControls(session) {
+    const caps = session.quyenYeuCau || {};
+    const rows = [];
+    if (caps.coTheDoiLich) {
+      rows.push(`<div class="teacher-row">${button("Yêu cầu đổi lịch", "reschedule", session.id)}</div>`);
+    }
+    if (caps.coTheChinhCong) {
+      rows.push(`<div class="teacher-row">${button("Yêu cầu chỉnh công", "correction", session.id)}</div>`);
+    }
+    if (!rows.length && caps.lyDoKhoa) {
+      rows.push(`<p class="teacher-muted" style="margin:8px 0 0">${escape(caps.lyDoKhoa)}</p>`);
+    }
+    return rows.join("");
   }
   function sessionView(session) {
     const blocked = disabledSession(session);
     const presence = session.soPhutThucTe;
     return (
-      head("Vận hành ca dạy & Check-in / Check-out") +
-      sessionPicker() +
+      head(
+        "Chi tiết ca dạy & Check-in / Check-out",
+        sessionTitle(session),
+        button("← Thời khóa biểu", "tab", "schedule") +
+          button("Tải lại ca", "reload-session"),
+      ) +
       `<div class="teacher-session-banner"><p>${date(session.ngay)} · ${time(session.gioBatDau)}–${time(session.gioKetThuc)}${session.loai === "bu" ? " · Học bù" : ""}</p><h2>${escape(session.tenLop)}</h2><p>${escape(session.maLop)} · ${escape(session.tenCoSo || session.diaDiem || "Trực tuyến")} ${escape(session.phongHoc || "")}</p><div class="teacher-actions">${button("Bấm Check-in", "checkin", session.id, "p", blocked || Boolean(session.checkinLuc) || session.trangThai === "da_day")}${button("Bấm Check-out", "checkout", session.id, "", blocked || !session.checkinLuc || Boolean(session.checkoutLuc))}${link(session.linkHoc, "Vào phòng học trực tuyến")}</div></div>` +
       `<div class="teacher-grid"><div class="card"><h2>Thông tin chấm công</h2>${[
         ["Trạng thái ca", tag(session.trangThai)],
@@ -631,7 +704,8 @@
         )
         .join(
           "",
-        )}</div><div class="card"><h2>Sổ buổi học</h2><p class="teacher-muted">${session.hocViens.length} học viên trong ca này.</p><div class="teacher-row">${button("Mở sổ · Điểm danh & Chấm bài", "log", session.id, "p")}</div><div class="teacher-row">${button("Gửi yêu cầu điều chỉnh công", "correction", session.id)}</div><div class="teacher-row">${button("Gửi đơn nghỉ / Đổi lịch", "request", session.id)}</div></div></div>`
+        )}</div><div class="card"><h2>Sổ buổi học &amp; Yêu cầu</h2><p class="teacher-muted">${session.hocViens.length} học viên trong ca này.</p><div class="teacher-row">${button("Mở sổ · Điểm danh & Chấm bài", "log", session.id, "p")}</div>${shiftRequestControls(session)}</div></div>` +
+      materialCard(session)
     );
   }
   function logView(session) {
@@ -643,18 +717,58 @@
       vang_co_phep: "Vắng có phép",
       vang_khong_phep: "Vắng không phép",
     };
-    const homework = session.baiTap || {};
+    const prevList = Array.isArray(session.danhSachBaiTapTruoc)
+      ? session.danhSachBaiTapTruoc
+      : [];
+    const savedHwId = session.hocViens.find((s) => s.baiTapId)?.baiTapId || null;
+    const selectedPrev =
+      prevList.find((item) => String(item.id) === String(savedHwId)) ||
+      prevList[0] ||
+      null;
+    const activeHomeworkId = selectedPrev?.id ?? savedHwId ?? "";
+    const canGrade = Boolean(activeHomeworkId);
+    const prevHomeworkBox = prevList.length
+      ? `<div class="teacher-prev-homework">
+          ${prevList.length > 1
+            ? select(
+                "Bài tập về nhà buổi trước cần chấm",
+                "baiTapChamId",
+                Object.fromEntries(
+                  prevList.map((item) => [
+                    item.id,
+                    `${item.tieuDe} · Buổi ${date(item.ngayBuoiHoc)}`,
+                  ]),
+                ),
+                activeHomeworkId,
+              )
+            : `<input type="hidden" name="baiTapChamId" value="${escape(activeHomeworkId)}">
+               <div><span class="tag i">Bài tập buổi trước · ${date(selectedPrev.ngayBuoiHoc)}</span>
+               <b style="display:block;margin-top:6px">${escape(selectedPrev.tieuDe)}</b>
+               ${selectedPrev.noiDung ? `<p class="teacher-muted" style="margin:4px 0 0">${escape(selectedPrev.noiDung)}</p>` : ""}</div>`}
+          <div class="teacher-actions" style="margin-top:8px">${link(selectedPrev?.fileDeBaiUrl, "Xem đề bài buổi trước")}</div>
+        </div>`
+      : savedHwId
+        ? `<input type="hidden" name="baiTapChamId" value="${escape(savedHwId)}"><p class="teacher-muted">Đang hiển thị kết quả chấm bài tập đã lưu của buổi học này.</p>`
+        : '<div class="teacher-empty">Chưa có bài tập về nhà từ buổi học trước để chấm. Bạn vẫn có thể điểm danh và ghi nhận xét buổi học.</div>';
     return (
       head(
         "Sổ buổi học & Chấm bài",
-        "",
-        button("Quay lại ca dạy", "session", session.id),
+        sessionTitle(session),
+        button("← Quay lại chi tiết ca", "session", session.id) +
+          button("Tải lại", "reload-session"),
       ) +
-      sessionPicker() +
       `<div class="card"><div class="row-b"><b>${escape(sessionTitle(session))}</b>${session.checkinLuc ? tag("hop_le", "Đã check-in").replace("Hợp lệ", "Đã check-in") : tag("chua_check")}</div></div>
       ${!writable ? `<div class="card teacher-muted">${disabledSession(session) ? "Ca học hiện chỉ được xem." : "Check-in để bắt đầu ghi sổ buổi học."} ${button("Xem ca dạy", "session", session.id)}</div>` : ""}
-      <form id="teacher-log-form"><fieldset ${writable ? "" : "disabled"} style="border:0;min-width:0"><div class="card"><h2>Hôm nay học gì</h2>${field("Chủ đề bài học *", "chuDe", session.chuDeBaiHoc || "", "text", 'required maxlength="255"')}${textarea("Nội dung đã giảng dạy", "noiDung", session.noiDungBaiHoc || "", 15000)}${field("Liên kết bài giảng", "fileBaiGiangUrl", session.fileBaiGiangUrl || "", "text", 'maxlength="255"')}</div>
-      <div class="card"><h2>Điểm danh & Chấm bài</h2><div class="teacher-students">${
+      <form id="teacher-log-form"><fieldset ${writable ? "" : "disabled"} style="border:0;min-width:0">
+      <div class="card"><h2>Hôm nay học gì</h2>${field("Chủ đề bài học *", "chuDe", session.chuDeBaiHoc || "", "text", 'required maxlength="255"')}${textarea("Nội dung đã giảng dạy", "noiDung", session.noiDungBaiHoc || "", 15000)}
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">
+          <div class="row-b"><span class="teacher-muted"><b>Tài liệu chuẩn bị buổi học</b></span>${button("Quản lý tệp ở chi tiết ca", "session", session.id)}</div>
+          ${materialSummary(session)}
+        </div>
+      </div>
+      <div class="card"><h2>Điểm danh &amp; Chấm bài tập về nhà buổi trước</h2>
+      ${prevHomeworkBox}
+      <div class="teacher-students" style="margin-top:12px">${
         session.hocViens
           .map(
             (
@@ -663,18 +777,17 @@
         <summary><span><b>${escape(student.hoTen)}</b><small>${escape(session.tenLop)} · ${escape(session.maLop)}</small></span><span class="teacher-student-arrow" aria-hidden="true">⌄</span></summary>
         <div class="teacher-student-fields"><div class="teacher-form-grid">
           ${select("Điểm danh *", "attendance-" + student.hocVienId, attendanceOptions, student.trangThaiDiemDanh).replace("<select ", "<select required ")}
-          ${field("Điểm bài tập / 10", "score-" + student.hocVienId, student.diemBaiTapGiay ?? "", "number", 'min="0" max="10" step="0.01"')}
+          ${field("Điểm bài tập buổi trước / 10", "score-" + student.hocVienId, canGrade ? (student.diemBaiTapGiay ?? "") : "", "number", 'min="0" max="10" step="0.01"' + (canGrade ? "" : ' disabled placeholder="Chưa có bài buổi trước"'))}
           ${select("Mức tiếp thu", "level-" + student.hocVienId, { "": "Chưa đánh giá", 1: "1 / 5", 2: "2 / 5", 3: "3 / 5", 4: "4 / 5", 5: "5 / 5" }, student.mucTiepThu)}
           ${select("Thái độ", "attitude-" + student.hocVienId, { "": "Chưa đánh giá", tot: "Tốt", kha: "Khá", trung_binh: "Trung bình", can_cai_thien: "Cần cải thiện" }, student.thaiDo)}
-          <div class="full">${textarea("Nhận xét bài tập", "comment-" + student.hocVienId, student.nhanXetBaiTap || "", 255)}</div>
+          <div class="full">${canGrade ? textarea("Nhận xét bài tập buổi trước", "comment-" + student.hocVienId, student.nhanXetBaiTap || "", 255) : `<label>Nhận xét bài tập buổi trước<textarea name="comment-${student.hocVienId}" rows="2" disabled placeholder="Chưa có bài tập buổi trước để chấm"></textarea></label>`}</div>
           ${textarea("Nhận xét buổi học", "note-" + student.hocVienId, student.nhanXetBuoiHoc || "")}
           ${textarea("Hướng cải thiện", "improve-" + student.hocVienId, student.huongCaiThien || "")}
         </div></div></details>`,
           )
           .join("") || empty("Ca học chưa có học viên.")
       }</div></div>
-      <div class="card"><h2>Bài tập của buổi học</h2><div class="teacher-form-grid">${field("Tên bài tập", "homeworkTitle", homework.tieuDe || "", "text", 'maxlength="255"' + (homework.id ? " required" : ""))}${field("Hạn nộp", "deadline", (homework.hanNop || "").replace(" ", "T").slice(0, 16), "datetime-local")}<div class="full">${textarea("Nội dung bài tập", "homeworkContent", homework.noiDung || "", 15000)}${field("Liên kết đề bài / PDF", "homeworkUrl", homework.fileDeBaiUrl || "", "text", 'maxlength="255"')}</div></div>${link(homework.fileDeBaiUrl, "Mở đề bài đã giao")}</div>
-      <p class="teacher-error" data-form-error role="alert" hidden></p><div class="teacher-log-footer"><button class="btn p" type="submit" name="saveMode" value="save">Lưu sổ buổi học</button><button class="btn" type="submit" name="saveMode" value="checkout" ${session.checkoutLuc ? "disabled" : ""}>Lưu sổ & Check-out</button></div></fieldset></form>`
+      <p class="teacher-error" data-form-error role="alert" hidden></p><div class="teacher-log-footer"><button class="btn p" type="submit" name="saveMode" value="save">Lưu sổ buổi học</button><button class="btn" type="submit" name="saveMode" value="checkout" ${session.checkoutLuc ? "disabled" : ""}>Lưu sổ &amp; Check-out</button></div></fieldset></form>`
     );
   }
   function availabilityCalendar() {
@@ -731,9 +844,93 @@
     );
   }
   function recruit() {
+    const openShifts = state.shiftOpenings.filter(
+      (item) => item.trangThai === "dang_mo",
+    );
+    const myShiftApps = state.shiftOpenings.filter((item) => item.donCuaToi);
     return (
-      head("Đề xuất ghép lớp & Ứng tuyển") +
-      `<div class="card"><h2>Đề xuất dành cho bạn</h2>${table(
+      head(
+        "Đề xuất & Ứng tuyển lớp",
+        "Ứng tuyển các ca tuyển Giáo viên phù hợp lịch rảnh, chuyên môn và theo dõi kết quả duyệt từ Giáo vụ.",
+        button("Tải lại", "reload"),
+      ) +
+      `<div class="card"><h2>Đề xuất tuyển Giáo viên cho lớp / ca đang mở</h2>${table(
+        [
+          "Mã đề xuất",
+          "Lớp · Môn · Khối",
+          "Ngày & Giờ ca",
+          "Hình thức · Địa điểm",
+          "Vị trí & Yêu cầu",
+          "Điều kiện & Trạng thái",
+          "Thao tác",
+        ],
+        openShifts.map((item) => {
+          const mine = item.donCuaToi;
+          const place =
+            item.hinhThuc === "online"
+              ? "Trực tuyến (Online)"
+              : `${item.tenCoSo || item.diaDiem || "Trực tiếp"}${item.phongHoc ? " · " + item.phongHoc : ""}${item.tenKhuVuc ? " · " + item.tenKhuVuc : ""}`;
+          const statusCell = mine
+            ? `${tag(mine.trangThai)}${mine.lyDoTuChoi ? `<span class="teacher-elig-note">Lý do: ${escape(mine.lyDoTuChoi)}</span>` : ""}`
+            : item.duDieuKien
+              ? '<span class="tag ok">Phù hợp lịch &amp; chuyên môn</span>'
+              : `<span class="tag r">Chưa đủ điều kiện</span><span class="teacher-elig-note">${escape((item.lyDoKhongDuDieuKien || []).join(" "))}</span>`;
+          const actionCell = mine
+            ? mine.trangThai === "da_duyet"
+              ? button("Xem ca trên lịch", "session", item.buoiHocId, "p")
+              : '<span class="teacher-muted">Đã ứng tuyển</span>'
+            : button(
+                "Ứng tuyển Giáo viên",
+                "apply-shift",
+                item.id,
+                "p",
+                !item.duDieuKien,
+              );
+          return `<tr>
+            <td><b>${escape(item.maDeXuat)}</b><br><small>${escape(item.tenNguoiTao || "")}</small></td>
+            <td><b>${escape(item.maLop)}</b><br><small>${escape(item.tenLop)} · ${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
+            <td><b>${date(item.ngay)}</b><br><small>${time(item.gioBatDau)}–${time(item.gioKetThuc)}</small></td>
+            <td>${escape(place)}</td>
+            <td><span class="tag i">Giáo viên</span><br><small>${escape(item.yeuCau || "Theo chuẩn lớp học")}</small></td>
+            <td>${statusCell}</td>
+            <td>${actionCell}</td>
+          </tr>`;
+        }),
+        "Hiện chưa có đề xuất tuyển Giáo viên nào đang mở.",
+      )}</div>
+      <div class="card"><h2>Đơn ứng tuyển ca của tôi &amp; Kết quả duyệt</h2>${table(
+        [
+          "Mã đề xuất",
+          "Lớp · Môn · Khối",
+          "Ngày & Giờ ca",
+          "Vị trí",
+          "Lời nhắn",
+          "Trạng thái duyệt",
+          "Kết quả / Lý do từ chối",
+          "Thao tác",
+        ],
+        myShiftApps.map((item) => {
+          const mine = item.donCuaToi;
+          const resultNote =
+            mine.trangThai === "da_duyet"
+              ? "Đã phân công chính thức lên thời khóa biểu cá nhân."
+              : mine.trangThai === "tu_choi"
+                ? `Từ chối: ${mine.lyDoTuChoi || "Chưa đạt yêu cầu."}`
+                : "Đang chờ Giáo vụ duyệt (chưa hiển thị trên thời khóa biểu).";
+          return `<tr>
+            <td><b>${escape(item.maDeXuat)}</b></td>
+            <td><b>${escape(item.maLop)}</b><br><small>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
+            <td><b>${date(item.ngay)}</b><br><small>${time(item.gioBatDau)}–${time(item.gioKetThuc)}</small></td>
+            <td><span class="tag i">Giáo viên</span></td>
+            <td>${escape(mine.ghiChu || "—")}</td>
+            <td>${tag(mine.trangThai)}<br><small>${datetime(mine.duyetLuc || mine.createdAt)}</small></td>
+            <td>${escape(resultNote)}</td>
+            <td>${mine.trangThai === "da_duyet" ? button("Xem ca", "session", item.buoiHocId, "p") : "—"}</td>
+          </tr>`;
+        }),
+        "Bạn chưa gửi đơn ứng tuyển ca nào.",
+      )}</div>
+      <div class="card"><h2>Đề xuất ghép lớp từ nhu cầu học mới</h2>${table(
         [
           "Mã đề xuất",
           "Yêu cầu",
@@ -750,8 +947,8 @@
             !["huy", "da_chot"].includes(proposal.trangThaiYeuCau);
           return `<tr><td>DX-${proposal.id}</td><td><b>${escape(proposal.maYc)}</b><br>${escape(proposal.ghiChu || "")}</td><td>${escape(proposal.tenHocVien || proposal.hoTenLienHe || "—")}</td><td>${escape(proposal.tenMon)} · ${escape(proposal.tenCapLop)}</td><td>${proposal.hinhThuc === "online" ? "Trực tuyến" : proposal.hinhThuc === "offline" ? "Trực tiếp" : "Linh hoạt"}<br>${(proposal.lichYeuCau || []).map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join("<br>")}<br><small>${escape(proposal.tenKhuVuc || "")}</small></td><td>${tag(proposal.ttNhanSu)}<br><small>${escape(proposal.lyDoTuChoiNhanSu || "")}</small></td><td>${tag(proposal.ttPhuHuynh)}</td><td>${pending ? button("Đồng ý", "accept", proposal.id, "p") + " " + button("Từ chối", "reject", proposal.id) : escape(proposal.maLop || (proposal.trangThaiYeuCau === "da_chot" ? "Đã chốt đề xuất" : "Đã ghi nhận"))}</td></tr>`;
         }),
-        "Chưa có đề xuất mới từ Giáo vụ.",
-      )}</div><div class="card"><h2>Cơ hội nhận lớp phù hợp</h2>${table(
+        "Chưa có đề xuất ghép lớp mới từ Giáo vụ.",
+      )}</div><div class="card"><h2>Cơ hội nhận lớp mới từ nhu cầu phụ huynh</h2>${table(
         [
           "Mã yêu cầu",
           "Môn · Khối",
@@ -837,7 +1034,7 @@
         ],
         sessions.map(
           (session) =>
-            `<tr><td>${date(session.ngay)}</td><td>${escape(session.maLop)}</td><td>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</td><td>${datetime(session.checkinLuc)}</td><td>${datetime(session.checkoutLuc)}</td><td>${escape(session.soPhutThucTe ?? "—")}</td><td>${workMinutes(session)}</td><td>${session.checkinLuc ? (Number(session.checkinTre) ? "Đi trễ" : "Đúng giờ") : "—"}</td><td>${tag(session.trangThaiCong)}</td><td>${tag(session.kyCong)}</td><td>${button("Xem ca", "session", session.id)} ${button("Điều chỉnh", "correction", session.id)}</td></tr>`,
+            `<tr><td>${date(session.ngay)}</td><td>${escape(session.maLop)}</td><td>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</td><td>${datetime(session.checkinLuc)}</td><td>${datetime(session.checkoutLuc)}</td><td>${escape(session.soPhutThucTe ?? "—")}</td><td>${workMinutes(session)}</td><td>${session.checkinLuc ? (Number(session.checkinTre) ? "Đi trễ" : "Đúng giờ") : "—"}</td><td>${tag(session.trangThaiCong)}</td><td>${tag(session.kyCong)}</td><td>${button("Xem ca", "session", session.id)}${session.quyenYeuCau?.coTheChinhCong ? " " + button("Điều chỉnh", "correction", session.id) : ""}</td></tr>`,
         ),
       )}</div>`
     );
@@ -847,7 +1044,10 @@
     const version = ++renderVersion;
     menu(false);
     document.querySelectorAll("#teacher-nav [data-id]").forEach((item) => {
-      const active = item.dataset.id === state.tab;
+      const active =
+        item.dataset.id === state.tab ||
+        (["session", "log"].includes(state.tab) &&
+          item.dataset.id === "schedule");
       item.classList.toggle("on", active);
       if (active) item.setAttribute("aria-current", "page");
       else item.removeAttribute("aria-current");
@@ -855,8 +1055,12 @@
     if (["session", "log"].includes(state.tab)) {
       if (!state.sessionId) {
         content.innerHTML =
-          head(screens[state.tab]) +
-          `<div class="card">${empty("Bạn chưa có ca được phân công.")}</div>`;
+          head(
+            screens[state.tab],
+            "",
+            button("← Thời khóa biểu", "tab", "schedule", "p"),
+          ) +
+          `<div class="card">${empty("Vui lòng chọn một ca trên thời khóa biểu để xem chi tiết và thực hiện Check-in / Check-out.")}</div>`;
         return;
       }
       content.innerHTML =
@@ -890,33 +1094,28 @@
     if (state.dirty && !window.confirm("Sổ buổi học chưa lưu. Rời trang này?"))
       return;
     state.dirty = false;
+    state.materialDirty = false;
     state.tab = tab;
     if (sessionId) state.sessionId = sessionId;
     history.replaceState(null, "", "#/teacher/teach-" + tab);
     if (refresh) await load();
     await render();
   }
-  function requestModal(type = "nghi_day", sessionId = state.sessionId) {
+  function requestModal(type = "doi_lich", sessionId = state.sessionId) {
     const all = state.workspace.sessions;
     const sessions =
       type === "dieu_chinh_cong"
-        ? all
-        : all.filter(
-            (session) =>
-              !session.checkinLuc &&
-              !["huy", "doi", "da_day"].includes(session.trangThai) &&
-              `${session.ngay} ${session.gioBatDau}` >
-                state.workspace.serverNow,
-          );
+        ? all.filter((session) => Boolean(session.quyenYeuCau?.coTheChinhCong))
+        : all.filter((session) => Boolean(session.quyenYeuCau?.coTheDoiLich));
     const selected =
       sessions.find((item) => String(item.id) === String(sessionId)) ||
       sessions[0];
     modal(
       "Làm đơn mới",
-      `<form id="teacher-request-form"><div class="teacher-form-grid">${select("Loại yêu cầu", "loai", { nghi_day: "Nghỉ cả lớp", doi_lich: "Đổi lịch dạy", dieu_chinh_cong: "Điều chỉnh giờ công", xin_lop: "Xin nhận lớp" }, type)}<div class="full">${select("Ca học *", "buoiHocId", Object.fromEntries(sessions.map((session) => [session.id, sessionTitle(session)])), sessionId)}</div>
+      `<form id="teacher-request-form"><div class="teacher-form-grid">${select("Loại yêu cầu", "loai", { doi_lich: "Yêu cầu đổi lịch", nghi_day: "Nghỉ cả lớp", dieu_chinh_cong: "Yêu cầu chỉnh công", xin_lop: "Xin nhận lớp" }, type)}<div class="full">${select("Ca học *", "buoiHocId", Object.fromEntries(sessions.map((session) => [session.id, sessionTitle(session)])), selected?.id ?? "")}</div>
       ${type === "doi_lich" ? field("Ngày đề xuất *", "ngayMoi", selected?.ngay || "", "date", "required") + field("Giờ bắt đầu *", "gioBatDau", selected ? time(selected.gioBatDau) : "", "time", "required") + field("Giờ kết thúc *", "gioKetThuc", selected ? time(selected.gioKetThuc) : "", "time", "required") : ""}
       ${type === "dieu_chinh_cong" ? field("Check-in đề nghị *", "checkinMoi", selected?.checkinLuc || (selected ? selected.ngay + "T" + selected.gioBatDau : ""), "datetime-local", "required") + field("Check-out đề nghị *", "checkoutMoi", selected?.checkoutLuc || (selected ? selected.ngay + "T" + selected.gioKetThuc : ""), "datetime-local", "required") : ""}
-      <div class="full">${textarea("Lý do *", "lyDo", "", 255)}</div></div>${!sessions.length ? empty("Chưa có ca phù hợp để gửi loại yêu cầu này.") : ""}${formFoot()}</form>`,
+      <div class="full">${textarea("Lý do *", "lyDo", "", 255)}</div></div>${!sessions.length ? empty("Chưa có ca phù hợp theo trạng thái hiện tại để gửi loại yêu cầu này.") : ""}${formFoot()}</form>`,
     );
     dialog.querySelector("[name=lyDo]").required = true;
     dialog.querySelector("[name=buoiHocId]").required = true;
@@ -1086,10 +1285,20 @@
         rosterModal(id);
         return;
       case "request":
-        requestModal("nghi_day", id || state.sessionId);
+        requestModal("doi_lich", id || state.sessionId);
+        return;
+      case "reschedule":
+        requestModal("doi_lich", id || state.sessionId);
         return;
       case "correction":
         requestModal("dieu_chinh_cong", id);
+        return;
+      case "remove-material":
+        if (!window.confirm("Gỡ tài liệu chuẩn bị đã gắn cho buổi học này?")) return;
+        state.detail = await api(`${attendance}/sessions/${id}/material`, "delete");
+        await load();
+        await render();
+        toast("Đã gỡ tài liệu buổi học.");
         return;
       case "add-availability":
       case "edit-availability":
@@ -1204,6 +1413,23 @@
         if (action === "reject")
           dialog.querySelector("[name=lyDo]").required = true;
         return;
+      case "apply-shift": {
+        const opening = state.shiftOpenings.find(
+          (item) => String(item.id) === String(id),
+        );
+        if (!opening) return;
+        modal(
+          "Ứng tuyển vị trí Giáo viên",
+          `<form id="teacher-shift-apply-form" data-id="${escape(opening.id)}">
+            <p><b>${escape(opening.maDeXuat)} · ${escape(opening.maLop)}</b> — ${escape(opening.tenLop)}</p>
+            <p class="teacher-muted">Ca ngày ${date(opening.ngay)} · ${time(opening.gioBatDau)}–${time(opening.gioKetThuc)} · ${escape(opening.tenMon)} · ${escape(opening.tenCapLop)}</p>
+            ${opening.yeuCau ? `<p class="teacher-muted">Yêu cầu: ${escape(opening.yeuCau)}</p>` : ""}
+            ${textarea("Lời nhắn cho Giáo vụ (tùy chọn)", "ghiChu", "", 500)}
+            ${formFoot("Gửi đơn ứng tuyển")}
+          </form>`,
+        );
+        return;
+      }
       case "apply":
         if (!window.confirm("Gửi ứng tuyển nhận lớp đến Giáo vụ?")) return;
         await api(
@@ -1218,10 +1444,8 @@
       case "logout":
         if (state.dirty && !window.confirm("Sổ buổi học chưa lưu. Đăng xuất?"))
           return;
-        await api("/administration/auth/logout", "post", {});
         state.dirty = false;
-        AccessService.markLoggedOut();
-        location.replace(AppConfig.AUTH_PAGE + "?loggedOut=1");
+        await AccountUI.logout();
         return;
       default:
         return;
@@ -1255,6 +1479,18 @@
     )
       validateTimeFields(event.target.form);
     if (event.target.closest("#teacher-log-form")) state.dirty = true;
+    if (event.target.closest("#teacher-material-form")) {
+      state.materialDirty = true;
+      if (event.target.matches('input[type="file"]')) {
+        const info = event.target.closest("#teacher-material-form")?.querySelector("[data-selected-file]");
+        const picked = event.target.files?.[0];
+        if (info) {
+          info.textContent = picked
+            ? `Đã chọn tệp: ${picked.name} (${formatBytes(picked.size)}) — Bấm "Tải lên & Lưu tài liệu" để lưu.`
+            : "";
+        }
+      }
+    }
     if (event.target.closest("#teacher-request-form") && name === "loai") {
       if (value === "xin_lop") {
         dialog.close();
@@ -1279,11 +1515,7 @@
       await render();
       return;
     }
-    if (name === "session-picker") {
-      const previous = state.sessionId;
-      await navigate(state.tab, value);
-      event.target.value = state.sessionId || previous;
-    } else if (fields[name] && value !== undefined) {
+    if (fields[name] && value !== undefined) {
       if (
         (name === "calendar-date" && !value) ||
         (name === "timesheet-month" && !value)
@@ -1318,6 +1550,18 @@
     )
       validateTimeFields(event.target.form);
     if (event.target.closest("#teacher-log-form")) state.dirty = true;
+    if (event.target.closest("#teacher-material-form")) {
+      state.materialDirty = true;
+      if (event.target.matches('input[type="file"]')) {
+        const info = event.target.closest("#teacher-material-form")?.querySelector("[data-selected-file]");
+        const picked = event.target.files?.[0];
+        if (info) {
+          info.textContent = picked
+            ? `Đã chọn tệp: ${picked.name} (${formatBytes(picked.size)}) — Bấm "Tải lên & Lưu tài liệu" để lưu.`
+            : "";
+        }
+      }
+    }
   });
   document.addEventListener("submit", async (event) => {
     const form = event.target;
@@ -1364,6 +1608,14 @@
           "/people/teachers/me/availability/" + form.dataset.id,
           "delete",
         );
+      } else if (form.id === "teacher-shift-apply-form") {
+        await api(
+          "/academic/scheduling/openings/" + form.dataset.id + "/apply",
+          "post",
+          {
+            ghiChu: values.get("ghiChu")?.trim() || null,
+          },
+        );
       } else if (form.id === "teacher-proposal-form") {
         await api(
           "/academic/admissions/proposals/" + form.dataset.id + "/respond",
@@ -1373,27 +1625,37 @@
             lyDo: values.get("lyDo") || null,
           },
         );
+      } else if (form.id === "teacher-material-form") {
+        const sid = form.dataset.sessionId || state.sessionId;
+        const fileInput = form.querySelector('input[name="file"]');
+        const file = fileInput?.files?.[0] || null;
+        if (file && file.size > 10 * 1024 * 1024) {
+          throw new Error("Tệp tài liệu vượt quá dung lượng tối đa 10 MB.");
+        }
+        const payload = new FormData();
+        if (file) payload.append("file", file);
+        const fileUrl = String(values.get("fileUrl") || "").trim();
+        const tieuDe = String(values.get("tieuDe") || "").trim();
+        const ghiChu = String(values.get("ghiChu") || "").trim();
+        if (fileUrl) payload.append("fileUrl", fileUrl);
+        if (tieuDe) payload.append("tieuDe", tieuDe);
+        if (ghiChu) payload.append("ghiChu", ghiChu);
+        state.detail = await api(`${attendance}/sessions/${sid}/material`, "post", payload);
+        state.materialDirty = false;
       } else if (form.id === "teacher-log-form") {
         const number = (name) =>
-          values.get(name) === "" ? null : Number(values.get(name));
+          values.get(name) === "" || values.get(name) === null ? null : Number(values.get(name));
+        const hwIdRaw = values.get("baiTapChamId");
         const body = {
           revision: state.detail.revision,
           chuDe: values.get("chuDe"),
           noiDung: values.get("noiDung"),
-          fileBaiGiangUrl: values.get("fileBaiGiangUrl"),
-          baiTap: values.get("homeworkTitle").trim()
-            ? {
-                tieuDe: values.get("homeworkTitle"),
-                noiDung: values.get("homeworkContent"),
-                fileDeBaiUrl: values.get("homeworkUrl"),
-                hanNop: dateTimeValue(values, "deadline"),
-              }
-            : null,
+          baiTapChamId: hwIdRaw ? Number(hwIdRaw) : null,
           hocViens: state.detail.hocViens.map((student) => ({
             hocVienId: Number(student.hocVienId),
             trangThaiDiemDanh: values.get("attendance-" + student.hocVienId),
             diemBaiTapGiay: number("score-" + student.hocVienId),
-            nhanXetBaiTap: values.get("comment-" + student.hocVienId),
+            nhanXetBaiTap: values.get("comment-" + student.hocVienId) || null,
             mucTiepThu: number("level-" + student.hocVienId),
             thaiDo: values.get("attitude-" + student.hocVienId) || null,
             nhanXetBuoiHoc: values.get("note-" + student.hocVienId),
@@ -1429,7 +1691,11 @@
       toast(
         form.id === "teacher-availability-delete-form"
           ? "Đã xóa lịch rảnh."
-          : "Đã lưu thành công.",
+          : form.id === "teacher-shift-apply-form"
+            ? "Đã gửi đơn ứng tuyển. Chờ Giáo vụ phê duyệt."
+            : form.id === "teacher-material-form"
+              ? "Đã tải lên và lưu tài liệu buổi học."
+              : "Đã lưu thành công.",
       );
     } catch (error) {
       errorElement.textContent = error.message;
@@ -1455,7 +1721,9 @@
     .getElementById("teacher-backdrop")
     .addEventListener("click", () => menu(false));
   window.addEventListener("focus", async () => {
-    if (!state.workspace || state.dirty || dialog.open) return;
+    const matForm = document.getElementById("teacher-material-form");
+    const hasPickedFile = Boolean(matForm?.querySelector('input[type="file"]')?.files?.length);
+    if (!state.workspace || state.dirty || state.materialDirty || hasPickedFile || dialog.open || state.tab === "session") return;
     try {
       await load();
       await render();
@@ -1474,13 +1742,17 @@
   );
   document.getElementById("teacher-nav").innerHTML = Object.entries(screens)
     .map(([key, label], index) =>
-      key === "log"
+      key === "log" || key === "session"
         ? ""
         : `<button type="button" data-action="tab" data-id="${key}"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24">${icons[index]}</svg></span>${label}</button>`,
     )
     .join("");
   window.addEventListener("account-profile-updated", () => {
-    profileUpdate = load().catch(error => toast(error.message));
+    profileUpdate = load()
+      .then(() => {
+        if (!state.dirty) return render();
+      })
+      .catch((error) => toast(error.message));
   });
   AccountUI.setProfileView(async () => { await profileUpdate; return availabilityCalendar(); });
   load()

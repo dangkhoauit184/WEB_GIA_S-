@@ -251,6 +251,23 @@ function setSfOnlineMode(isOnline){
 
 var calendarStaff=[], calendarCampuses=[], calendarRooms=[];
 var editingSessionId=null, selectedSessionId=null, makeupOriginId=null, calendarRequestVersion=0;
+const CLASS_TYPE_LABELS={kem_1_1:'Kèm 1:1',kem_1_2:'Kèm 1:2',nhom:'Lớp nhóm'};
+function isPureTutorPerson(item){
+  const types=String(item?.phanLoai||'').split(',').map(v=>v.trim()).filter(Boolean);
+  return types.includes('gia_su') && !types.includes('giao_vien');
+}
+function syncStaffTutorGuard(cls){
+  const select=document.getElementById('sfTeacherSelect');
+  if(!select)return;
+  const blockTutors=currentPortal==='staff' && cls?.loaiLop==='nhom';
+  [...select.options].forEach(opt=>{
+    if(opt.dataset.pureTutor==='1') opt.disabled=blockTutors;
+  });
+  if(blockTutors && select.selectedOptions[0]?.disabled){
+    const firstValid=[...select.options].find(opt=>!opt.disabled);
+    select.value=firstValid?firstValid.value:'';
+  }
+}
 function calendarOptions(key) {
   const labels={branch:'Tất cả cơ sở',teacher:'Tất cả giáo viên',classCode:'Tất cả lớp học'};
   const field={branch:'branch',teacher:'mainTeacher',classCode:'classCode'}[key];
@@ -299,7 +316,7 @@ function openSessionDetail(id) {
   if(!session)return;
   selectedSessionId=id;
   document.getElementById('dtModalTitle').textContent=session.classCode+' · '+session.date;
-  document.getElementById('dtModalContent').innerHTML=`<div class="item"><span>Lớp</span><b>${Admin.esc(session.className)}</b></div><div class="item"><span>Thời gian</span><b>${session.startTime} – ${session.endTime}</b></div><div class="item"><span>Người dạy</span><b>${Admin.esc(session.mainTeacher||'Chưa phân công')}</b></div><div class="item"><span>Trợ giảng</span><b>${Admin.esc(session.ta||'—')}</b></div><div class="item"><span>Địa điểm</span><span>${Admin.esc(session.branch+' · '+session.room)}</span></div><p>${Admin.esc(session.topic)}</p>${session.isOnline&&/^https?:\/\//i.test(session.onlineLink)?`<p><a target="_blank" rel="noopener noreferrer" href="${Admin.esc(session.onlineLink)}">Mở phòng học trực tuyến</a></p>`:''}<div class="modal-act">${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','edit')?`<button class="btn sm" onclick="rescheduleSessionDetail()">Chỉnh sửa / Dời lịch</button>${session.chuaBatDau&&!session.lyDoKhongXoa?'<button class="btn sm danger" onclick="deleteSessionDetail()">Xóa ca học</button>':''}${Admin.user.role==='ADMIN'?'<button class="btn sm danger" onclick="cancelSessionDetail()">Admin hủy buổi</button>':''}`:''}</div>`;
+  document.getElementById('dtModalContent').innerHTML=`<div class="item"><span>Lớp</span><b>${Admin.esc(session.className)}${session.loaiLop?` <span class="tag i">${Admin.esc(CLASS_TYPE_LABELS[session.loaiLop]||session.loaiLop)}</span>`:''}</b></div><div class="item"><span>Thời gian</span><b>${session.startTime} – ${session.endTime}</b></div><div class="item"><span>Người dạy</span><b>${Admin.esc(session.mainTeacher||'Chưa phân công')}</b></div><div class="item"><span>Trợ giảng</span><b>${Admin.esc(session.ta||'—')}</b></div><div class="item"><span>Địa điểm</span><span>${Admin.esc(session.branch+' · '+session.room)}</span></div><p>${Admin.esc(session.topic)}</p>${session.isOnline&&/^https?:\/\//i.test(session.onlineLink)?`<p><a target="_blank" rel="noopener noreferrer" href="${Admin.esc(session.onlineLink)}">Mở phòng học trực tuyến</a></p>`:''}<div class="modal-act">${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','add')&&session.chuaBatDau&&typeof openShiftRecruitmentForm==='function'?`<button class="btn sm p" onclick="closeModalSessionDetail();openShiftRecruitmentForm(${session._id})">Đăng tuyển GV / Gia sư / TG</button>`:''}${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','edit')?`<button class="btn sm" onclick="rescheduleSessionDetail()">Chỉnh sửa / Dời lịch</button>${session.chuaBatDau&&!session.lyDoKhongXoa?'<button class="btn sm danger" onclick="deleteSessionDetail()">Xóa ca học</button>':''}${Admin.user.role==='ADMIN'?'<button class="btn sm danger" onclick="cancelSessionDetail()">Admin hủy buổi</button>':''}`:''}</div>`;
   if(StaffUI.can('VanHanhBuoiHoc','edit') && session.chuaBatDau && session.lyDoKhongXoa) {
     document.getElementById('dtModalContent').insertAdjacentHTML('beforeend',`<p class="form-error">${Admin.esc(session.lyDoKhongXoa)}</p>`);
   }
@@ -330,10 +347,13 @@ function openSessionForm(id){
   editingSessionId=row?row._id:null;makeupOriginId=row?.buoiGocId||null;
   document.getElementById('sessionFormElement').reset();
   const classes=CLASSES.filter(item=>['sap_bat_dau','dang_hoc'].includes(item.trangThai)||item.id===row?.lopId);
-  document.getElementById('sfClassSelect').innerHTML=classes.map(item=>`<option value="${item.id}">${Admin.esc(item.code+' · '+item.name)}</option>`).join('');
+  document.getElementById('sfClassSelect').innerHTML=classes.map(item=>`<option value="${item.id}">${Admin.esc(item.code+' · '+item.name+(item.loaiLop?' ('+(CLASS_TYPE_LABELS[item.loaiLop]||item.loaiLop)+')':''))}</option>`).join('');
   document.getElementById('sfClassSelect').disabled=Boolean(row);
   if(row)document.getElementById('sfClassSelect').value=String(row.lopId);
-  document.getElementById('sfTeacherSelect').innerHTML=calendarStaff.filter(item=>item.nhanSuId&&item.status==='active'&&(item.phanLoai.includes('giao_vien')||item.phanLoai.includes('gia_su'))).map(item=>`<option value="${item.userId}">${Admin.esc(item.hoTen)}</option>`).join('');
+  document.getElementById('sfTeacherSelect').innerHTML=calendarStaff.filter(item=>item.nhanSuId&&item.status==='active'&&(item.phanLoai.includes('giao_vien')||item.phanLoai.includes('gia_su'))).map(item=>{
+    const pureTutor=isPureTutorPerson(item);
+    return `<option value="${item.userId}" data-pure-tutor="${pureTutor?'1':'0'}">${Admin.esc(item.hoTen+(pureTutor?' (Gia sư · Kèm 1:1/1:2)':''))}</option>`;
+  }).join('');
   document.getElementById('sfTaSelect').innerHTML='<option value="">Không phân công</option>'+calendarStaff.filter(item=>item.nhanSuId&&item.status==='active'&&item.phanLoai.includes('tro_giang')).map(item=>`<option value="${item.userId}">${Admin.esc(item.hoTen)}</option>`).join('');
   document.getElementById('sfBranchSelect').innerHTML='<option value="">Tại nhà học viên</option>'+calendarCampuses.filter(item=>item.isActive).map(item=>`<option value="${item.id}">${Admin.esc(item.tenCoSo)}</option>`).join('');
   document.getElementById('sfRoomSelect').innerHTML='<option value="">Chưa chọn phòng</option>'+calendarRooms.map(item=>`<option value="${Admin.esc(item.ten)}">${Admin.esc(item.ten)}</option>`).join('');
@@ -367,6 +387,7 @@ async function onSfClassChanged(){
   if(!cls)return;
   const person=calendarStaff.find(item=>item.nhanSuId===cls.nguoiDayChinhId);
   document.getElementById('sfTeacherSelect').value=String(person?.userId||'');
+  syncStaffTutorGuard(cls);
   document.getElementById('sfBranchSelect').value=String(cls.coSoId||'');
   document.getElementById('sfRoomSelect').value=cls.phongHoc||'';
   document.getElementById('sfOnlineLink').value=cls.linkHoc||'';
@@ -420,8 +441,10 @@ function onSfTypeChanged(){
 }
 function onSfBranchChanged(){checkSfConflicts();}
 function checkSfConflicts(){
+  const cls=CLASSES.find(item=>item.id===Number(document.getElementById('sfClassSelect')?.value));
   const person=calendarStaff.find(item=>Number(item.userId)===Number(document.getElementById('sfTeacherSelect').value));
-  document.getElementById('sfTeacherAvailability').textContent=person?(person.lichRanh?'Lịch rảnh đã đăng ký · '+person.lichRanh:'Người dạy chưa đăng ký lịch rảnh.'):'';
+  const tutorHint=currentPortal==='staff'&&cls?.loaiLop==='nhom'?' · Lớp nhóm chỉ xếp Giáo viên (Gia sư chỉ xếp lớp kèm 1:1/1:2).':'';
+  document.getElementById('sfTeacherAvailability').textContent=(person?(person.lichRanh?'Lịch rảnh đã đăng ký · '+person.lichRanh:'Người dạy chưa đăng ký lịch rảnh.'):'')+tutorHint;
   const date=document.getElementById('sfDate').value;
   const start=document.getElementById('sfStartTime').value, end=document.getElementById('sfEndTime').value;
   const userId=Number(document.getElementById('sfTeacherSelect').value);

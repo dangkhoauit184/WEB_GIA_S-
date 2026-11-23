@@ -143,13 +143,15 @@
         }
       }
     }
-    function documentLink(url) {
-      if (!url) return '<span class="parent-muted">Chưa có đề bài</span>';
+    function documentLink(url, fileName = "") {
+      if (!url) return '<span class="parent-muted">Chưa có tài liệu</span>';
       try {
-        const parsed = new URL(url, window.location.origin);
+        const isLocal = url.startsWith("/") && !url.startsWith("//") && !url.includes("\\");
+        const parsed = new URL(url, isLocal ? window.location.origin : undefined);
         if (!["http:", "https:"].includes(parsed.protocol))
           return '<span class="parent-muted">Tệp chưa khả dụng</span>';
-        return `<a class="btn sm" href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer" download>Tải PDF</a>`;
+        const label = fileName ? `Xem / Tải tệp (${fileName})` : "Xem / Tải tài liệu";
+        return `<a class="btn sm" href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
       } catch {
         return '<span class="parent-muted">Tệp chưa khả dụng</span>';
       }
@@ -622,13 +624,15 @@
           "Nội dung",
           `<span class="parent-body-copy">${esc(row.noiDung || "Chưa cập nhật")}</span>`,
         ) +
+        (row.baiTap ? item("Tài liệu / Bài tập xem trước", esc(row.baiTap)) : "") +
+        (row.ghiChuTaiLieu ? item("Hướng dẫn chuẩn bị", `<span class="parent-body-copy">${esc(row.ghiChuTaiLieu)}</span>`) : "") +
         item("Chuyên cần", esc(note?.attend || "Chưa điểm danh"));
       const actions = row.canLeave
         ? button("Gửi đơn xin nghỉ", "leave-session", row.buoiHocId, "warn")
         : "";
       openDialog(
         "Chi tiết buổi học",
-        `<div class="parent-summary">${summary}</div>${documentLink(row.fileUrl)}`,
+        `<div class="parent-summary">${summary}</div><div style="margin-top:12px">${documentLink(row.fileUrl, row.fileName || "")}</div>`,
         null,
         "",
         actions,

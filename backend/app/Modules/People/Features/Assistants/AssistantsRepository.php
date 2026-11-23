@@ -1,6 +1,7 @@
 <?php
 namespace App\Modules\People\Features\Assistants;
 
+use App\Modules\Academic\Features\Attendance\{SessionMaterialService, ShiftRequestPolicy};
 use App\Shared\{ApiException, Store};
 
 final class AssistantsRepository
@@ -29,9 +30,14 @@ final class AssistantsRepository
         JOIN cap_lop cl ON cl.id=l.cap_lop_id
         WHERE l.deleted_at IS NULL AND pc.user_id=?';
 
-    public static function sessions(int $user): array
+    public static function sessions(int $user, ?string $serverNow = null): array
     {
-        return Store::rows(self::SESSION_SELECT.' ORDER BY b.ngay, b.gio_bat_dau, b.id', [$user]);
+        $now = $serverNow ?? Store::one('SELECT NOW() AS now')['now'];
+        $rows = Store::rows(self::SESSION_SELECT.' ORDER BY b.ngay, b.gio_bat_dau, b.id', [$user]);
+        foreach ($rows as &$row) {
+            $row['quyen_yeu_cau'] = ShiftRequestPolicy::capabilities($row, $now, 'tro_giang');
+        }
+        return $rows;
     }
 
     public static function session(int $id, int $user): array
@@ -50,14 +56,15 @@ final class AssistantsRepository
 
     public static function classes(int $user): array
     {
-        $classes = Store::rows("SELECT l.id, l.ma_lop, l.ten_lop, l.trang_thai, l.hinh_thuc, l.dia_diem, l.link_hoc,
+        $classes = Store::rows("SELECT l.id, l.ma_lop, l.ten_lop, l.trang_thai, l.hinh_thuc, l.dia_diem, l.phong_hoc, l.link_hoc,
             l.ngay_bat_dau, l.ngay_ket_thuc, k.ten AS ten_khoa, m.ten AS ten_mon, cl.ten AS ten_cap_lop,
-            u_gv.hoten AS ten_giao_vien_chinh,
+            cs.ten_co_so, u_gv.hoten AS ten_giao_vien_chinh,
             (SELECT COUNT(*) FROM lop_hoc_vien x JOIN hoc_vien hv ON hv.id=x.hoc_vien_id
                 WHERE x.lop_id=l.id AND hv.deleted_at IS NULL AND x.ngay_vao<=CURDATE()
                 AND (x.ngay_roi IS NULL OR x.ngay_roi>=CURDATE()) AND x.trang_thai IN ('dang_hoc','hoc_thu')) AS si_so
             FROM lop_hoc l
             LEFT JOIN khoa_hoc k ON k.id=l.khoa_hoc_id
+            LEFT JOIN co_so cs ON cs.id=l.co_so_id
             JOIN mon_hoc m ON m.id=l.mon_hoc_id
             JOIN cap_lop cl ON cl.id=l.cap_lop_id
             LEFT JOIN nhan_su_chuyen_mon ns_gv ON ns_gv.id=l.nguoi_day_chinh_id
@@ -81,7 +88,8 @@ final class AssistantsRepository
     public static function students(array $session): array
     {
         return Store::rows("SELECT hv.id AS hoc_vien_id, hv.ma_hv, hv.ho_ten, s.id AS so_id,
-            COALESCE(s.trang_thai_diem_danh, 'co_mat') AS trang_thai_diem_danh,
+            s.trang_thai_diem_danh, s.bai_tap_id, s.diem_bai_tap_giay, s.nhan_xet_bai_tap,
+            s.muc_tiep_thu, s.thai_do, s.nhan_xet_buoi_hoc, s.huong_cai_thien, s.updated_at,
             IF(EXISTS(SELECT 1 FROM hoc_bu_hoc_vien hb WHERE hb.buoi_bu_id=? AND hb.hoc_vien_id=hv.id), 1, 0) AS co_hoc_bu
             FROM lop_hoc_vien x JOIN hoc_vien hv ON hv.id=x.hoc_vien_id
             LEFT JOIN so_theo_doi_buoi_hoc s ON s.buoi_hoc_id=? AND s.hoc_vien_id=hv.id
@@ -95,15 +103,24 @@ final class AssistantsRepository
 
     public static function detail(int $id, int $user): array
     {
+        $now = Store::one('SELECT NOW() AS now')['now'];
         $session = self::session($id, $user);
         $students = self::students($session);
-        // Trợ giảng chỉ xem học viên và điểm danh (không trả điểm, nhận xét, bài tập)
+        $homework = Store::one('SELECT id, tieu_de, noi_dung, file_de_bai_url, han_nop, updated_at FROM bai_tap WHERE buoi_hoc_id=? ORDER BY id DESC LIMIT 1', [$id]);
+        $prev = SessionMaterialService::previousHomeworks($session);
         $session['hocViens'] = $students;
-        $rosterForRevision = array_map(static fn($st) => [
-            'hocVienId' => (int)$st['hoc_vien_id'],
-            'trangThaiDiemDanh' => $st['trang_thai_diem_danh'] ?? 'co_mat',
-        ], $students);
-        $session['revision'] = hash('sha256', json_encode($rosterForRevision, JSON_THROW_ON_ERROR));
+        $session['baiTap'] = $homework;
+        $session['tai_lieu'] = SessionMaterialService::describe($session, $homework);
+        $session['bai_tap_buoi_truoc'] = $prev['latest'];
+        $session['danh_sach_bai_tap_truoc'] = $prev['items'];
+        $session['quyen_yeu_cau'] = ShiftRequestPolicy::capabilities($session, $now, 'tro_giang');
+        $session['revision'] = hash('sha256', json_encode([
+            $session['chu_de_bai_hoc'],
+            $session['noi_dung_bai_hoc'],
+            $session['file_bai_giang_url'],
+            $students,
+            $homework,
+        ], JSON_THROW_ON_ERROR));
         return $session;
     }
 
@@ -111,20 +128,25 @@ final class AssistantsRepository
     {
         return Store::rows("SELECT CONCAT(IF(r.ly_do LIKE '[Đổi giờ]%', 'DG-', 'BB-'), r.id) AS ma,
                 IF(r.ly_do LIKE '[Đổi giờ]%', 'doi_gio', 'bao_ban') AS loai,
-                b.id AS buoi_hoc_id, l.ma_lop, b.ngay, r.ly_do, r.trang_thai, r.ly_do_tu_choi AS phan_hoi, r.duyet_luc, r.created_at
+                b.id AS buoi_hoc_id, l.ma_lop, l.ten_lop, b.ngay, r.ly_do, r.trang_thai, r.ly_do_tu_choi AS phan_hoi, r.duyet_luc, r.created_at
             FROM don_xin_nghi r
             JOIN buoi_hoc b ON b.id=r.buoi_hoc_id
             JOIN lop_hoc l ON l.id=b.lop_id
             WHERE r.nguoi_gui_id=? AND r.doi_tuong='tro_giang'
             UNION ALL
             SELECT CONCAT('DC-', r.id) AS ma, 'dieu_chinh_cong' AS loai,
-                b.id AS buoi_hoc_id, l.ma_lop, b.ngay, r.ly_do, r.trang_thai, r.ghi_chu_duyet AS phan_hoi, r.duyet_luc, r.created_at
+                b.id AS buoi_hoc_id, l.ma_lop, l.ten_lop, b.ngay, r.ly_do, r.trang_thai, r.ghi_chu_duyet AS phan_hoi, r.duyet_luc, r.created_at
             FROM dieu_chinh_cong r
             JOIN phan_cong_buoi_hoc pc ON pc.id=r.phan_cong_id
             JOIN buoi_hoc b ON b.id=pc.buoi_hoc_id
             JOIN lop_hoc l ON l.id=b.lop_id
             WHERE r.nguoi_yeu_cau_id=? AND pc.user_id=?
             ORDER BY created_at DESC, ma DESC", [$user, $user, $user]);
+    }
+
+    public static function periods(int $user): array
+    {
+        return Store::rows('SELECT nam, thang, trang_thai FROM bang_cong_thang WHERE user_id=? ORDER BY nam DESC, thang DESC', [$user]);
     }
 
     public static function monthSummary(int $user, string $serverNow): array

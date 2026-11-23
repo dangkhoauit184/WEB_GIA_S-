@@ -1,1956 +1,1587 @@
 (() => {
   "use strict";
-
-  //if (!AccessService.requireAuth(["TRO_GIANG"])) return;
-
-  const LABELS = {
-    VERSION_TAG: "DB 004/005",
-    VERSION_005: "(005)",
-    STANDARD_005: "Chuẩn nghiệp vụ DB 005",
-    POLICY_NOTE:
-      "Chính sách Chấm công DB 004/005: Chỉ bấm nút Check-in/Check-out trực tiếp (không GPS, không ảnh, không khóa 30p). Số phút tính công = phần giao giữa [Check-in, Check-out] và khung lịch.",
-    TABLE_HEADER: "Danh sách các ca phân công trong tuần (PHAN_CONG_BUOI_HOC)",
-  };
+  if (!AccessService.requireAuth(["TRO_GIANG"])) return;
 
   const screens = {
     dash: "Tổng quan hỗ trợ",
     schedule: "Lịch ca trợ giảng",
-    session: "Ca học & Check-in (005)",
-    log: "Hỗ trợ điểm danh",
-    myclasses: "Lớp hỗ trợ",
-    requests: "Đơn từ & Báo bận",
-    paysheet: "Bảng công trợ giảng",
+    session: "Chi tiết ca hỗ trợ & Check-in / Check-out",
+    log: "Sổ buổi học & Chấm bài",
+    myclasses: "Lớp hỗ trợ & Lịch rảnh",
+    recruit: "Đề xuất & Ứng tuyển ca",
+    requests: "Đơn nghỉ cá nhân / Đổi giờ / Công",
+    paysheet: "Bảng công cá nhân",
   };
-
-  const icons = {
-    dash: '<svg class="svg-ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
-    schedule: '<svg class="svg-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18"/></svg>',
-    session: '<svg class="svg-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
-    log: '<svg class="svg-ico" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>',
-    myclasses: '<svg class="svg-ico" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-    requests: '<svg class="svg-ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
-    paysheet: '<svg class="svg-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v12M15 9.5a2.5 2.5 0 0 0-5 0c0 3 5 2 5 5a2.5 2.5 0 0 1-5 0"/></svg>',
-  };
-
+  const icons = [
+    '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+    '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18"/>',
+    '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    '<path d="M4 3h16v18H4zM8 7h8M8 11h8M8 15h5"/>',
+    '<path d="m3 10 9-7 9 7v11H3zM9 21v-8h6v8"/>',
+    '<path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>',
+    '<path d="M14 3H4v18h16V9M14 3v6h6M8 13h8M8 17h5"/>',
+    '<path d="M4 3h16v18H4zM8 7h8M8 11h8M8 15h8M8 18h4"/>',
+  ];
   const state = {
     workspace: null,
+    shiftOpenings: [],
+    notifications: [],
     tab: "dash",
     sessionId: null,
-    sessionDetail: null,
+    detail: null,
     dirty: false,
-    renderVersion: 0,
-    calMonth: null, // "YYYY-MM"
-    payMonth: null, // "YYYY-MM"
-    calClassId: "all",
-    reqFilterType: "all",
-    reqFilterStatus: "all",
-    weekOffset: 0,
-    calViewMode: "week",
-    simulatedScenario: null,
-    reqFilterChip: "all",
+    calendarMode: "week",
+    calendarDate: "",
+    availabilityMode: "week",
+    availabilityDate: "",
+    requestFilter: "",
+    month: "",
+    classFilter: "",
   };
-
-  const $ = (id) => document.getElementById(id);
-  const esc = (value) =>
+  const content = document.getElementById("assistant-content");
+  const dialog = document.getElementById("assistant-dialog");
+  const dialogContent = document.getElementById("assistant-dialog-content");
+  let toastTimer;
+  let renderVersion = 0;
+  let availabilityInProfile = false;
+  let profileUpdate = Promise.resolve();
+  const escape = (value) =>
     String(value ?? "").replace(
       /[&<>"']/g,
-      (char) =>
+      (character) =>
         ({
           "&": "&amp;",
           "<": "&lt;",
           ">": "&gt;",
           '"': "&quot;",
           "'": "&#39;",
-        })[char]
+        })[character],
     );
-
-  function toast(message, type = "ok") {
-    const el = $("assistant-toast");
-    if (!el) return;
-    el.textContent = message;
-    el.className = `toast ${type}`;
-    el.hidden = false;
-    clearTimeout(el._timer);
-    el._timer = setTimeout(() => {
-      el.hidden = true;
-    }, 3800);
+  const api = async (path, method = "get", body) =>
+    (await HttpService[method](path, body)).data;
+  const assistants = "/people/assistants";
+  const empty = (text) => `<div class="assistant-empty">${escape(text)}</div>`;
+  const button = (label, action, id = "", style = "", disabled = false) =>
+    `<button type="button" class="btn sm ${style}" data-action="${action}" data-id="${escape(id)}" ${disabled ? "disabled" : ""}>${label}</button>`;
+  const head = (title, subtitle = "", actions = "") =>
+    `<div class="pg-head"><div><h1>${escape(title)}</h1>${subtitle ? `<p class="sub">${escape(subtitle)}</p>` : ""}</div><div class="assistant-actions">${actions}</div></div>`;
+  const date = (value) =>
+    value
+      ? new Intl.DateTimeFormat("vi-VN", { timeZone: "UTC" }).format(
+          new Date(value.slice(0, 10) + "T12:00:00Z"),
+        )
+      : "—";
+  const datetime = (value) =>
+    value ? `${value.slice(11, 16)} · ${date(value)}` : "—";
+  const time = (value) => value?.slice(0, 5) || "—";
+  const today = () => state.workspace.serverNow.slice(0, 10);
+  const addDays = (value, count) =>
+    new Date(Date.parse(value + "T12:00:00Z") + count * 86400000)
+      .toISOString()
+      .slice(0, 10);
+  const monday = (value) =>
+    addDays(value, -((new Date(value + "T12:00:00Z").getUTCDay() + 6) % 7));
+  const sessionTitle = (session) =>
+    `${session.maLop} · ${date(session.ngay)} · ${time(session.gioBatDau)}–${time(session.gioKetThuc)}`;
+  const disabledSession = (session) =>
+    ["huy", "doi"].includes(session.trangThai) ||
+    session.kyCong !== "mo" ||
+    session.vaiTro !== "tro_giang";
+  const labels = {
+    du_kien: "Sắp diễn ra",
+    dang_day: "Đang diễn ra",
+    da_day: "Đã dạy",
+    huy: "Đã hủy",
+    doi: "Đã đổi lịch",
+    cho_duyet: "Chờ xử lý",
+    da_duyet: "Đã duyệt",
+    tu_choi: "Từ chối",
+    da_huy: "Đã hủy",
+    dang_hoc: "Đang học",
+    sap_bat_dau: "Sắp bắt đầu",
+    hoan_thanh: "Hoàn thành",
+    tam_dung: "Tạm dừng",
+    bao_ban: "Xin nghỉ cá nhân",
+    doi_gio: "Đổi giờ hỗ trợ",
+    dieu_chinh_cong: "Điều chỉnh công",
+    mo: "Đang mở",
+    da_chot: "Đã chốt",
+    da_tra: "Đã trả",
+    hop_le: "Hợp lệ",
+    chua_check: "Chưa check-in",
+    hoc_thu: "Học thử",
+    da_roi: "Đã rời lớp",
+    tam_nghi: "Tạm nghỉ",
+    cho_xep_lop: "Chờ xếp lớp",
+    dang_mo: "Đang mở tuyển",
+    da_du_nguoi: "Đã đủ người",
+    da_dong: "Đã đóng",
+  };
+  function tag(value, fallback) {
+    const style = [
+      "da_day",
+      "da_duyet",
+      "hop_le",
+      "dang_hoc",
+      "da_du_nguoi",
+    ].includes(value)
+      ? "ok"
+      : ["huy", "tu_choi", "da_huy", "da_dong"].includes(value)
+        ? "r"
+        : ["cho_duyet", "du_kien", "dang_mo"].includes(value)
+          ? "w"
+          : "i";
+    return `<span class="tag ${style}">${escape(labels[value] || fallback || value)}</span>`;
   }
-
-  function openDialog(title, contentHtml) {
-    const dialog = $("assistant-dialog");
-    const container = $("assistant-dialog-content");
-    if (!dialog || !container) return;
-    container.innerHTML = `
-      <header class="row-b" style="margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--g200)">
-        <h2 id="assistant-dialog-title" style="font-size:16px;font-weight:700;margin:0">${esc(title)}</h2>
-        <button class="btn sm" type="button" data-dialog-close aria-label="Đóng">✕</button>
-      </header>
-      <div>${contentHtml}</div>
-    `;
+  function link(value, label) {
+    try {
+      if (!value) return "";
+      const isLocalPath =
+        value.startsWith("/") &&
+        !value.startsWith("//") &&
+        !value.includes("\\");
+      const url = new URL(value, isLocalPath ? location.origin : undefined);
+      if (!["http:", "https:"].includes(url.protocol)) return "";
+      return `<a class="btn sm" href="${escape(url.href)}" target="_blank" rel="noopener noreferrer">${escape(label)}</a>`;
+    } catch {
+      return "";
+    }
+  }
+  function table(headers, rows, emptyMessage = "Chưa có dữ liệu.") {
+    return `<div class="tw"><table><thead><tr>${headers.map((label) => `<th>${label}</th>`).join("")}</tr></thead><tbody>${rows.length ? rows.join("") : `<tr><td colspan="${headers.length}">${empty(emptyMessage)}</td></tr>`}</tbody></table></div>`;
+  }
+  function toast(message) {
+    const element = document.getElementById("assistant-toast");
+    element.textContent = message;
+    element.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      element.hidden = true;
+    }, 5000);
+  }
+  function menu(open) {
+    document.body.classList.toggle("menu-open", open);
+    document.getElementById("assistant-backdrop").hidden = !open;
+    document
+      .getElementById("assistant-menu")
+      .setAttribute("aria-expanded", String(open));
+  }
+  function modal(title, body) {
+    dialogContent.innerHTML = `<div class="assistant-dialog-head"><h2 id="assistant-dialog-title">${escape(title)}</h2>${button("✕", "close", "", "", false)}</div><div class="assistant-dialog-body">${body}</div>`;
     if (!dialog.open) dialog.showModal();
   }
-
-  function closeDialog() {
-    const dialog = $("assistant-dialog");
-    if (dialog && dialog.open) dialog.close();
+  function formFoot(label = "Gửi yêu cầu") {
+    return `<p class="assistant-error" data-form-error role="alert" hidden></p><div class="assistant-dialog-foot">${button("Hủy", "close")}<button class="btn p" type="submit">${label}</button></div>`;
   }
-
-  // DATE HELPERS
-  function parseServerDate(str) {
-    if (!str) return new Date();
-    return new Date(str.replace(" ", "T"));
+  function field(label, name, value = "", type = "text", extra = "") {
+    if (type === "datetime-local") {
+      const parts = value.replace(" ", "T").split("T");
+      return `<fieldset class="assistant-date-time" data-date-time="${name}"><legend>${escape(label)}</legend><div class="assistant-form-grid">
+        ${field("Ngày", name + "Date", parts[0] || "", "date", extra)}
+        ${field("Giờ", name + "Time", parts[1]?.slice(0, 5) || "", "time", extra)}</div></fieldset>`;
+    }
+    if (type === "time") {
+      return `<div class="assistant-field"><label for="assistant-input-${name}">${escape(label)} (HH:mm)</label><input id="assistant-input-${name}" name="${name}" type="text" data-time24 value="${escape(value)}" placeholder="HH:mm" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" aria-describedby="assistant-error-${name}" ${extra}><small id="assistant-error-${name}" class="assistant-field-error" data-field-error aria-live="polite" hidden></small></div>`;
+    }
+    const control = `<label>${escape(label)}<input name="${name}" type="${type}" value="${escape(value)}" ${extra}${type === "date" ? ` aria-describedby="assistant-error-${name}"` : ""}></label>`;
+    return type === "date"
+      ? `<div class="assistant-field">${control}<small id="assistant-error-${name}" class="assistant-field-error" data-field-error aria-live="polite" hidden></small></div>`
+      : control;
   }
-
-  function formatDateVi(date) {
-    const days = [
-      "Chủ Nhật",
-      "Thứ Hai",
-      "Thứ Ba",
-      "Thứ Tư",
-      "Thứ Năm",
-      "Thứ Sáu",
-      "Thứ Bảy",
-    ];
-    const d = days[date.getDay()];
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${d}, ${day}/${month}/${year}`;
+  const validTime = (value) => /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
+  function dateTimeValue(values, name) {
+    const day = values.get(name + "Date");
+    const hour = values.get(name + "Time");
+    return day && hour ? day + "T" + hour : null;
   }
-
-  function formatShortDate(dateStr) {
-    if (!dateStr) return "";
-    const p = dateStr.slice(0, 10).split("-");
-    if (p.length === 3) return `${p[2]}/${p[1]}`;
-    return dateStr;
-  }
-
-  function getWeekRange(refDate) {
-    const curr = new Date(refDate);
-    const day = curr.getDay();
-    const diffToMon = (day === 0 ? -6 : 1) - day;
-    const mon = new Date(curr);
-    mon.setDate(curr.getDate() + diffToMon);
-    mon.setHours(0, 0, 0, 0);
-
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
-    sun.setHours(23, 59, 59, 999);
-
-    const formatISO = (d) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-    return {
-      monday: mon,
-      sunday: sun,
-      mondayStr: formatISO(mon),
-      sundayStr: formatISO(sun),
-    };
-  }
-
-  // API WORKSPACE LOADER
-  async function loadWorkspace(keepTab = false) {
-    const version = ++state.renderVersion;
-    try {
-      const res = await HttpService.get("/people/assistants/workspace");
-      if (version !== state.renderVersion) return;
-      state.workspace = res.data;
-
-      // Update Topbar
-      const user = AccessService.getCurrentUser() || {};
-      const profile = state.workspace.profile || {};
-      const name = profile.hoTen || user.hoTen || user.username || "Trợ giảng";
-      const nameEl = $("assistant-name");
-      if (nameEl) nameEl.textContent = name;
-      const avatarEl = $("assistant-avatar");
-      if (avatarEl) avatarEl.textContent = AccountUI.initial(name);
-
-      const serverNow = parseServerDate(state.workspace.serverNow);
-      const dateEl = $("assistant-date");
-      if (dateEl) {
-        dateEl.innerHTML = `
-          <svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18"/></svg>
-          <span>${esc(formatDateVi(serverNow))}</span>
-        `;
-      }
-
-      if (!state.calMonth) {
-        state.calMonth = `${serverNow.getFullYear()}-${String(serverNow.getMonth() + 1).padStart(2, "0")}`;
-      }
-      if (!state.payMonth) {
-        state.payMonth = state.calMonth;
-      }
-
-      renderNav();
-      renderCurrentTab();
-    } catch (err) {
-      if (version !== state.renderVersion) return;
-      const content = $("assistant-content");
-      if (content) {
-        content.innerHTML = `
-          <div class="card" style="border-color:var(--err-l);background:var(--err-ll)">
-            <b style="color:var(--err)">Lỗi tải dữ liệu cổng Trợ giảng:</b>
-            <p style="margin:6px 0 0;font-size:13px">${esc(err.message)}</p>
-            <button class="btn sm p" style="margin-top:12px" onclick="window.location.reload()">Thử lại</button>
-          </div>
-        `;
-      }
+  function fieldError(control, message = "") {
+    control.setCustomValidity(message);
+    if (message) control.setAttribute("aria-invalid", "true");
+    else control.removeAttribute("aria-invalid");
+    const feedback = control
+      .closest(".assistant-field")
+      ?.querySelector("[data-field-error]");
+    if (feedback) {
+      feedback.textContent = message;
+      feedback.hidden = !message;
     }
   }
-
-  function setTab(tabName) {
-    if (state.dirty) {
-      if (!confirm("Bạn có thay đổi chưa lưu trên màn hình này. Chắc chắn muốn rời đi?")) {
-        return;
+  function validateTimeFields(form) {
+    let valid = true;
+    form
+      .querySelectorAll("[data-time24],input[type=date]")
+      .forEach((control) => {
+        let message = "";
+        if (!control.value && (control.required || control.validity.badInput))
+          message = control.hasAttribute("data-time24")
+            ? "Vui lòng nhập giờ theo dạng HH:mm, từ 00:00 đến 23:59."
+            : "Vui lòng chọn ngày hợp lệ.";
+        else if (
+          control.value &&
+          control.hasAttribute("data-time24") &&
+          !validTime(control.value)
+        )
+          message =
+            "Giờ cần có dạng HH:mm, từ 00:00 đến 23:59. Ví dụ 12:00 là buổi trưa, 18:00 là buổi tối.";
+        fieldError(control, message);
+        if (message) valid = false;
+      });
+    form.querySelectorAll("[data-date-time]").forEach((group) => {
+      const day = group.querySelector("input[type=date]");
+      const hour = group.querySelector("[data-time24]");
+      if (Boolean(day.value) !== Boolean(hour.value)) {
+        fieldError(
+          day.value ? hour : day,
+          day.value ? "Vui lòng nhập giờ." : "Vui lòng chọn ngày.",
+        );
+        valid = false;
       }
-      state.dirty = false;
-    }
-    state.tab = tabName;
-    renderNav();
-    loadWorkspace(true);
+    });
+    return valid;
   }
-
-  function renderNav() {
-    const nav = $("assistant-nav");
-    if (!nav) return;
-    nav.innerHTML = Object.entries(screens)
+  function validateRequest() {
+    const form = document.getElementById("assistant-request-form");
+    if (!form) return true;
+    let valid = validateTimeFields(form);
+    if (valid && form.elements.loai.value === "doi_gio") {
+      if (form.elements.gioKetThuc.value <= form.elements.gioBatDau.value) {
+        fieldError(
+          form.elements.gioKetThuc,
+          "Giờ kết thúc phải sau giờ bắt đầu trong cùng ngày.",
+        );
+        valid = false;
+      }
+      if (
+        form.elements.ngayMoi.value +
+          " " +
+          form.elements.gioBatDau.value +
+          ":00" <=
+        state.workspace.serverNow
+      ) {
+        fieldError(
+          form.elements.ngayMoi,
+          "Ngày và giờ đề xuất phải sau thời điểm hiện tại.",
+        );
+        valid = false;
+      }
+    }
+    if (valid && form.elements.loai.value === "dieu_chinh_cong") {
+      const values = new FormData(form);
+      if (
+        dateTimeValue(values, "checkoutMoi") <=
+        dateTimeValue(values, "checkinMoi")
+      ) {
+        fieldError(
+          form.elements.checkoutMoiTime,
+          "Check-out đề nghị phải sau Check-in đề nghị. Kiểm tra cả ngày và giờ.",
+        );
+        valid = false;
+      }
+    }
+    form.querySelector("[type=submit]").disabled =
+      !valid ||
+      !form.elements.buoiHocId.value ||
+      form.hasAttribute("aria-busy");
+    return valid;
+  }
+  const options = (values, selected) =>
+    Object.entries(values)
       .map(
-        ([key, label]) => `
-      <button type="button" class="nav-item ${state.tab === key ? "active" : ""}" data-tab="${key}">
-        <span class="nav-icon">${icons[key] || ""}</span>
-        <span class="nav-label">${esc(label)}</span>
-      </button>
-    `
+        ([value, label]) =>
+          `<option value="${escape(value)}" ${String(selected ?? "") === value ? "selected" : ""}>${escape(label)}</option>`,
       )
       .join("");
-  }
+  const select = (label, name, values, selected, extra = "") =>
+    `<label>${label}<select aria-label="${escape(label)}" name="${name}" ${extra}>${options(values, selected)}</select></label>`;
+  const textarea = (label, name, value = "", maxlength = 10000) =>
+    `<label>${label}<textarea name="${name}" maxlength="${maxlength}" rows="2">${escape(value)}</textarea></label>`;
 
-  function renderCurrentTab() {
-    const content = $("assistant-content");
-    if (!content || !state.workspace) return;
-    switch (state.tab) {
-      case "dash":
-        renderDash(content);
-        break;
-      case "schedule":
-        renderSchedule(content);
-        break;
-      case "session":
-        renderSession(content);
-        break;
-      case "log":
-        renderLog(content);
-        break;
-      case "myclasses":
-        renderMyClasses(content);
-        break;
-      case "requests":
-        renderRequests(content);
-        break;
-      case "paysheet":
-        renderPaysheet(content);
-        break;
-      default:
-        renderDash(content);
-    }
-  }
-
-  // ==========================================
-  // MÀN 1 — TỔNG QUAN HỖ TRỢ (GIỐNG ẢNH ĐÍNH KÈM)
-  // ==========================================
-  function renderDash(container) {
-    const ws = state.workspace;
-    const serverNow = parseServerDate(ws.serverNow);
-    const todayStr = ws.serverNow.slice(0, 10);
-    const user = AccessService.getCurrentUser() || {};
-    const profile = ws.profile || {};
-    const name = profile.hoTen || user.hoTen || user.username || "Trợ giảng";
-
-    // 1. Thống kê
-    const todaySessions = (ws.sessions || []).filter(
-      (s) => s.ngay === todayStr && !["huy", "doi"].includes(s.trangThai)
+  function periodStatus(ym) {
+    const [y, m] = String(ym || "").split("-").map(Number);
+    const hit = (state.workspace?.periods || []).find(
+      (p) => Number(p.nam) === y && Number(p.thang) === m,
     );
-    const classesCount = (ws.classes || []).length;
-    const monthSum = ws.monthSummary || {};
-    const curMonth = serverNow.getMonth() + 1;
-    const billableMinFmt = new Intl.NumberFormat("vi-VN").format(
-      monthSum.tongPhutCong || 0
+    return hit ? hit.trangThai : "mo";
+  }
+
+  async function load() {
+    const [workspace, shiftOpenings, notifications] = await Promise.all([
+      api(assistants + "/workspace"),
+      api("/academic/scheduling/openings"),
+      api("/communication/notifications"),
+    ]);
+    state.workspace = workspace;
+    state.shiftOpenings = Array.isArray(shiftOpenings) ? shiftOpenings : [];
+    state.notifications = Array.isArray(notifications) ? notifications : [];
+    state.calendarDate ||= today();
+    state.availabilityDate ||= today();
+    state.month ||= today().slice(0, 7);
+    if (
+      state.sessionId &&
+      !state.workspace.sessions.some(
+        (session) => String(session.id) === String(state.sessionId),
+      )
+    ) {
+      state.sessionId = null;
+    }
+    const profile = state.workspace.profile;
+    document.getElementById("assistant-name").textContent = profile.hoTen;
+    document.getElementById("assistant-avatar").textContent = AccountUI.initial(profile.hoTen);
+    document.getElementById("assistant-date").textContent =
+      new Intl.DateTimeFormat("vi-VN", {
+        dateStyle: "full",
+        timeZone: "UTC",
+      }).format(new Date(today() + "T12:00:00Z"));
+    const unread = state.notifications.filter(
+      (notification) => !Number(notification.daDoc),
+    ).length;
+    document.getElementById("assistant-unread").textContent = unread;
+    document.getElementById("assistant-unread").hidden = !unread;
+  }
+
+  function sessionRows(sessions) {
+    return sessions.map(
+      (session) =>
+        `<tr><td><b>${escape(session.maLop)}</b><br><small>${escape(session.tenLop)}</small></td><td>${date(session.ngay)}</td><td>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</td><td>${session.loai === "bu" ? '<span class="tag purple">Học bù</span>' : "Buổi thường"}</td><td>${escape(session.hinhThuc === "online" ? "Trực tuyến" : session.tenCoSo || session.diaDiem || "Chưa cập nhật")}<br>${escape(session.phongHoc || "")}</td><td>${tag(session.trangThai)}</td><td>${button("Xem ca", "session", session.id)} ${button("Ghi sổ", "log", session.id)}</td></tr>`,
     );
-
-    // 2. Ca hôm nay sắp diễn ra / gần nhất
-    const upcomingToday =
-      todaySessions.find((s) => !s.checkoutLuc) || todaySessions[0] || null;
-
-    // 3. Ca trong tuần (Thứ 2 đến Chủ nhật)
-    const week = getWeekRange(serverNow);
-    const weekSessions = (ws.sessions || []).filter(
-      (s) => s.ngay >= week.mondayStr && s.ngay <= week.sundayStr
+  }
+  function dashboardStatus(session) {
+    if (["huy", "doi"].includes(session.trangThai))
+      return tag(session.trangThai);
+    if (session.checkoutLuc) return '<span class="tag g">Đã Check-out</span>';
+    if (session.checkinLuc) return '<span class="tag i">Đã Check-in</span>';
+    if (session.ngay + " " + session.gioKetThuc <= state.workspace.serverNow)
+      return '<span class="tag w">Chưa Check-in</span>';
+    if (session.ngay + " " + session.gioBatDau <= state.workspace.serverNow)
+      return '<span class="tag w">Đến giờ hỗ trợ</span>';
+    return session.loai === "bu"
+      ? '<span class="tag purple">Đã xếp lịch bù</span>'
+      : '<span class="tag i">Sắp diễn ra</span>';
+  }
+  function todayBanner(sessions) {
+    const now = state.workspace.serverNow;
+    const session =
+      sessions.find((item) => item.checkinLuc && !item.checkoutLuc) ||
+      sessions.find(
+        (item) => !item.checkoutLuc && item.ngay + " " + item.gioKetThuc > now,
+      );
+    if (!session) {
+      const message = !sessions.length
+        ? "Hôm nay bạn chưa có ca được phân công."
+        : sessions.every((item) => item.checkoutLuc)
+          ? "Bạn đã hoàn tất các ca hỗ trợ hôm nay."
+          : "Các ca hôm nay đã qua khung giờ dự kiến.";
+      return `<section class="assistant-session-banner assistant-dashboard-banner"><div><span class="tag">Ca hỗ trợ hôm nay · ${date(today())}</span><h2>${message}</h2></div>${button("Xem lịch tuần", "week-schedule", "", "p")}</section>`;
+    }
+    const classroom = state.workspace.classes.find(
+      (item) => String(item.id) === String(session.lopId),
     );
-
-    // 4. Lịch rảnh profile
-    const lichRanhs = profile.lichRanhs || [];
-    const monDays = profile.monDays || [];
-    const monStr = monDays
-      .map((m) => `${m.tenMon || m.maMon} (K${m.capLopTu}–${m.capLopDen})`)
-      .join(", ") || "Chưa đăng ký môn";
-
-    const daysMap = {
-      2: "T2",
-      3: "T3",
-      4: "T4",
-      5: "T5",
-      6: "T6",
-      7: "T7",
-      8: "CN",
-    };
-    const groupedRanh = {};
-    lichRanhs.forEach((r) => {
-      const slot = `${r.gioBatDau.slice(0, 5)}–${r.gioKetThuc.slice(0, 5)}`;
-      if (!groupedRanh[slot]) groupedRanh[slot] = [];
-      groupedRanh[slot].push(daysMap[r.thu] || `T${r.thu}`);
-    });
-    const ranhHtml = Object.keys(groupedRanh).length
-      ? Object.entries(groupedRanh)
-          .map(
-            ([slot, days]) =>
-              `<span class="tag ok" style="margin:2px 4px 2px 0">${esc(days.join(", "))} (${esc(slot)})</span>`
-          )
-          .join("")
-      : '<span style="color:var(--g500)">Chưa cập nhật lịch rảnh</span>';
-
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1>Xin chào, ${esc(name)}</h1>
-          <p class="sub">Trợ giảng · ${esc(formatDateVi(serverNow))} · ${esc(LABELS.STANDARD_005)}</p>
-        </div>
-        <div class="row">
-          <button type="button" class="btn p sm" data-action="go-schedule">
-            📅 Xem Lịch dạy cá nhân
-          </button>
-        </div>
-      </div>
-
-      <!-- 4 THẺ THỐNG KÊ (ĐÃ THAY THÙ LAO THEO ĐẶC TẢ) -->
-      <div class="assistant-stats-grid">
-        <div class="assistant-stat-card g">
-          <div class="assistant-stat-num">${todaySessions.length} ca</div>
-          <div class="assistant-stat-label">Ca phân công hôm nay (${esc(formatShortDate(todayStr))})</div>
-        </div>
-        <div class="assistant-stat-card b">
-          <div class="assistant-stat-num">${classesCount} lớp</div>
-          <div class="assistant-stat-label">Lớp đang phụ trách</div>
-        </div>
-        <div class="assistant-stat-card t">
-          <div class="assistant-stat-num">${billableMinFmt} phút</div>
-          <div class="assistant-stat-label">Phút tính công T${curMonth} (Giao khung lịch)</div>
-        </div>
-        <div class="assistant-stat-card p">
-          <div class="assistant-stat-num">${monthSum.soCaHoanThanh || 0} ca</div>
-          <div class="assistant-stat-label">Ca đã Check-out T${curMonth}</div>
-        </div>
-      </div>
-
-      <!-- GRID 2 CỘT -->
-      <div class="assistant-dash-grid">
-        <!-- CỘT TRÁI -->
-        <div class="assistant-dash-left">
-          <!-- BANNER TEAL ĐẬM -->
-          <div class="assistant-banner">
-            <div>
-              ${
-                upcomingToday
-                  ? `
-                <span class="assistant-banner-tag">${upcomingToday.checkinLuc && !upcomingToday.checkoutLuc ? "CA ĐANG HỖ TRỢ" : "CA DẠY SẮP DIỄN RA HÔM NAY"}</span>
-                <div class="assistant-banner-title">${esc(upcomingToday.maLop)} — ${esc(upcomingToday.tenLop)} (${esc(upcomingToday.phongHoc || "P.Học")} — ${esc(upcomingToday.tenCoSo || "EduCenter")})</div>
-                <p class="assistant-banner-sub">
-                  Khung giờ lịch: <b>${esc(upcomingToday.gioBatDau.slice(0, 5))} – ${esc(upcomingToday.gioKetThuc.slice(0, 5))}</b>
-                  · Sĩ số: ${upcomingToday.siSoLop || 0} HV ${upcomingToday.soHvHocBu > 0 ? `(+${upcomingToday.soHvHocBu} HV học bù)` : ""}
-                </p>
-              `
-                  : `
-                <span class="assistant-banner-tag">THÔNG TIN CA HÔM NAY</span>
-                <div class="assistant-banner-title">${todaySessions.length ? "Bạn đã hoàn tất các ca hôm nay." : "Hôm nay bạn chưa có ca được phân công."}</div>
-                <p class="assistant-banner-sub">Bấm nút bên phải để kiểm tra thời khóa biểu tuần này.</p>
-              `
-              }
-            </div>
-            <div>
-              ${
-                upcomingToday
-                  ? upcomingToday.checkinLuc && !upcomingToday.checkoutLuc
-                    ? `<button type="button" class="assistant-btn-banner" data-action="quick-checkout" data-id="${upcomingToday.id}">⚡ Check-out 1 chạm →</button>`
-                    : !upcomingToday.checkinLuc
-                    ? `<button type="button" class="assistant-btn-banner" data-action="quick-checkin" data-id="${upcomingToday.id}">⚡ Check-in 1 chạm →</button>`
-                    : `<button type="button" class="assistant-btn-banner" data-action="go-session" data-id="${upcomingToday.id}">Xem ca →</button>`
-                  : `<button type="button" class="assistant-btn-banner" data-action="go-schedule">Xem lịch tuần →</button>`
-              }
-            </div>
-          </div>
-
-          <!-- BẢNG CA PHÂN CÔNG TRONG TUẦN -->
-          <div class="card" style="padding:18px 20px">
-            <div class="row-b" style="margin-bottom:14px">
-              <h3 style="font-size:14px;font-weight:700;margin:0;color:var(--g900)">
-                ${esc(LABELS.TABLE_HEADER)}
-              </h3>
-              <button type="button" class="btn sm" data-action="go-schedule">Xem Thời khóa biểu tuần</button>
-            </div>
-            <div class="tw">
-              <table>
-                <thead>
-                  <tr>
-                    <th>NGÀY &amp; GIỜ LỊCH</th>
-                    <th>MÃ LỚP / MÔN HỌC</th>
-                    <th>PHÒNG / CƠ SỞ</th>
-                    <th>VAI TRÒ</th>
-                    <th>TRẠNG THÁI CÔNG</th>
-                    <th>THAO TÁC</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${
-                    weekSessions.length
-                      ? weekSessions
-                          .map((s) => renderDashSessionRow(s, todayStr, serverNow))
-                          .join("")
-                      : `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--g500)">Không có ca phân công nào trong tuần này (${esc(formatShortDate(week.mondayStr))} – ${esc(formatShortDate(week.sundayStr))}).</td></tr>`
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- CỘT PHẢI -->
-        <div class="assistant-dash-right">
-          <!-- THAO TÁC NHANH (TRỢ GIẢNG) -->
-          <div class="card" style="padding:18px 20px;margin-bottom:16px">
-            <h3 style="font-size:14px;font-weight:700;margin:0 0 12px;color:var(--g900)">Thao tác nhanh (Trợ giảng)</h3>
-            <div class="assistant-quick-grid">
-              <button type="button" class="assistant-quick-btn p" data-action="quick-action-session">
-                ⚡ Check-in / Out 1 chạm
-              </button>
-              <button type="button" class="assistant-quick-btn" data-action="quick-action-log">
-                📖 Hỗ trợ điểm danh
-              </button>
-              <button type="button" class="assistant-quick-btn" data-action="quick-action-request">
-                📝 Gửi đơn xin nghỉ / Đổi giờ
-              </button>
-              <button type="button" class="assistant-quick-btn" data-action="quick-action-paysheet" style="color:#059669">
-                💵 Bảng công
-              </button>
-            </div>
-            <div class="assistant-policy-box">
-              <b>Chính sách Chấm công ${esc(LABELS.VERSION_TAG)}:</b> Chỉ bấm nút Check-in/Check-out trực tiếp (không GPS, không ảnh, không khóa 30p). Số phút tính công = phần giao giữa [Check-in, Check-out] và khung lịch.
-            </div>
-          </div>
-
-          <!-- HỒ SƠ CHUYÊN MÔN & LỊCH RẢNH -->
-          <div class="card" style="padding:18px 20px">
-            <div class="row-b" style="margin-bottom:12px">
-              <h3 style="font-size:14px;font-weight:700;margin:0;color:var(--g900)">Hồ sơ Chuyên môn &amp; Lịch rảnh</h3>
-              <button type="button" class="btn sm" data-action="edit-profile">Cập nhật</button>
-            </div>
-            <div class="item">
-              <span>Người dạy</span>
-              <b>${esc(name)} (Trợ giảng)</b>
-            </div>
-            <div class="item">
-              <span>Trạng thái hồ sơ</span>
-              <span class="tag ok">● Đang hoạt động</span>
-            </div>
-            <div class="item" style="align-items:flex-start">
-              <span style="min-width:110px">Môn đăng ký (NHAN_SU_MON)</span>
-              <span style="text-align:right;font-weight:500">${esc(monStr)}</span>
-            </div>
-            <div class="item" style="align-items:flex-start;border-bottom:0">
-              <span style="min-width:110px">Khung rảnh (NHAN_SU_LICH_RANH)</span>
-              <div style="text-align:right">${ranhHtml}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Gắn sự kiện click cho Màn 1
-    container.querySelectorAll("[data-action]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const action = btn.dataset.action;
-        const id = btn.dataset.id ? Number(btn.dataset.id) : null;
-        if (action === "go-schedule") setTab("schedule");
-        else if (action === "quick-action-session") {
-          state.sessionId = upcomingToday ? upcomingToday.id : null;
-          setTab("session");
-        } else if (action === "quick-action-log") {
-          state.sessionId = upcomingToday ? upcomingToday.id : null;
-          setTab("log");
-        } else if (action === "quick-action-request") {
-          openCreateRequestModal(upcomingToday ? upcomingToday.id : null);
-        } else if (action === "quick-action-paysheet") setTab("paysheet");
-        else if (action === "edit-profile") AccountUI.edit();
-        else if (action === "quick-checkin" && id) doCheckin(id);
-        else if (action === "quick-checkout" && id) doCheckout(id);
-        else if (action === "go-session" && id) {
-          state.sessionId = id;
-          setTab("session");
-        } else if (action === "go-log" && id) {
-          state.sessionId = id;
-          setTab("log");
-        } else if (action === "view-detail" && id) {
-          openSessionDetailDialog(id);
-        }
-      });
-    });
+    const minutes = (value) =>
+      Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
+    const duration = minutes(session.gioKetThuc) - minutes(session.gioBatDau);
+    const heading = session.checkinLuc
+      ? "Ca đã Check-in hôm nay"
+      : session.ngay + " " + session.gioBatDau <= now
+        ? "Ca hỗ trợ trong khung giờ hôm nay"
+        : "Ca hỗ trợ sắp diễn ra hôm nay";
+    return `<section class="assistant-session-banner assistant-dashboard-banner"><div><span class="tag">${heading}</span>
+      <h2>${escape(session.maLop)} — ${escape(session.tenLop)}</h2>
+      <p>${escape(session.hinhThuc === "online" ? "Trực tuyến" : session.tenCoSo || session.diaDiem || "Chưa cập nhật địa điểm")} ${escape(session.phongHoc || "")}</p>
+      <p>Khung giờ lịch <b>${time(session.gioBatDau)}–${time(session.gioKetThuc)} (${duration} phút)</b>${classroom ? ` · Sĩ số lớp ${classroom.siSo} học viên` : ""}</p></div>
+      ${button("Xem chi tiết ca →", "session", session.id, "p")}</section>`;
   }
-
-  function renderDashSessionRow(s, todayStr, serverNow) {
-    const isToday = s.ngay === todayStr;
-    const isFuture = s.ngay > todayStr;
-    const isPast = s.ngay < todayStr;
-    const isMakeup = s.loai === "bu";
-
-    // Date column
-    let dateLabel = formatShortDate(s.ngay);
-    if (isToday) dateLabel = `<b>Hôm nay, ${dateLabel}</b>`;
-    else {
-      const d = new Date(s.ngay + "T00:00:00");
-      const days = ["CN", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
-      dateLabel = `<span>${days[d.getDay()]}, ${dateLabel}</span>`;
-    }
-
-    // Status tag
-    let statusTag = '<span class="tag">Chưa xác định</span>';
-    if (["huy", "doi"].includes(s.trangThai)) {
-      statusTag = `<span class="tag r">${s.trangThai === "huy" ? "Đã hủy" : "Đã đổi lịch"}</span>`;
-    } else if (s.checkoutLuc) {
-      statusTag = '<span class="tag ok">✓ Đã Check-out</span>';
-    } else if (s.checkinLuc) {
-      statusTag = '<span class="tag i">⚡ Đã Check-in</span>';
-    } else if (isToday) {
-      const startDateTime = new Date(`${s.ngay}T${s.gioBatDau}`);
-      const endDateTime = new Date(`${s.ngay}T${s.gioKetThuc}`);
-      if (serverNow < startDateTime) {
-        statusTag = '<span class="tag w">Sắp diễn ra</span>';
-      } else if (serverNow <= endDateTime) {
-        statusTag = '<span class="tag w" style="font-weight:700">Đến giờ hỗ trợ</span>';
-      } else {
-        statusTag = '<span class="tag r">Chưa Check-in</span>';
-      }
-    } else if (isFuture) {
-      statusTag = isMakeup
-        ? '<span class="tag purple">Đã xếp lịch bù</span>'
-        : '<span class="tag">Lịch thường</span>';
-    } else if (isPast) {
-      statusTag = '<span class="tag r">Vắng / Quên Check</span>';
-    }
-
-    // Role tag
-    const roleTag = isMakeup
-      ? '<span class="tag purple">Ca dạy bù</span>'
-      : '<span class="tag i">Trợ giảng</span>';
-
-    // Action button
-    let actionBtn = "";
-    if (isToday && !s.checkoutLuc) {
-      actionBtn = `<button class="btn p sm" data-action="go-session" data-id="${s.id}">Vào ca</button>`;
-    } else if (s.checkinLuc) {
-      actionBtn = `<button class="btn sm" data-action="go-log" data-id="${s.id}">Hỗ trợ điểm danh</button>`;
-    } else {
-      actionBtn = `<button class="btn sm" data-action="view-detail" data-id="${s.id}">Chi tiết</button>`;
-    }
-
-    return `
-      <tr>
-        <td>
-          <div>${dateLabel}</div>
-          <div style="font-size:11.5px;color:var(--g500);margin-top:2px">${esc(s.gioBatDau.slice(0, 5))} – ${esc(s.gioKetThuc.slice(0, 5))}</div>
-        </td>
-        <td>
-          <b style="color:${isMakeup ? "var(--purple)" : "#0d9488"}">${esc(s.maLop)}</b>
-          <div style="font-size:11.5px;color:var(--g500)">${esc(s.tenLop)}</div>
-        </td>
-        <td>${esc(s.phongHoc || "P.Học")} — ${esc(s.tenCoSo || "CS1")}</td>
-        <td>${roleTag}</td>
-        <td>${statusTag}</td>
-        <td>${actionBtn}</td>
-      </tr>
-    `;
-  }
-
-  // ==========================================
-  // MÀN 2 — LỊCH CA TRỢ GIẢNG (THỜI KHÓA BIỂU CÁ NHÂN - GIỐNG ẢNH 1)
-  // ==========================================
-  function renderSchedule(container) {
-    const ws = state.workspace;
-    const serverNow = parseServerDate(ws.serverNow);
-    const sessions = ws.sessions || [];
-
-    // Calculate reference week Monday and Sunday
-    const baseDate = new Date(serverNow);
-    baseDate.setDate(baseDate.getDate() + (state.weekOffset || 0) * 7);
-    const week = getWeekRange(baseDate);
-
-    const formatDayShort = (d) =>
-      `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const formatDayFullVi = (d) =>
-      `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-
-    const weekStartStr = formatDayShort(week.monday);
-    const weekEndStr = formatDayFullVi(week.sunday);
-    const todayStr = ws.serverNow.slice(0, 10);
-
-    // Days of this week (Monday to Sunday)
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-      const dt = new Date(week.monday);
-      dt.setDate(dt.getDate() + i);
-      const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-      const dayNames = ["CN", "THỨ 2", "THỨ 3", "THỨ 4", "THỨ 5", "THỨ 6", "THỨ 7"];
-      const isToday = iso === todayStr;
-      weekDays.push({
-        date: dt,
-        iso,
-        dayName: dayNames[dt.getDay()],
-        dayShort: formatDayShort(dt),
-        isToday,
-      });
-    }
-
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1 id="teachCalTitle">Thời khóa biểu cá nhân</h1>
-          <p class="sub">Thời khóa biểu các ca dạy thường và ca dạy bù được phân công. Bấm vào ca để xem chi tiết, check-in hoặc vào sổ học vụ.</p>
-        </div>
-      </div>
-
-      <div class="cal-box">
-        <div class="cal-bar">
-          <div class="row" style="gap:6px">
-            <button class="cal-nav-btn" data-action="prev-week">&lt; Trước</button>
-            <button class="cal-nav-btn" data-action="today-week">Hôm nay</button>
-            <button class="cal-nav-btn" data-action="next-week">Sau &gt;</button>
-          </div>
-          <div class="cal-range-btn">
-            📅 Tuần: ${weekStartStr} – ${weekEndStr}
-          </div>
-          <div class="row" style="gap:4px">
-            <button class="btn sm ${state.calViewMode === "week" ? "p" : ""}" data-action="view-week" style="${state.calViewMode === "week" ? "background:#0f172a;border-color:#0f172a;color:#fff" : ""}">Lịch Tuần</button>
-            <button class="btn sm ${state.calViewMode === "month" ? "p" : ""}" data-action="view-month" style="${state.calViewMode === "month" ? "background:#0f172a;border-color:#0f172a;color:#fff" : ""}">Lịch Tháng</button>
-          </div>
-        </div>
-
-        ${
-          state.calViewMode === "week"
-            ? `
-          <div class="cal-week-grid">
-            ${weekDays
-              .map((d) => {
-                const daySessions = sessions.filter((s) => s.ngay === d.iso);
-                let cardsHtml = "";
-                if (daySessions.length) {
-                  cardsHtml = daySessions
-                    .map((s) => {
-                      const isCancelled = ["huy", "doi"].includes(s.trangThai);
-                      return `
-                      <div class="ses-card ${isCancelled ? "cancelled" : ""}" data-action="view-session-card" data-id="${s.id}">
-                        <div class="sc-code">
-                          <span>${esc(s.maLop)}</span>
-                          ${isCancelled ? '<span class="tag r" style="font-size:10px;padding:1px 6px">Đã hủy</span>' : ""}
-                        </div>
-                        <div class="sc-subj">${esc(s.tenMon || s.tenLop)} · ${esc(s.tenLop)}</div>
-                        <div class="sc-time">🕒 ${esc(s.gioBatDau.slice(0, 5))} - ${esc(s.gioKetThuc.slice(0, 5))}</div>
-                        <div class="sc-loc">📍 ${esc(s.phongHoc || s.diaDiem || "Thủ Đức")}</div>
-                      </div>
-                    `;
-                    })
-                    .join("");
-                } else if (state.weekOffset === 0 && d.dayName === "THỨ 4") {
-                  cardsHtml = `
-                    <div class="ses-card" data-action="demo-card">
-                      <div class="sc-code"><span>LOP-E6G</span></div>
-                      <div class="sc-subj">Tiếng Anh · Tiếng Anh 6 Cơ bản</div>
-                      <div class="sc-time">🕒 09:00 - 11:00</div>
-                      <div class="sc-loc">📍 Thủ Đức</div>
-                    </div>
-                  `;
-                } else if (state.weekOffset === 0 && d.dayName === "THỨ 7") {
-                  cardsHtml = `
-                    <div class="ses-card cancelled" data-action="demo-card">
-                      <div class="sc-code">
-                        <span>LOP-E6G</span>
-                        <span class="tag r" style="font-size:10px;padding:1px 6px">Đã hủy</span>
-                      </div>
-                      <div class="sc-subj">Tiếng Anh · Tiếng Anh 6 Cơ bản</div>
-                      <div class="sc-time">🕒 09:00 - 11:00</div>
-                      <div class="sc-loc">📍 Thủ Đức</div>
-                    </div>
-                  `;
-                } else {
-                  cardsHtml = '<div class="cal-col-empty">—</div>';
-                }
-
-                return `
-                  <div class="cal-day-col ${d.isToday ? "is-today" : ""}">
-                    <div class="cal-col-head ${d.isToday ? "is-today" : ""}">
-                      <div class="d-name">
-                        ${d.dayName} ${d.isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}
-                      </div>
-                      <div class="d-num">${d.dayShort}</div>
-                    </div>
-                    <div class="cal-col-body">
-                      ${cardsHtml}
-                    </div>
-                  </div>
-                `;
-              })
-              .join("")}
-          </div>
-        `
-            : `
-          <!-- MONTH VIEW -->
-          <div style="padding:16px;background:var(--g50);border-bottom:1px solid var(--g200);display:flex;align-items:center;gap:12px">
-            <label style="font-size:12px;font-weight:600">Chọn tháng:</label>
-            <input type="month" id="calMonthInput" value="${state.calMonth}" class="form-control" style="width:160px">
-          </div>
-          <div class="tw" style="padding:16px">
-            <table>
-              <thead>
-                <tr><th>NGÀY</th><th>GIỜ</th><th>LỚP HỌC &amp; MÔN</th><th>ĐỊA ĐIỂM</th><th>GIÁO VIÊN CHÍNH</th><th>TRẠNG THÁI</th><th>THAO TÁC</th></tr>
-              </thead>
-              <tbody>
-                ${
-                  sessions.length
-                    ? sessions
-                        .map(
-                          (s) => `
-                        <tr>
-                          <td><b>${esc(formatShortDate(s.ngay))}</b> (${esc(s.ngay)})</td>
-                          <td>${esc(s.gioBatDau.slice(0, 5))} – ${esc(s.gioKetThuc.slice(0, 5))}</td>
-                          <td><b style="color:#0d9488">${esc(s.maLop)}</b><div style="font-size:11px;color:var(--g500)">${esc(s.tenLop)}</div></td>
-                          <td>${esc(s.phongHoc || s.diaDiem || "Cơ sở 1")}</td>
-                          <td>${esc(s.tenGiaoVienChinh || "Chưa có")}</td>
-                          <td><span class="tag ok">${s.checkoutLuc ? "Đã Check-out" : s.checkinLuc ? "Đã Check-in" : "Lịch thường"}</span></td>
-                          <td><button class="btn sm" data-action="view-detail" data-id="${s.id}">Chi tiết</button></td>
-                        </tr>
-                      `
-                        )
-                        .join("")
-                    : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--g500)">Không có ca trong tháng.</td></tr>'
-                }
-              </tbody>
-            </table>
-          </div>
-        `
-        }
-      </div>
-    `;
-
-    // Events
-    container.querySelectorAll("[data-action]").forEach((b) => {
-      b.addEventListener("click", () => {
-        const act = b.dataset.action;
-        if (act === "prev-week") {
-          state.weekOffset = (state.weekOffset || 0) - 1;
-          renderSchedule(container);
-        } else if (act === "next-week") {
-          state.weekOffset = (state.weekOffset || 0) + 1;
-          renderSchedule(container);
-        } else if (act === "today-week") {
-          state.weekOffset = 0;
-          renderSchedule(container);
-        } else if (act === "view-week") {
-          state.calViewMode = "week";
-          renderSchedule(container);
-        } else if (act === "view-month") {
-          state.calViewMode = "month";
-          renderSchedule(container);
-        } else if (act === "view-session-card") {
-          const id = Number(b.dataset.id);
-          state.sessionId = id;
-          setTab("session");
-        } else if (act === "view-detail") {
-          openSessionDetailDialog(Number(b.dataset.id));
-        } else if (act === "demo-card") {
-          setTab("session");
-        }
-      });
-    });
-
-    const mInput = $("calMonthInput");
-    if (mInput) {
-      mInput.addEventListener("change", () => {
-        state.calMonth = mInput.value;
-        renderSchedule(container);
-      });
-    }
-  }
-
-  // ==========================================
-  // MÀN 3 — VẬN HÀNH CA DẠY & CHECK-IN (GIỐNG ẢNH 2)
-  // ==========================================
-  function renderSession(container) {
-    const ws = state.workspace;
-    const sessions = ws.sessions || [];
-    const todayStr = ws.serverNow.slice(0, 10);
-
-    const current =
-      sessions.find((s) => s.id === state.sessionId) ||
-      sessions.find((s) => s.ngay === todayStr) ||
-      sessions[0] ||
-      {
-        id: 1,
-        maLop: "LOP-T9A",
-        tenLop: "Toán 9 (Kèm 1-1) — Nguyễn Văn A",
-        phongHoc: "Phòng P.201 — Cơ sở 1 (Thủ Đức)",
-        gioBatDau: "18:00:00",
-        gioKetThuc: "20:00:00",
-        ngay: todayStr,
-        tenGiaoVienChinh: "Nguyễn Minh Anh",
-      };
-
-    // Scenario simulation state
-    const sc = state.simulatedScenario;
-    let ciText = "Chưa bấm Check-in";
-    let ciClass = "tag";
-    let isLate = false;
-    let dispCin = "—";
-    let dispCout = "—";
-    let dispReal = "—";
-    let dispPay = "—";
-    let dispFlag = '<span class="tag">Chưa xác định</span>';
-
-    if (sc === 1) {
-      ciText = "Đã Check-in (17:50)";
-      ciClass = "tag ok";
-      dispCin = "17:50 (Đến sớm 10p — Không giới hạn)";
-      dispCout = "20:05 (Về muộn 5p)";
-      dispReal = "135 phút (17:50 → 20:05)";
-      dispPay = "120 phút (Giao với lịch [18:00–20:00])";
-      dispFlag = '<span class="tag ok">Không trễ (Đúng giờ)</span>';
-      isLate = false;
-    } else if (sc === 2) {
-      ciText = "Đã Check-in (17:50)";
-      ciClass = "tag ok";
-      dispCin = "17:50 (Đến sớm 10p)";
-      dispCout = "19:30 (Về sớm 30p)";
-      dispReal = "100 phút (17:50 → 19:30)";
-      dispPay = "90 phút (Giao với lịch [18:00–19:30])";
-      dispFlag = '<span class="tag i">Không trễ · Về sớm 30p</span>';
-      isLate = false;
-    } else if (sc === 3) {
-      ciText = "Check-in trễ (18:10)";
-      ciClass = "tag r";
-      dispCin = "18:10 (Trễ 10 phút so với 18:00)";
-      dispCout = "20:05 (Về muộn 5p không bù được giờ trễ)";
-      dispReal = "115 phút (18:10 → 20:05)";
-      dispPay = "110 phút (Giao với lịch [18:10–20:00])";
-      dispFlag = '<span class="tag r">⚠ Đi trễ 10 phút</span>';
-      isLate = true;
-    } else if (sc === 4) {
-      ciText = "Check-in trễ (18:10)";
-      ciClass = "tag r";
-      dispCin = "18:10 (Trễ 10 phút)";
-      dispCout = "19:30 (Về sớm 30 phút)";
-      dispReal = "80 phút (18:10 → 19:30)";
-      dispPay = "80 phút (Giao với lịch [18:10–19:30])";
-      dispFlag = '<span class="tag r">⚠ Đi trễ 10p &amp; Về sớm 30p</span>';
-      isLate = true;
-    } else if (current.checkinLuc) {
-      dispCin = current.checkinLuc;
-      dispCout = current.checkoutLuc || "—";
-      dispReal = current.soPhutThucTe !== null ? `${current.soPhutThucTe} phút` : "—";
-      dispPay = current.soPhutTinhCong !== null ? `${current.soPhutTinhCong} phút` : "—";
-      isLate = Boolean(current.checkinTre);
-      ciText = isLate ? "Check-in trễ" : "Đã Check-in";
-      ciClass = isLate ? "tag r" : "tag ok";
-      dispFlag = isLate ? '<span class="tag r">Đi trễ</span>' : '<span class="tag ok">Đúng giờ</span>';
-    }
-
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1>Vận hành Ca dạy &amp; Check-in / Check-out (Chuẩn DB 004/005)</h1>
-          <p class="sub">Chỉ bấm nút ghi nhận giờ server thực tế · Không dùng GPS/Ảnh minh chứng · Không giới hạn đến sớm/về muộn · Phút công = Giao với khung lịch</p>
-        </div>
-      </div>
-
-      <!-- BANNER CA DẠY PHÂN CÔNG HÔM NAY (ẢNH 2) -->
-      <div class="banner" id="sesBanner" style="background:linear-gradient(135deg, #0d5f56 0%, #064e3b 100%);color:#fff;border-radius:var(--rl);padding:22px 26px;display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px;box-shadow:0 4px 14px rgba(13,148,136,0.16)">
-        <div>
-          <p style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.7);margin:0 0 4px">Ca dạy phân công hôm nay</p>
-          <h2 id="sesTitle" style="color:#fff;font-size:18px;font-weight:800;margin:0 0 4px">${esc(current.tenLop || "Toán 9 (Kèm 1-1) — Nguyễn Văn A")}</h2>
-          <p id="sesAddr" style="font-size:13px;color:rgba(255,255,255,.88);margin:0">${esc(current.phongHoc || "Phòng P.201 — Cơ sở 1 (Thủ Đức)")} · Quản lý xác nhận tại điểm dạy</p>
-          <div class="row" style="margin-top:10px;gap:8px">
-            <span class="${ciClass}" id="ciTag" style="${sc ? "" : "background:rgba(255,255,255,.15);color:#fff"}">${ciText}</span>
-            <span class="tag" style="background:rgba(255,255,255,.12);color:#5eead4">Chính sách 005: Không cần GPS / Ảnh</span>
-          </div>
-        </div>
-        <div style="text-align:right">
-          <div class="time" style="font-size:16px;font-weight:700;color:#fff">Lịch: ${esc(current.gioBatDau.slice(0, 5))}–${esc(current.gioKetThuc.slice(0, 5))}</div>
-          <div class="row" style="margin-top:10px;justify-content:flex-end;gap:8px;flex-wrap:wrap">
-            <button class="btn" id="ciBtn" style="background:#0d9488;border-color:#0d9488;color:#fff;font-weight:700" data-action="do-checkin-real" data-id="${current.id}">✅ Bấm Check-in (Đúng giờ)</button>
-            <button class="btn sm" id="ciSimBtn" style="background:rgba(255,255,255,.14);border-color:transparent;color:#fff" data-action="sim-late">Giả lập Vào trễ 18:10</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="lateWarn" class="warn-box" style="display:${isLate ? "block" : "none"}">
-        ⚠ <b>Ghi nhận đi trễ (DB 004):</b> Giờ Check-in sau mốc bắt đầu lịch (18:00). Hệ thống tự động gắn cờ <b>Đi trễ</b> và chỉ tính công phần giao với khung lịch 18:00–20:00.
-      </div>
-
-      <!-- 2 CỘT: TRẠNG THÁI CHẤM CÔNG & 4 KỊCH BẢN (ẢNH 2) -->
-      <div class="assistant-dash-grid">
-        <div class="card" style="padding:20px">
-          <h2 style="font-size:15px;font-weight:800;color:var(--g900);margin:0 0 14px">Trạng thái Chấm công &amp; Phút tính công (PHAN_CONG_BUOI_HOC — quy_tac_cong = 4)</h2>
-          <div class="item"><span>Lớp học &amp; Người dạy</span><b id="sesClass">${esc(current.tenLop || "Toán 9")} — ${esc(current.tenGiaoVienChinh || "Nguyễn Minh Anh")}</b></div>
-          <div class="item"><span>Khung giờ lịch phân công (gio_lich)</span><b>${esc(current.gioBatDau.slice(0, 5))} – ${esc(current.gioKetThuc.slice(0, 5))} (120 phút)</b></div>
-          <div class="item"><span>Giờ bấm Check-in (checkin_luc)</span><b id="ciTimeDisp">${dispCin}</b></div>
-          <div class="item"><span>Giờ bấm Check-out (checkout_luc)</span><b id="coTimeDisp">${dispCout}</b></div>
-          <div class="item"><span>Thời gian hiện diện (so_phut_thuc_te)</span><span id="realMinsDisp">${dispReal}</span></div>
-          <div class="item"><span>Số phút tính công (so_phut_tinh_cong — Giao lịch)</span><b id="payMinsDisp" style="color:#0d9488;font-size:14px">${dispPay}</b></div>
-          <div class="item"><span>Cờ đi trễ</span><span id="lateFlagDisp">${dispFlag}</span></div>
-          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
-            <button class="btn p" data-action="go-log" data-id="${current.id}">📖 Mở Sổ buổi học (Điểm danh &amp; Chấm bài)</button>
-            <button class="btn sm" data-action="open-adj-modal" data-id="${current.id}">⏱️ Gửi Admin điều chỉnh công (Nếu quên Check-out)</button>
-          </div>
-        </div>
-
-        <div class="card" style="padding:20px">
-          <h2 style="font-size:15px;font-weight:800;color:var(--g900);margin:0 0 10px">⚡ Bấm thử 4 kịch bản tính công chuẩn DB 004 (Lịch 18:00 – 20:00)</h2>
-          <div class="hint" style="margin-bottom:12px;font-size:12px;background:var(--g50);border-left:3px solid #0d9488;padding:10px 12px;border-radius:var(--rs);color:var(--g700)">
-            <span>Đến sớm hoặc về muộn không được cộng thêm phút công. Về sớm hoặc đến trễ bị trừ phút công tương ứng.</span>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="scenario-btn" data-sc="1">
-              <span><b>Kịch bản 1:</b> Vào <code>17:50</code> → Ra <code>20:05</code> (Đến sớm, về muộn)</span>
-              <span class="tag ok">120 phút công · Không trễ</span>
-            </button>
-            <button class="scenario-btn" data-sc="2">
-              <span><b>Kịch bản 2:</b> Vào <code>17:50</code> → Ra <code>19:30</code> (Đến sớm, về sớm)</span>
-              <span class="tag i">90 phút công · Không trễ</span>
-            </button>
-            <button class="scenario-btn" data-sc="3">
-              <span><b>Kịch bản 3:</b> Vào <code>18:10</code> → Ra <code>20:05</code> (Vào trễ 10p, về muộn)</span>
-              <span class="tag w">110 phút công · Có trễ</span>
-            </button>
-            <button class="scenario-btn" data-sc="4">
-              <span><b>Kịch bản 4:</b> Vào <code>18:10</code> → Ra <code>19:30</code> (Vào trễ 10p, về sớm 30p)</span>
-              <span class="tag r">80 phút công · Có trễ</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Events
-    container.querySelectorAll(".scenario-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const scNum = Number(btn.dataset.sc);
-        state.simulatedScenario = scNum;
-        if (scNum === 1) toast("Kịch bản 1: Check-in 17:50 → Out 20:05 · Giao khung lịch [18:00–20:00] = 120 phút công (Không trễ)!", "ok");
-        else if (scNum === 2) toast("Kịch bản 2: Check-in 17:50 → Out 19:30 · Giao khung lịch [18:00–19:30] = 90 phút công!", "info");
-        else if (scNum === 3) toast("Kịch bản 3: Check-in 18:10 → Out 20:05 · Giao khung lịch [18:10–20:00] = 110 phút công (Trễ)!", "warn");
-        else if (scNum === 4) toast("Kịch bản 4: Check-in 18:10 → Out 19:30 · Giao khung lịch [18:10–19:30] = 80 phút công (Trễ)!", "warn");
-        renderSession(container);
-      });
-    });
-
-    const ciBtn = container.querySelector("[data-action=do-checkin-real]");
-    if (ciBtn) {
-      ciBtn.addEventListener("click", () => {
-        state.simulatedScenario = 1;
-        toast("Đã ghi nhận Check-in thành công!", "ok");
-        renderSession(container);
-      });
-    }
-
-    const simLateBtn = container.querySelector("[data-action=sim-late]");
-    if (simLateBtn) {
-      simLateBtn.addEventListener("click", () => {
-        state.simulatedScenario = 3;
-        toast("Kịch bản Vào trễ 18:10 · Gắn cờ Đi trễ!", "warn");
-        renderSession(container);
-      });
-    }
-
-    const goLogBtn = container.querySelector("[data-action=go-log]");
-    if (goLogBtn) {
-      goLogBtn.addEventListener("click", () => {
-        state.sessionId = current.id;
-        setTab("log");
-      });
-    }
-
-    const adjBtn = container.querySelector("[data-action=open-adj-modal]");
-    if (adjBtn) {
-      adjBtn.addEventListener("click", () => {
-        openCreateRequestModal(current.id);
-      });
-    }
-  }
-
-  // ==========================================
-  // MÀN 4 — HỖ TRỢ ĐIỂM DANH & SỔ BUỔI HỌC (GIỐNG ẢNH 3)
-  // ==========================================
-  function renderLog(container) {
-    const session = state.sessionDetail || {
-      id: state.sessionId || 1,
-      chuDeBaiHoc: "Giải bài toán bằng cách lập hệ phương trình (Dạng năng suất & chuyển động)",
-      tenLop: "Toán 9 — Nguyễn Văn A",
-      hocViens: [
-        { hocVienId: 18, maHv: "HV-0018", hoTen: "Nguyễn Văn A", coHocBu: false, trangThaiDiemDanh: "co_mat", diem: 8.75, nhanXet: "Làm bài đầy đủ, phát biểu sôi nổi." },
-        { hocVienId: 24, maHv: "HV-0024", hoTen: "Trần Minh Khôi", coHocBu: true, trangThaiDiemDanh: "co_mat", diem: 7.5, nhanXet: "Học bù theo kịp bài tốt." }
-      ]
-    };
-
-    const students = session.hocViens && session.hocViens.length ? session.hocViens : [
-      { hocVienId: 18, maHv: "HV-0018", hoTen: "Nguyễn Văn A", coHocBu: false, trangThaiDiemDanh: "co_mat", diem: 8.75, nhanXet: "Làm bài đầy đủ, phát biểu sôi nổi." },
-      { hocVienId: 24, maHv: "HV-0024", hoTen: "Trần Minh Khôi", coHocBu: true, trangThaiDiemDanh: "co_mat", diem: 7.5, nhanXet: "Học bù theo kịp bài tốt." }
+  function dashboard() {
+    const workspace = state.workspace;
+    const sessions = workspace.sessions.filter(
+      (session) =>
+        session.ngay === today() && !["huy", "doi"].includes(session.trangThai),
+    );
+    const weekStart = monday(today());
+    const nextWeek = addDays(weekStart, 7);
+    const weekSessions = workspace.sessions.filter(
+      (session) => session.ngay >= weekStart && session.ngay < nextWeek,
+    );
+    const dayLabel = (day) =>
+      (day === today()
+        ? "Hôm nay"
+        : new Intl.DateTimeFormat("vi-VN", {
+            weekday: "long",
+            timeZone: "UTC",
+          }).format(new Date(day + "T12:00:00Z"))) +
+      ", " +
+      date(day);
+    const openShifts = state.shiftOpenings.filter(
+      (item) => item.trangThai === "dang_mo" && !item.donCuaToi && item.duDieuKien,
+    );
+    const pendingRequests = workspace.requests.filter(
+      (req) => req.trangThai === "cho_duyet",
+    );
+    const monthSessions = workspace.sessions.filter(
+      (session) =>
+        session.ngay.startsWith(today().slice(0, 7)) &&
+        session.trangThaiCong !== "tu_choi",
+    );
+    const minutes = monthSessions.reduce(
+      (sum, session) => sum + Number(session.soPhutTinhCong || 0),
+      0,
+    );
+    const stats = [
+      [sessions.length, `Ca hỗ trợ hôm nay · ${date(today())}`],
+      [workspace.classes.length, "Lớp đang hỗ trợ"],
+      [openShifts.length, "Ca tuyển Trợ giảng phù hợp"],
+      [minutes, "Phút công tháng này"],
     ];
-
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1>Hỗ trợ điểm danh</h1>
-          <p class="sub">Ghi nhận trạng thái điểm danh học viên · Điểm số và nhận xét do Giáo viên chính phụ trách</p>
-        </div>
-      </div>
-
-      <!-- NOTICE BOX GREEN (ẢNH 3) -->
-      <div class="notice-box-green" style="margin-bottom:16px">
-        Mỗi buổi học ghi nhận đúng 1 kết quả chấm bài/điểm số cho từng học viên tham gia buổi đó (kể cả học viên được xếp học bù cá nhân).
-      </div>
-
-      <!-- TABLE HỌC VIÊN (ẢNH 3) -->
-      <div class="card" style="padding:18px 20px;margin-bottom:16px">
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>HỌC VIÊN</th>
-                <th>LOẠI THAM GIA</th>
-                <th>TRẠNG THÁI (4 MỨC)</th>
-                <th>BÀI CHẤM TRONG BUỔI</th>
-                <th>ĐIỂM SỐ (1 ĐIỂM/BUỔI)</th>
-                <th>NHẬN XÉT THÁI ĐỘ &amp; TIẾP THU</th>
-              </tr>
-            </thead>
-            <tbody id="attRosterBody">
-              ${students
-                .map((st) => {
-                  const val = st.trangThaiDiemDanh || "co_mat";
-                  return `
-                    <tr data-student-id="${st.hocVienId}">
-                      <td>
-                        <b>${esc(st.hoTen)}</b>
-                        <div style="font-size:11px;color:var(--g500)">${esc(st.maHv)} (${st.coHocBu ? "Học bù cá nhân" : "Chính thức"})</div>
-                      </td>
-                      <td>
-                        <span class="tag ${st.coHocBu ? "purple" : "ok"}" style="background:transparent;border:1px solid ${st.coHocBu ? "#c084fc" : "#34d399"};color:${st.coHocBu ? "#7e22ce" : "#059669"};font-weight:600">
-                          ${st.coHocBu ? "Xếp bù (HOC_BU_HV)" : "Ghi danh lớp"}
-                        </span>
-                      </td>
-                      <td>
-                        <select class="form-control att-select" style="min-width:130px;font-weight:600">
-                          <option value="co_mat" ${val === "co_mat" ? "selected" : ""}>Có mặt</option>
-                          <option value="di_tre" ${val === "di_tre" ? "selected" : ""}>Đi trễ</option>
-                          <option value="vang_co_phep" ${val === "vang_co_phep" ? "selected" : ""}>Vắng có phép</option>
-                          <option value="vang_khong_phep" ${val === "vang_khong_phep" ? "selected" : ""}>Vắng không phép</option>
-                        </select>
-                      </td>
-                      <td><span class="tag i" style="background:#e0f2fe;color:#0284c7;font-weight:700">BT-102</span></td>
-                      <td>
-                        <input type="number" step="0.25" min="0" max="10" value="${st.diem || "8.75"}" style="width:75px;text-align:center" class="form-control">
-                      </td>
-                      <td>
-                        <input type="text" value="${esc(st.nhanXet || "Làm bài đầy đủ, phát biểu sôi nổi.")}" style="width:100%" class="form-control">
-                      </td>
-                    </tr>
-                  `;
-                })
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- CARD GIAO BÀI TẬP VỀ NHÀ (ẢNH 3) -->
-      <div class="card" style="padding:18px 20px;margin-bottom:16px">
-        <h2 style="font-size:15px;font-weight:800;color:var(--g900);margin:0 0 12px">
-          Giao bài tập về nhà <span style="font-size:11px;font-weight:400;color:var(--g500)">(Học sinh làm trên giấy, Phụ huynh tải PDF về in)</span>
-        </h2>
-        <div class="row" style="gap:12px;margin-bottom:10px">
-          <div style="flex:1">
-            <label style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:4px;display:block">Tiêu đề bài tập</label>
-            <input type="text" id="fHwTitle" value="Phiếu BT-103: 10 Bài toán lập hệ PT nâng cao" style="width:100%" class="form-control">
-          </div>
-          <div style="width:220px">
-            <label style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:4px;display:block">Hạn nộp</label>
-            <input type="text" id="fHwDue" value="Đầu buổi T6, 23/10/2026" style="width:100%" class="form-control">
-          </div>
-        </div>
-        <label style="font-size:12px;font-weight:600;color:var(--g700);margin:10px 0 4px;display:block">Link file đề bài PDF tải về in ra giấy</label>
-        <input type="text" id="fHwLink" value="https://educenter.edu.vn/files/de-bai-so-103.pdf" style="width:100%" class="form-control">
-      </div>
-
-      <!-- CARD HOÀN TẤT CA DẠY (ẢNH 3) -->
-      <div class="card" style="background:var(--g50);padding:18px 20px">
-        <div class="row-b">
-          <div>
-            <b style="font-size:14px;color:var(--g900)">Hoàn tất ca dạy</b>
-            <p style="color:var(--g500);font-size:12px;margin:2px 0 0">Lưu học vụ trước khi bấm Check-out kết thúc ca.</p>
-          </div>
-          <div class="row" style="gap:10px">
-            <button class="btn p" id="btnSaveAttendance">💾 Lưu sổ buổi học</button>
-            <button class="btn dark" id="btnCheckoutLog" style="background:#0f172a;color:#fff">🏁 Bấm Check-out kết thúc ca</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const saveBtn = $("btnSaveAttendance");
-    if (saveBtn) {
-      saveBtn.addEventListener("click", () => {
-        toast("Đã lưu sổ buổi học, điểm danh học viên (gồm cả HV học bù) và 1 bài chấm/điểm của buổi học!", "ok");
-      });
-    }
-
-    const coBtn = $("btnCheckoutLog");
-    if (coBtn) {
-      coBtn.addEventListener("click", () => {
-        toast("Đã ghi nhận Check-out 1 chạm và tự động chạy sp_cap_nhat_phut_tinh_cong!", "ok");
-      });
-    }
-  }
-
-  // ==========================================
-  // MÀN 5 — LỚP PHỤ TRÁCH & HỒ SƠ CHUYÊN MÔN (GIỐNG ẢNH 4)
-  // ==========================================
-  function renderMyClasses(container) {
-    const ws = state.workspace;
-    const classes = ws.classes && ws.classes.length ? ws.classes : [
-      { id: 1, maLop: "LOP-T9A", tenMon: "Toán", tenKhoa: "Toán 9 (Kèm 1-1)", lichHocStr: "T3, T5 (18:00–20:00)", vaiTro: "Dạy chính", siSo: 1, trangThai: "Đang học" },
-      { id: 2, maLop: "LOP-E6G", tenMon: "Tiếng Anh", tenKhoa: "Tiếng Anh 6 Cơ bản", lichHocStr: "T4, T7 (09:00–11:00)", vaiTro: "Dạy chính", siSo: 11, trangThai: "Đang học" },
-      { id: 3, maLop: "LOP-L11B", tenMon: "Vật Lý", tenKhoa: "Vật Lý 11 (Kèm 1-1)", lichHocStr: "T2, T6 (19:00–21:00)", vaiTro: "Dạy chính", siSo: 1, trangThai: "Đang học" },
-    ];
-
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1 id="myClassTitle">Lớp phụ trách &amp; Hồ sơ chuyên môn</h1>
-          <p class="sub" id="myClassSub">Danh sách các lớp đang đảm nhiệm và thông tin đăng ký chuyên môn / lịch rảnh</p>
-        </div>
-        <button class="btn sm p" data-action="open-profile">👤 Xem / Cập nhật Môn dạy &amp; Lịch rảnh</button>
-      </div>
-
-      <div class="card" style="padding:18px 20px">
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>MÃ LỚP</th>
-                <th>MÔN · KHÓA HỌC</th>
-                <th>LỊCH HỌC</th>
-                <th>VAI TRÒ</th>
-                <th>SĨ SỐ</th>
-                <th>TRẠNG THÁI</th>
-                <th>THAO TÁC</th>
-              </tr>
-            </thead>
-            <tbody id="myClassBody">
-              ${classes
-                .map(
-                  (c) => `
-                <tr>
-                  <td><b>${esc(c.maLop)}</b></td>
-                  <td>${esc(c.tenMon || "Toán")} · ${esc(c.tenKhoa || c.tenLop || "Khóa chuẩn")}</td>
-                  <td>${esc(c.lichHocStr || "T3, T5 (18:00–20:00)")}</td>
-                  <td><span class="tag ok" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0">${esc(c.vaiTro || "Trợ giảng")}</span></td>
-                  <td>${c.siSo || 1} HV</td>
-                  <td><span class="tag ok" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0">Đang học</span></td>
-                  <td><button class="btn sm" data-action="view-schedule" data-class="${c.id}">Xem lịch</button></td>
-                </tr>
-              `
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    container.querySelectorAll("[data-action]").forEach((b) => {
-      b.addEventListener("click", () => {
-        const act = b.dataset.action;
-        if (act === "open-profile") {
-          AccountUI.edit();
-        } else if (act === "view-schedule") {
-          setTab("schedule");
-        }
-      });
-    });
-  }
-
-  // ==========================================
-  // MÀN 6 — ĐƠN TỪ & YÊU CẦU CÁ NHÂN (GIỐNG ẢNH 5)
-  // ==========================================
-  function renderRequests(container) {
-    const ws = state.workspace;
-    const requests = ws.requests || [];
-    const filter = state.reqFilterChip || "all";
-
-    const demoRequests = [
-      {
-        ma: "DON-GV-106",
-        loai: "dieu_chinh_cong",
-        loaiText: "Chỉnh giờ công",
-        maLop: "LOP-E6G",
-        buoiText: "2026-11-18",
-        lyDo: "dsdsd (Giờ dạy thực tế: 18:00 - 20:00)",
-        ngayGui: "21/11/2026",
-        trangThai: "cho_duyet",
-        trangThaiText: "Chờ giáo vụ duyệt",
-        phanHoi: "Đã gửi đến Giáo vụ để phê duyệt"
-      }
-    ];
-
-    const displayList = requests.length ? requests : demoRequests;
-
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1>Đơn từ &amp; Yêu cầu cá nhân</h1>
-          <p class="sub">Gửi yêu cầu nghỉ nguyên buổi cả lớp (Admin duyệt), đổi lịch dạy (Giáo vụ duyệt) hoặc điều chỉnh giờ công (Admin duyệt)</p>
-        </div>
-        <button class="btn p" data-action="create-request">+ Làm đơn mới</button>
-      </div>
-
-      <!-- FILTER CHIPS (ẢNH 5) -->
-      <div class="card" style="padding:12px 16px;margin-bottom:12px">
-        <div class="row" style="gap:6px">
-          <span style="font-size:12px;font-weight:600;color:var(--g600)">Lọc theo:</span>
-          <div class="chips">
-            <span class="chip ${filter === "all" ? "on" : ""}" data-filter="all">Tất cả đơn</span>
-            <span class="chip ${filter === "nghi_day" ? "on" : ""}" data-filter="nghi_day">Nghỉ cả lớp (Admin duyệt)</span>
-            <span class="chip ${filter === "doi_lich" ? "on" : ""}" data-filter="doi_lich">Đổi lịch (Giáo vụ duyệt)</span>
-            <span class="chip ${filter === "dieu_chinh_cong" ? "on" : ""}" data-filter="dieu_chinh_cong">Điều chỉnh giờ công (Admin duyệt)</span>
-            <span class="chip ${filter === "xin_lop" ? "on" : ""}" data-filter="xin_lop">Xin nhận lớp</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- TABLE ĐƠN TỪ (ẢNH 5) -->
-      <div class="card" style="padding:18px 20px">
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>MÃ ĐƠN</th>
-                <th>LOẠI ĐƠN</th>
-                <th>LỚP / BUỔI LIÊN QUAN</th>
-                <th>LÝ DO &amp; NỘI DUNG</th>
-                <th>NGÀY GỬI</th>
-                <th>TRẠNG THÁI</th>
-                <th>PHẢN HỒI</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${displayList
-                .map(
-                  (r) => `
-                <tr>
-                  <td><b>${esc(r.ma || "DON-GV-106")}</b></td>
-                  <td><span class="tag ok" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0">${esc(r.loaiText || "Chỉnh giờ công")}</span></td>
-                  <td>
-                    <b>${esc(r.maLop || "LOP-E6G")}</b>
-                    <div style="font-size:11px;color:var(--g500)">${esc(r.buoiText || "2026-11-18")}</div>
-                  </td>
-                  <td style="max-width:280px;font-size:12.5px">${esc(r.lyDo)}</td>
-                  <td style="font-size:12px">${esc(r.ngayGui || "21/11/2026")}</td>
-                  <td><span class="tag w" style="background:#fffbeb;color:#b45309;border-color:#fde68a">${esc(r.trangThaiText || "Chờ giáo vụ duyệt")}</span></td>
-                  <td style="font-size:12px;color:var(--g600)">${esc(r.phanHoi || "Đã gửi đến Giáo vụ để phê duyệt")}</td>
-                </tr>
-              `
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    container.querySelectorAll(".chip").forEach((ch) => {
-      ch.addEventListener("click", () => {
-        state.reqFilterChip = ch.dataset.filter;
-        renderRequests(container);
-      });
-    });
-
-    const createBtn = container.querySelector("[data-action=create-request]");
-    if (createBtn) createBtn.addEventListener("click", () => openCreateRequestModal());
-  }
-
-  // ==========================================
-  // MÀN 7 — BẢNG CÔNG & QUYẾT TOÁN THÙ LAO CÁ NHÂN (GIỐNG ẢNH 6)
-  // ==========================================
-  function renderPaysheet(container) {
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1>Bảng công &amp; Quyết toán thù lao cá nhân</h1>
-          <p class="sub">Tính theo phần giao khung lịch (so_phut_tinh_cong) × Đơn giá giờ tại thời điểm dạy (DB 004/005)</p>
-        </div>
-        <button class="btn sm" data-action="print-payslip" style="border:1px solid var(--g300);background:#fff">In Phiếu lương cá nhân</button>
-      </div>
-
-      <!-- 3 STATS CARDS (ẢNH 6) -->
-      <div class="assistant-stats-grid-3">
-        <div class="assistant-stat-card g">
-          <div class="assistant-stat-num">4.320.000đ</div>
-          <div class="assistant-stat-label">Thù lao thực nhận T10 (Đã chốt)</div>
-        </div>
-        <div class="assistant-stat-card b">
-          <div class="assistant-stat-num">24 ca</div>
-          <div class="assistant-stat-label">Số ca hoàn thành</div>
-        </div>
-        <div class="assistant-stat-card t">
-          <div class="assistant-stat-num">2.880 phút</div>
-          <div class="assistant-stat-label">Tổng phút tính công (so_phut_tinh_cong)</div>
-        </div>
-      </div>
-
-      <!-- TABLE BẢNG CÔNG 9 CỘT (ẢNH 6) -->
-      <div class="card" style="padding:18px 20px">
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>NGÀY</th>
-                <th>LỚP HỌC</th>
-                <th>KHUNG LỊCH</th>
-                <th>CHECK-IN — OUT</th>
-                <th>PHÚT HIỆN DIỆN</th>
-                <th>PHÚT TÍNH CÔNG</th>
-                <th>ĐƠN GIÁ / GIỜ</th>
-                <th>THÀNH TIỀN</th>
-                <th>TRẠNG THÁI</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>20/10/2026</td>
-                <td><b>LOP-T9A</b> (Toán 9)</td>
-                <td>18:00–20:00</td>
-                <td>17:50 → 20:05</td>
-                <td>135p</td>
-                <td><b>120p</b></td>
-                <td>180.000đ/h</td>
-                <td><b>360.000đ</b></td>
-                <td><span class="tag ok" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0">Đúng giờ</span></td>
-              </tr>
-              <tr>
-                <td>15/10/2026</td>
-                <td><b>LOP-T9A</b> (Toán 9)</td>
-                <td>18:00–20:00</td>
-                <td>18:10 → 20:05</td>
-                <td>115p</td>
-                <td><b>110p</b></td>
-                <td>180.000đ/h</td>
-                <td><b>330.000đ</b></td>
-                <td><span class="tag w" style="background:#fffbeb;color:#b45309;border-color:#fde68a">Trễ 10p</span></td>
-              </tr>
-              <tr>
-                <td>10/10/2026</td>
-                <td><b>LOP-T9A</b> (Toán 9)</td>
-                <td>18:00–20:00</td>
-                <td>18:10 → 19:30</td>
-                <td>80p</td>
-                <td><b>80p</b></td>
-                <td>180.000đ/h</td>
-                <td><b>240.000đ</b></td>
-                <td><span class="tag r" style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3">Trễ 10p · Ra sớm</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    const printBtn = container.querySelector("[data-action=print-payslip]");
-    if (printBtn) {
-      printBtn.addEventListener("click", () => {
-        window.print();
-      });
-    }
-  }
-
-  function openCreateRequestModal(preselectedSessionId = null) {
-    const ws = state.workspace;
-    const sessions = ws.sessions || [];
-    const serverNow = parseServerDate(ws.serverNow);
-    const todayStr = ws.serverNow.slice(0, 10);
-
-    const html = `
-      <form id="createRequestForm" novalidate style="display:flex;flex-direction:column;gap:12px">
-        <div>
-          <label style="font-size:12px;font-weight:600;margin-bottom:4px;display:block">Loại đơn <span style="color:var(--err)">*</span></label>
-          <select id="crTypeSelect" style="font-weight:600">
-            <option value="bao_ban">1. Báo bận / xin nghỉ ca học (Gửi Giáo vụ cơ sở)</option>
-            <option value="doi_gio">2. Đề nghị đổi giờ ca học (Gửi Giáo vụ cơ sở)</option>
-            <option value="dieu_chinh_cong">3. Đề nghị điều chỉnh giờ công (Gửi Admin)</option>
-          </select>
-        </div>
-
-        <div>
-          <label style="font-size:12px;font-weight:600;margin-bottom:4px;display:block">Chọn ca học liên quan <span style="color:var(--err)">*</span></label>
-          <select id="crSessionSelect" style="font-weight:500">
-            ${sessions
+    return (
+      head(
+        `Xin chào, ${workspace.profile.hoTen}`,
+        `Hôm nay ${date(today())} · Tuần ${date(weekStart)} – ${date(addDays(weekStart, 6))}.`,
+        button("Xem lịch ca trợ giảng", "tab", "schedule", "p"),
+      ) +
+      `<div class="assistant-stats">${stats.map(([value, label]) => `<div class="card assistant-stat"><strong>${value}</strong><span>${label}</span></div>`).join("")}</div>` +
+      `<div class="assistant-grid"><div>${todayBanner(sessions)}<div class="card assistant-week-assignments"><div class="row-b"><div><h2>Các ca phân công trong tuần</h2><p class="assistant-muted">${date(weekStart)} – ${date(addDays(weekStart, 6))}</p></div>${button("Xem thời khóa biểu tuần", "week-schedule")}</div>${table(
+        [
+          "Ngày & Giờ lịch",
+          "Mã lớp / Môn học",
+          "Phòng / Cơ sở",
+          "Vai trò",
+          "Trạng thái",
+          "Thao tác",
+        ],
+        weekSessions.map(
+          (
+            session,
+          ) => `<tr><td><b>${dayLabel(session.ngay)}</b><br><small>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</small></td>
+        <td><b>${escape(session.maLop)}</b><br><small>${escape(session.tenMon)} · ${escape(session.tenLop)}</small></td>
+        <td>${escape(session.phongHoc || "")}<br><small>${escape(session.hinhThuc === "online" ? "Trực tuyến" : session.tenCoSo || session.diaDiem || "Chưa cập nhật")}</small></td>
+        <td><span class="tag ${session.loai === "bu" ? "purple" : "i"}">${session.loai === "bu" ? "Ca hỗ trợ bù" : "Trợ giảng"}</span></td>
+        <td>${dashboardStatus(session)}</td><td>${button(session.checkinLuc ? "Xem ca" : "Chi tiết ca", "session", session.id, session.ngay === today() && !session.checkoutLuc ? "p" : "")}${session.checkinLuc ? button("Sổ buổi học", "log", session.id) : ""}</td></tr>`,
+        ),
+      )}</div>
+      <div class="card"><h2>Đề xuất tuyển Trợ giảng phù hợp</h2>${
+        openShifts.length
+          ? openShifts
+              .slice(0, 5)
               .map(
-                (s) => `
-              <option value="${s.id}" ${s.id === preselectedSessionId ? "selected" : ""}>
-                ${esc(formatShortDate(s.ngay))} ${esc(s.gioBatDau.slice(0, 5))}–${esc(s.gioKetThuc.slice(0, 5))} · ${esc(s.maLop)} (${esc(s.tenLop)})
-              </option>
-            `
+                (item) =>
+                  `<div class="assistant-row"><div><b>${escape(item.maDeXuat)} · ${escape(item.maLop)}</b><small>${date(item.ngay)} · ${time(item.gioBatDau)}–${time(item.gioKetThuc)} · ${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></div>${button("Ứng tuyển", "tab", "recruit", "p")}</div>`,
               )
-              .join("")}
-          </select>
-        </div>
-
-        <div id="crSlotSection" style="display:none;background:var(--g50);padding:12px;border-radius:var(--rs);border:1px solid var(--g200)">
-          <div style="font-weight:700;font-size:12px;margin-bottom:8px;color:#0d9488">Thời gian đề xuất đổi giờ mới:</div>
-          <div class="row" style="gap:10px">
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--g600)">Ngày mới *</label>
-              <input type="date" id="crNgayMoi" min="${todayStr}">
-            </div>
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--g600)">Giờ bắt đầu *</label>
-              <input type="time" id="crGioBatDau" value="18:00">
-            </div>
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--g600)">Giờ kết thúc *</label>
-              <input type="time" id="crGioKetThuc" value="20:00">
-            </div>
-          </div>
-          <small id="crSlotErr" class="account-error" style="display:block;margin-top:4px"></small>
-        </div>
-
-        <div id="crAdjSection" style="display:none;background:var(--g50);padding:12px;border-radius:var(--rs);border:1px solid var(--g200)">
-          <div style="font-weight:700;font-size:12px;margin-bottom:8px;color:#0d9488">Khung giờ Check-in / Check-out đề nghị:</div>
-          <div class="row" style="gap:10px">
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--g600)">Check-in đề nghị *</label>
-              <input type="datetime-local" id="crCheckinMoi">
-            </div>
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--g600)">Check-out đề nghị *</label>
-              <input type="datetime-local" id="crCheckoutMoi">
-            </div>
-          </div>
-          <small id="crAdjErr" class="account-error" style="display:block;margin-top:4px"></small>
-        </div>
-
-        <div>
-          <label style="font-size:12px;font-weight:600;margin-bottom:4px;display:block">Lý do cụ thể <span style="color:var(--err)">*</span></label>
-          <textarea id="crLyDo" rows="3" placeholder="Nhập lý do gửi đơn (tối đa 255 ký tự)..." maxlength="255" required></textarea>
-          <small id="crLyDoErr" class="account-error" style="display:block;margin-top:2px"></small>
-        </div>
-
-        <div class="row-b" style="margin-top:10px;padding-top:12px;border-top:1px solid var(--g200)">
-          <button type="button" class="btn sm" data-dialog-close>Hủy</button>
-          <button type="submit" class="btn p sm" id="btnSubmitRequest">Gửi đơn ngay</button>
-        </div>
-      </form>
-    `;
-
-    openDialog("Làm đơn mới (Trợ giảng)", html);
-
-    const form = $("createRequestForm");
-    const typeSelect = $("crTypeSelect");
-    const slotSec = $("crSlotSection");
-    const adjSec = $("crAdjSection");
-    const submitBtn = $("btnSubmitRequest");
-
-    function syncFormSections() {
-      const type = typeSelect.value;
-      slotSec.style.display = type === "doi_gio" ? "block" : "none";
-      adjSec.style.display = type === "dieu_chinh_cong" ? "block" : "none";
-      validateLive();
+              .join("")
+          : empty("Chưa có đề xuất tuyển Trợ giảng phù hợp đang mở.")
+      }</div></div>
+      <div><div class="card"><h2>Công việc trợ giảng</h2><div class="assistant-row">${button("Mở thời khóa biểu", "tab", "schedule", "p")}</div><div class="assistant-row">${button("Đề xuất & Ứng tuyển ca", "tab", "recruit")}</div><div class="assistant-row">${button("Hồ sơ & Lịch rảnh", "profile-view")}</div><div class="assistant-row">${button(`Gửi đơn từ${pendingRequests.length ? ` (${pendingRequests.length} chờ)` : ""}`, "request")}</div><div class="assistant-row">${button("Xem bảng công cá nhân", "tab", "paysheet")}</div></div>
+      <div class="card"><h2>Thông báo gần đây</h2>${
+        state.notifications
+          .slice(0, 4)
+          .map(
+            (notification) =>
+              `<div class="assistant-row"><div><b>${escape(notification.tieuDe)}</b><small>${escape(notification.noiDung)}</small></div></div>`,
+          )
+          .join("") || empty("Chưa có thông báo.")
+      }${button("Xem thông báo", "notifications")}</div></div></div>`
+    );
+  }
+  function calendarStatus(session) {
+    if (["huy", "doi"].includes(session.trangThai)) return "cancelled";
+    if (session.checkoutLuc || session.trangThai === "da_day")
+      return "completed";
+    if (session.checkinLuc) return "active";
+    return session.loai === "bu" ? "makeup" : "upcoming";
+  }
+  function calendarCard(session, compact = false) {
+    const status = calendarStatus(session);
+    const statusLabel = {
+      cancelled: "Đã hủy / Đổi lịch",
+      completed: "Hoàn tất",
+      active: "Đã Check-in",
+      makeup: "Hỗ trợ bù",
+      upcoming: "Đã xếp lịch",
+    }[status];
+    const title = escape(sessionTitle(session) + " · " + statusLabel);
+    if (compact)
+      return `<button type="button" class="cal-m-chip ${status}" data-action="session" data-id="${session.id}" title="${title}"><span>${time(session.gioBatDau)}</span><b>${escape(session.maLop)}</b>${session.checkinLuc ? "<span>✓</span>" : ""}</button>`;
+    return `<button type="button" class="ses-card ${status}" data-action="session" data-id="${session.id}" title="${title}">
+      <span class="assistant-calendar-badge">${escape(statusLabel)}</span>
+      <span class="sc-code">${escape(session.maLop)}</span>
+      <span class="sc-subj">${escape(session.tenMon)} · ${escape(session.tenLop)}</span>
+      <span class="sc-time">${time(session.gioBatDau)} – ${time(session.gioKetThuc)}</span>
+      <span class="sc-loc">${escape(session.hinhThuc === "online" ? "Trực tuyến" : session.tenCoSo || session.diaDiem || "Chưa cập nhật địa điểm")} ${escape(session.phongHoc || "")}</span>
+      ${session.loai === "bu" && status !== "makeup" ? '<span class="assistant-muted">Buổi học bù</span>' : ""}
+    </button>`;
+  }
+  function calendarPeriod(selected, view) {
+    const first = selected.slice(0, 7) + "-01";
+    const start = monday(view === "month" ? first : selected);
+    const nextMonth = new Date(first + "T12:00:00Z");
+    nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+    const monthEnd = addDays(nextMonth.toISOString().slice(0, 10), -1);
+    const count = (Date.parse(monthEnd) - Date.parse(start)) / 86400000 + 1;
+    return {
+      start,
+      days: view === "month" ? Math.ceil(count / 7) * 7 : 7,
+      range:
+        view === "week"
+          ? `Tuần ${date(start)} – ${date(addDays(start, 6))}`
+          : `Tháng ${selected.slice(5, 7)} / ${selected.slice(0, 4)}`,
+      headings: ["THỨ 2", "THỨ 3", "THỨ 4", "THỨ 5", "THỨ 6", "THỨ 7", "CN"],
+    };
+  }
+  function schedule() {
+    const view = state.calendarMode;
+    const selected = state.calendarDate;
+    const { start, days, range, headings } = calendarPeriod(selected, view);
+    const sessions = state.workspace.sessions.filter(
+      (session) =>
+        !state.classFilter || String(session.lopId) === state.classFilter,
+    );
+    const cells = Array.from({ length: days }, (_, index) => {
+      const day = addDays(start, index);
+      const isToday = day === today();
+      const rows = sessions.filter((session) => session.ngay === day);
+      if (view === "month")
+        return `<div class="cal-month-cell ${isToday ? "is-today" : ""} ${day.slice(0, 7) !== selected.slice(0, 7) ? "other-month" : ""}"><div class="row-b"><b>${Number(day.slice(8))}</b>${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div>${rows.map((session) => calendarCard(session, true)).join("")}</div>`;
+      return `<div class="cal-day-col ${isToday ? "is-today" : ""}"><div class="cal-col-head ${isToday ? "is-today" : ""}"><div class="d-name">${headings[index]}${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div><div class="d-num">${day.slice(8)}/${day.slice(5, 7)}</div></div><div class="cal-col-body">${rows.map((session) => calendarCard(session)).join("") || '<div class="cal-col-empty">—</div>'}</div></div>`;
+    }).join("");
+    return (
+      head(
+        "Thời khóa biểu cá nhân",
+        "Bấm vào một ca trên lịch để xem chi tiết, Check-in / Check-out và ghi sổ buổi học.",
+      ) +
+      `<div class="cal-box">
+      <div class="cal-bar"><div class="row">${button("‹ Trước", "calendar-prev")}${button("Hôm nay", "calendar-today")}${button("Sau ›", "calendar-next")}</div>
+        <div class="assistant-calendar-period"><b class="cal-range-btn">${escape(range)}</b>${field("Chọn tháng", "calendar-month", selected.slice(0, 7), "month", "required")}</div>
+        <div class="seg"><button type="button" class="${view === "week" ? "on" : ""}" data-action="calendar-mode" data-id="week">Lịch Tuần</button><button type="button" class="${view === "month" ? "on" : ""}" data-action="calendar-mode" data-id="month">Lịch Tháng</button><button type="button" class="${view === "list" ? "on" : ""}" data-action="calendar-mode" data-id="list">Danh sách</button></div>
+      </div>
+      <div class="cal-filter-bar">${select("Lớp học", "class-filter", { "": "Tất cả lớp", ...Object.fromEntries(state.workspace.classes.map((item) => [item.id, item.maLop])) }, state.classFilter)}${button("Đặt lại lọc", "calendar-reset")} ${button("Tải lại lịch", "reload")}</div>
+      <div class="assistant-calendar-scroll">${view === "list" ? table(["Lớp", "Ngày", "Giờ", "Loại buổi", "Địa điểm", "Trạng thái", "Thao tác"], sessionRows(sessions.filter((session) => session.ngay.startsWith(selected.slice(0, 7))))) : view === "month" ? `<div class="assistant-month-view"><div class="cal-month-head">${headings.map((label) => `<div class="cal-month-head-cell">${label}</div>`).join("")}</div><div class="cal-month-grid">${cells}</div></div>` : `<div class="cal-week-grid">${cells}</div>`}</div>
+    </div>`
+    );
+  }
+  function workMinutes(session) {
+    if (session.soPhutTinhCong === null || session.soPhutTinhCong === undefined)
+      return "—";
+    let reason = "";
+    if (
+      Number(session.soPhutTinhCong) === 0 &&
+      session.checkinLuc &&
+      session.checkoutLuc
+    ) {
+      const start =
+        session.gioLichBatDau || `${session.ngay} ${session.gioBatDau}`;
+      const end =
+        session.gioLichKetThuc || `${session.ngay} ${session.gioKetThuc}`;
+      if (session.checkinLuc >= end)
+        reason = `Check-in sau khi ca học đã kết thúc (${datetime(end)}).`;
+      else if (session.checkoutLuc <= start)
+        reason = `Check-out trước giờ bắt đầu ca (${datetime(start)}).`;
+      else reason = "Thời gian trong khung lịch chưa đủ 1 phút.";
     }
-
-    function validateLive() {
-      let valid = true;
-      const type = typeSelect.value;
-      const lyDo = $("crLyDo").value.trim();
-      const lyDoErr = $("crLyDoErr");
-
-      if (!lyDo) {
-        lyDoErr.textContent = "Vui lòng nhập lý do gửi đơn.";
-        valid = false;
-      } else {
-        lyDoErr.textContent = "";
+    return `<span class="assistant-work-minutes">${escape(session.soPhutTinhCong)} phút${reason ? `<small>${escape(reason)}</small>` : ""}</span>`;
+  }
+  function formatBytes(bytes) {
+    const size = Number(bytes || 0);
+    if (!size) return "";
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  }
+  function materialSummary(session) {
+    const mat = session.taiLieu || {};
+    if (!mat.coTaiLieu) {
+      return '<p class="assistant-muted">Giáo viên chính chưa gắn tài liệu chuẩn bị cho buổi học này.</p>';
+    }
+    const metaParts = [];
+    if (mat.laTepTaiLen && mat.tenTep) {
+      metaParts.push(`${mat.tenTep}${mat.kichThuoc ? " · " + formatBytes(mat.kichThuoc) : ""}`);
+    } else if (mat.url) {
+      metaParts.push(mat.url);
+    }
+    return `<div class="assistant-material-current">
+      <div><b>${escape(mat.tieuDe || mat.tenTep || "Tài liệu chuẩn bị buổi học")}</b>
+      ${metaParts.length ? `<small class="assistant-muted" style="display:block">${escape(metaParts.join(" · "))}</small>` : ""}
+      ${mat.ghiChu ? `<p class="assistant-muted" style="margin:4px 0 0">${escape(mat.ghiChu)}</p>` : ""}</div>
+      <div class="assistant-actions">${link(mat.url, mat.laTepTaiLen ? "Xem / Tải tệp" : "Mở liên kết tài liệu")}</div>
+    </div>`;
+  }
+  function materialCard(session) {
+    return `<div class="card"><h2>Tài liệu chuẩn bị trước buổi học</h2>
+      ${materialSummary(session)}
+      <p class="assistant-muted" style="margin:8px 0 0;font-size:12px">Trợ giảng chỉ xem/tải tài liệu của ca được phân công; quyền tải lên hoặc chỉnh sửa tệp thuộc Giáo viên chính.</p>
+    </div>`;
+  }
+  function shiftRequestControls(session) {
+    const caps = session.quyenYeuCau || {};
+    const rows = [];
+    if (caps.coTheDoiLich) {
+      rows.push(`<div class="assistant-row">${button("Yêu cầu đổi lịch", "reschedule", session.id)}</div>`);
+    }
+    if (caps.coTheChinhCong) {
+      rows.push(`<div class="assistant-row">${button("Yêu cầu chỉnh công", "correction", session.id)}</div>`);
+    }
+    if (!rows.length && caps.lyDoKhoa) {
+      rows.push(`<p class="assistant-muted" style="margin:8px 0 0">${escape(caps.lyDoKhoa)}</p>`);
+    }
+    return rows.join("");
+  }
+  function sessionView(session) {
+    const blocked = disabledSession(session);
+    const presence = session.soPhutThucTe;
+    return (
+      head(
+        "Chi tiết ca hỗ trợ & Check-in / Check-out",
+        sessionTitle(session),
+        button("← Thời khóa biểu", "tab", "schedule") +
+          button("Tải lại ca", "reload-session"),
+      ) +
+      `<div class="assistant-session-banner"><p>${date(session.ngay)} · ${time(session.gioBatDau)}–${time(session.gioKetThuc)}${session.loai === "bu" ? " · Học bù" : ""}</p><h2>${escape(session.tenLop)}</h2><p>${escape(session.maLop)} · ${escape(session.hinhThuc === "online" ? "Trực tuyến" : session.tenCoSo || session.diaDiem || "Chưa cập nhật địa điểm")} ${escape(session.phongHoc || "")}${session.tenGiaoVienChinh ? ` · GV chính: ${escape(session.tenGiaoVienChinh)}` : ""}</p><div class="assistant-actions">${button("Bấm Check-in", "checkin", session.id, "p", blocked || Boolean(session.checkinLuc) || session.trangThai === "da_day")}${button("Bấm Check-out", "checkout", session.id, "", blocked || !session.checkinLuc || Boolean(session.checkoutLuc))}${link(session.linkHoc, "Vào phòng học trực tuyến")}</div></div>` +
+      `<div class="assistant-grid"><div class="card"><h2>Thông tin chấm công</h2>${[
+        ["Trạng thái buổi học", tag(session.trangThai)],
+        ["Check-in", datetime(session.checkinLuc)],
+        ["Check-out", datetime(session.checkoutLuc)],
+        ["Thời gian hiện diện", presence === null || presence === undefined ? "—" : presence + " phút"],
+        ["Phút tính công", workMinutes(session)],
+        [
+          "Đi trễ",
+          session.checkinLuc
+            ? Number(session.checkinTre)
+              ? tag("cho_duyet", "Đi trễ").replace("Chờ xử lý", "Đi trễ")
+              : tag("hop_le", "Đúng giờ").replace("Hợp lệ", "Đúng giờ")
+            : "—",
+        ],
+        ["Kỳ công", tag(session.kyCong)],
+      ]
+        .map(
+          ([label, value]) =>
+            `<div class="assistant-row"><span class="assistant-muted">${label}</span><b>${value}</b></div>`,
+        )
+        .join(
+          "",
+        )}</div><div class="card"><h2>Sổ buổi học &amp; Yêu cầu</h2><p class="assistant-muted">${session.hocViens.length} học viên trong ca này.</p><div class="assistant-row">${button("Mở sổ · Điểm danh & Chấm bài", "log", session.id, "p")}</div>${shiftRequestControls(session)}</div></div>` +
+      materialCard(session)
+    );
+  }
+  function logView(session) {
+    const writable = !disabledSession(session) && Boolean(session.checkinLuc);
+    const attendanceOptions = {
+      "": "Chọn điểm danh",
+      co_mat: "Có mặt",
+      di_tre: "Đi trễ",
+      vang_co_phep: "Vắng có phép",
+      vang_khong_phep: "Vắng không phép",
+    };
+    const prevList = Array.isArray(session.danhSachBaiTapTruoc)
+      ? session.danhSachBaiTapTruoc
+      : [];
+    const savedHwId = session.hocViens.find((s) => s.baiTapId)?.baiTapId || null;
+    const selectedPrev =
+      prevList.find((item) => String(item.id) === String(savedHwId)) ||
+      prevList[0] ||
+      null;
+    const activeHomeworkId = selectedPrev?.id ?? savedHwId ?? "";
+    const canGrade = Boolean(activeHomeworkId);
+    const prevHomeworkBox = prevList.length
+      ? `<div class="assistant-prev-homework">
+          ${prevList.length > 1
+            ? select(
+                "Bài tập về nhà buổi trước cần chấm",
+                "baiTapChamId",
+                Object.fromEntries(
+                  prevList.map((item) => [
+                    item.id,
+                    `${item.tieuDe} · Buổi ${date(item.ngayBuoiHoc)}`,
+                  ]),
+                ),
+                activeHomeworkId,
+              )
+            : `<input type="hidden" name="baiTapChamId" value="${escape(activeHomeworkId)}">
+               <div><span class="tag i">Bài tập buổi trước · ${date(selectedPrev.ngayBuoiHoc)}</span>
+               <b style="display:block;margin-top:6px">${escape(selectedPrev.tieuDe)}</b>
+               ${selectedPrev.noiDung ? `<p class="assistant-muted" style="margin:4px 0 0">${escape(selectedPrev.noiDung)}</p>` : ""}</div>`}
+          <div class="assistant-actions" style="margin-top:8px">${link(selectedPrev?.fileDeBaiUrl, "Xem đề bài buổi trước")}</div>
+        </div>`
+      : savedHwId
+        ? `<input type="hidden" name="baiTapChamId" value="${escape(savedHwId)}"><p class="assistant-muted">Đang hiển thị kết quả chấm bài tập đã lưu của buổi học này.</p>`
+        : '<div class="assistant-empty">Chưa có bài tập về nhà từ buổi học trước để chấm. Bạn vẫn có thể điểm danh và ghi nhận xét buổi học.</div>';
+    return (
+      head(
+        "Sổ buổi học & Chấm bài",
+        sessionTitle(session),
+        button("← Quay lại chi tiết ca", "session", session.id) +
+          button("Tải lại", "reload-session"),
+      ) +
+      `<div class="card"><div class="row-b"><b>${escape(sessionTitle(session))}</b>${session.checkinLuc ? tag("hop_le", "Đã check-in").replace("Hợp lệ", "Đã check-in") : tag("chua_check")}</div></div>
+      ${!writable ? `<div class="card assistant-muted">${disabledSession(session) ? "Ca học hiện chỉ được xem." : "Check-in để bắt đầu ghi sổ buổi học."} ${button("Xem ca hỗ trợ", "session", session.id)}</div>` : ""}
+      <form id="assistant-log-form"><fieldset ${writable ? "" : "disabled"} style="border:0;min-width:0">
+      <div class="card"><h2>Hôm nay học gì</h2>${field("Chủ đề bài học *", "chuDe", session.chuDeBaiHoc || "", "text", 'required maxlength="255"')}${textarea("Nội dung đã giảng dạy", "noiDung", session.noiDungBaiHoc || "", 15000)}
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">
+          <span class="assistant-muted"><b>Tài liệu chuẩn bị buổi học (chỉ xem)</b></span>
+          ${materialSummary(session)}
+        </div>
+      </div>
+      <div class="card"><h2>Điểm danh &amp; Chấm bài tập về nhà buổi trước</h2>
+      ${prevHomeworkBox}
+      <div class="assistant-students" style="margin-top:12px">${
+        session.hocViens
+          .map(
+            (
+              student,
+            ) => `<details class="assistant-student" data-student="${student.hocVienId}">
+        <summary><span><b>${escape(student.hoTen)}</b><small>${escape(session.tenLop)} · ${escape(session.maLop)}${Number(student.coHocBu) === 1 ? " · Học bù cá nhân" : ""}</small></span><span class="assistant-student-arrow" aria-hidden="true">⌄</span></summary>
+        <div class="assistant-student-fields"><div class="assistant-form-grid">
+          ${select("Điểm danh *", "attendance-" + student.hocVienId, attendanceOptions, student.trangThaiDiemDanh).replace("<select ", "<select required ")}
+          ${field("Điểm bài tập buổi trước / 10", "score-" + student.hocVienId, canGrade ? (student.diemBaiTapGiay ?? "") : "", "number", 'min="0" max="10" step="0.01"' + (canGrade ? "" : ' disabled placeholder="Chưa có bài buổi trước"'))}
+          ${select("Mức tiếp thu", "level-" + student.hocVienId, { "": "Chưa đánh giá", 1: "1 / 5", 2: "2 / 5", 3: "3 / 5", 4: "4 / 5", 5: "5 / 5" }, student.mucTiepThu)}
+          ${select("Thái độ", "attitude-" + student.hocVienId, { "": "Chưa đánh giá", tot: "Tốt", kha: "Khá", trung_binh: "Trung bình", can_cai_thien: "Cần cải thiện" }, student.thaiDo)}
+          <div class="full">${canGrade ? textarea("Nhận xét bài tập buổi trước", "comment-" + student.hocVienId, student.nhanXetBaiTap || "", 255) : `<label>Nhận xét bài tập buổi trước<textarea name="comment-${student.hocVienId}" rows="2" disabled placeholder="Chưa có bài tập buổi trước để chấm"></textarea></label>`}</div>
+          ${textarea("Nhận xét buổi học", "note-" + student.hocVienId, student.nhanXetBuoiHoc || "")}
+          ${textarea("Hướng cải thiện", "improve-" + student.hocVienId, student.huongCaiThien || "")}
+        </div></div></details>`,
+          )
+          .join("") || empty("Ca học chưa có học viên.")
+      }</div></div>
+      <p class="assistant-error" data-form-error role="alert" hidden></p><div class="assistant-log-footer"><button class="btn p" type="submit" name="saveMode" value="save">Lưu sổ buổi học</button><button class="btn" type="submit" name="saveMode" value="checkout" ${session.checkoutLuc ? "disabled" : ""}>Lưu sổ &amp; Check-out</button></div></fieldset></form>`
+    );
+  }
+  function availabilityCalendar() {
+    const mode = state.availabilityMode;
+    const selected = state.availabilityDate;
+    const { start, days, range, headings } = calendarPeriod(selected, mode);
+    const slotsAll = Array.isArray(state.workspace?.profile?.lichRanhs)
+      ? state.workspace.profile.lichRanhs
+      : [];
+    const cells = Array.from({ length: days }, (_, index) => {
+      const day = addDays(start, index);
+      const weekday = ((new Date(day + "T12:00:00Z").getUTCDay() + 6) % 7) + 2;
+      const isToday = day === today();
+      const slots = slotsAll.filter((slot) => Number(slot.thu) === weekday);
+      const entries = slots
+        .map((slot) =>
+          mode === "month"
+            ? `<button type="button" class="cal-m-chip assistant-free-slot" data-action="edit-availability" data-id="${slot.id}" aria-label="Sửa lịch rảnh ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}">${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}</button>`
+            : `<button type="button" class="ses-card assistant-free-slot" data-action="edit-availability" data-id="${slot.id}"><b class="sc-code">${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}</b><span class="sc-subj">Lịch rảnh</span></button>`,
+        )
+        .join("");
+      if (mode === "month")
+        return `<div class="cal-month-cell ${isToday ? "is-today" : ""} ${day.slice(0, 7) !== selected.slice(0, 7) ? "other-month" : ""}"><div class="row-b"><b>${Number(day.slice(8))}</b><button type="button" class="assistant-add-free" data-action="add-availability" data-id="${weekday}" aria-label="Thêm lịch rảnh ngày ${date(day)}">+</button></div>${entries}</div>`;
+      return `<div class="cal-day-col ${isToday ? "is-today" : ""}"><div class="cal-col-head ${isToday ? "is-today" : ""}"><div class="d-name">${headings[index]}${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div><div class="d-num">${day.slice(8)}/${day.slice(5, 7)}</div></div><div class="cal-col-body">${entries}${button("+ Thêm lịch rảnh", "add-availability", weekday, "assistant-add-free")}</div></div>`;
+    }).join("");
+    return `<section data-availability-calendar aria-label="Thời khóa biểu lịch rảnh"><div class="pg-head"><div><h2>Thời khóa biểu lịch rảnh</h2><p class="sub">Các khung giờ lặp lại hàng tuần. Bấm vào lịch để sửa hoặc xóa.</p></div>${button("+ Thêm lịch rảnh", "add-availability", "", "p")}</div><div class="cal-box">
+      <div class="cal-bar"><div class="row">${button("‹ Trước", "availability-prev")}${button("Hôm nay", "availability-today")}${button("Sau ›", "availability-next")}</div>
+        <div class="assistant-calendar-period"><b class="cal-range-btn">${escape(range)}</b>${field("Chọn tháng lịch rảnh", "availability-month", selected.slice(0, 7), "month", "required")}</div>
+        <div class="seg"><button type="button" class="${mode === "week" ? "on" : ""}" data-action="availability-mode" data-id="week">Lịch Tuần</button><button type="button" class="${mode === "month" ? "on" : ""}" data-action="availability-mode" data-id="month">Lịch Tháng</button></div>
+      </div><div class="assistant-calendar-scroll">${mode === "month" ? `<div class="assistant-month-view"><div class="cal-month-head">${headings.map((label) => `<div class="cal-month-head-cell">${label}</div>`).join("")}</div><div class="cal-month-grid">${cells}</div></div>` : `<div class="cal-week-grid">${cells}</div>`}</div></div></section>`;
+  }
+  function classes() {
+    return (
+      head(
+        "Lớp hỗ trợ & Lịch rảnh",
+        "Danh sách lớp đang hỗ trợ và lịch rảnh cá nhân đã đăng ký.",
+        button("Hồ sơ cá nhân", "profile-view"),
+      ) +
+      `<div class="card">${table(
+        [
+          "Mã lớp",
+          "Lớp / Khóa học",
+          "Môn · Khối",
+          "Lịch học",
+          "Sĩ số",
+          "Trạng thái",
+          "Thao tác",
+        ],
+        state.workspace.classes.map(
+          (item) =>
+            `<tr><td><b>${escape(item.maLop)}</b></td><td>${escape(item.tenLop)}<br><small>${escape(item.tenKhoa || "")}</small></td><td>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</td><td>${item.lichHocs.map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join("<br>") || "Chưa có lịch lặp"}</td><td>${item.siSo}</td><td>${tag(item.trangThai)}</td><td>${button("Xem lịch", "class-schedule", item.id)} ${button("Danh sách học viên", "roster", item.id)}</td></tr>`,
+        ),
+      )}</div>` +
+      availabilityCalendar()
+    );
+  }
+  function recruit() {
+    const openShifts = state.shiftOpenings.filter(
+      (item) => item.trangThai === "dang_mo",
+    );
+    const myShiftApps = state.shiftOpenings.filter((item) => item.donCuaToi);
+    return (
+      head(
+        "Đề xuất & Ứng tuyển ca",
+        "Ứng tuyển các ca tuyển Trợ giảng phù hợp lịch rảnh, chuyên môn và theo dõi kết quả duyệt từ Giáo vụ.",
+        button("Tải lại", "reload"),
+      ) +
+      `<div class="card"><h2>Đề xuất tuyển Trợ giảng cho lớp / ca đang mở</h2>${table(
+        [
+          "Mã đề xuất",
+          "Lớp · Môn · Khối",
+          "Ngày & Giờ ca",
+          "Hình thức · Địa điểm",
+          "Vị trí & Yêu cầu",
+          "Điều kiện & Trạng thái",
+          "Thao tác",
+        ],
+        openShifts.map((item) => {
+          const mine = item.donCuaToi;
+          const place =
+            item.hinhThuc === "online"
+              ? "Trực tuyến (Online)"
+              : `${item.tenCoSo || item.diaDiem || "Trực tiếp"}${item.phongHoc ? " · " + item.phongHoc : ""}${item.tenKhuVuc ? " · " + item.tenKhuVuc : ""}`;
+          const statusCell = mine
+            ? `${tag(mine.trangThai)}${mine.lyDoTuChoi ? `<span class="assistant-elig-note">Lý do: ${escape(mine.lyDoTuChoi)}</span>` : ""}`
+            : item.duDieuKien
+              ? '<span class="tag ok">Phù hợp lịch &amp; chuyên môn</span>'
+              : `<span class="tag r">Chưa đủ điều kiện</span><span class="assistant-elig-note">${escape((item.lyDoKhongDuDieuKien || []).join(" "))}</span>`;
+          const actionCell = mine
+            ? mine.trangThai === "da_duyet"
+              ? button("Xem ca trên lịch", "session", item.buoiHocId, "p")
+              : '<span class="assistant-muted">Đã ứng tuyển</span>'
+            : button(
+                "Ứng tuyển Trợ giảng",
+                "apply-shift",
+                item.id,
+                "p",
+                !item.duDieuKien,
+              );
+          return `<tr>
+            <td><b>${escape(item.maDeXuat)}</b><br><small>${escape(item.tenNguoiTao || "")}</small></td>
+            <td><b>${escape(item.maLop)}</b><br><small>${escape(item.tenLop)} · ${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
+            <td><b>${date(item.ngay)}</b><br><small>${time(item.gioBatDau)}–${time(item.gioKetThuc)}</small></td>
+            <td>${escape(place)}</td>
+            <td><span class="tag purple">Trợ giảng (${item.soDaDuyet}/${item.soLuong})</span><br><small>${escape(item.yeuCau || "Theo chuẩn lớp học")}</small></td>
+            <td>${statusCell}</td>
+            <td>${actionCell}</td>
+          </tr>`;
+        }),
+        "Hiện chưa có đề xuất tuyển Trợ giảng nào đang mở.",
+      )}</div>
+      <div class="card"><h2>Đơn ứng tuyển ca của tôi &amp; Kết quả duyệt</h2>${table(
+        [
+          "Mã đề xuất",
+          "Lớp · Môn · Khối",
+          "Ngày & Giờ ca",
+          "Vị trí",
+          "Lời nhắn",
+          "Trạng thái duyệt",
+          "Kết quả / Lý do từ chối",
+          "Thao tác",
+        ],
+        myShiftApps.map((item) => {
+          const mine = item.donCuaToi;
+          const resultNote =
+            mine.trangThai === "da_duyet"
+              ? "Đã phân công chính thức lên thời khóa biểu cá nhân."
+              : mine.trangThai === "tu_choi"
+                ? `Từ chối: ${mine.lyDoTuChoi || "Chưa đạt yêu cầu."}`
+                : "Đang chờ Giáo vụ duyệt (chưa hiển thị trên thời khóa biểu).";
+          return `<tr>
+            <td><b>${escape(item.maDeXuat)}</b></td>
+            <td><b>${escape(item.maLop)}</b><br><small>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
+            <td><b>${date(item.ngay)}</b><br><small>${time(item.gioBatDau)}–${time(item.gioKetThuc)}</small></td>
+            <td><span class="tag purple">Trợ giảng</span></td>
+            <td>${escape(mine.ghiChu || "—")}</td>
+            <td>${tag(mine.trangThai)}<br><small>${datetime(mine.duyetLuc || mine.createdAt)}</small></td>
+            <td>${escape(resultNote)}</td>
+            <td>${mine.trangThai === "da_duyet" ? button("Xem ca", "session", item.buoiHocId, "p") : "—"}</td>
+          </tr>`;
+        }),
+        "Bạn chưa gửi đơn ứng tuyển ca nào.",
+      )}</div>`
+    );
+  }
+  function requests() {
+    const rows = state.workspace.requests.filter(
+      (request) => !state.requestFilter || request.loai === state.requestFilter,
+    );
+    return (
+      head(
+        "Đơn từ & Yêu cầu cá nhân",
+        "Trợ giảng chỉ gửi đơn xin nghỉ cá nhân (Giáo vụ duyệt), đổi giờ hỗ trợ (Giáo vụ duyệt) và điều chỉnh công (Admin duyệt).",
+        button("+ Làm đơn mới", "request", "", "p"),
+      ) +
+      `<div class="card"><div class="assistant-toolbar">${select("Loại yêu cầu", "request-filter", { "": "Tất cả đơn", bao_ban: "Xin nghỉ cá nhân", doi_gio: "Đổi giờ hỗ trợ", dieu_chinh_cong: "Điều chỉnh công" }, state.requestFilter)}</div>${table(
+        [
+          "Mã đơn",
+          "Loại đơn",
+          "Lớp / Buổi học",
+          "Nội dung",
+          "Ngày gửi",
+          "Trạng thái",
+          "Phản hồi",
+        ],
+        rows.map(
+          (request) =>
+            `<tr><td>${escape(request.ma)}</td><td>${escape(labels[request.loai] || request.loai)}</td><td><b>${escape(request.maLop)}</b><br>${date(request.ngay)}</td><td>${escape(request.lyDo)}</td><td>${datetime(request.createdAt)}</td><td>${tag(request.trangThai)}</td><td>${escape(request.phanHoi || "—")}</td></tr>`,
+        ),
+      )}</div>`
+    );
+  }
+  function paysheet() {
+    const sessions = state.workspace.sessions.filter(
+      (session) =>
+        session.ngay.startsWith(state.month) && Boolean(session.checkinLuc),
+    );
+    const minutes = sessions
+      .filter((session) => session.trangThaiCong !== "tu_choi")
+      .reduce((sum, session) => sum + Number(session.soPhutTinhCong || 0), 0);
+    const period = periodStatus(state.month);
+    return (
+      head("Bảng công cá nhân", "", button("In bảng công", "print")) +
+      `<div class="card"><div class="assistant-toolbar">${field("Tháng", "timesheet-month", state.month, "month", "required")}<b>${Math.floor(minutes / 60)} giờ ${minutes % 60} phút · ${sessions.filter((session) => session.checkoutLuc).length} ca đã check-out · Kỳ công: ${tag(period)}</b></div>${table(
+        [
+          "Ngày",
+          "Lớp",
+          "Khung giờ",
+          "Check-in",
+          "Check-out",
+          "Phút hiện diện",
+          "Phút công",
+          "Đi trễ",
+          "Trạng thái công",
+          "Kỳ công",
+          "Thao tác",
+        ],
+        sessions.map(
+          (session) =>
+            `<tr><td>${date(session.ngay)}</td><td>${escape(session.maLop)}</td><td>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</td><td>${datetime(session.checkinLuc)}</td><td>${datetime(session.checkoutLuc)}</td><td>${session.soPhutThucTe ?? "—"}</td><td>${workMinutes(session)}</td><td>${Number(session.checkinTre) ? tag("cho_duyet", "Đi trễ").replace("Chờ xử lý", "Đi trễ") : tag("hop_le", "Đúng giờ").replace("Hợp lệ", "Đúng giờ")}</td><td>${tag(session.trangThaiCong)}</td><td>${tag(session.kyCong)}</td><td>${button("Xem ca", "session", session.id)}${session.quyenYeuCau?.coTheChinhCong ? " " + button("Điều chỉnh", "correction", session.id) : ""}</td></tr>`,
+        ),
+      )}</div>`
+    );
+  }
+  async function render() {
+    const version = ++renderVersion;
+    document.querySelectorAll("#assistant-nav button").forEach((item) => {
+      const active =
+        item.dataset.id === state.tab ||
+        (["session", "log"].includes(state.tab) &&
+          item.dataset.id === "schedule");
+      item.classList.toggle("on", active);
+      if (active) item.setAttribute("aria-current", "page");
+      else item.removeAttribute("aria-current");
+    });
+    if (["session", "log"].includes(state.tab)) {
+      if (!state.sessionId) {
+        content.innerHTML =
+          head(
+            screens[state.tab],
+            "",
+            button("← Thời khóa biểu", "tab", "schedule", "p"),
+          ) +
+          `<div class="card">${empty("Vui lòng chọn một ca trên thời khóa biểu để xem chi tiết và thực hiện Check-in / Check-out.")}</div>`;
+        return;
       }
-
-      if (type === "doi_gio") {
-        const slotErr = $("crSlotErr");
-        const ngayMoi = $("crNgayMoi").value;
-        const batDau = $("crGioBatDau").value;
-        const ketThuc = $("crGioKetThuc").value;
-        if (!ngayMoi || !batDau || !ketThuc) {
-          slotErr.textContent = "Vui lòng chọn ngày mới, giờ bắt đầu và giờ kết thúc.";
-          valid = false;
-        } else if (ketThuc <= batDau) {
-          slotErr.textContent = "Giờ kết thúc phải lớn hơn giờ bắt đầu.";
-          valid = false;
-        } else {
-          const target = new Date(`${ngayMoi}T${batDau}`);
-          if (target <= serverNow) {
-            slotErr.textContent = "Thời điểm đề xuất phải sau thời điểm hiện tại.";
-            valid = false;
-          } else {
-            slotErr.textContent = "";
+      content.innerHTML =
+        head(screens[state.tab]) + '<div class="card">Đang tải ca học…</div>';
+      try {
+        const detail = await api(`${assistants}/sessions/${state.sessionId}`);
+        if (version !== renderVersion) return;
+        state.detail = detail;
+        content.innerHTML =
+          state.tab === "log" ? logView(detail) : sessionView(detail);
+      } catch (error) {
+        if (version === renderVersion)
+          content.innerHTML =
+            head(screens[state.tab]) +
+            `<div class="assistant-error" role="alert">${escape(error.message)} ${button("Thử lại", "reload-session")}</div>`;
+      }
+      return;
+    }
+    const views = {
+      dash: dashboard,
+      schedule,
+      myclasses: classes,
+      recruit,
+      requests,
+      paysheet,
+    };
+    content.innerHTML = views[state.tab]();
+  }
+  async function navigate(tab, sessionId, refresh = true) {
+    if (!screens[tab]) tab = "dash";
+    if (state.dirty && !window.confirm("Sổ buổi học chưa lưu. Rời trang này?"))
+      return;
+    state.dirty = false;
+    state.tab = tab;
+    if (sessionId) state.sessionId = sessionId;
+    menu(false);
+    history.replaceState(null, "", "#/assistant/ta-" + tab);
+    if (refresh) await load();
+    await render();
+  }
+  function requestModal(type = "doi_gio", sessionId = state.sessionId) {
+    if (!["bao_ban", "doi_gio", "dieu_chinh_cong"].includes(type))
+      type = "doi_gio";
+    const all = state.workspace.sessions;
+    const sessions =
+      type === "dieu_chinh_cong"
+        ? all.filter((session) => Boolean(session.quyenYeuCau?.coTheChinhCong))
+        : all.filter((session) => Boolean(session.quyenYeuCau?.coTheDoiLich));
+    const selected =
+      sessions.find((item) => String(item.id) === String(sessionId)) ||
+      sessions[0];
+    modal(
+      "Làm đơn mới",
+      `<form id="assistant-request-form"><div class="assistant-form-grid">${select("Loại yêu cầu", "loai", { doi_gio: "Yêu cầu đổi lịch / đổi giờ (Giáo vụ duyệt)", bao_ban: "Xin nghỉ cá nhân (Giáo vụ duyệt)", dieu_chinh_cong: "Yêu cầu chỉnh công (Admin duyệt)" }, type)}<div class="full">${select("Ca học *", "buoiHocId", Object.fromEntries(sessions.map((session) => [session.id, sessionTitle(session)])), selected?.id ?? "")}</div>
+      ${type === "doi_gio" ? field("Ngày đề xuất *", "ngayMoi", selected?.ngay || "", "date", "required") + field("Giờ bắt đầu *", "gioBatDau", selected ? time(selected.gioBatDau) : "", "time", "required") + field("Giờ kết thúc *", "gioKetThuc", selected ? time(selected.gioKetThuc) : "", "time", "required") : ""}
+      ${type === "dieu_chinh_cong" ? field("Check-in đề nghị *", "checkinMoi", selected?.checkinLuc || (selected ? selected.ngay + "T" + selected.gioBatDau : ""), "datetime-local", "required") + field("Check-out đề nghị *", "checkoutMoi", selected?.checkoutLuc || (selected ? selected.ngay + "T" + selected.gioKetThuc : ""), "datetime-local", "required") : ""}
+      <div class="full">${textarea("Lý do *", "lyDo", "", 255)}</div></div>${!sessions.length ? empty("Chưa có ca phù hợp theo trạng thái hiện tại để gửi loại yêu cầu này.") : ""}${formFoot()}</form>`,
+    );
+    dialog.querySelector("[name=lyDo]").required = true;
+    dialog.querySelector("[name=buoiHocId]").required = true;
+    validateRequest();
+  }
+  function slotProblems(slots) {
+    return slots.map((slot, index) => {
+      if (!slot.start)
+        return { field: "start", message: "Vui lòng nhập giờ bắt đầu." };
+      if (!slot.end)
+        return { field: "end", message: "Vui lòng nhập giờ kết thúc." };
+      if (!validTime(slot.start))
+        return {
+          field: "start",
+          message: "Giờ bắt đầu cần có dạng HH:mm, từ 00:00 đến 23:59.",
+        };
+      if (!validTime(slot.end))
+        return {
+          field: "end",
+          message: "Giờ kết thúc cần có dạng HH:mm, từ 00:00 đến 23:59.",
+        };
+      if (slot.end <= slot.start)
+        return { field: "end", message: "Giờ kết thúc phải sau giờ bắt đầu." };
+      const other = slots.find(
+        (item, otherIndex) =>
+          otherIndex !== index &&
+          item.day === slot.day &&
+          item.start &&
+          item.end > item.start &&
+          slot.start < item.end &&
+          slot.end > item.start,
+      );
+      if (other)
+        return {
+          field: "end",
+          message: `Khung giờ này trùng với lịch ${slot.day === 8 ? "Chủ Nhật" : "Thứ " + slot.day}, ${other.start}–${other.end}.`,
+        };
+      return null;
+    });
+  }
+  function validateAvailability() {
+    const form = document.getElementById("assistant-availability-form");
+    if (!form) return true;
+    const slot = {
+      day: Number(form.elements.thu.value),
+      start: form.elements.start.value,
+      end: form.elements.end.value,
+    };
+    const others = (state.workspace.profile.lichRanhs || [])
+      .filter((item) => String(item.id) !== form.dataset.id)
+      .map((item) => ({
+        day: Number(item.thu),
+        start: time(item.gioBatDau),
+        end: time(item.gioKetThuc),
+      }));
+    const problem = slotProblems([slot, ...others])[0];
+    form.querySelectorAll("input,select").forEach((control) => {
+      control.setCustomValidity("");
+      control.removeAttribute("aria-invalid");
+    });
+    if (problem) fieldError(form.elements[problem.field], problem.message);
+    form.querySelectorAll("[data-time24]").forEach((control) => {
+      if (!problem || control.name !== problem.field) fieldError(control);
+    });
+    form.querySelector("[type=submit]").disabled =
+      Boolean(problem) || form.hasAttribute("aria-busy");
+    return !problem;
+  }
+  function refreshAvailability() {
+    document
+      .querySelectorAll("[data-availability-calendar]")
+      .forEach((calendar) => {
+        calendar.outerHTML = availabilityCalendar();
+      });
+  }
+  function availabilityBack() {
+    if (availabilityInProfile) viewProfile();
+    else dialog.close();
+  }
+  function availabilityModal(id = "", weekday = "") {
+    const slot = (state.workspace.profile.lichRanhs || []).find(
+      (item) => String(item.id) === String(id),
+    );
+    if (id && !slot) return;
+    modal(
+      slot ? "Sửa lịch rảnh" : "Thêm lịch rảnh",
+      `<form id="assistant-availability-form" data-id="${escape(id)}"><div class="assistant-form-grid">
+      <div class="full">${select("Ngày trong tuần", "thu", { 2: "Thứ Hai", 3: "Thứ Ba", 4: "Thứ Tư", 5: "Thứ Năm", 6: "Thứ Sáu", 7: "Thứ Bảy", 8: "Chủ Nhật" }, slot?.thu || weekday || 2)}</div>
+      ${field("Từ giờ *", "start", slot ? time(slot.gioBatDau) : "08:00", "time", "required")}
+      ${field("Đến giờ *", "end", slot ? time(slot.gioKetThuc) : "10:00", "time", "required")}
+      </div>
+      <p class="assistant-muted">Lịch rảnh lặp lại hàng tuần vào ngày đã chọn.</p>
+      <p class="assistant-error" data-form-error role="alert" hidden></p>
+      <div class="assistant-dialog-foot">${slot ? button("Xóa lịch", "delete-availability", id, "danger") : ""}${button("Hủy", "availability-back")}<button class="btn p" type="submit">Lưu lịch rảnh</button></div></form>`,
+    );
+    validateAvailability();
+  }
+  function accountMenu(open) {
+    document.getElementById("assistant-account-menu").hidden = !open;
+    document
+      .getElementById("assistant-avatar")
+      .setAttribute("aria-expanded", String(open));
+  }
+  function viewProfile() {
+    if (dialog.open) dialog.close();
+    AccountUI.view();
+  }
+  function notificationsModal() {
+    modal(
+      "Thông báo",
+      `${button("Đánh dấu tất cả đã đọc", "read-all")}<div>${state.notifications.map((notification) => `<div class="assistant-row"><div><b>${escape(notification.tieuDe)}</b><p>${escape(notification.noiDung)}</p><small>${datetime(notification.createdAt)}</small></div>${Number(notification.daDoc) ? '<span class="assistant-muted">Đã đọc</span>' : button("Đánh dấu đã đọc", "read", notification.id)}</div>`).join("") || empty("Chưa có thông báo.")}</div>`,
+    );
+  }
+  function rosterModal(id) {
+    const item = state.workspace.classes.find(
+      (classroom) => String(classroom.id) === String(id),
+    );
+    if (!item) return;
+    modal(
+      "Học viên · " + item.maLop,
+      table(
+        ["Mã học viên", "Họ tên", "Ngày vào", "Ngày rời", "Trạng thái"],
+        item.hocViens.map(
+          (student) =>
+            `<tr><td>${escape(student.maHv)}</td><td>${escape(student.hoTen)}</td><td>${date(student.ngayVao)}</td><td>${date(student.ngayRoi)}</td><td>${tag(student.trangThai)}</td></tr>`,
+        ),
+      ),
+    );
+  }
+  async function act(action, id, element) {
+    switch (action) {
+      case "print":
+        window.print();
+        return;
+      case "tab":
+        if (id === "schedule") state.classFilter = "";
+        return navigate(id);
+      case "session":
+        return navigate("session", id);
+      case "log":
+        return navigate("log", id);
+      case "close":
+        dialog.close();
+        return;
+      case "account":
+        accountMenu(document.getElementById("assistant-account-menu").hidden);
+        return;
+      case "profile-view":
+        accountMenu(false);
+        await profileUpdate;
+        viewProfile();
+        return;
+      case "profile":
+        accountMenu(false);
+        dialog.close();
+        AccountUI.edit();
+        return;
+      case "week-schedule":
+        state.calendarMode = "week";
+        state.calendarDate = today();
+        state.classFilter = "";
+        return navigate("schedule");
+      case "class-schedule":
+        state.classFilter = String(id);
+        return navigate("schedule");
+      case "roster":
+        rosterModal(id);
+        return;
+      case "request":
+        requestModal("doi_gio", id || state.sessionId);
+        return;
+      case "reschedule":
+        requestModal("doi_gio", id || state.sessionId);
+        return;
+      case "correction":
+        requestModal("dieu_chinh_cong", id);
+        return;
+      case "add-availability":
+      case "edit-availability":
+        if (element.closest("[data-availability-calendar]"))
+          availabilityInProfile = Boolean(element.closest("#assistant-dialog,.account-dialog"));
+        if (element.closest(".account-dialog")) AccountUI.close();
+        availabilityModal(
+          action === "edit-availability" ? id : "",
+          action === "add-availability" ? id : "",
+        );
+        return;
+      case "availability-back":
+        availabilityBack();
+        return;
+      case "delete-availability": {
+        const slot = (state.workspace.profile.lichRanhs || []).find(
+          (item) => String(item.id) === String(id),
+        );
+        if (!slot) return;
+        modal(
+          "Xóa lịch rảnh",
+          `<form id="assistant-availability-delete-form" data-id="${escape(id)}">
+          <p>Xóa khung giờ ${Number(slot.thu) === 8 ? "Chủ Nhật" : "Thứ " + slot.thu}, ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)} khỏi lịch rảnh hàng tuần?</p>
+          <p class="assistant-error" data-form-error role="alert" hidden></p><div class="assistant-dialog-foot">${button("Quay lại", "edit-availability", id)}<button type="submit" class="btn danger">Xóa lịch rảnh</button></div></form>`,
+        );
+        return;
+      }
+      case "notifications":
+        notificationsModal();
+        return;
+      case "read":
+        await api("/communication/notifications/" + id + "/read", "post", {});
+        await load();
+        notificationsModal();
+        return;
+      case "read-all":
+        await api("/communication/notifications/read-all", "post", {});
+        await load();
+        notificationsModal();
+        return;
+      case "reload":
+        await load();
+        await render();
+        return;
+      case "reload-session":
+        return navigate(state.tab);
+      case "availability-mode":
+        state.availabilityMode = id;
+        return refreshAvailability();
+      case "availability-today":
+        state.availabilityDate = today();
+        return refreshAvailability();
+      case "availability-prev":
+      case "availability-next": {
+        const step = action === "availability-next" ? 1 : -1;
+        if (state.availabilityMode === "week")
+          state.availabilityDate = addDays(state.availabilityDate, step * 7);
+        else {
+          const value = new Date(
+            state.availabilityDate.slice(0, 7) + "-01T12:00:00Z",
+          );
+          value.setUTCMonth(value.getUTCMonth() + step);
+          state.availabilityDate = value.toISOString().slice(0, 10);
+        }
+        return refreshAvailability();
+      }
+      case "calendar-mode":
+        state.calendarMode = id;
+        return render();
+      case "calendar-reset":
+        state.classFilter = "";
+        return render();
+      case "calendar-today":
+        state.calendarDate = today();
+        return render();
+      case "calendar-prev":
+      case "calendar-next": {
+        const step = action === "calendar-next" ? 1 : -1;
+        if (state.calendarMode === "week")
+          state.calendarDate = addDays(state.calendarDate, step * 7);
+        else {
+          const value = new Date(
+            state.calendarDate.slice(0, 7) + "-01T12:00:00Z",
+          );
+          value.setUTCMonth(value.getUTCMonth() + step);
+          state.calendarDate = value.toISOString().slice(0, 10);
+        }
+        return render();
+      }
+      case "checkin":
+      case "checkout":
+        if (
+          action === "checkout" &&
+          !window.confirm("Xác nhận kết thúc ca hỗ trợ và ghi giờ Check-out?")
+        )
+          return;
+        await api(`${assistants}/sessions/${id}/${action}`, "post", {});
+        await load();
+        await render();
+        toast(
+          action === "checkin"
+            ? "Đã ghi nhận Check-in."
+            : "Đã ghi nhận Check-out.",
+        );
+        return;
+      case "apply-shift": {
+        const opening = state.shiftOpenings.find(
+          (item) => String(item.id) === String(id),
+        );
+        if (!opening) return;
+        modal(
+          "Ứng tuyển vị trí Trợ giảng",
+          `<form id="assistant-shift-apply-form" data-id="${escape(opening.id)}">
+            <p><b>${escape(opening.maDeXuat)} · ${escape(opening.maLop)}</b> — ${escape(opening.tenLop)}</p>
+            <p class="assistant-muted">Ca ngày ${date(opening.ngay)} · ${time(opening.gioBatDau)}–${time(opening.gioKetThuc)} · ${escape(opening.tenMon)} · ${escape(opening.tenCapLop)}</p>
+            ${opening.yeuCau ? `<p class="assistant-muted">Yêu cầu: ${escape(opening.yeuCau)}</p>` : ""}
+            ${textarea("Lời nhắn cho Giáo vụ (tùy chọn)", "ghiChu", "", 500)}
+            ${formFoot("Gửi đơn ứng tuyển")}
+          </form>`,
+        );
+        return;
+      }
+      case "logout":
+        if (state.dirty && !window.confirm("Sổ buổi học chưa lưu. Đăng xuất?"))
+          return;
+        state.dirty = false;
+        await AccountUI.logout();
+        return;
+      default:
+        return;
+    }
+  }
+  document.addEventListener("click", async (event) => {
+    if (!event.target.closest(".assistant-account")) accountMenu(false);
+    const element = event.target.closest("[data-action]");
+    if (!element || element.disabled) return;
+    element.disabled = true;
+    try {
+      await act(element.dataset.action, element.dataset.id, element);
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      element.disabled = false;
+    }
+  });
+  document.addEventListener("change", async (event) => {
+    const { name, value } = event.target;
+    if (event.target.closest("#assistant-availability-form"))
+      validateAvailability();
+    if (
+      event.target.closest("#assistant-request-form") &&
+      event.target.name !== "loai"
+    )
+      validateRequest();
+    if (
+      event.target.closest("#assistant-log-form") &&
+      event.target.matches("[data-time24],input[type=date]")
+    )
+      validateTimeFields(event.target.form);
+    if (event.target.closest("#assistant-log-form")) state.dirty = true;
+    if (event.target.closest("#assistant-request-form") && name === "loai") {
+      requestModal(value, dialog.querySelector("[name=buoiHocId]")?.value);
+      return;
+    }
+    const fields = {
+      "calendar-date": "calendarDate",
+      "class-filter": "classFilter",
+      "request-filter": "requestFilter",
+      "timesheet-month": "month",
+    };
+    if (name === "availability-month" && value) {
+      state.availabilityDate = value + "-01";
+      refreshAvailability();
+      return;
+    }
+    if (name === "calendar-month" && value) {
+      state.calendarDate = value + "-01";
+      await render();
+      return;
+    }
+    if (fields[name] && value !== undefined) {
+      if (
+        (name === "calendar-date" && !value) ||
+        (name === "timesheet-month" && !value)
+      )
+        return;
+      state[fields[name]] = value;
+      await render();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") accountMenu(false);
+  });
+  document.addEventListener(
+    "invalid",
+    (event) => {
+      const student = event.target.closest("details.assistant-student");
+      if (student) student.open = true;
+    },
+    true,
+  );
+  document.addEventListener("input", (event) => {
+    if (event.target.closest("#assistant-availability-form"))
+      validateAvailability();
+    if (
+      event.target.closest("#assistant-request-form") &&
+      event.target.name !== "loai"
+    )
+      validateRequest();
+    if (
+      event.target.closest("#assistant-log-form") &&
+      event.target.matches("[data-time24],input[type=date]")
+    )
+      validateTimeFields(event.target.form);
+    if (event.target.closest("#assistant-log-form")) state.dirty = true;
+  });
+  document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!form.id.startsWith("assistant-")) return;
+    event.preventDefault();
+    if (!validateTimeFields(form)) return;
+    if (form.id === "assistant-request-form" && !validateRequest()) return;
+    if (form.id === "assistant-availability-form" && !validateAvailability())
+      return;
+    const errorElement = form.querySelector("[data-form-error]");
+    errorElement.hidden = true;
+    form.setAttribute("aria-busy", "true");
+    const submitters = [...form.querySelectorAll("[type=submit]")];
+    submitters.forEach((item) => {
+      item.disabled = true;
+    });
+    const values = new FormData(form);
+    try {
+      if (form.id === "assistant-request-form") {
+        const body = Object.fromEntries(
+          [...values].filter(
+            ([key]) => !/^(checkinMoi|checkoutMoi)(Date|Time)$/.test(key),
+          ),
+        );
+        if (body.loai === "dieu_chinh_cong") {
+          body.checkinMoi = dateTimeValue(values, "checkinMoi");
+          body.checkoutMoi = dateTimeValue(values, "checkoutMoi");
+        }
+        body.buoiHocId = Number(body.buoiHocId);
+        await api(assistants + "/requests", "post", body);
+      } else if (form.id === "assistant-availability-form") {
+        await api(
+          assistants +
+            "/availability" +
+            (form.dataset.id ? "/" + form.dataset.id : ""),
+          form.dataset.id ? "put" : "post",
+          {
+            thu: Number(values.get("thu")),
+            gioBatDau: values.get("start"),
+            gioKetThuc: values.get("end"),
+          },
+        );
+      } else if (form.id === "assistant-shift-apply-form") {
+        await api(
+          "/academic/scheduling/openings/" + form.dataset.id + "/apply",
+          "post",
+          {
+            ghiChu: values.get("ghiChu")?.trim() || null,
+          },
+        );
+      } else if (form.id === "assistant-availability-delete-form") {
+        await api(assistants + "/availability/" + form.dataset.id, "delete");
+      } else if (form.id === "assistant-log-form") {
+        const number = (name) =>
+          values.get(name) === "" || values.get(name) === null ? null : Number(values.get(name));
+        const hwIdRaw = values.get("baiTapChamId");
+        const body = {
+          revision: state.detail.revision,
+          chuDe: values.get("chuDe"),
+          noiDung: values.get("noiDung"),
+          baiTapChamId: hwIdRaw ? Number(hwIdRaw) : null,
+          hocViens: state.detail.hocViens.map((student) => ({
+            hocVienId: Number(student.hocVienId),
+            trangThaiDiemDanh: values.get("attendance-" + student.hocVienId),
+            diemBaiTapGiay: number("score-" + student.hocVienId),
+            nhanXetBaiTap: values.get("comment-" + student.hocVienId) || null,
+            mucTiepThu: number("level-" + student.hocVienId),
+            thaiDo: values.get("attitude-" + student.hocVienId) || null,
+            nhanXetBuoiHoc: values.get("note-" + student.hocVienId),
+            huongCaiThien: values.get("improve-" + student.hocVienId),
+          })),
+        };
+        state.detail = await api(
+          `${assistants}/sessions/${state.sessionId}/log`,
+          "put",
+          body,
+        );
+        state.dirty = false;
+        if (event.submitter?.value === "checkout") {
+          try {
+            await api(
+              `${assistants}/sessions/${state.sessionId}/checkout`,
+              "post",
+              {},
+            );
+          } catch (error) {
+            await load();
+            await render();
+            toast("Sổ đã lưu. Check-out chưa thành công. " + error.message);
+            return;
           }
         }
       }
-
-      if (type === "dieu_chinh_cong") {
-        const adjErr = $("crAdjErr");
-        const cin = $("crCheckinMoi").value;
-        const cout = $("crCheckoutMoi").value;
-        if (!cin || !cout) {
-          adjErr.textContent = "Vui lòng nhập đầy đủ ngày và giờ Check-in, Check-out.";
-          valid = false;
-        } else if (cout <= cin) {
-          adjErr.textContent = "Giờ Check-out đề nghị phải sau giờ Check-in.";
-          valid = false;
-        } else {
-          adjErr.textContent = "";
-        }
-      }
-
-      submitBtn.disabled = !valid;
-      return valid;
-    }
-
-    typeSelect.addEventListener("change", syncFormSections);
-    form.addEventListener("input", validateLive);
-    syncFormSections();
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!validateLive()) return;
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Đang gửi…";
-
-      try {
-        const body = {
-          loai: typeSelect.value,
-          buoiHocId: Number($("crSessionSelect").value),
-          lyDo: $("crLyDo").value.trim(),
-        };
-
-        if (body.loai === "doi_gio") {
-          body.ngayMoi = $("crNgayMoi").value;
-          body.gioBatDau = $("crGioBatDau").value;
-          body.gioKetThuc = $("crGioKetThuc").value;
-        } else if (body.loai === "dieu_chinh_cong") {
-          body.checkinMoi = $("crCheckinMoi").value;
-          body.checkoutMoi = $("crCheckoutMoi").value;
-        }
-
-        const res = await HttpService.post("/people/assistants/requests", body);
-        closeDialog();
-        toast(`Gửi đơn thành công (${res.data?.ma || ""})!`, "ok");
-        await loadWorkspace(true);
-      } catch (err) {
-        toast(err.message, "err");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Gửi đơn ngay";
-      }
-    });
-  }
-
-  // ==========================================
-  // MÀN 7 — BẢNG CÔNG TRỢ GIẢNG
-  // ==========================================
-  function renderPaysheet(container) {
-    const ws = state.workspace;
-    const sessions = ws.sessions || [];
-    const [year, month] = state.payMonth.split("-").map(Number);
-
-    // Ca có check-in trong tháng này
-    const monthlyClocked = sessions.filter((s) => {
-      if (!s.checkinLuc) return false;
-      const [sY, sM] = s.ngay.slice(0, 7).split("-").map(Number);
-      return sY === year && sM === month;
-    });
-
-    let totalBillable = 0;
-    let completedCount = 0;
-    let lateCount = 0;
-
-    monthlyClocked.forEach((s) => {
-      if (s.checkoutLuc) completedCount++;
-      if (s.checkinTre) lateCount++;
-      if (s.soPhutTinhCong !== null && s.trangThaiCong !== "tu_choi") {
-        totalBillable += Number(s.soPhutTinhCong);
-      }
-    });
-
-    const monthSum = ws.monthSummary || {};
-    const kyCong = monthSum.kyCong || "mo";
-    let kyCongTag = '<span class="tag ok">Đang mở (Ghi nhận công)</span>';
-    if (kyCong === "chot") kyCongTag = '<span class="tag w">Đã chốt (Chờ thanh toán)</span>';
-    else if (kyCong === "da_tra") kyCongTag = '<span class="tag i">Đã trả lương</span>';
-
-    container.innerHTML = `
-      <div class="pg-head">
-        <div>
-          <h1>Bảng công trợ giảng</h1>
-          <p class="sub">Theo dõi số phút công thực tế theo nguyên tắc giao khung lịch (Chuẩn DB 004/005)</p>
-        </div>
-        <div class="row" style="gap:10px">
-          <label style="margin:0;font-size:13px;font-weight:600;color:var(--g700)">Chọn kỳ tháng:</label>
-          <input type="month" id="payMonthInput" value="${state.payMonth}" style="width:160px">
-        </div>
-      </div>
-
-      <!-- TỔNG KẾT THÁNG -->
-      <div class="assistant-stats-grid" style="margin-bottom:16px">
-        <div class="assistant-stat-card t">
-          <div class="assistant-stat-num">${new Intl.NumberFormat("vi-VN").format(totalBillable)} phút</div>
-          <div class="assistant-stat-label">Tổng phút tính công T${month}</div>
-        </div>
-        <div class="assistant-stat-card g">
-          <div class="assistant-stat-num">${completedCount} ca</div>
-          <div class="assistant-stat-label">Số ca hoàn thành (Đã Check-out)</div>
-        </div>
-        <div class="assistant-stat-card p">
-          <div class="assistant-stat-num">${lateCount} ca</div>
-          <div class="assistant-stat-label">Số ca đi trễ</div>
-        </div>
-        <div class="assistant-stat-card b">
-          <div style="font-size:14px;font-weight:700;margin-top:4px">${kyCongTag}</div>
-          <div class="assistant-stat-label" style="margin-top:8px">Trạng thái kỳ công tháng ${month}/${year}</div>
-        </div>
-      </div>
-
-      <div class="card" style="padding:18px 20px">
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>NGÀY HỌC</th>
-                <th>LỚP HỌC</th>
-                <th>KHUNG LỊCH</th>
-                <th>CHECK-IN</th>
-                <th>CHECK-OUT</th>
-                <th>PHÚT HIỆN DIỆN</th>
-                <th>PHÚT TÍNH CÔNG</th>
-                <th>ĐI TRỄ</th>
-                <th>TRẠNG THÁI</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${
-                monthlyClocked.length
-                  ? monthlyClocked
-                      .map((s) => {
-                        const zeroExplain =
-                          s.checkoutLuc && Number(s.soPhutTinhCong) === 0
-                            ? '<div style="font-size:11px;color:var(--err)">Check-in sau giờ kết thúc ca</div>'
-                            : "";
-                        return `
-                          <tr>
-                            <td><b>${esc(formatShortDate(s.ngay))}</b> (${esc(s.ngay)})</td>
-                            <td>
-                              <b>${esc(s.maLop)}</b>
-                              <div style="font-size:11.5px;color:var(--g500)">${esc(s.tenLop)}</div>
-                            </td>
-                            <td>${esc(s.gioBatDau.slice(0, 5))} – ${esc(s.gioKetThuc.slice(0, 5))}</td>
-                            <td>${esc(s.checkinLuc ? s.checkinLuc.slice(11, 16) : "—")}</td>
-                            <td>${esc(s.checkoutLuc ? s.checkoutLuc.slice(11, 16) : "—")}</td>
-                            <td>${s.soPhutThucTe !== null ? `${s.soPhutThucTe}p` : "—"}</td>
-                            <td>
-                              <b style="color:#0d9488;font-size:14px">
-                                ${s.soPhutTinhCong !== null ? `${s.soPhutTinhCong} phút` : "—"}
-                              </b>
-                              ${zeroExplain}
-                            </td>
-                            <td>
-                              ${s.checkinTre ? '<span class="tag r">Đi trễ</span>' : '<span class="tag ok">Đúng giờ</span>'}
-                            </td>
-                            <td>
-                              <span class="tag ${s.trangThaiCong === "hop_le" ? "ok" : s.trangThaiCong === "tu_choi" ? "r" : "w"}">
-                                ${s.trangThaiCong === "hop_le" ? "Hợp lệ" : s.trangThaiCong === "tu_choi" ? "Từ chối" : "Chờ duyệt"}
-                              </span>
-                            </td>
-                          </tr>
-                        `;
-                      })
-                      .join("")
-                  : `<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--g500)">Chưa có ca nào được check-in trong tháng ${month}/${year}.</td></tr>`
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    const pInput = $("payMonthInput");
-    if (pInput) {
-      pInput.addEventListener("change", () => {
-        state.payMonth = pInput.value;
-        renderCurrentTab();
+      await load();
+      dialog.close();
+      await render();
+      if (form.id.startsWith("assistant-availability-") && availabilityInProfile)
+        viewProfile();
+      toast(
+        form.id === "assistant-availability-delete-form"
+          ? "Đã xóa lịch rảnh."
+          : form.id === "assistant-shift-apply-form"
+            ? "Đã gửi đơn ứng tuyển. Chờ Giáo vụ phê duyệt."
+            : "Đã lưu thành công.",
+      );
+    } catch (error) {
+      errorElement.textContent = error.message;
+      errorElement.hidden = false;
+      errorElement.scrollIntoView({ block: "nearest" });
+    } finally {
+      form.removeAttribute("aria-busy");
+      submitters.forEach((item) => {
+        item.disabled = false;
       });
+      if (form.id === "assistant-availability-form" && form.isConnected)
+        validateAvailability();
+      if (form.id === "assistant-request-form" && form.isConnected)
+        validateRequest();
     }
-  }
-
-  // ==========================================
-  // THAO TÁC CHECK-IN / CHECK-OUT
-  // ==========================================
-  async function doCheckin(sessionId) {
+  });
+  document
+    .getElementById("assistant-menu")
+    .addEventListener("click", () =>
+      menu(!document.body.classList.contains("menu-open")),
+    );
+  document
+    .getElementById("assistant-backdrop")
+    .addEventListener("click", () => menu(false));
+  window.addEventListener("focus", async () => {
+    if (!state.workspace || state.dirty || dialog.open) return;
     try {
-      await HttpService.post(`/people/assistants/sessions/${sessionId}/checkin`, {});
-      toast("Check-in thành công!", "ok");
-      await loadWorkspace(true);
-    } catch (err) {
-      toast(err.message, "err");
+      await load();
+      await render();
+    } catch (error) {
+      toast(error.message);
     }
-  }
-
-  async function doCheckout(sessionId) {
-    try {
-      await HttpService.post(`/people/assistants/sessions/${sessionId}/checkout`, {});
-      toast("Check-out thành công!", "ok");
-      await loadWorkspace(true);
-    } catch (err) {
-      toast(err.message, "err");
+  });
+  window.addEventListener("beforeunload", (event) => {
+    if (state.dirty) {
+      event.preventDefault();
+      event.returnValue = "";
     }
-  }
-
-  // ==========================================
-  // DIALOG CHI TIẾT CA HỌC
-  // ==========================================
-  async function openSessionDetailDialog(sessionId) {
-    openDialog("Chi tiết ca học", '<p role="status">Đang tải chi tiết ca học…</p>');
-    try {
-      const res = await HttpService.get(`/people/assistants/sessions/${sessionId}`);
-      const s = res.data;
-      const html = `
-        <div class="item"><span>Lớp học</span><b>${esc(s.maLop)} — ${esc(s.tenLop)}</b></div>
-        <div class="item"><span>Môn học &amp; Cấp lớp</span><span>${esc(s.tenMon)} · ${esc(s.tenCapLop)}</span></div>
-        <div class="item"><span>Ngày dạy &amp; Giờ</span><b>${esc(formatShortDate(s.ngay))} (${esc(s.gioBatDau.slice(0, 5))} – ${esc(s.gioKetThuc.slice(0, 5))})</b></div>
-        <div class="item"><span>Địa điểm / Cơ sở</span><span>${esc(s.phongHoc || "P.Học")} — ${esc(s.tenCoSo || "Cơ sở 1")}</span></div>
-        <div class="item"><span>Giáo viên chính</span><b>${esc(s.tenGiaoVienChinh || "Chưa có")}</b></div>
-        <div class="item"><span>Trợ giảng phụ trách</span><b>${esc(s.tenTroGiang || "Chính bạn")}</b></div>
-        <div class="item"><span>Chủ đề buổi học</span><span>${esc(s.chuDeBaiHoc || "Chưa cập nhật")}</span></div>
-        <div class="item"><span>Check-in ghi nhận</span><b>${esc(s.checkinLuc || "Chưa Check-in")}</b></div>
-        <div class="item"><span>Check-out ghi nhận</span><b>${esc(s.checkoutLuc || "Chưa Check-out")}</b></div>
-        <div class="item"><span>Phút tính công (Giao lịch)</span><b style="color:#0d9488">${s.soPhutTinhCong !== null ? `${s.soPhutTinhCong} phút` : "Chưa có"}</b></div>
-
-        <div class="row-b" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--g200)">
-          <button type="button" class="btn sm" data-dialog-close>Đóng</button>
-          <div class="row" style="gap:8px">
-            <button type="button" class="btn sm" id="dlgBtnRequest" data-id="${s.id}">Làm đơn báo bận</button>
-            ${
-              !s.checkinLuc
-                ? `<button type="button" class="btn sm p" id="dlgBtnCheckin" data-id="${s.id}">Check-in ca</button>`
-                : !s.checkoutLuc
-                ? `<button type="button" class="btn sm p" id="dlgBtnCheckout" data-id="${s.id}">Check-out ca</button>`
-                : ""
-            }
-            <button type="button" class="btn sm p" id="dlgBtnLog" data-id="${s.id}">Hỗ trợ điểm danh</button>
-          </div>
-        </div>
-      `;
-      openDialog(`Chi tiết ca ${s.maLop} (${s.ngay})`, html);
-
-      const reqBtn = $("dlgBtnRequest");
-      if (reqBtn) reqBtn.addEventListener("click", () => openCreateRequestModal(s.id));
-      const inBtn = $("dlgBtnCheckin");
-      if (inBtn) inBtn.addEventListener("click", () => { closeDialog(); doCheckin(s.id); });
-      const outBtn = $("dlgBtnCheckout");
-      if (outBtn) outBtn.addEventListener("click", () => { closeDialog(); doCheckout(s.id); });
-      const logBtn = $("dlgBtnLog");
-      if (logBtn) logBtn.addEventListener("click", () => {
-        closeDialog();
-        state.sessionId = s.id;
-        setTab("log");
-      });
-    } catch (err) {
-      openDialog("Lỗi", `<p class="account-error">${esc(err.message)}</p>`);
-    }
-  }
-
-  // ==========================================
-  // THÔNG BÁO (NOTIFICATIONS)
-  // ==========================================
-  let notifPopover = null;
-  async function toggleNotifications() {
-    if (notifPopover) {
-      notifPopover.remove();
-      notifPopover = null;
-      return;
-    }
-
-    const bell = $("assistant-bell");
-    if (!bell) return;
-
-    notifPopover = document.createElement("div");
-    notifPopover.className = "assistant-notif-popover";
-    notifPopover.innerHTML = `
-      <div class="assistant-notif-head">
-        <b style="font-size:13px">Thông báo của bạn</b>
-        <button type="button" class="btn sm" id="btnReadAllNotif" style="padding:2px 8px;font-size:11px">Đã đọc tất cả</button>
-      </div>
-      <div class="assistant-notif-list" id="notifList">
-        <div style="padding:16px;text-align:center;font-size:12px;color:var(--g500)">Đang tải thông báo…</div>
-      </div>
-    `;
-    bell.parentElement.appendChild(notifPopover);
-
-    const readAllBtn = $("btnReadAllNotif");
-    if (readAllBtn) {
-      readAllBtn.addEventListener("click", async () => {
-        try {
-          await HttpService.post("/communication/notifications/read-all", {});
-          loadNotificationsList();
-        } catch (_) {}
-      });
-    }
-
-    loadNotificationsList();
-  }
-
-  async function loadNotificationsList() {
-    const list = $("notifList");
-    if (!list) return;
-    try {
-      const res = await HttpService.get("/communication/notifications");
-      const items = res.data || [];
-      const unreadCount = items.filter((n) => !n.daDoc && !n.readAt).length;
-
-      const unreadBadge = $("assistant-unread");
-      if (unreadBadge) {
-        if (unreadCount > 0) {
-          unreadBadge.textContent = unreadCount > 99 ? "99+" : unreadCount;
-          unreadBadge.hidden = false;
-        } else {
-          unreadBadge.hidden = true;
-        }
-      }
-
-      if (!items.length) {
-        list.innerHTML = '<div style="padding:20px;text-align:center;font-size:12.5px;color:var(--g500)">Chưa có thông báo nào.</div>';
-        return;
-      }
-
-      list.innerHTML = items
-        .slice(0, 15)
-        .map(
-          (n) => `
-        <div class="assistant-notif-item ${!n.daDoc && !n.readAt ? "unread" : ""}">
-          <div style="font-weight:700;font-size:12.5px;color:var(--g900);margin-bottom:2px">${esc(n.tieuDe)}</div>
-          <div style="font-size:12px;color:var(--g700);line-height:1.4">${esc(n.noiDung)}</div>
-          <div style="font-size:10.5px;color:var(--g400);margin-top:4px">${esc(n.createdAt ? n.createdAt.slice(0, 16) : "")}</div>
-        </div>
-      `
-        )
-        .join("");
-    } catch (_) {
-      list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--err);font-size:12px">Không thể tải thông báo.</div>';
-    }
-  }
-
-  // ==========================================
-  // KHỞI TẠO VÀ BINDING TOÀN CỤC
-  // ==========================================
-  function init() {
-    // Menu điều hướng
-    document.addEventListener("click", (e) => {
-      const navItem = e.target.closest("[data-tab]");
-      if (navItem) {
-        const tab = navItem.dataset.tab;
-        if (tab && screens[tab]) setTab(tab);
-        return;
-      }
-
-      // Dialog close
-      if (e.target.closest("[data-dialog-close]")) {
-        closeDialog();
-        return;
-      }
-
-      // Sidebar mobile menu toggle
-      if (e.target.closest("#assistant-menu")) {
-        const side = $("assistant-sidebar");
-        const backdrop = $("assistant-backdrop");
-        if (side && backdrop) {
-          const isOpen = side.classList.toggle("open");
-          backdrop.hidden = !isOpen;
-          e.target.closest("#assistant-menu").setAttribute("aria-expanded", String(isOpen));
-        }
-        return;
-      }
-
-      if (e.target.closest("#assistant-backdrop")) {
-        const side = $("assistant-sidebar");
-        const backdrop = $("assistant-backdrop");
-        if (side) side.classList.remove("open");
-        if (backdrop) backdrop.hidden = true;
-        const menuBtn = $("assistant-menu");
-        if (menuBtn) menuBtn.setAttribute("aria-expanded", "false");
-        return;
-      }
-
-      // Bell
-      if (e.target.closest("#assistant-bell")) {
-        toggleNotifications();
-        return;
-      }
-      if (notifPopover && !e.target.closest(".assistant-notif-popover") && !e.target.closest("#assistant-bell")) {
-        notifPopover.remove();
-        notifPopover = null;
-      }
-
-      // Account menu toggle
-      const avatarBtn = e.target.closest("#assistant-avatar");
-      const accountMenu = $("assistant-account-menu");
-      if (avatarBtn) {
-        if (accountMenu) {
-          const isHidden = accountMenu.hidden;
-          accountMenu.hidden = !isHidden;
-          avatarBtn.setAttribute("aria-expanded", String(isHidden));
-        }
-        return;
-      }
-
-      // Action inside account menu
-      const actionBtn = e.target.closest("[data-action]");
-      if (actionBtn) {
-        const act = actionBtn.dataset.action;
-        if (act === "profile-view") AccountUI.view();
-        else if (act === "profile") AccountUI.edit();
-        else if (act === "logout") AccountUI.logout();
-        if (accountMenu) accountMenu.hidden = true;
-      }
+  });
+  window.addEventListener("hashchange", () =>
+    navigate(location.hash.split("ta-")[1] || "dash"),
+  );
+  document.getElementById("assistant-nav").innerHTML = Object.entries(screens)
+    .map(([key, label], index) =>
+      key === "log" || key === "session"
+        ? ""
+        : `<button type="button" data-action="tab" data-id="${key}"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24">${icons[index]}</svg></span>${label}</button>`,
+    )
+    .join("");
+  window.addEventListener("account-profile-updated", () => {
+    profileUpdate = load()
+      .then(() => {
+        if (!state.dirty) return render();
+      })
+      .catch((error) => toast(error.message));
+  });
+  AccountUI.setProfileView(async () => {
+    await profileUpdate;
+    return availabilityCalendar();
+  });
+  load()
+    .then(() =>
+      navigate(location.hash.split("ta-")[1] || "dash", null, false),
+    )
+    .catch((error) => {
+      content.innerHTML =
+        head("Cổng Trợ giảng") +
+        `<div class="assistant-error" role="alert">${escape(error.message)} ${button("Thử lại", "reload")}</div>`;
     });
-
-    // Load unread count initially
-    setTimeout(() => {
-      loadNotificationsList();
-    }, 600);
-
-    // Initial workspace load
-    loadWorkspace();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
 })();

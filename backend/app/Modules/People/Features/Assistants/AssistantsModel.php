@@ -5,7 +5,7 @@ use App\Shared\ApiModel;
 
 final class AssistantsModel
 {
-    private const FORBIDDEN_PATTERN = '/^(don_gia|donGia|luong|thu_lao|thuLao|muc_tra|mucTra|cach_tinh_luong|cachTinhLuong|tien|hocPhi|hoc_phi|donGiaGioChuan|don_gia_gio_chuan|hocPhiBuoiDeXuat|hoc_phi_buoi_de_xuat)/i';
+    private const FORBIDDEN_PATTERN = '/^(don_?gia|luong|thu_?lao|muc_?tra|cach_?tinh_?luong|tien|hoc_?phi|ngan_?hang|so_?tai_?khoan|chu_?tai_?khoan)/i';
 
     public static function map(mixed $data): mixed
     {

@@ -27,6 +27,8 @@ final class SchedulingRepository
                 THEN 'Ca đang là buổi gốc của lịch học bù. Kiểm tra ca bù liên kết trong thời khóa biểu.'
             WHEN EXISTS (SELECT 1 FROM dieu_chinh_cong d JOIN phan_cong_buoi_hoc p ON p.id=d.phan_cong_id WHERE p.buoi_hoc_id=b.id)
                 THEN 'Ca đã có yêu cầu điều chỉnh công.'
+            WHEN EXISTS (SELECT 1 FROM de_xuat_tuyen_ca dt WHERE dt.buoi_hoc_id=b.id)
+                THEN 'Ca đã có đề xuất tuyển nhân sự liên kết.'
             ELSE NULL END";
     }
 
@@ -47,7 +49,7 @@ final class SchedulingRepository
     public static function sessions(array $filters,array $user,?int $id=null): array
     {
         [$scope,$params]=Access::classScope($user);
-        $sql='SELECT b.*,l.ma_lop,l.ten_lop,'.self::deletionBlockerSql().' AS ly_do_khong_xoa,pc.user_id AS day_chinh_user_id,u.hoten AS ten_nguoi_day_chinh,
+        $sql='SELECT b.*,l.ma_lop,l.ten_lop,l.loai_lop,'.self::deletionBlockerSql().' AS ly_do_khong_xoa,pc.user_id AS day_chinh_user_id,u.hoten AS ten_nguoi_day_chinh,
             (b.trang_thai=\'du_kien\' AND TIMESTAMP(b.ngay,b.gio_bat_dau)>NOW()) AS chua_bat_dau,
             (SELECT GROUP_CONCAT(ta.user_id) FROM phan_cong_buoi_hoc ta WHERE ta.buoi_hoc_id=b.id AND ta.vai_tro=\'tro_giang\' AND ta.trang_thai<>\'da_go\') AS tro_giang_ids,
             (SELECT GROUP_CONCAT(hb.hoc_vien_id) FROM hoc_bu_hoc_vien hb WHERE hb.buoi_bu_id=b.id) AS hoc_bu_ids,

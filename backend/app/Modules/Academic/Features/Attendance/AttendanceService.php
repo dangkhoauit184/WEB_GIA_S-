@@ -1,17 +1,19 @@
 <?php
 namespace App\Modules\Academic\Features\Attendance;
 
-use App\Shared\{ApiException, Input, Store};
+use App\Shared\{Access, ApiException, Input, Store};
 use App\Modules\People\Features\Teachers\TeachersService;
+use CodeIgniter\HTTP\Files\UploadedFile;
 
 final class AttendanceService
 {
     public static function workspace(): array
     {
         $actor = AttendanceFilter::teacher();
-        return AttendanceModel::map(['server_now'=>Store::one('SELECT NOW() AS now')['now'],
+        $now = Store::one('SELECT NOW() AS now')['now'];
+        return AttendanceModel::map(['server_now'=>$now,
             'profile'=>TeachersService::detail($actor['teacherId']),
-            'sessions'=>AttendanceRepository::sessions($actor['userId']),
+            'sessions'=>AttendanceRepository::sessions($actor['userId'], $now),
             'classes'=>AttendanceRepository::classes($actor), 'requests'=>AttendanceRepository::requests($actor['userId'])]);
     }
 
@@ -19,6 +21,36 @@ final class AttendanceService
     {
         $actor = AttendanceFilter::teacher();
         return AttendanceModel::map(AttendanceRepository::detail($id, $actor['userId']));
+    }
+
+    public static function uploadMaterial(int $id, ?UploadedFile $file, array $meta): array
+    {
+        $actor = AttendanceFilter::teacher();
+        SessionMaterialService::saveMaterial(
+            $id,
+            $actor,
+            static fn(int $sid, int $uid): array => AttendanceRepository::lock($sid, $uid),
+            $file,
+            $meta
+        );
+        return self::detail($id);
+    }
+
+    public static function removeMaterial(int $id): array
+    {
+        $actor = AttendanceFilter::teacher();
+        SessionMaterialService::removeMaterial(
+            $id,
+            $actor,
+            static fn(int $sid, int $uid): array => AttendanceRepository::lock($sid, $uid)
+        );
+        return self::detail($id);
+    }
+
+    public static function downloadMaterial(int $id): array
+    {
+        $user = Access::user();
+        return SessionMaterialService::authorizeDownload($id, $user);
     }
 
     private static function writable(array $session): void
@@ -70,23 +102,21 @@ final class AttendanceService
             $received = array_column($data['hocViens'], 'hocVienId');
             sort($expected); sort($received);
             if ($expected !== $received) throw new ApiException(409, 'Danh sách học viên đã thay đổi hoặc không thuộc ca học.');
-            Store::execute('UPDATE buoi_hoc SET chu_de_bai_hoc=?,noi_dung_bai_hoc=?,file_bai_giang_url=? WHERE id=?',
-                [$data['chuDe'], $data['noiDung'], $data['fileBaiGiangUrl'], $id]);
-            $homework = $before['baiTap'];
-            if ($data['baiTap'] !== null) {
-                $values = $data['baiTap'];
-                if ($homework) {
-                    Store::update('bai_tap', 'id', (int)$homework['id'], $values,
-                        ['tieuDe'=>'tieu_de', 'noiDung'=>'noi_dung', 'fileDeBaiUrl'=>'file_de_bai_url', 'hanNop'=>'han_nop']);
-                } else {
-                    $homework = ['id'=>Store::insert('bai_tap', ['buoi_hoc_id'=>$id, 'tieu_de'=>$values['tieuDe'],
-                        'noi_dung'=>$values['noiDung'], 'file_de_bai_url'=>$values['fileDeBaiUrl'], 'han_nop'=>$values['hanNop'], 'nguoi_tao_id'=>$actor['userId']])];
-                }
-            }
+            Store::execute('UPDATE buoi_hoc SET chu_de_bai_hoc=?,noi_dung_bai_hoc=? WHERE id=?',
+                [$data['chuDe'], $data['noiDung'], $id]);
+            $requestedHomeworkId = isset($data['baiTapChamId']) && $data['baiTapChamId'] !== null
+                ? (int)$data['baiTapChamId']
+                : null;
             foreach ($data['hocViens'] as $student) {
                 $existing = Store::one('SELECT id,bai_tap_id FROM so_theo_doi_buoi_hoc WHERE buoi_hoc_id=? AND hoc_vien_id=?', [$id, $student['hocVienId']]);
-                $assignment = $existing['bai_tap_id'] ?? $homework['id'] ?? null;
-                if ($student['diemBaiTapGiay'] !== null && !$assignment) throw new ApiException(400, 'Nhập tên bài tập trước khi chấm điểm.');
+                $assignment = SessionMaterialService::resolveGradingHomeworkId(
+                    $session,
+                    $requestedHomeworkId,
+                    $existing,
+                    (int)$student['hocVienId'],
+                    $student['diemBaiTapGiay'] !== null ? (float)$student['diemBaiTapGiay'] : null,
+                    $student['nhanXetBaiTap']
+                );
                 $values = ['trang_thai_diem_danh'=>$student['trangThaiDiemDanh'], 'bai_tap_id'=>$assignment,
                     'diem_bai_tap_giay'=>$student['diemBaiTapGiay'], 'nhan_xet_bai_tap'=>$student['nhanXetBaiTap'],
                     'muc_tiep_thu'=>$student['mucTiepThu'], 'thai_do'=>$student['thaiDo'],
@@ -125,12 +155,13 @@ final class AttendanceService
             $session = AttendanceRepository::lock($data['buoiHocId'], $actor['userId']);
             if ($session['vai_tro'] !== 'day_chinh') throw new ApiException(403, 'Ca này chưa phân công bạn làm giáo viên chính.');
             $type = $data['loai'];
-            if ($type !== 'dieu_chinh_cong') {
-                $now = Store::one('SELECT NOW() AS now')['now'];
-                if ($session['ngay'].' '.$session['gio_bat_dau'] <= $now || $session['checkin_luc'] || in_array($session['trang_thai'], ['huy','doi','da_day'], true)) {
-                    throw new ApiException(409, 'Chỉ gửi đề nghị nghỉ hoặc đổi lịch cho ca chưa bắt đầu.');
-                }
-            }
+            $now = Store::one('SELECT NOW() AS now')['now'];
+            ShiftRequestPolicy::assertCanRequest(
+                $session,
+                $now,
+                'day_chinh',
+                $type === 'dieu_chinh_cong' ? 'time_adjustment' : 'reschedule'
+            );
             if ($type === 'dieu_chinh_cong') {
                 $table = 'dieu_chinh_cong';
                 $values = ['phan_cong_id'=>$session['phan_cong_id'], 'loai'=>$session['checkin_luc'] ? 'sua_gio' : 'bo_sung_checkin',

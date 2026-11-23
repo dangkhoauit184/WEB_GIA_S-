@@ -15,6 +15,7 @@
       <h2>Lối tắt công việc</h2>
       <div class="btn-group" style="flex-direction:column;gap:8px">
         <button class="btn p" onclick="showS('staff-schedule')">Thời khóa biểu &amp; Xếp ca học</button>
+        <button class="btn" onclick="showS('staff-recruitment')">Đề xuất tuyển GV / Trợ giảng &amp; Duyệt ứng tuyển</button>
         <button class="btn" onclick="showS('staff-intake')">Tuyển sinh &amp; Ghép người dạy (4 bước)</button>
         <button class="btn" onclick="showS('staff-parents')">Quản lý Hồ sơ Phụ huynh &amp; Liên kết Con</button>
         <button class="btn" onclick="showS('staff-billing')">Phát hành Hóa đơn Trọn khóa &amp; Theo dõi Thu tiền</button>
@@ -29,10 +30,47 @@
 
     </div>
     <div class="row">
+      <button class="btn sm" onclick="openShiftRecruitmentForm()">Đăng tuyển GV / Trợ giảng</button>
       <button class="btn p sm" onclick="openSessionForm()">+ Xếp ca học mới</button>
     </div>
   </div>
   <div id="staffCalContainer"></div>
+</section></template>
+<template id="view-staff-recruitment"><section class="screen active" id="staff-recruitment">
+  <div class="pg-head">
+    <div>
+      <h1>Đề xuất tuyển Giáo viên / Trợ giảng &amp; Duyệt ứng tuyển</h1>
+      <p class="sub">Đăng đề xuất phân công nhân sự cho ca học sắp diễn ra và duyệt đơn ứng tuyển phù hợp lịch rảnh, chuyên môn.</p>
+    </div>
+    <div class="row">
+      <button type="button" class="btn sm" id="recruitmentReloadBtn">Tải lại</button>
+      <button type="button" class="btn p sm" id="recruitmentCreateBtn">+ Đăng đề xuất tuyển nhân sự</button>
+    </div>
+  </div>
+  <div class="card">
+    <form id="recruitmentFilterForm" class="staff-search" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px">
+      <label>Tìm kiếm<input name="q" placeholder="Mã đề xuất, mã lớp, tên lớp hoặc môn" maxlength="150"></label>
+      <label>Vị trí<select name="vaiTro"><option value="">Tất cả vị trí</option><option value="day_chinh">Giáo viên (Dạy chính)</option><option value="tro_giang">Trợ giảng</option></select></label>
+      <label>Trạng thái<select name="trangThai"><option value="">Tất cả trạng thái</option><option value="dang_mo">Đang mở tuyển</option><option value="da_du_nguoi">Đã đủ người</option><option value="da_dong">Đã đóng</option></select></label>
+      <button type="submit" class="btn">Lọc danh sách</button>
+    </form>
+    <div class="tw"><table>
+      <thead><tr><th>Mã đề xuất</th><th>Lớp · Môn · Khối</th><th>Ca học · Địa điểm</th><th>Vị trí &amp; Chỉ tiêu</th><th>Yêu cầu &amp; Hiện có</th><th>Ứng tuyển</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody id="recruitmentOpeningsBody"><tr><td colspan="8" class="admin-empty">Đang tải…</td></tr></tbody>
+    </table></div>
+  </div>
+  <div class="card" id="recruitmentAppsSection">
+    <div class="row-b" style="margin-bottom:10px">
+      <div>
+        <h2 id="recruitmentAppsTitle" style="margin:0">Danh sách ứng tuyển</h2>
+        <p id="recruitmentAppsMeta" class="sub" style="margin:4px 0 0">Chọn một đề xuất ở bảng trên để xem và duyệt ứng viên.</p>
+      </div>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Ứng viên</th><th>Lời nhắn ứng tuyển</th><th>Kiểm tra điều kiện</th><th>Thời gian gửi</th><th>Trạng thái &amp; Kết quả</th><th>Thao tác</th></tr></thead>
+      <tbody id="recruitmentAppsBody"><tr><td colspan="6" class="admin-empty">Chưa chọn đề xuất tuyển nhân sự.</td></tr></tbody>
+    </table></div>
+  </div>
 </section></template>
 <template id="view-staff-classes"><section class="screen active" id="staff-classes">
   <div class="pg-head">

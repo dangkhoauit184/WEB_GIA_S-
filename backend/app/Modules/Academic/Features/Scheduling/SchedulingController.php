@@ -14,4 +14,9 @@ final class SchedulingController extends \App\Shared\ApiController
     public function assign($id) { return $this->respond(fn()=>SchedulingService::assign((int)$id,$this->input()),201); }
     public function update($id) { return $this->respond(fn()=>SchedulingService::update((int)$id,$this->input())); }
     public function delete($id) { return $this->respond(fn()=>SchedulingService::delete((int)$id,(string)$this->request->getBody()===''?[]:$this->input())); }
+    public function openings() { return $this->respond(fn()=>ShiftRecruitment::list($this->request->getGet())); }
+    public function createOpening() { return $this->respond(fn()=>ShiftRecruitment::create($this->input()),201); }
+    public function closeOpening($id) { return $this->respond(fn()=>ShiftRecruitment::close((int)$id,(string)$this->request->getBody()===''?[]:$this->input())); }
+    public function applyOpening($id) { return $this->respond(fn()=>ShiftRecruitment::apply((int)$id,(string)$this->request->getBody()===''?[]:$this->input()),201); }
+    public function reviewApplication($id) { return $this->respond(fn()=>ShiftRecruitment::review((int)$id,$this->input())); }
 }

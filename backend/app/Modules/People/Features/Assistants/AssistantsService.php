@@ -1,8 +1,9 @@
 <?php
 namespace App\Modules\People\Features\Assistants;
 
+use App\Modules\Academic\Features\Attendance\{SessionMaterialService, ShiftRequestPolicy};
 use App\Shared\{ApiException, Input, Store};
-use App\Modules\People\Features\Teachers\TeachersService;
+use App\Modules\People\Features\Teachers\{TeachersRepository, TeachersService, TeachersValidator};
 
 final class AssistantsService
 {
@@ -15,9 +16,10 @@ final class AssistantsService
         return AssistantsModel::map([
             'server_now' => $serverNow,
             'profile' => $profile,
-            'sessions' => AssistantsRepository::sessions($actor['userId']),
+            'sessions' => AssistantsRepository::sessions($actor['userId'], $serverNow),
             'classes' => AssistantsRepository::classes($actor['userId']),
             'requests' => AssistantsRepository::requests($actor['userId']),
+            'periods' => AssistantsRepository::periods($actor['userId']),
             'month_summary' => AssistantsRepository::monthSummary($actor['userId'], $serverNow),
         ]);
     }
@@ -81,6 +83,98 @@ final class AssistantsService
         });
 
         return self::detail($id);
+    }
+
+    public static function saveLog(int $id, array $body): array
+    {
+        $actor = AssistantsFilter::assistant();
+        $data = AssistantsValidator::log($body);
+
+        Store::transaction(function () use ($id, $actor, $data) {
+            $session = AssistantsRepository::lock($id, $actor['userId']);
+            self::writable($session);
+
+            if (!$session['checkin_luc']) {
+                throw new ApiException(409, 'Bạn cần check-in trước khi ghi sổ buổi học.');
+            }
+
+            $before = AssistantsRepository::detail($id, $actor['userId']);
+            if (!hash_equals($before['revision'], $data['revision'])) {
+                throw new ApiException(409, 'Sổ buổi học vừa thay đổi. Tải lại trước khi lưu.');
+            }
+
+            $expected = array_map('intval', array_column($before['hocViens'], 'hoc_vien_id'));
+            $received = array_column($data['hocViens'], 'hocVienId');
+            sort($expected);
+            sort($received);
+            if ($expected !== $received) {
+                throw new ApiException(409, 'Danh sách học viên đã thay đổi hoặc không thuộc ca học.');
+            }
+
+            if ($data['chuDe'] !== $before['chu_de_bai_hoc']
+                || $data['noiDung'] !== $before['noi_dung_bai_hoc']) {
+                Store::execute('UPDATE buoi_hoc SET chu_de_bai_hoc=?, noi_dung_bai_hoc=? WHERE id=?',
+                    [$data['chuDe'], $data['noiDung'], $id]);
+            }
+
+            $requestedHomeworkId = isset($data['baiTapChamId']) && $data['baiTapChamId'] !== null
+                ? (int)$data['baiTapChamId']
+                : null;
+
+            foreach ($data['hocViens'] as $student) {
+                $existing = Store::one('SELECT id, bai_tap_id FROM so_theo_doi_buoi_hoc WHERE buoi_hoc_id=? AND hoc_vien_id=?',
+                    [$id, $student['hocVienId']]);
+                $assignment = SessionMaterialService::resolveGradingHomeworkId(
+                    $session,
+                    $requestedHomeworkId,
+                    $existing,
+                    (int)$student['hocVienId'],
+                    $student['diemBaiTapGiay'] !== null ? (float)$student['diemBaiTapGiay'] : null,
+                    $student['nhanXetBaiTap']
+                );
+                $values = [
+                    'trang_thai_diem_danh' => $student['trangThaiDiemDanh'],
+                    'bai_tap_id' => $assignment,
+                    'diem_bai_tap_giay' => $student['diemBaiTapGiay'],
+                    'nhan_xet_bai_tap' => $student['nhanXetBaiTap'],
+                    'muc_tiep_thu' => $student['mucTiepThu'],
+                    'thai_do' => $student['thaiDo'],
+                    'nhan_xet_buoi_hoc' => $student['nhanXetBuoiHoc'],
+                    'huong_cai_thien' => $student['huongCaiThien'],
+                    'nguoi_nhap_id' => $actor['userId'],
+                ];
+                if ($existing) {
+                    Store::update('so_theo_doi_buoi_hoc', 'id', (int)$existing['id'], $values, array_combine(array_keys($values), array_keys($values)));
+                } else {
+                    Store::insert('so_theo_doi_buoi_hoc', ['buoi_hoc_id' => $id, 'hoc_vien_id' => $student['hocVienId']] + $values);
+                }
+                $parent = Store::one('SELECT phu_huynh_user_id FROM hoc_vien WHERE id=?', [$student['hocVienId']]);
+                if ($parent && $parent['phu_huynh_user_id']) {
+                    Store::execute("INSERT INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung)
+                        VALUES (?,'nhan_xet',?,?,'buoi_hoc',?,?) ON DUPLICATE KEY UPDATE noi_dung=VALUES(noi_dung)",
+                        [$parent['phu_huynh_user_id'], 'Sổ buổi học · '.$session['ma_lop'], $session['ngay'].' · '.$data['chuDe'], $id, 'teacher-log:'.$id.':'.$student['hocVienId']]);
+                }
+            }
+
+            Store::recordAudit($actor['userId'], 'sua', 'buoi_hoc', $id, $before,
+                ['thao_tac' => 'tro_giang_ghi_so_buoi_hoc', 'chu_de' => $data['chuDe'], 'hoc_vien_ids' => $received]);
+        });
+
+        return self::detail($id);
+    }
+
+    public static function saveAvailability(array $body, ?int $id = null): array
+    {
+        $actor = AssistantsFilter::assistant();
+        AssistantsValidator::fields($body, ['thu', 'gioBatDau', 'gioKetThuc']);
+        $slot = TeachersValidator::validate(['lichRanhs' => [$body]], false)['lichRanhs'][0];
+        return TeachersRepository::availability($actor + ['teacherId' => $actor['assistantId']], $id, $slot);
+    }
+
+    public static function deleteAvailability(int $id): array
+    {
+        $actor = AssistantsFilter::assistant();
+        return TeachersRepository::availability($actor + ['teacherId' => $actor['assistantId']], $id, null);
     }
 
     public static function attendance(int $id, array $body): array
@@ -183,13 +277,12 @@ final class AssistantsService
             }
 
             $now = Store::one('SELECT NOW() AS now')['now'];
-            if ($type !== 'dieu_chinh_cong') {
-                if ($session['ngay'].' '.$session['gio_bat_dau'] <= $now
-                    || $session['checkin_luc']
-                    || in_array($session['trang_thai'], ['huy', 'doi', 'da_day'], true)) {
-                    throw new ApiException(409, 'Chỉ gửi đơn báo bận hoặc đổi giờ cho ca chưa bắt đầu.');
-                }
-            }
+            ShiftRequestPolicy::assertCanRequest(
+                $session,
+                $now,
+                'tro_giang',
+                $type === 'dieu_chinh_cong' ? 'time_adjustment' : 'reschedule'
+            );
 
             if ($type === 'dieu_chinh_cong') {
                 $table = 'dieu_chinh_cong';

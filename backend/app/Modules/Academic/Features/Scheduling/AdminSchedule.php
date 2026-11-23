@@ -41,14 +41,20 @@ final class AdminSchedule
             if(!$campusProvided && !$data['isOnline']) $data['coSoId']=$class['co_so_id'];
             if(!in_array($class['trang_thai'],['sap_bat_dau','dang_hoc','tam_dung'],true)) throw new ApiException(409,'Lớp đã kết thúc hoặc hủy.');
             if($actor['role']==='GIAO_VU' && $actor['coSoId'] && $data['coSoId'] && (int)$data['coSoId']!==(int)$actor['coSoId']) throw new ApiException(403,'Cơ sở nằm ngoài phạm vi phụ trách.');
+            $mainPerson=null;
             foreach([$data['userId'],...$data['troGiangIds']] as $index=>$userId) {
                 if(!$userId) continue;
                 $person=Store::one("SELECT phan_loai FROM nhan_su_chuyen_mon WHERE user_id=? AND deleted_at IS NULL AND trang_thai='hoat_dong'",[$userId]);
                 if(!$person || ($index===0 && !array_intersect(explode(',',$person['phan_loai']),['giao_vien','gia_su'])) || ($index>0 && !in_array('tro_giang',explode(',',$person['phan_loai']),true))) {
                     throw new ApiException(400,'Người được phân công cần hồ sơ đang hoạt động phù hợp vai trò.');
                 }
+                if($index===0) $mainPerson=$person;
             }
             if($actor['role']==='GIAO_VU') {
+                $mainTypes=array_filter(explode(',',(string)($mainPerson['phan_loai']??'')));
+                if(in_array('gia_su',$mainTypes,true) && !in_array('giao_vien',$mainTypes,true) && $class['loai_lop']==='nhom') {
+                    throw new ApiException(400,'Gia sư chỉ được xếp ca thuộc lớp kèm gia sư (1:1 hoặc 1:2), không xếp vào lớp nhóm.');
+                }
                 $qualified=Store::one('SELECT sm.id FROM nhan_su_mon sm JOIN nhan_su_chuyen_mon ns ON ns.id=sm.nhan_su_id
                     WHERE ns.user_id=? AND sm.mon_hoc_id=? AND ? BETWEEN sm.cap_lop_tu AND sm.cap_lop_den',[$data['userId'],$class['mon_hoc_id'],$class['cap_lop_id']]);
                 $weekday=(int)(new \DateTimeImmutable($data['ngay']))->format('N')+1;
@@ -102,6 +108,17 @@ final class AdminSchedule
                         don_gia=(SELECT don_gia_gio_chuan FROM nhan_su_chuyen_mon WHERE user_id=? AND deleted_at IS NULL),cach_tinh_luong='theo_gio' WHERE id=?",[$actor['userId'],$actor['userId'],$userId,$old['id']]);
                     elseif($old) Store::execute("UPDATE phan_cong_buoi_hoc SET trang_thai='da_phan_cong',phan_cong_boi=? WHERE id=?",[$actor['userId'],$old['id']]);
                     else Store::insert('phan_cong_buoi_hoc',['buoi_hoc_id'=>$sessionId,'user_id'=>$userId,'vai_tro'=>$role,'don_gia'=>0,'cach_tinh_luong'=>'theo_gio','phan_cong_boi'=>$actor['userId']]);
+                    if($date>=date('Y-m-d')) {
+                        $roleLabel=$role==='tro_giang'?'Trợ giảng':'Dạy chính';
+                        Store::execute("INSERT IGNORE INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+                            VALUES (?,'phan_cong',?,?,'buoi_hoc',?,?,1)", [
+                            (int)$userId,
+                            'Phân công ca học ('.$roleLabel.') · '.$class['ma_lop'],
+                            'Bạn được phân công ca '.$class['ma_lop'].' ngày '.$date.' lúc '.substr($data['gioBatDau'],0,5).'–'.substr($data['gioKetThuc'],0,5).'.',
+                            $sessionId,
+                            'assign-session:'.$sessionId.':'.$role,
+                        ]);
+                    }
                 }
                 $after=Store::one('SELECT * FROM buoi_hoc WHERE id=?',[$sessionId]);
                 Store::recordAudit((int)$actor['userId'],$id?'sua':'them','buoi_hoc',$sessionId,$before,$after);

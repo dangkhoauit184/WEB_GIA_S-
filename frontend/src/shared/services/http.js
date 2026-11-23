@@ -16,8 +16,9 @@ const HttpService = {
       ? endpoint
       : `${AppConfig.API_BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
 
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const headers = {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       'Accept': 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
       ...(options.headers || {}),
@@ -29,7 +30,7 @@ const HttpService = {
       headers,
     };
 
-    if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
+    if (config.body && typeof config.body === 'object' && !isFormData) {
       config.body = JSON.stringify(config.body);
     }
 

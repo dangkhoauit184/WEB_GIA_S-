@@ -34,6 +34,74 @@ final class AssistantsValidator
         return $value;
     }
 
+    public static function url(mixed $value): ?string
+    {
+        $url = self::text($value, 255);
+        if ($url !== null && str_starts_with($url, '/') && !str_starts_with($url, '//') && !preg_match('/[\\\\\x00-\x20]/', $url)) {
+            return $url;
+        }
+        if ($url !== null && (!filter_var($url, FILTER_VALIDATE_URL) || !in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['https', 'http'], true))) {
+            throw new ApiException(400, 'Liên kết cần bắt đầu bằng http hoặc https.');
+        }
+        return $url;
+    }
+
+    /**
+     * Session log for Teaching Assistants:
+     * records lesson topic/notes, attendance, and grades previous session's homework;
+     * strictly forbids attaching/modifying lecture materials, PDFs, or creating new homework.
+     */
+    public static function log(array $body): array
+    {
+        if (array_key_exists('fileBaiGiangUrl', $body) && $body['fileBaiGiangUrl'] !== null && $body['fileBaiGiangUrl'] !== '') {
+            throw new ApiException(403, 'Trợ giảng không có quyền gắn hoặc chỉnh sửa tài liệu bài giảng.', 'FORBIDDEN');
+        }
+        unset($body['fileBaiGiangUrl']);
+        if (array_key_exists('baiTap', $body) && $body['baiTap'] !== null) {
+            if (is_array($body['baiTap']) && (array_key_exists('fileDeBaiUrl', $body['baiTap']) || array_key_exists('file_de_bai_url', $body['baiTap']))) {
+                throw new ApiException(403, 'Trợ giảng không có quyền gắn hoặc chỉnh sửa tệp đề bài tập PDF.', 'FORBIDDEN');
+            }
+            throw new ApiException(400, 'Sổ buổi học không dùng để giao bài tập về nhà mới.');
+        }
+        unset($body['baiTap']);
+
+        self::fields($body, ['revision', 'chuDe', 'noiDung', 'baiTapChamId', 'hocViens']);
+        $data = Input::validate($body, [
+            'revision' => ['string', true],
+            'baiTapChamId' => ['id', false],
+            'hocViens' => ['array', true],
+        ]);
+        $data['chuDe'] = self::text($body['chuDe'] ?? null, 255, true);
+        $data['noiDung'] = self::text($body['noiDung'] ?? null, 15000);
+
+        if (count($data['hocViens']) > 300) {
+            throw new ApiException(400, 'Danh sách học viên quá dài.');
+        }
+        $seen = [];
+        foreach ($data['hocViens'] as &$student) {
+            if (!is_array($student)) throw new ApiException(400, 'Học viên không hợp lệ.');
+            self::fields($student, ['hocVienId', 'trangThaiDiemDanh', 'diemBaiTapGiay', 'nhanXetBaiTap', 'mucTiepThu', 'thaiDo', 'nhanXetBuoiHoc', 'huongCaiThien']);
+            $student = Input::validate($student, [
+                'hocVienId' => ['id', true],
+                'trangThaiDiemDanh' => [['co_mat', 'di_tre', 'vang_co_phep', 'vang_khong_phep'], true],
+                'diemBaiTapGiay' => ['number', false],
+                'mucTiepThu' => ['id', false],
+                'thaiDo' => [['tot', 'kha', 'trung_binh', 'can_cai_thien'], false],
+                'nhanXetBaiTap' => ['string', false],
+                'nhanXetBuoiHoc' => ['string', false],
+                'huongCaiThien' => ['string', false],
+            ]);
+            if (isset($seen[$student['hocVienId']]) || ($student['diemBaiTapGiay'] ?? 0) > 10 || ($student['mucTiepThu'] ?? 1) > 5) {
+                throw new ApiException(400, 'Học viên trùng hoặc điểm không hợp lệ.');
+            }
+            $seen[$student['hocVienId']] = true;
+            foreach (['nhanXetBaiTap' => 255, 'nhanXetBuoiHoc' => 10000, 'huongCaiThien' => 10000] as $key => $max) {
+                $student[$key] = self::text($student[$key] ?? null, $max);
+            }
+        }
+        return $data;
+    }
+
     public static function attendance(array $body): array
     {
         self::fields($body, ['revision', 'hocViens']);
