@@ -235,30 +235,66 @@ try {
     check(!preg_match('/donGia|don_gia|mucTra|muc_tra|tongLuong|tong_luong/',json_encode($work)),'teacher workspace excludes salary');
     check(http('/api/academic/attendance/workspace','GET',null,$parentToken)[0]===403,'parent cannot use teacher APIs');
     check(http('/api/academic/attendance/workspace','GET',null,$tutorToken)[0]===403,'tutor portal remains separate');
+    // Pre-session material upload (before check-in) on a clean prior session + strict download authorization
+    $prevSessionId=Store::insert('buoi_hoc',['lop_id'=>$classId,'ngay'=>'2026-11-09','gio_bat_dau'=>'18:00','gio_ket_thuc'=>'20:00','trang_thai'=>'du_kien']);
+    Store::insert('phan_cong_buoi_hoc',['buoi_hoc_id'=>$prevSessionId,'user_id'=>$teacher['userId'],'vai_tro'=>'day_chinh','don_gia'=>140000,'trang_thai'=>'da_phan_cong']);
+    $minimalPdf="%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n";
+    check(httpMultipart('/api/academic/attendance/sessions/'.$prevSessionId.'/material', [], ['file'=>['shell.php', '<?php echo 1;', 'application/x-php']], $teacherToken)[0]===400,'material upload blocks disallowed extension');
+    check(httpMultipart('/api/academic/attendance/sessions/'.$prevSessionId.'/material', [], ['file'=>['spoof.pdf', '<?php echo 1;', 'application/pdf']], $teacherToken)[0]===400,'material upload blocks MIME spoofing');
+    [$matUpStatus,$matUpBody]=httpMultipart('/api/academic/attendance/sessions/'.$prevSessionId.'/material',
+        ['tieuDe'=>'Tài liệu & BTVN buổi 1','ghiChu'=>'Đọc trước phần lý thuyết và làm bài 1-3'],
+        ['file'=>['bai-giang-buoi-1.pdf', $minimalPdf, 'application/pdf']], $teacherToken);
+    check($matUpStatus===200 && ($matUpBody['data']['taiLieu']['laTepTaiLen']??false) && ($matUpBody['data']['taiLieu']['tenTep']??'')==='bai-giang-buoi-1.pdf','teacher uploads real PDF before check-in');
+    $matDownloadPath=$matUpBody['data']['taiLieu']['url'];
+    check(str_starts_with($matDownloadPath,'/api/academic/attendance/sessions/'.$prevSessionId.'/material/download'),'material download path canonical');
+    check(http($matDownloadPath,'GET',null,null)[0]===401,'unauthenticated material download blocked');
+    check(http($matDownloadPath,'GET',null,$otherToken)[0]===403,'parent outside class cannot download session material');
+    check(http($matDownloadPath,'GET',null,$tutorToken)[0]===403,'unassigned tutor cannot download session material');
+    [$dlTeacherStatus,,$dlTeacherBytes]=http($matDownloadPath,'GET',null,$teacherToken);
+    check($dlTeacherStatus===200 && str_starts_with($dlTeacherBytes,'%PDF-1.4'),'assigned teacher downloads uploaded material');
+    [$dlParentStatus,,$dlParentBytes]=http($matDownloadPath,'GET',null,$parentToken);
+    check($dlParentStatus===200 && str_starts_with($dlParentBytes,'%PDF-1.4'),'enrolled parent downloads pre-session material');
+    $prevHwId=(int)$matUpBody['data']['baiTap']['id'];
+
     $teacherSession=(int)$sessions[1]['id'];
     $teacherDetail=requestOk('/api/academic/attendance/sessions/'.$teacherSession,'GET',null,$teacherToken);
     check(http('/api/academic/attendance/sessions/'.$teacherSession,'GET',null,$tutorToken)[0]===403,'another role cannot inspect teacher log');
+    check((int)($teacherDetail['baiTapBuoiTruoc']['id']??0)===$prevHwId,'next session log exposes previous session homework for grading');
+    // Session logbook does NOT create new homework; grades previous session's homework
     $teacherLog=['revision'=>$teacherDetail['revision'],'chuDe'=>'Bài giảng kiểm thử','noiDung'=>'Nội dung đã dạy',
-        'baiTap'=>['tieuDe'=>'Bài tập giấy','fileDeBaiUrl'=>'https://example.test/de-bai.pdf'],
-        'hocViens'=>[['hocVienId'=>$student['id'],'trangThaiDiemDanh'=>'co_mat','diemBaiTapGiay'=>8.5]]];
+        'baiTapChamId'=>$prevHwId,
+        'hocViens'=>[['hocVienId'=>$student['id'],'trangThaiDiemDanh'=>'co_mat','diemBaiTapGiay'=>8.5,'nhanXetBaiTap'=>'Làm tốt BTVN buổi trước']]];
     check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken)[0]===409,'checkin required for log');
+    check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog+['baiTap'=>['tieuDe'=>'Không được giao mới']],$teacherToken)[0]===400,'session log rejects creating new homework');
     check(http('/api/academic/attendance/sessions/'.$teacherSession.'/checkin','POST',['checkinLuc'=>'2000-01-01'],$teacherToken)[0]===400,'server rejects client clock');
     $clock=requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/checkin','POST',[],$teacherToken);
     check($clock['checkinLuc']!==null && $clock['trangThai']==='dang_day','teacher checkin persists');
+    check(($clock['quyenYeuCau']['coTheDoiLich']??true)===false && ($clock['quyenYeuCau']['coTheChinhCong']??true)===false,'in-progress teacher shift disables both reschedule and time adjustment');
+    check(http('/api/academic/attendance/requests','POST',['loai'=>'doi_lich','buoiHocId'=>$teacherSession,'lyDo'=>'Thử đổi lịch lúc đang dạy','ngayMoi'=>'2098-01-09','gioBatDau'=>'18:00','gioKetThuc'=>'20:00'],$teacherToken)[0]===409,'in-progress shift blocks reschedule request');
+    check(http('/api/academic/attendance/requests','POST',['loai'=>'dieu_chinh_cong','buoiHocId'=>$teacherSession,'lyDo'=>'Thử chỉnh công lúc đang dạy','checkinMoi'=>$sessions[1]['ngay'].'T18:00','checkoutMoi'=>$sessions[1]['ngay'].'T20:00'],$teacherToken)[0]===409,'in-progress shift blocks time adjustment request');
     $calendarIds=array_map('intval',array_column(requestOk('/api/academic/scheduling/sessions','GET',null,$teacherToken),'id'));
     $workspaceIds=array_map('intval',array_column(requestOk('/api/academic/attendance/workspace','GET',null,$teacherToken)['sessions'],'id'));
     check(in_array($teacherSession,$calendarIds,true) && in_array($teacherSession,$workspaceIds,true),'checked-in session stays in both calendar sources');
     check(requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/checkin','POST',[],$teacherToken)['checkinLuc']===$clock['checkinLuc'],'checkin replay keeps first timestamp');
     $teacherLog['revision']=$clock['revision'];
     $saved=requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken);
-    check((float)$saved['hocViens'][0]['diemBaiTapGiay']===8.5 && $saved['baiTap']['tieuDe']==='Bài tập giấy','teacher log and grade persist');
+    check((float)$saved['hocViens'][0]['diemBaiTapGiay']===8.5 && (int)$saved['hocViens'][0]['baiTapId']===$prevHwId,'teacher log grades previous session homework cleanly');
     check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken)[0]===409,'stale log cannot overwrite newer data');
     $teacherLog['revision']=$saved['revision'];
     $teacherLog['hocViens'][0]['hocVienId']=$student2['id'];
     check(http('/api/academic/attendance/sessions/'.$teacherSession.'/log','PUT',$teacherLog,$teacherToken)[0]===409,'teacher cannot grade a student outside roster');
+    // Anti-duplicate grading across sessions: grading same (student, prevHwId) in sessions[3] must be rejected (409)
+    $thirdSessionId=(int)$sessions[3]['id'];
+    $thirdClock=requestOk('/api/academic/attendance/sessions/'.$thirdSessionId.'/checkin','POST',[],$teacherToken);
+    check(http('/api/academic/attendance/sessions/'.$thirdSessionId.'/log','PUT',[
+        'revision'=>$thirdClock['revision'],'chuDe'=>'Buổi 3','noiDung'=>'Kiểm tra chống chấm trùng','baiTapChamId'=>$prevHwId,
+        'hocViens'=>[['hocVienId'=>$student['id'],'trangThaiDiemDanh'=>'co_mat','diemBaiTapGiay'=>9.0]]
+    ],$teacherToken)[0]===409,'duplicate grading of same previous homework in another session rejected');
     Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id=?',[$clock['phanCongId']]);
     $clock=requestOk('/api/academic/attendance/sessions/'.$teacherSession.'/checkout','POST',[],$teacherToken);
     check($clock['checkoutLuc']!==null && $clock['trangThai']==='da_day','checkout persists and ends session');
+    check(($clock['quyenYeuCau']['coTheDoiLich']??true)===false && ($clock['quyenYeuCau']['coTheChinhCong']??false)===true,'completed teacher shift allows only time adjustment');
+    check(http('/api/academic/attendance/requests','POST',['loai'=>'doi_lich','buoiHocId'=>$teacherSession,'lyDo'=>'Thử đổi lịch sau khi dạy xong','ngayMoi'=>'2098-01-10','gioBatDau'=>'18:00','gioKetThuc'=>'20:00'],$teacherToken)[0]===409,'completed shift blocks reschedule request');
     check((int)$clock['soPhutTinhCong']===0 && $clock['gioLichBatDau']!==null && $clock['gioLichKetThuc']!==null,
         'checkout outside scheduled hours returns zero minutes and schedule snapshot');
     check(in_array($teacherSession,array_map('intval',array_column(requestOk('/api/academic/scheduling/sessions','GET',null,$teacherToken),'id')),true),'completed session remains on timetable');
@@ -295,6 +331,9 @@ try {
     requestOk($availabilityPath.'/'.$noonSlot['id'],'DELETE',null,$teacherToken);
     $requestSession=Store::insert('buoi_hoc',['lop_id'=>$classId,'ngay'=>'2098-01-07','gio_bat_dau'=>'18:00','gio_ket_thuc'=>'20:00']);
     Store::insert('phan_cong_buoi_hoc',['buoi_hoc_id'=>$requestSession,'user_id'=>$teacher['userId'],'vai_tro'=>'day_chinh']);
+    $reqSessionDetail=requestOk('/api/academic/attendance/sessions/'.$requestSession,'GET',null,$teacherToken);
+    check(($reqSessionDetail['quyenYeuCau']['coTheDoiLich']??false)===true && ($reqSessionDetail['quyenYeuCau']['coTheChinhCong']??true)===false,'upcoming teacher shift allows only reschedule');
+    check(http('/api/academic/attendance/requests','POST',['loai'=>'dieu_chinh_cong','buoiHocId'=>$requestSession,'lyDo'=>'Chỉnh công ca chưa diễn ra','checkinMoi'=>'2098-01-07T18:00','checkoutMoi'=>'2098-01-07T20:00'],$teacherToken)[0]===409,'upcoming teacher shift blocks time adjustment');
     $requestBody=['loai'=>'doi_lich','buoiHocId'=>$requestSession,'lyDo'=>'Có việc cá nhân','ngayMoi'=>'2098-01-08','gioBatDau'=>'18:00','gioKetThuc'=>'20:00'];
     [$badStatus,$badTime]=http('/api/academic/attendance/requests','POST',array_replace($requestBody,['gioKetThuc'=>'00:00']),$teacherToken);
     check($badStatus===400 && str_contains($badTime['message'],'Giờ kết thúc phải sau giờ bắt đầu') && !str_contains($badTime['message'],'gioKetThuc'),'reschedule reversed hours give a readable error');
@@ -369,15 +408,15 @@ try {
     check(http('/api/people/assistants/workspace', 'GET', null, $staffToken)[0] === 403, 'staff cannot call assistant workspace');
 
     $taWork = requestOk('/api/people/assistants/workspace', 'GET', null, $assistantToken);
-    check(isset($taWork['sessions']) && isset($taWork['classes']) && isset($taWork['monthSummary']), 'assistant workspace structure');
+    check(isset($taWork['sessions'], $taWork['classes'], $taWork['monthSummary'], $taWork['periods']), 'assistant workspace structure');
 
-    // 5. Không rò rỉ tiền/lương/đơn giá trong toàn bộ JSON response của feature
+    // 5. Không rò rỉ tiền/lương/đơn giá/tài khoản ngân hàng trong toàn bộ JSON response của feature
     $taWorkJson = json_encode($taWork);
-    check(!preg_match('/donGia|don_gia|mucTra|muc_tra|tongLuong|tong_luong|thuLao|thu_lao|hocPhi|hoc_phi/i', $taWorkJson), 'assistant workspace excludes all salary and rate keys');
+    check(!preg_match('/don_?gia|muc_?tra|tong_?luong|thu_?lao|hoc_?phi|ngan_?hang|so_?tai_?khoan|chu_?tai_?khoan/i', $taWorkJson), 'assistant workspace excludes all salary, rate, and bank keys');
 
     // Scoping check: Assistant 2
-    $taUser2 = Store::insert('users', ['hoten'=>'Trợ giảng 2 '.$suffix, 'email'=>'ta2.'.$suffix.'@example.test', 'vai_tro'=>'tro_giang']);
-    Store::insert('account', ['user_id'=>$taUser2, 'group_id'=>4, 'username'=>'ta2_'.$suffix, 'password_hash'=>password_hash('Assistant@123', PASSWORD_BCRYPT), 'status'=>'active']);
+    $taUser2 = Store::insert('users', ['hoten'=>'Trợ giảng 2 '.$suffix, 'email'=>'ta2.'.$suffix.'@example.test']);
+    Store::insert('account', ['user_id'=>$taUser2, 'group_id'=>$assistantGroup, 'username'=>'ta2_'.$suffix, 'password_hash'=>password_hash('Assistant@123', PASSWORD_BCRYPT), 'status'=>'active']);
     Store::insert('nhan_su_chuyen_mon', ['user_id'=>$taUser2, 'ma_ns'=>'TA2-'.$suffix, 'phan_loai'=>'tro_giang', 'trang_thai'=>'hoat_dong']);
     $assistant2Token = requestOk('/api/auth/login', 'POST', ['username'=>'ta2_'.$suffix, 'password'=>'Assistant@123'])['token'];
 
@@ -398,14 +437,24 @@ try {
     $taReplay = requestOk('/api/people/assistants/sessions/'.$taSession.'/checkin', 'POST', [], $assistantToken);
     check($taReplay['checkinLuc'] === $taClockIn['checkinLuc'], 'assistant checkin replay is idempotent');
 
-    // 3. Điểm danh (Attendance)
+    // 3. Điểm danh hỗ trợ (legacy /attendance) & Sổ buổi học đầy đủ (/log, CHẶN gắn/sửa file bài tập PDF)
+    if (!Store::one('SELECT id FROM so_theo_doi_buoi_hoc WHERE buoi_hoc_id=? AND hoc_vien_id=?', [$taSession, $student['id']])) {
+        Store::insert('so_theo_doi_buoi_hoc', [
+            'buoi_hoc_id' => $taSession,
+            'hoc_vien_id' => $student['id'],
+            'trang_thai_diem_danh' => 'co_mat',
+            'diem_bai_tap_giay' => 9.0,
+            'nhan_xet_buoi_hoc' => 'Giáo viên nhận xét mẫu',
+            'nguoi_nhap_id' => $teacher['userId'],
+        ]);
+    }
     $taDetail = requestOk('/api/people/assistants/sessions/'.$taSession, 'GET', null, $assistantToken);
-    check(!preg_match('/diemBaiTapGiay|nhanXetBuoiHoc|baiTap/i', json_encode($taDetail['hocViens'])), 'assistant session excludes homework grades and notes');
 
+    // Legacy attendance-only endpoint still rejects extra fields and preserves grades/notes
     check(http('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
         'revision' => $taDetail['revision'],
         'hocViens' => [['hocVienId'=>$student['id'], 'trangThaiDiemDanh'=>'co_mat', 'diemBaiTapGiay'=>9]]
-    ], $assistantToken)[0] === 400, 'assistant attendance rejects extra fields like diemBaiTapGiay');
+    ], $assistantToken)[0] === 400, 'assistant attendance-only endpoint rejects extra fields');
 
     check(http('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
         'revision' => 'wrong_revision',
@@ -418,13 +467,89 @@ try {
     ], $assistantToken)[0] === 409, 'mismatched student roster rejected');
 
     $studentLogBefore = Store::one('SELECT diem_bai_tap_giay, nhan_xet_buoi_hoc FROM so_theo_doi_buoi_hoc WHERE buoi_hoc_id=? AND hoc_vien_id=?', [$taSession, $student['id']]);
-    $taAttRes = requestOk('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
+    requestOk('/api/people/assistants/sessions/'.$taSession.'/attendance', 'PUT', [
         'revision' => $taDetail['revision'],
         'hocViens' => [['hocVienId'=>$student['id'], 'trangThaiDiemDanh'=>'di_tre']]
     ], $assistantToken);
     $studentLogAfter = Store::one('SELECT trang_thai_diem_danh, diem_bai_tap_giay, nhan_xet_buoi_hoc FROM so_theo_doi_buoi_hoc WHERE buoi_hoc_id=? AND hoc_vien_id=?', [$taSession, $student['id']]);
     check($studentLogAfter['trang_thai_diem_danh'] === 'di_tre', 'assistant attendance updated to di_tre');
-    check($studentLogAfter['diem_bai_tap_giay'] === $studentLogBefore['diem_bai_tap_giay'] && $studentLogAfter['nhan_xet_buoi_hoc'] === $studentLogBefore['nhan_xet_buoi_hoc'], 'assistant attendance does not overwrite teacher grade or note');
+    check($studentLogBefore !== null && $studentLogAfter['diem_bai_tap_giay'] === $studentLogBefore['diem_bai_tap_giay'] && $studentLogAfter['nhan_xet_buoi_hoc'] === $studentLogBefore['nhan_xet_buoi_hoc'], 'assistant attendance-only endpoint preserves grade and note');
+
+    // Dedicated previous + current session for TA full log, grading previous homework & strict material/PDF guard tests
+    $taPrevSession = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>'2098-01-24', 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00', 'trang_thai'=>'da_day']);
+    $teacherPdfUrl = 'https://example.test/de-bai-gv.pdf';
+    $taPrevHwId = Store::insert('bai_tap', [
+        'buoi_hoc_id' => $taPrevSession,
+        'tieu_de' => 'Bài tập buổi ôn tập trước',
+        'noi_dung' => 'Làm bài 1-5',
+        'file_de_bai_url' => $teacherPdfUrl,
+        'nguoi_tao_id' => $teacher['userId'],
+    ]);
+    $taLogSession = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>'2098-01-25', 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$taLogSession, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
+    // Upcoming TA shift: only reschedule/leave allowed, time adjustment blocked (409); cannot upload material (403)
+    $taUpDetail = requestOk('/api/people/assistants/sessions/'.$taLogSession, 'GET', null, $assistantToken);
+    check(($taUpDetail['quyenYeuCau']['coTheDoiLich'] ?? false) === true && ($taUpDetail['quyenYeuCau']['coTheChinhCong'] ?? true) === false, 'upcoming TA shift allows only reschedule');
+    check(http('/api/people/assistants/requests', 'POST', ['loai'=>'dieu_chinh_cong','buoiHocId'=>$taLogSession,'lyDo'=>'Chỉnh công ca chưa học','checkinMoi'=>'2098-01-25T18:00','checkoutMoi'=>'2098-01-25T20:00'], $assistantToken)[0] === 409, 'upcoming TA shift blocks time adjustment');
+    check(httpMultipart('/api/academic/attendance/sessions/'.$taLogSession.'/material', [], ['file'=>['ta.pdf', $minimalPdf, 'application/pdf']], $assistantToken)[0] === 403, 'assistant forbidden from uploading session material');
+
+    requestOk('/api/people/assistants/sessions/'.$taLogSession.'/checkin', 'POST', [], $assistantToken);
+    $taLogDetail = requestOk('/api/people/assistants/sessions/'.$taLogSession, 'GET', null, $assistantToken);
+    check(($taLogDetail['quyenYeuCau']['coTheDoiLich'] ?? true) === false && ($taLogDetail['quyenYeuCau']['coTheChinhCong'] ?? true) === false, 'in-progress TA shift hides both requests');
+    check(http('/api/people/assistants/requests', 'POST', ['loai'=>'doi_gio','buoiHocId'=>$taLogSession,'lyDo'=>'Đổi giờ lúc đang dạy','ngayMoi'=>'2098-01-26','gioBatDau'=>'18:00','gioKetThuc'=>'20:00'], $assistantToken)[0] === 409, 'in-progress TA shift blocks reschedule');
+    check(http('/api/people/assistants/requests', 'POST', ['loai'=>'dieu_chinh_cong','buoiHocId'=>$taLogSession,'lyDo'=>'Chỉnh công lúc đang dạy','checkinMoi'=>'2098-01-25T18:00','checkoutMoi'=>'2098-01-25T20:00'], $assistantToken)[0] === 409, 'in-progress TA shift blocks time adjustment');
+    check((int)($taLogDetail['baiTapBuoiTruoc']['id'] ?? 0) === $taPrevHwId && $taLogDetail['baiTapBuoiTruoc']['fileDeBaiUrl'] === $teacherPdfUrl, 'assistant session reads previous session homework metadata');
+
+    $taLogStudents = array_map(static fn(array $hv): array => [
+        'hocVienId' => (int)$hv['hocVienId'],
+        'trangThaiDiemDanh' => 'co_mat',
+        'diemBaiTapGiay' => (int)$hv['hocVienId'] === (int)$student['id'] ? 8.5 : 7.5,
+        'nhanXetBaiTap' => 'Làm bài cẩn thận',
+        'mucTiepThu' => 4,
+        'thaiDo' => 'tot',
+        'nhanXetBuoiHoc' => 'Tích cực phát biểu',
+        'huongCaiThien' => 'Ôn thêm phần hình học',
+    ], $taLogDetail['hocViens']);
+
+    // Full log endpoint: strictly FORBIDS attaching/modifying homework PDF (403), lecture URL (403), or creating new homework (400)
+    $taLogPayload = [
+        'revision' => $taLogDetail['revision'],
+        'chuDe' => 'Ôn tập trợ giảng',
+        'noiDung' => 'Hỗ trợ giải bài tập trên lớp',
+        'baiTapChamId' => $taPrevHwId,
+        'hocViens' => $taLogStudents,
+    ];
+    check(http('/api/people/assistants/sessions/'.$taLogSession.'/log', 'PUT', $taLogPayload + ['baiTap' => ['tieuDe' => 'Hack', 'fileDeBaiUrl' => 'https://example.test/hack.pdf']], $assistantToken)[0] === 403, 'assistant log forbids attaching or editing homework PDF');
+    check(http('/api/people/assistants/sessions/'.$taLogSession.'/log', 'PUT', $taLogPayload + ['fileBaiGiangUrl' => 'https://example.test/hack.pdf'], $assistantToken)[0] === 403, 'assistant log forbids modifying lecture material url');
+    check(http('/api/people/assistants/sessions/'.$taLogSession.'/log', 'PUT', $taLogPayload + ['baiTap' => ['tieuDe' => 'Tạo mới trong sổ']], $assistantToken)[0] === 400, 'assistant log forbids creating new homework in logbook');
+
+    // Full log grading previous session's homework succeeds
+    $taLogSaved = requestOk('/api/people/assistants/sessions/'.$taLogSession.'/log', 'PUT', $taLogPayload, $assistantToken);
+    $savedStudentRow = null;
+    foreach ($taLogSaved['hocViens'] as $hvRow) {
+        if ((int)$hvRow['hocVienId'] === (int)$student['id']) $savedStudentRow = $hvRow;
+    }
+    check($savedStudentRow !== null && (float)$savedStudentRow['diemBaiTapGiay'] === 8.5 && (int)$savedStudentRow['baiTapId'] === $taPrevHwId && $savedStudentRow['nhanXetBuoiHoc'] === 'Tích cực phát biểu', 'assistant full log saves previous homework grade and comments');
+    check($taLogSaved['chuDeBaiHoc'] === 'Ôn tập trợ giảng', 'assistant full log saves session topic');
+    check($taLogSaved['baiTapBuoiTruoc']['fileDeBaiUrl'] === $teacherPdfUrl, 'assistant log preserves previous teacher homework PDF url');
+    check(http('/api/people/assistants/sessions/'.$taLogSession.'/log', 'PUT', $taLogPayload, $assistantToken)[0] === 409, 'stale assistant log revision rejected');
+    check(http('/api/people/assistants/sessions/'.$taLogSession.'/log', 'PUT', array_merge($taLogPayload, [
+        'revision' => $taLogSaved['revision'],
+        'hocViens' => [['hocVienId' => 999999, 'trangThaiDiemDanh' => 'co_mat']],
+    ]), $assistantToken)[0] === 409, 'assistant log rejects out-of-roster student');
+
+    // 3b. Assistant personal availability CRUD (same rules as teacher, strictly scoped)
+    $taAvailPath = '/api/people/assistants/availability';
+    $taSlot = requestOk($taAvailPath, 'POST', ['thu' => 8, 'gioBatDau' => '08:00', 'gioKetThuc' => '10:00'], $assistantToken, 201);
+    $taSlotId = (int)$taSlot['id'];
+    check(http($taAvailPath, 'POST', ['thu' => 8, 'gioBatDau' => '09:00', 'gioKetThuc' => '11:00'], $assistantToken)[0] === 409, 'assistant availability refuses overlap');
+    check(http($taAvailPath.'/'.$taSlotId, 'PUT', ['thu' => 8, 'gioBatDau' => '10:00', 'gioKetThuc' => '08:00'], $assistantToken)[0] === 400, 'assistant availability refuses reversed hours');
+    check(http($taAvailPath.'/'.$taSlotId, 'PUT', ['thu' => 8, 'gioBatDau' => '07:00', 'gioKetThuc' => '09:00'], $assistant2Token)[0] === 404, 'assistant 2 cannot edit assistant 1 availability');
+    check(http($taAvailPath, 'POST', ['thu' => 8, 'gioBatDau' => '06:00', 'gioKetThuc' => '07:00'], $parentToken)[0] === 403, 'parent cannot add assistant availability');
+    $taSlotEdited = requestOk($taAvailPath.'/'.$taSlotId, 'PUT', ['thu' => 8, 'gioBatDau' => '07:30', 'gioKetThuc' => '09:30'], $assistantToken);
+    check($taSlotEdited['gioBatDau'] === '07:30:00', 'assistant availability edit persists');
+    requestOk($taAvailPath.'/'.$taSlotId, 'DELETE', null, $assistantToken);
+    check(http($taAvailPath.'/'.$taSlotId, 'DELETE', null, $assistantToken)[0] === 404, 'deleted assistant availability returns 404');
 
     // Check-out
     Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE buoi_hoc_id=? AND user_id=?', [$taSession, $taUser]);
@@ -434,23 +559,30 @@ try {
     check($taSessionFinalStatus === $taSessionOldStatus, 'assistant checkout does NOT alter buoi_hoc.trang_thai');
     check(requestOk('/api/people/assistants/sessions/'.$taSession.'/checkout', 'POST', [], $assistantToken)['checkoutLuc'] === $taClockOut['checkoutLuc'], 'assistant checkout replay idempotent');
 
-    // Timekeeping calculation: 18:10 -> 19:30 => 80 minutes + late; 17:50 -> 20:10 => 120 minutes + no late
-    $schedDay = date('Y-m-d', strtotime('+3 days'));
-    $testBuoi1 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>$schedDay, 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    // Timekeeping calculation: 18:10 -> 19:30 => 80 minutes + late; 17:50 -> 20:10 => 120 minutes + no late (distinct deterministic dates)
+    $schedDay1 = '2098-02-01';
+    $schedDay2 = '2098-02-02';
+    $testBuoi1 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>$schedDay1, 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
     $pcTest1 = Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$testBuoi1, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
-    Store::execute("UPDATE phan_cong_buoi_hoc SET checkin_luc=?, checkout_luc=? WHERE id=?", [$schedDay.' 18:10:00', $schedDay.' 19:30:00', $pcTest1]);
+    Store::execute("UPDATE phan_cong_buoi_hoc SET checkin_luc=?, checkout_luc=? WHERE id=?", [$schedDay1.' 18:10:00', $schedDay1.' 19:30:00', $pcTest1]);
     $pcRes1 = Store::one('SELECT so_phut_tinh_cong, checkin_tre FROM phan_cong_buoi_hoc WHERE id=?', [$pcTest1]);
     check((int)$pcRes1['so_phut_tinh_cong'] === 80 && (int)$pcRes1['checkin_tre'] === 1, '18:10 to 19:30 yields 80 minutes and late flag');
 
-    $testBuoi2 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>$schedDay, 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    $testBuoi2 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>$schedDay2, 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
     $pcTest2 = Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$testBuoi2, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
-    Store::execute("UPDATE phan_cong_buoi_hoc SET checkin_luc=?, checkout_luc=? WHERE id=?", [$schedDay.' 17:50:00', $schedDay.' 20:10:00', $pcTest2]);
+    Store::execute("UPDATE phan_cong_buoi_hoc SET checkin_luc=?, checkout_luc=? WHERE id=?", [$schedDay2.' 17:50:00', $schedDay2.' 20:10:00', $pcTest2]);
     $pcRes2 = Store::one('SELECT so_phut_tinh_cong, checkin_tre FROM phan_cong_buoi_hoc WHERE id=?', [$pcTest2]);
     check((int)$pcRes2['so_phut_tinh_cong'] === 120 && (int)$pcRes2['checkin_tre'] === 0, '17:50 to 20:10 yields 120 minutes and not late');
 
-    // 4. Requests (bao_ban, doi_gio, dieu_chinh_cong)
-    $futureAssignedSession = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>date('Y-m-d', strtotime('+4 days')), 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    // 4. Requests (chỉ nghỉ cá nhân bao_ban, đổi giờ doi_gio, điều chỉnh công dieu_chinh_cong; chặn nghỉ cả lớp nghi_day)
+    $futureAssignedSession = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>'2098-02-03', 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
     Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$futureAssignedSession, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
+
+    check(http('/api/people/assistants/requests', 'POST', [
+        'loai' => 'nghi_day',
+        'buoiHocId' => $futureAssignedSession,
+        'lyDo' => 'Thử xin nghỉ cả lớp'
+    ], $assistantToken)[0] === 400, 'assistant cannot submit whole-class leave nghi_day');
 
     $bbReq = requestOk('/api/people/assistants/requests', 'POST', [
         'loai' => 'bao_ban',
@@ -466,13 +598,13 @@ try {
         'lyDo' => 'Gửi đơn trùng'
     ], $assistantToken)[0] === 409, 'duplicate pending bao_ban rejected');
 
-    $futureAssignedSession2 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>date('Y-m-d', strtotime('+5 days')), 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
+    $futureAssignedSession2 = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>'2098-02-04', 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00']);
     Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$futureAssignedSession2, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
     check(http('/api/people/assistants/requests', 'POST', [
         'loai' => 'doi_gio',
         'buoiHocId' => $futureAssignedSession2,
         'lyDo' => 'Đổi giờ',
-        'ngayMoi' => date('Y-m-d', strtotime('+6 days')),
+        'ngayMoi' => '2098-02-05',
         'gioBatDau' => '20:00',
         'gioKetThuc' => '18:00'
     ], $assistantToken)[0] === 400, 'doi_gio end time before start time rejected');
@@ -480,8 +612,8 @@ try {
     $dgReq = requestOk('/api/people/assistants/requests', 'POST', [
         'loai' => 'doi_gio',
         'buoiHocId' => $futureAssignedSession2,
-        'lyDo' => 'Đổi giờ dạy',
-        'ngayMoi' => date('Y-m-d', strtotime('+6 days')),
+        'lyDo' => 'Đổi giờ hỗ trợ',
+        'ngayMoi' => '2098-02-05',
         'gioBatDau' => '18:00',
         'gioKetThuc' => '20:00'
     ], $assistantToken, 201);
@@ -491,8 +623,8 @@ try {
         'loai' => 'dieu_chinh_cong',
         'buoiHocId' => $taSession,
         'lyDo' => 'Quên check-in đầu giờ',
-        'checkinMoi' => $schedDay.'T18:00',
-        'checkoutMoi' => $schedDay.'T20:00'
+        'checkinMoi' => $schedDay1.'T18:00',
+        'checkoutMoi' => $schedDay1.'T20:00'
     ], $assistantToken, 201);
     check(str_starts_with($dcReq['ma'], 'DC-'), 'dieu_chinh_cong returns DC- code');
 
@@ -500,6 +632,422 @@ try {
     $dcNotif = Store::one("SELECT user_id FROM thong_bao WHERE doi_tuong_loai='dieu_chinh_cong' AND doi_tuong_id=?", [$dcReq['id']]);
     check(Store::one("SELECT group_name FROM role_group g JOIN account a ON a.group_id=g.group_id WHERE a.user_id=?", [$bbNotif['user_id']])['group_name'] === 'NhanVien', 'bao_ban notifies branch staff');
     check(Store::one("SELECT group_name FROM role_group g JOIN account a ON a.group_id=g.group_id WHERE a.user_id=?", [$dcNotif['user_id']])['group_name'] === 'Admin', 'dieu_chinh_cong notifies admin');
+
+    // ==========================================
+    // Shift Recruitment & Unified Profile Suite (006)
+    // ==========================================
+    // 1. Unified profile GET/PUT parity for GIAO_VIEN and TRO_GIANG (DB persisted, zero money/bank leakage)
+    foreach ([['teacher', $teacherToken, 'GV Đơn vị cập nhật'], ['assistant', $assistantToken, 'TG Đơn vị cập nhật']] as [$roleTag, $roleTok, $orgText]) {
+        $profBefore = requestOk('/api/auth/me/profile', 'GET', null, $roleTok);
+        check(isset($profBefore['professional']['maNs'], $profBefore['professional']['lichRanhs']), $roleTag.' profile reads professional metadata');
+        check(!preg_match('/donGia|nganHang|soTaiKhoan|chuTaiKhoan/i', json_encode($profBefore)), $roleTag.' profile excludes salary and bank info');
+        $profSaved = requestOk('/api/auth/me/profile', 'PUT', [
+            'hoTen' => $profBefore['hoTen'],
+            'email' => $profBefore['email'],
+            'donViCongTac' => $orgText,
+            'gioiThieu' => 'Cập nhật hồ sơ '.$roleTag,
+        ], $roleTok);
+        check($profSaved['professional']['donViCongTac'] === $orgText && $profSaved['professional']['gioiThieu'] === 'Cập nhật hồ sơ '.$roleTag, $roleTag.' profile edit persists to DB');
+    }
+
+    // 2. Shift openings & applications (Staff creates/reviews; Teacher -> day_chinh ONLY; Assistant -> tro_giang ONLY)
+    $recruitClass = requestOk('/api/academic/classes', 'POST', [
+        'maLop' => 'REC-'.$suffix,
+        'tenLop' => 'Lớp Tuyển Ca '.$suffix,
+        'loaiLop' => 'nhom',
+        'monHocId' => 1,
+        'capLopId' => 9,
+        'nguoiDayChinhId' => $teacher['id'],
+        'hinhThuc' => 'offline',
+        'khuVucId' => 1,
+        'siSoToiThieu' => 1,
+        'siSoToiDa' => 10,
+        'hocPhiBuoi' => 180000,
+        'mucTraChinh' => 150000,
+        'mucTraTroGiang' => 80000,
+        'soBuoiDuKien' => 8,
+        'ngayBatDau' => '2026-11-01',
+        'trangThai' => 'dang_hoc',
+    ], $token, 201);
+    $recruitDay = '2098-03-04';
+    $recruitWeekday = (int)(new \DateTimeImmutable($recruitDay))->format('N') + 1;
+    $recruitSession = Store::insert('buoi_hoc', ['lop_id' => $recruitClass['id'], 'ngay' => $recruitDay, 'gio_bat_dau' => '18:00', 'gio_ket_thuc' => '20:00']);
+    $recruitSessionBefore = Store::one('SELECT ngay, gio_bat_dau, gio_ket_thuc, phong_hoc, trang_thai FROM buoi_hoc WHERE id=?', [$recruitSession]);
+
+    // Permissions
+    check(http('/api/academic/scheduling/openings', 'GET', null, $parentToken)[0] === 403, 'parent cannot read shift openings');
+    check(http('/api/academic/scheduling/openings', 'POST', ['buoiHocId' => $recruitSession, 'vaiTro' => 'tro_giang'], $teacherToken)[0] === 403, 'teacher cannot create shift opening');
+    check(http('/api/academic/scheduling/openings', 'POST', ['buoiHocId' => $recruitSession, 'vaiTro' => 'tro_giang'], $assistantToken)[0] === 403, 'assistant cannot create shift opening');
+    check(http('/api/academic/scheduling/openings', 'POST', ['buoiHocId' => $recruitSession, 'vaiTro' => 'day_chinh', 'soLuong' => 2], $staffToken)[0] === 400, 'day_chinh opening rejects quantity > 1');
+
+    // Staff creates TA opening & Teacher opening
+    $taOpening = requestOk('/api/academic/scheduling/openings', 'POST', [
+        'buoiHocId' => $recruitSession,
+        'vaiTro' => 'tro_giang',
+        'soLuong' => 1,
+        'yeuCau' => 'Hỗ trợ chấm bài tập giấy',
+    ], $staffToken, 201);
+    check(str_starts_with($taOpening['maDeXuat'], 'TC-') && $taOpening['trangThai'] === 'dang_mo', 'staff creates tro_giang opening');
+    check(http('/api/academic/scheduling/openings', 'POST', ['buoiHocId' => $recruitSession, 'vaiTro' => 'tro_giang'], $staffToken)[0] === 409, 'duplicate active opening rejected');
+
+    $gvOpening = requestOk('/api/academic/scheduling/openings', 'POST', [
+        'buoiHocId' => $recruitSession,
+        'vaiTro' => 'day_chinh',
+        'soLuong' => 1,
+        'yeuCau' => 'Giáo viên đứng lớp Toán 9',
+    ], $staffToken, 201);
+    check($gvOpening['vaiTro'] === 'day_chinh', 'staff creates day_chinh opening');
+
+    // Strict role visibility & cross-role apply block
+    $gvOpeningsList = requestOk('/api/academic/scheduling/openings', 'GET', null, $teacherToken);
+    $taOpeningsList = requestOk('/api/academic/scheduling/openings', 'GET', null, $assistantToken);
+    check(!in_array('tro_giang', array_column($gvOpeningsList, 'vaiTro'), true), 'teacher only sees day_chinh openings');
+    check(!in_array('day_chinh', array_column($taOpeningsList, 'vaiTro'), true), 'assistant only sees tro_giang openings');
+    check(!preg_match('/donGia|mucTra|hocPhi|nganHang|soTaiKhoan/i', json_encode($taOpeningsList)), 'openings response excludes salary and bank info');
+    check(http('/api/academic/scheduling/openings/'.$taOpening['id'].'/apply', 'POST', [], $teacherToken)[0] === 403, 'teacher cannot apply to tro_giang opening');
+    check(http('/api/academic/scheduling/openings/'.$gvOpening['id'].'/apply', 'POST', [], $assistantToken)[0] === 403, 'assistant cannot apply to day_chinh opening');
+    check(http('/api/academic/scheduling/openings/'.$taOpening['id'].'/apply', 'POST', [], $staffToken)[0] === 403, 'staff cannot apply to opening');
+
+    // Unqualified assistant (missing subject/region/availability) is blocked on backend
+    check(http('/api/academic/scheduling/openings/'.$taOpening['id'].'/apply', 'POST', ['ghiChu' => 'Thử ứng tuyển'], $assistantToken)[0] === 409, 'unqualified assistant cannot apply');
+
+    // Equip assistant 1 & assistant 2 with matching subject, grade, region, and availability
+    $ta1NsId = (int)Store::one('SELECT id FROM nhan_su_chuyen_mon WHERE user_id=?', [$taUser])['id'];
+    $ta2NsId = (int)Store::one('SELECT id FROM nhan_su_chuyen_mon WHERE user_id=?', [$taUser2])['id'];
+    foreach ([$ta1NsId, $ta2NsId] as $nsId) {
+        Store::insert('nhan_su_mon', ['nhan_su_id' => $nsId, 'mon_hoc_id' => 1, 'cap_lop_tu' => 6, 'cap_lop_den' => 9, 'hoc_phi_buoi_de_xuat' => 80000]);
+        Store::insert('nhan_su_khu_vuc', ['nhan_su_id' => $nsId, 'khu_vuc_id' => 1]);
+        Store::insert('nhan_su_lich_ranh', ['nhan_su_id' => $nsId, 'thu' => $recruitWeekday, 'gio_bat_dau' => '17:30', 'gio_ket_thuc' => '21:00']);
+    }
+
+    // Assistant 1 applies -> pending, NOT on personal timetable yet, duplicate apply blocked
+    $ta1App = requestOk('/api/academic/scheduling/openings/'.$taOpening['id'].'/apply', 'POST', ['ghiChu' => 'Rảnh đúng khung giờ'], $assistantToken, 201);
+    check($ta1App['trangThai'] === 'cho_duyet' && $ta1App['phanCongId'] === null, 'pending application does not create assignment');
+    $ta1SessionsPending = array_column(requestOk('/api/people/assistants/workspace', 'GET', null, $assistantToken)['sessions'], 'id');
+    check(!in_array($recruitSession, $ta1SessionsPending, true), 'pending application is not shown on personal timetable');
+    check(http('/api/academic/scheduling/openings/'.$taOpening['id'].'/apply', 'POST', [], $assistantToken)[0] === 409, 'duplicate application blocked');
+    check(http('/api/academic/scheduling/applications/'.$ta1App['id'].'/review', 'POST', ['trangThai' => 'da_duyet'], $assistantToken)[0] === 403, 'assistant cannot review applications');
+
+    // Staff rejects Assistant 1 with reason -> rejected, NOT on timetable, reason visible, double review blocked
+    check(http('/api/academic/scheduling/applications/'.$ta1App['id'].'/review', 'POST', ['trangThai' => 'tu_choi'], $staffToken)[0] === 400, 'reject requires reason');
+    $ta1Rejected = requestOk('/api/academic/scheduling/applications/'.$ta1App['id'].'/review', 'POST', ['trangThai' => 'tu_choi', 'lyDoTuChoi' => 'Ưu tiên trợ giảng chưa đủ ca trong tuần'], $staffToken);
+    check($ta1Rejected['trangThai'] === 'tu_choi' && $ta1Rejected['phanCongId'] === null && str_contains($ta1Rejected['lyDoTuChoi'], 'Ưu tiên'), 'rejection saves reason and creates no assignment');
+    check(http('/api/academic/scheduling/applications/'.$ta1App['id'].'/review', 'POST', ['trangThai' => 'da_duyet'], $staffToken)[0] === 409, 'double review rejected');
+    $ta1SessionsRejected = array_column(requestOk('/api/people/assistants/workspace', 'GET', null, $assistantToken)['sessions'], 'id');
+    check(!in_array($recruitSession, $ta1SessionsRejected, true), 'rejected application is not shown on personal timetable');
+
+    // Assistant 2 applies & Staff approves -> creates official phan_cong_buoi_hoc, shows on Assistant 2 timetable, closes opening, preserves buoi_hoc
+    $ta2App = requestOk('/api/academic/scheduling/openings/'.$taOpening['id'].'/apply', 'POST', ['ghiChu' => 'Sẵn sàng nhận ca'], $assistant2Token, 201);
+    $ta2Approved = requestOk('/api/academic/scheduling/applications/'.$ta2App['id'].'/review', 'POST', ['trangThai' => 'da_duyet'], $staffToken);
+    check($ta2Approved['trangThai'] === 'da_duyet' && $ta2Approved['phanCongId'] !== null, 'approved application creates official assignment');
+    check(http('/api/academic/scheduling/applications/'.$ta2App['id'].'/review', 'POST', ['trangThai' => 'da_duyet'], $staffToken)[0] === 409, 'double approval rejected');
+    $ta2SessionsAfter = array_column(requestOk('/api/people/assistants/workspace', 'GET', null, $assistant2Token)['sessions'], 'id');
+    check(in_array($recruitSession, $ta2SessionsAfter, true), 'approved shift appears on assistant 2 personal timetable');
+    check(Store::one('SELECT trang_thai FROM de_xuat_tuyen_ca WHERE id=?', [$taOpening['id']])['trang_thai'] === 'da_du_nguoi', 'filled opening closes automatically');
+    $recruitSessionAfterTa = Store::one('SELECT ngay, gio_bat_dau, gio_ket_thuc, phong_hoc, trang_thai FROM buoi_hoc WHERE id=?', [$recruitSession]);
+    check($recruitSessionAfterTa === $recruitSessionBefore, 'approving application never modifies session schedule');
+
+    // Conflict guard: overlapping shift opening on same day/time blocks Assistant 2 from applying
+    $conflictSession = Store::insert('buoi_hoc', ['lop_id' => $classId, 'ngay' => $recruitDay, 'gio_bat_dau' => '18:30', 'gio_ket_thuc' => '20:00']);
+    $conflictOpening = requestOk('/api/academic/scheduling/openings', 'POST', ['buoiHocId' => $conflictSession, 'vaiTro' => 'tro_giang'], $staffToken, 201);
+    check(http('/api/academic/scheduling/openings/'.$conflictOpening['id'].'/apply', 'POST', [], $assistant2Token)[0] === 409, 'overlapping shift blocked from applying');
+    requestOk('/api/academic/scheduling/openings/'.$conflictOpening['id'].'/close', 'POST', [], $staffToken);
+
+    // Teacher applies to day_chinh opening & Staff approves -> appears on Teacher timetable
+    Store::insert('nhan_su_lich_ranh', ['nhan_su_id' => $teacher['id'], 'thu' => $recruitWeekday, 'gio_bat_dau' => '17:30', 'gio_ket_thuc' => '21:00']);
+    $gvApp = requestOk('/api/academic/scheduling/openings/'.$gvOpening['id'].'/apply', 'POST', ['ghiChu' => 'Nhận dạy chính'], $teacherToken, 201);
+    $gvApproved = requestOk('/api/academic/scheduling/applications/'.$gvApp['id'].'/review', 'POST', ['trangThai' => 'da_duyet'], $staffToken);
+    check($gvApproved['trangThai'] === 'da_duyet' && $gvApproved['phanCongId'] !== null, 'approved teacher application creates day_chinh assignment');
+    $gvSessionsAfter = array_column(requestOk('/api/academic/attendance/workspace', 'GET', null, $teacherToken)['sessions'], 'id');
+    check(in_array($recruitSession, $gvSessionsAfter, true), 'approved teacher shift appears on teacher personal timetable');
+    check(Store::one('SELECT ngay, gio_bat_dau, gio_ket_thuc, phong_hoc, trang_thai FROM buoi_hoc WHERE id=?', [$recruitSession]) === $recruitSessionBefore, 'teacher approval preserves session schedule');
+
+    // Tutor (GIA_SU) portal parity with Teacher + strict tutoring-only class scheduling & recruitment rules
+    $tutorToken = requestOk('/api/auth/login', 'POST', ['username' => 'gs_'.$suffix, 'password' => 'Tutor@123'])['token'];
+    $tutorWorkInit = requestOk('/api/people/tutors/me/workspace', 'GET', null, $tutorToken);
+    check(isset($tutorWorkInit['profile'], $tutorWorkInit['sessions'], $tutorWorkInit['classes'], $tutorWorkInit['requests'], $tutorWorkInit['periods']), 'tutor workspace returns full structure');
+    check(!preg_match('/donGia|don_gia|mucTra|muc_tra|tongLuong|tong_luong|nganHang|soTaiKhoan/i', json_encode($tutorWorkInit)), 'tutor workspace excludes salary and bank info');
+    check(http('/api/people/tutors/me/workspace', 'GET', null, $teacherToken)[0] === 403, 'teacher cannot access tutor workspace');
+    check(http('/api/people/tutors/me/workspace', 'GET', null, $assistantToken)[0] === 403, 'assistant cannot access tutor workspace');
+    check(http('/api/people/tutors/me/workspace', 'GET', null, $parentToken)[0] === 403, 'parent cannot access tutor workspace');
+    check(http('/api/people/assistants/workspace', 'GET', null, $tutorToken)[0] === 403, 'tutor cannot access assistant workspace');
+    check(http('/frontend/src/modules/people/features/tutors/tutors.html')[0] === 200 && http('/frontend/src/modules/people/features/tutors/tutors.js')[0] === 200, 'tutor frontend portal assets served');
+
+    // Equip pure tutor ($teacher2, phan_loai='gia_su') with subject, grade, region, mode & availability via Tutor API
+    Store::execute("UPDATE nhan_su_chuyen_mon SET hinh_thuc_day='online,offline' WHERE id=?", [$teacher2['id']]);
+    Store::insert('nhan_su_mon', ['nhan_su_id' => $teacher2['id'], 'mon_hoc_id' => 1, 'cap_lop_tu' => 6, 'cap_lop_den' => 9, 'hoc_phi_buoi_de_xuat' => 180000]);
+    Store::insert('nhan_su_khu_vuc', ['nhan_su_id' => $teacher2['id'], 'khu_vuc_id' => 1]);
+    $tutorDay1 = '2098-03-11';
+    $tutorDay2 = '2098-03-18';
+    $tutorWeekday = (int)(new \DateTimeImmutable($tutorDay1))->format('N') + 1;
+    $tutorSlot = requestOk('/api/people/tutors/me/availability', 'POST', ['thu' => $tutorWeekday, 'gioBatDau' => '17:00', 'gioKetThuc' => '21:00'], $tutorToken, 201);
+    check(http('/api/people/tutors/me/availability', 'POST', ['thu' => $tutorWeekday, 'gioBatDau' => '18:00', 'gioKetThuc' => '19:00'], $tutorToken)[0] === 409, 'tutor duplicate availability rejected');
+    $tutorSlotUpdated = requestOk('/api/people/tutors/me/availability/'.$tutorSlot['id'], 'PUT', ['thu' => $tutorWeekday, 'gioBatDau' => '17:30', 'gioKetThuc' => '21:30'], $tutorToken);
+    check(str_starts_with($tutorSlotUpdated['gioBatDau'], '17:30'), 'tutor availability update persists');
+    $tutorSlotTemp = requestOk('/api/people/tutors/me/availability', 'POST', ['thu' => ($tutorWeekday === 8 ? 2 : $tutorWeekday + 1), 'gioBatDau' => '08:00', 'gioKetThuc' => '10:00'], $tutorToken, 201);
+    requestOk('/api/people/tutors/me/availability/'.$tutorSlotTemp['id'], 'DELETE', null, $tutorToken);
+
+    // Core rule: Staff CANNOT schedule pure tutor into group (nhom) class via operations-sessions or direct assign
+    check(http('/api/academic/scheduling/operations-sessions', 'POST', [
+        'lopId' => $recruitClass['id'],
+        'ngay' => $tutorDay1,
+        'gioBatDau' => '18:00',
+        'gioKetThuc' => '20:00',
+        'userId' => $teacher2['userId'],
+    ], $staffToken)[0] === 400, 'staff blocked from scheduling pure tutor into group class');
+    $nhomSessionForTutorCheck = Store::insert('buoi_hoc', ['lop_id' => $recruitClass['id'], 'ngay' => $tutorDay1, 'gio_bat_dau' => '18:00', 'gio_ket_thuc' => '20:00']);
+    check(http('/api/academic/scheduling/sessions/'.$nhomSessionForTutorCheck.'/assign', 'POST', [
+        'userId' => $teacher2['userId'],
+        'vaiTro' => 'day_chinh',
+        'donGia' => 120000,
+    ], $staffToken)[0] === 400, 'staff blocked from directly assigning pure tutor as main teacher of group class');
+
+    // Create tutoring class (kem_1_1) and schedule pure tutor via Staff -> allowed
+    $tutorClass = requestOk('/api/academic/classes', 'POST', [
+        'maLop' => 'TUT-'.$suffix,
+        'tenLop' => 'Kèm Toán 1:1',
+        'loaiLop' => 'kem_1_1',
+        'monHocId' => 1,
+        'capLopId' => 9,
+        'khuVucId' => 1,
+        'hinhThuc' => 'offline',
+        'nguoiDayChinhId' => $teacher2['id'],
+        'siSoToiThieu' => 1,
+        'siSoToiDa' => 1,
+        'hocPhiBuoi' => 220000,
+        'mucTraChinh' => 150000,
+        'soBuoiDuKien' => 8,
+        'ngayBatDau' => '2026-11-01',
+        'trangThai' => 'dang_hoc',
+    ], $token, 201);
+    requestOk('/api/academic/classes/'.$tutorClass['id'].'/enrollments', 'POST', ['hocVienId' => $student['id'], 'ngayVao' => '2026-11-01'], $token, 201);
+    $tutorSessionCreated = requestOk('/api/academic/scheduling/operations-sessions', 'POST', [
+        'lopId' => $tutorClass['id'],
+        'ngay' => $tutorDay1,
+        'gioBatDau' => '18:00',
+        'gioKetThuc' => '20:00',
+        'userId' => $teacher2['userId'],
+    ], $staffToken, 201);
+    $tutorSessionId = (int)$tutorSessionCreated['ids'][0];
+
+    // Shift recruitment for GIA_SU: hidden/blocked on nhom, visible & approvable on kem_1_1
+    $nhomOpening = requestOk('/api/academic/scheduling/openings', 'POST', [
+        'buoiHocId' => $nhomSessionForTutorCheck,
+        'vaiTro' => 'day_chinh',
+        'soLuong' => 1,
+        'yeuCau' => 'Lớp nhóm chỉ tuyển giáo viên',
+    ], $staffToken, 201);
+    $tutorRecruitSession = Store::insert('buoi_hoc', ['lop_id' => $tutorClass['id'], 'ngay' => $tutorDay2, 'gio_bat_dau' => '18:00', 'gio_ket_thuc' => '20:00']);
+    $tutorOpening = requestOk('/api/academic/scheduling/openings', 'POST', [
+        'buoiHocId' => $tutorRecruitSession,
+        'vaiTro' => 'day_chinh',
+        'soLuong' => 1,
+        'yeuCau' => 'Tuyển gia sư kèm 1:1 Toán 9',
+    ], $staffToken, 201);
+    $tutorOpeningsList = requestOk('/api/academic/scheduling/openings', 'GET', null, $tutorToken);
+    $tutorOpeningIds = array_column($tutorOpeningsList, 'id');
+    check(!in_array($nhomOpening['id'], $tutorOpeningIds, true), 'tutor does not see group class openings');
+    check(in_array($tutorOpening['id'], $tutorOpeningIds, true), 'tutor sees kem_1_1 tutoring opening');
+    check(http('/api/academic/scheduling/openings/'.$nhomOpening['id'].'/apply', 'POST', [], $tutorToken)[0] === 403, 'tutor blocked from applying to group class opening');
+    $tutorApp = requestOk('/api/academic/scheduling/openings/'.$tutorOpening['id'].'/apply', 'POST', ['ghiChu' => 'Rảnh kèm 1:1'], $tutorToken, 201);
+    check($tutorApp['trangThai'] === 'cho_duyet' && $tutorApp['phanCongId'] === null, 'tutor shift application starts pending');
+    $tutorApproved = requestOk('/api/academic/scheduling/applications/'.$tutorApp['id'].'/review', 'POST', ['trangThai' => 'da_duyet'], $staffToken);
+    check($tutorApproved['trangThai'] === 'da_duyet' && $tutorApproved['phanCongId'] !== null, 'staff approves tutor shift application');
+    requestOk('/api/academic/scheduling/openings/'.$nhomOpening['id'].'/close', 'POST', [], $staffToken);
+
+    // Tutor pre-session material upload, check-in, previous-homework grading, check-out & shift request policy
+    $tutorPrevSession = Store::insert('buoi_hoc', ['lop_id' => $tutorClass['id'], 'ngay' => '2098-03-04', 'gio_bat_dau' => '18:00', 'gio_ket_thuc' => '20:00', 'trang_thai' => 'da_day']);
+    Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id' => $tutorPrevSession, 'user_id' => $teacher2['userId'], 'vai_tro' => 'day_chinh', 'don_gia' => 150000, 'trang_thai' => 'da_day']);
+    [$tutMatStatus, $tutMatBody] = httpMultipart('/api/people/tutors/me/sessions/'.$tutorPrevSession.'/material',
+        ['tieuDe' => 'Phiếu tài liệu & BTVN kèm 1:1'],
+        ['file' => ['tutor-hw.pdf', $minimalPdf, 'application/pdf']], $tutorToken);
+    check($tutMatStatus === 200 && ($tutMatBody['data']['taiLieu']['laTepTaiLen'] ?? false), 'tutor uploads pre-session material PDF');
+    $tutorPrevHwId = (int)$tutMatBody['data']['baiTap']['id'];
+
+    $tutorWorkNow = requestOk('/api/people/tutors/me/workspace', 'GET', null, $tutorToken);
+    $tutorSessionIds = array_map('intval', array_column($tutorWorkNow['sessions'], 'id'));
+    check(in_array($tutorSessionId, $tutorSessionIds, true) && in_array($tutorRecruitSession, $tutorSessionIds, true), 'tutor timetable shows scheduled and approved tutoring shifts');
+    $tutorDetail = requestOk('/api/people/tutors/me/sessions/'.$tutorSessionId, 'GET', null, $tutorToken);
+    check($tutorDetail['loaiLop'] === 'kem_1_1', 'tutor session detail exposes loaiLop');
+    check(($tutorDetail['quyenYeuCau']['coTheDoiLich'] ?? false) === true && ($tutorDetail['quyenYeuCau']['coTheChinhCong'] ?? true) === false, 'upcoming tutor shift allows only reschedule');
+    $tutorLogBody = [
+        'revision' => $tutorDetail['revision'],
+        'chuDe' => 'Ôn tập chuyên đề kèm 1:1',
+        'noiDung' => 'Giải phương trình bậc 2',
+        'baiTapChamId' => $tutorPrevHwId,
+        'hocViens' => [['hocVienId' => $student['id'], 'trangThaiDiemDanh' => 'co_mat', 'diemBaiTapGiay' => 9.0, 'nhanXetBuoiHoc' => 'Tiếp thu nhanh']],
+    ];
+    check(http('/api/people/tutors/me/sessions/'.$tutorSessionId.'/log', 'PUT', $tutorLogBody, $tutorToken)[0] === 409, 'tutor must check in before saving log');
+    check(http('/api/people/tutors/me/sessions/'.$tutorSessionId.'/checkin', 'POST', ['checkinLuc' => '2000-01-01'], $tutorToken)[0] === 400, 'tutor checkin rejects client timestamp');
+    $tutorClockIn = requestOk('/api/people/tutors/me/sessions/'.$tutorSessionId.'/checkin', 'POST', [], $tutorToken);
+    check($tutorClockIn['checkinLuc'] !== null && $tutorClockIn['trangThai'] === 'dang_day', 'tutor checkin persists with server time');
+    check(($tutorClockIn['quyenYeuCau']['coTheDoiLich'] ?? true) === false && ($tutorClockIn['quyenYeuCau']['coTheChinhCong'] ?? true) === false, 'in-progress tutor shift hides both requests');
+    check(http('/api/people/tutors/me/requests', 'POST', ['loai' => 'dieu_chinh_cong', 'buoiHocId' => $tutorSessionId, 'lyDo' => 'Chỉnh công lúc đang kèm', 'checkinMoi' => $tutorDay1.'T18:00', 'checkoutMoi' => $tutorDay1.'T20:00'], $tutorToken)[0] === 409, 'in-progress tutor shift blocks time adjustment');
+    $tutorLogBody['revision'] = $tutorClockIn['revision'];
+    check(http('/api/people/tutors/me/sessions/'.$tutorSessionId.'/log', 'PUT', $tutorLogBody + ['baiTap' => ['tieuDe' => 'Không được tạo mới']], $tutorToken)[0] === 400, 'tutor log rejects creating new homework');
+    $tutorSavedLog = requestOk('/api/people/tutors/me/sessions/'.$tutorSessionId.'/log', 'PUT', $tutorLogBody, $tutorToken);
+    check((float)$tutorSavedLog['hocViens'][0]['diemBaiTapGiay'] === 9.0 && (int)$tutorSavedLog['hocViens'][0]['baiTapId'] === $tutorPrevHwId, 'tutor saves attendance and previous homework grade');
+    Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id=?', [$tutorClockIn['phanCongId']]);
+    $tutorClockOut = requestOk('/api/people/tutors/me/sessions/'.$tutorSessionId.'/checkout', 'POST', [], $tutorToken);
+    check($tutorClockOut['checkoutLuc'] !== null && $tutorClockOut['trangThai'] === 'da_day', 'tutor checkout persists');
+    check(($tutorClockOut['quyenYeuCau']['coTheDoiLich'] ?? true) === false && ($tutorClockOut['quyenYeuCau']['coTheChinhCong'] ?? false) === true, 'completed tutor shift allows only time adjustment');
+
+    // Tutor requests (nghi_day, doi_lich, dieu_chinh_cong)
+    $tutorReqLeave = requestOk('/api/people/tutors/me/requests', 'POST', ['loai' => 'nghi_day', 'buoiHocId' => $tutorRecruitSession, 'lyDo' => 'Xin nghỉ ca kèm'], $tutorToken, 201);
+    check($tutorReqLeave['trangThai'] === 'cho_duyet', 'tutor can submit class leave request');
+    check(http('/api/people/tutors/me/requests', 'POST', ['loai' => 'nghi_day', 'buoiHocId' => $tutorRecruitSession, 'lyDo' => 'Gửi trùng'], $tutorToken)[0] === 409, 'tutor duplicate request rejected');
+    $tutorReqShift = requestOk('/api/people/tutors/me/requests', 'POST', ['loai' => 'doi_lich', 'buoiHocId' => $tutorRecruitSession, 'lyDo' => 'Đề xuất đổi giờ', 'ngayMoi' => '2098-03-19', 'gioBatDau' => '18:00', 'gioKetThuc' => '20:00'], $tutorToken, 201);
+    check($tutorReqShift['trangThai'] === 'cho_duyet', 'tutor can submit reschedule request');
+    $tutorReqAdj = requestOk('/api/people/tutors/me/requests', 'POST', ['loai' => 'dieu_chinh_cong', 'buoiHocId' => $tutorSessionId, 'lyDo' => 'Quên bấm check-out đúng giờ', 'checkinMoi' => $tutorDay1.'T18:00', 'checkoutMoi' => $tutorDay1.'T20:00'], $tutorToken, 201);
+    check($tutorReqAdj['trangThai'] === 'cho_duyet', 'tutor can submit timekeeping adjustment request');
+
+    // Tutor parent opportunities strictly limited to kem_1_1 / kem_1_2 (group blocked 403)
+    $staffEmpId = (int)Store::one('SELECT id FROM nhan_vien WHERE user_id=?', [$staffUser])['id'];
+    $tutorOppId = Store::insert('yeu_cau_hoc', [
+        'ma_yc' => 'YC-TUT-'.$suffix, 'nguoi_gui_id' => $parent['userId'], 'hoc_vien_id' => $student['id'],
+        'mon_hoc_id' => 1, 'cap_lop_id' => 9, 'khu_vuc_id' => 1, 'hinh_thuc' => 'offline',
+        'loai_lop_mong_muon' => 'kem_1_1', 'nhan_vien_id' => $staffEmpId, 'trang_thai' => 'dang_tim',
+    ]);
+    Store::insert('yeu_cau_lich', ['yeu_cau_id' => $tutorOppId, 'thu' => $tutorWeekday, 'gio_bat_dau' => '20:00', 'gio_ket_thuc' => '21:00']);
+    $groupOppId = Store::insert('yeu_cau_hoc', [
+        'ma_yc' => 'YC-GRP-'.$suffix, 'nguoi_gui_id' => $parent['userId'], 'hoc_vien_id' => $student['id'],
+        'mon_hoc_id' => 1, 'cap_lop_id' => 9, 'khu_vuc_id' => 1, 'hinh_thuc' => 'offline',
+        'loai_lop_mong_muon' => 'nhom', 'nhan_vien_id' => $staffEmpId, 'trang_thai' => 'dang_tim',
+    ]);
+    Store::insert('yeu_cau_lich', ['yeu_cau_id' => $groupOppId, 'thu' => $tutorWeekday, 'gio_bat_dau' => '20:00', 'gio_ket_thuc' => '21:00']);
+    $tutorOppIds = array_map('intval', array_column(requestOk('/api/people/tutors/me/opportunities', 'GET', null, $tutorToken), 'id'));
+    check(in_array($tutorOppId, $tutorOppIds, true) && !in_array($groupOppId, $tutorOppIds, true), 'tutor opportunities include kem_1_1 and exclude nhom');
+    check(http('/api/people/tutors/me/opportunities/'.$groupOppId.'/apply', 'POST', [], $tutorToken)[0] === 403, 'tutor blocked from applying to group opportunity');
+    $tutorOppApplied = requestOk('/api/people/tutors/me/opportunities/'.$tutorOppId.'/apply', 'POST', [], $tutorToken, 201);
+    check($tutorOppApplied['ttNhanSu'] === 'dong_y', 'tutor applies to kem_1_1 opportunity');
+    Store::execute('DELETE FROM de_xuat_nhan_su WHERE yeu_cau_id IN (?,?)', [$tutorOppId, $groupOppId]);
+    Store::execute('DELETE FROM yeu_cau_lich WHERE yeu_cau_id IN (?,?)', [$tutorOppId, $groupOppId]);
+    Store::execute('DELETE FROM yeu_cau_hoc WHERE id IN (?,?)', [$tutorOppId, $groupOppId]);
+
+    // ==========================================
+    // Email Notification Worker & Detailed Reports (CSV/XLSX) Suite
+    // ==========================================
+    $remStart = (new \DateTimeImmutable('+4 hours', new \DateTimeZone('Asia/Ho_Chi_Minh')));
+    $remEnd = $remStart->modify('+90 minutes');
+    $remSessionId = Store::insert('buoi_hoc', [
+        'lop_id' => $tutorClass['id'],
+        'ngay' => $remStart->format('Y-m-d'),
+        'gio_bat_dau' => $remStart->format('H:i:00'),
+        'gio_ket_thuc' => $remEnd->format('H:i:00'),
+        'trang_thai' => 'du_kien',
+    ]);
+    Store::insert('phan_cong_buoi_hoc', [
+        'buoi_hoc_id' => $remSessionId,
+        'user_id' => $teacher2['userId'],
+        'vai_tro' => 'day_chinh',
+        'don_gia' => 150000,
+        'cach_tinh_luong' => 'theo_gio',
+        'phan_cong_boi' => (int)$login['user']['userId'],
+    ]);
+    $remRun1 = \App\Modules\Communication\Features\Notifications\EmailWorkerService::enqueueUpcomingReminders(24);
+    check($remRun1['enqueuedStaff'] >= 1 && $remRun1['enqueuedParents'] >= 1, 'email worker enqueues staff and parent reminders');
+    $remRun2 = \App\Modules\Communication\Features\Notifications\EmailWorkerService::enqueueUpcomingReminders(24);
+    check($remRun2['enqueuedTotal'] === 0, 'reminder enqueue is idempotent with zero duplicates');
+
+    // Lease / skip-locked concurrency claim prevents double claiming
+    $claim1 = \App\Modules\Communication\Features\Notifications\EmailWorkerService::claimBatch(1, 5, 300);
+    check(count($claim1) === 1, 'atomic claimBatch claims 1 ready notification');
+    $claim2 = \App\Modules\Communication\Features\Notifications\EmailWorkerService::claimBatch(50, 5, 300);
+    check(!in_array((int)$claim1[0]['id'], array_map('intval', array_column($claim2, 'id')), true), 'claimed row lease blocks duplicate concurrent claim');
+    // Reset leases so full batch processes cleanly with mock mailer
+    Store::execute("UPDATE thong_bao SET email_thu_tiep_luc=NULL WHERE co_gui_email=1 AND trang_thai_email='chua_gui'");
+
+    // Sensitive content (OTP) & wrong-owner financial email are permanently blocked without retry
+    $badOtpNotifId = Store::insert('thong_bao', [
+        'user_id' => $teacher['userId'],
+        'loai' => 'he_thong',
+        'tieu_de' => 'OTP test',
+        'noi_dung' => 'Mã OTP 123456 không được gửi qua hàng đợi',
+        'co_gui_email' => 1,
+    ]);
+    $workerMailer = new class extends \CodeIgniter\Email\Email {
+        public array $sent = [];
+        public bool $deliver = true;
+        public function send($autoClear = true) {
+            if (!$this->deliver) {
+                throw new \RuntimeException('SMTP timeout password=SuperSecret123');
+            }
+            $this->sent[] = ['to' => $this->recipients, 'subject' => $this->headers['Subject'] ?? '', 'body' => $this->body];
+            return true;
+        }
+    };
+    \Config\Services::injectMock('email', $workerMailer);
+    try {
+        $batchRes = \App\Modules\Communication\Features\Notifications\EmailWorkerService::processBatch(['limit' => 50, 'skipReminders' => true]);
+        check($batchRes['sent'] >= 2 && $batchRes['permanentFailed'] >= 1, 'email worker sends valid queued emails and blocks sensitive OTP');
+        $otpRow = Store::one('SELECT trang_thai_email, so_lan_thu_email, email_thu_tiep_luc FROM thong_bao WHERE id=?', [$badOtpNotifId]);
+        check($otpRow['trang_thai_email'] === 'loi' && (int)$otpRow['so_lan_thu_email'] === 5 && $otpRow['email_thu_tiep_luc'] === null, 'permanent failure does not retry infinitely');
+        $reRun = \App\Modules\Communication\Features\Notifications\EmailWorkerService::processBatch(['limit' => 50, 'skipReminders' => true]);
+        check($reRun['claimed'] === 0 && $reRun['sent'] === 0, 're-running email worker never resends already sent notifications');
+
+        // Transient SMTP failure schedules backoff and redacts secrets in loi_email
+        $retryNotifId = Store::insert('thong_bao', [
+            'user_id' => $parent['userId'],
+            'loai' => 'he_thong',
+            'tieu_de' => 'Kiểm thử retry tạm thời',
+            'noi_dung' => 'Nội dung thông báo nghiệp vụ hợp lệ.',
+            'co_gui_email' => 1,
+        ]);
+        $workerMailer->deliver = false;
+        $retryRes = \App\Modules\Communication\Features\Notifications\EmailWorkerService::processBatch(['limit' => 10, 'skipReminders' => true]);
+        check($retryRes['retried'] === 1, 'transient SMTP error schedules retry');
+        $retryRow = Store::one('SELECT trang_thai_email, so_lan_thu_email, email_thu_tiep_luc, loi_email FROM thong_bao WHERE id=?', [$retryNotifId]);
+        check($retryRow['trang_thai_email'] === 'loi' && (int)$retryRow['so_lan_thu_email'] === 1 && $retryRow['email_thu_tiep_luc'] !== null, 'backoff timestamp and attempt count recorded');
+        check(!str_contains((string)$retryRow['loi_email'], 'SuperSecret123') && str_contains((string)$retryRow['loi_email'], '[REDACTED]'), 'sanitized email error never leaks SMTP secrets');
+    } finally {
+        \Config\Services::resetSingle('email');
+    }
+    $emailStats = requestOk('/api/communication/notifications/email-stats', 'GET', null, $token);
+    check(isset($emailStats['summary']['sent']) && $emailStats['summary']['sent'] >= 2, 'admin reads email queue stats');
+    check(http('/api/communication/notifications/email-stats', 'GET', null, $teacherToken)[0] === 403, 'teacher cannot read email queue stats');
+    check(http('/api/communication/notifications/email-stats', 'GET', null, $staffToken)[0] === 403, 'staff cannot read email queue stats');
+
+    // Detailed Reports & CSV/XLSX Export (same filters, strict RBAC, formula injection protection)
+    $rptFrom = '2026-11-01';
+    $rptTo = '2026-12-31';
+    $rptMetaAdmin = requestOk('/api/reporting/dashboard/reports/meta', 'GET', null, $token);
+    check(in_array('revenue', $rptMetaAdmin['allowedReports'], true), 'admin report meta includes revenue');
+    $rptMetaStaff = requestOk('/api/reporting/dashboard/reports/meta', 'GET', null, $staffToken);
+    check(!in_array('revenue', $rptMetaStaff['allowedReports'], true), 'staff report meta excludes revenue');
+    foreach ([$teacherToken, $tutorToken, $assistantToken, $parentToken] as $nonMgrToken) {
+        check(http('/api/reporting/dashboard/reports/meta', 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read report meta');
+        check(http('/api/reporting/dashboard/reports/attendance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read attendance report');
+        check(http('/api/reporting/dashboard/reports/revenue?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read revenue report');
+        check(http('/api/reporting/dashboard/reports/revenue/export?format=xlsx&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot export revenue report');
+    }
+    check(http('/api/reporting/dashboard/reports/revenue?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot access admin-only revenue report');
+    check(http('/api/reporting/dashboard/reports/revenue/export?format=csv&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot export admin-only revenue report');
+    requestOk('/api/reporting/dashboard/reports/attendance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken);
+    requestOk('/api/reporting/dashboard/reports/class-performance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken);
+
+    $attReport = requestOk('/api/reporting/dashboard/reports/attendance?tuNgay='.$rptFrom.'&denNgay='.$rptTo.'&lopId='.$classId, 'GET', null, $token);
+    check($attReport['summary']['coMat'] >= 1 && $attReport['summary']['daDiemDanh'] >= 1, 'attendance report counts real marked attendance');
+    check(isset($attReport['summary']['chuaDiemDanh'], $attReport['summary']['chuaDienRa']), 'attendance report separates unrecorded and upcoming slots');
+    $revReport = requestOk('/api/reporting/dashboard/reports/revenue?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
+    check(isset($revReport['summary']['thucThuRong'], $revReport['summary']['phaiThu'], $revReport['summary']['giaoDichChoDoiSoat']), 'revenue report separates receivable, confirmed actuals, and pending intents');
+    $perfReport = requestOk('/api/reporting/dashboard/reports/class-performance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
+    check($perfReport['summary']['soLop'] >= 1 && isset($perfReport['classes'][0]['tyLeLapDay']), 'class performance report returns real DB class KPIs');
+
+    // Formula injection sanitization unit checks + live HTTP CSV & XLSX export checks
+    check(\App\Modules\Reporting\Features\Dashboard\SpreadsheetExport::sanitizeCell('=CMD|calc') === "'=CMD|calc", 'CSV/XLSX sanitizes leading =');
+    check(\App\Modules\Reporting\Features\Dashboard\SpreadsheetExport::sanitizeCell('+SUM(1,2)') === "'+SUM(1,2)", 'CSV/XLSX sanitizes leading +');
+    check(\App\Modules\Reporting\Features\Dashboard\SpreadsheetExport::sanitizeCell('-2+3') === "'-2+3", 'CSV/XLSX sanitizes leading -');
+    check(\App\Modules\Reporting\Features\Dashboard\SpreadsheetExport::sanitizeCell('@HYPERLINK') === "'@HYPERLINK", 'CSV/XLSX sanitizes leading @');
+    [$csvStatus, , $csvRaw, $csvHeaders] = http('/api/reporting/dashboard/reports/attendance/export?format=csv&tuNgay='.$rptFrom.'&denNgay='.$rptTo.'&lopId='.$classId, 'GET', null, $token);
+    check($csvStatus === 200 && str_starts_with($csvRaw, "\xEF\xBB\xBF") && str_contains(implode("\n", $csvHeaders), 'bao-cao-chuyen-can-2026-11-01-den-2026-12-31.csv'), 'CSV export returns UTF-8 BOM and structured filename');
+    foreach (['attendance' => 'chuyen-can', 'revenue' => 'doanh-thu', 'class-performance' => 'hieu-suat-lop'] as $rType => $rSlug) {
+        [$xStatus, , $xRaw, $xHeaders] = http('/api/reporting/dashboard/reports/'.$rType.'/export?format=xlsx&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
+        check($xStatus === 200 && str_starts_with($xRaw, "PK\x03\x04") && str_contains(implode("\n", $xHeaders), "bao-cao-$rSlug-$rptFrom-den-$rptTo.xlsx"), 'XLSX export produces valid OpenSpout workbook for '.$rType);
+    }
+
+    // Clean temporary reminder session so administration suite counts stay intact
+    Store::execute('DELETE FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=?', [$remSessionId]);
+    Store::execute('DELETE FROM buoi_hoc WHERE id=?', [$remSessionId]);
 
     // The administration suite shares this disposable DB and asserts its own handoff totals.
     Store::execute('DELETE FROM yeu_cau_hoc WHERE id=?',[$opportunityId]);

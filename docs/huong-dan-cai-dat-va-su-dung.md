@@ -705,6 +705,51 @@ WHERE g.group_name = 'Admin' AND a.status = 'active'
 
 Bộ test tự động chỉ dùng DB `_test` và phản hồi SDK có chữ ký giả lập; không thực hiện chuyển khoản thật. [payOS hiện không có sandbox riêng](https://payos.vn/docs/moi-truong-test/). Khi chủ tài khoản nghiệm thu kết nối thật, họ thực hiện và đối chiếu một khoản nhỏ có kiểm soát trên kênh production. Tham khảo [SDK PHP chính thức payOS](https://payos.vn/docs/sdks/back-end/php/) và [xác minh chữ ký webhook](https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature/).
 
+### 11.2. Cấu hình SMTP / Mailpit và chạy Worker gửi email thông báo (CLI)
+
+Worker gửi email thông báo nghiệp vụ chạy bằng CodeIgniter 4 CLI (tái sử dụng `Config\Email` của luồng OTP, không gửi email trực tiếp trong request web):
+
+1. **Chạy thử local với Mailpit:**
+   - Trong `config/server.env`, giữ `MAIL_PROTOCOL=smtp`, `MAIL_HOST=mailpit`, `MAIL_PORT=1025`, `MAIL_FROM_EMAIL=noreply@educenter.test`, `MAIL_FROM_NAME=EduCenter`, để trống `MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_ENCRYPTION`.
+   - Cấu hình tùy chọn `MAIL_REMINDER_HOURS=24` (số giờ trước giờ học để tạo nhắc lịch tự động, mặc định 24 giờ, tối đa 168 giờ).
+   - Chạy một lượt worker và xem trạng thái hàng đợi:
+
+```powershell
+docker compose exec -T backend php spark educenter:email-worker --limit=20
+docker compose exec -T backend php spark educenter:email-status
+```
+
+   - Mở hộp thư thử Mailpit tại `http://127.0.0.1:8025` để kiểm tra email HTML/tiếng Việt đã gửi.
+
+2. **Chạy định kỳ trên môi trường triển khai (SMTP thật):**
+   - Điền biến môi trường SMTP thật trong `config/server.env` riêng trên server (`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION=tls` hoặc `ssl`, `APP_BASE_URL=https://ten-mien-cua-ban`). Tuyệt đối không commit mật khẩu SMTP lên Git.
+   - Trên Linux/VPS, đặt cron chạy mỗi 5 phút:
+
+```cron
+*/5 * * * * cd /duong-dan-du-an && docker compose -f compose.production.yaml exec -T --user www-data backend php spark educenter:email-worker --limit=30 >> /var/log/educenter-email-worker.log 2>&1
+```
+
+   - Trên Windows local/server, có thể tạo **Task Scheduler** lặp mỗi 5 phút gọi:
+     `docker compose -f D:\WEB\compose.yaml exec -T backend php spark educenter:email-worker --limit=20`
+   - Nếu nâng cấp DB đã có từ 006, chạy thêm chỉ mục cộng thêm `database/migrations/007_email_queue_index.sql` và nạp lại `database/triggers/payments.sql` (không ảnh hưởng dữ liệu cũ).
+
+### 11.3. Làm mới bộ dữ liệu trình diễn cho tất cả vai trò (`lam-moi-du-lieu-mau.sql`)
+
+File SQL gọn tại `database/seeders/lam-moi-du-lieu-mau.sql` được chia làm 2 phần rõ ràng:
+- **Phần 1 — `1. XÓA BỘ SEED CŨ`:** có truy vấn `SELECT` xem trước số bản ghi sẽ xóa, xóa có điều kiện theo đúng thứ tự khóa ngoại (không dùng `DROP DATABASE`, không dùng `TRUNCATE`, không tắt `FOREIGN_KEY_CHECKS`), giữ nguyên tài khoản/mật khẩu đăng nhập hiện có và bảo toàn 100% môn học/khóa học Toán, Lịch sử cùng mọi dữ liệu ngoài bộ seed.
+- **Phần 2 — `2. TẠO BỘ DỮ LIỆU MỚI`:** tạo dữ liệu liên kết thực tế với tên tiếng Việt tự nhiên (không có chữ `DEMO`/`SQLDEMO` trong tên hiển thị, lớp, khóa học) cho đầy đủ vai trò; dùng email `.test`.
+
+Cách chạy thủ công (sau khi đã sao lưu DB): mở `database/seeders/lam-moi-du-lieu-mau.sql` trong DataGrip / MySQL Workbench (hoặc chạy qua `mysql` CLI), **chạy trước truy vấn xem trước 1.1** để kiểm tra số dòng, sau đó chạy phần 1.2 và Phần 2. Tài khoản đăng nhập (giữ nguyên mật khẩu hiện có trong DB; nếu tạo mới trên DB trống thì mật khẩu ban đầu là `Demo@123`, chỉ lưu dạng hash bcrypt):
+
+| Vai trò | Tài khoản giữ nguyên | Tên hiển thị mới | Dữ liệu trình diễn |
+| --- | --- | --- | --- |
+| Admin | `demo_admin` | Trần Quang Huy | Báo cáo chuyên cần/doanh thu/hiệu suất, đối soát GD chờ duyệt, duyệt nghỉ cả lớp & chỉnh công |
+| Giáo vụ | `demo_giaovu` | Lê Minh Thư | Xếp lịch 2 cơ sở, duyệt nghỉ cá nhân, tuyển sinh kèm 1:1, 3 đề xuất tuyển ca & 1 ứng tuyển chờ duyệt |
+| Giáo viên | `demo_giaovien`, `demo_gv02`, `demo_gv03` | Nguyễn Minh Anh, Phạm Hoàng Long, Lê Thu Hà | 3 lớp nhóm (Ngữ văn 9, Tiếng Anh 8, Vật lý 11), ca quá khứ có sổ/điểm & ca sắp dạy, ca tuyển GV |
+| Gia sư | `demo_giasu` | Đỗ Ngọc Ánh | 2 lớp kèm (`kem_1_1` Tiếng Anh 9, `kem_1_2` Ngữ văn 9), ca tuyển kèm 1:1 & nhu cầu phụ huynh kèm 1:1 |
+| Trợ giảng | `demo_trogiang` | Nguyễn Thảo Vy | Ca hỗ trợ lớp nhóm Ngữ văn 9, lịch rảnh, đơn ứng tuyển Trợ giảng |
+| Phụ huynh & Học viên | `demo_phuhuynh`, `demo_ph02`, `demo_ph03` | Nguyễn Thị Lan, Trần Văn Hùng, Lê Thị Hạnh | 6 học viên (1 phụ huynh nhiều con), điểm danh, điểm/bài tập, hóa đơn đã thu/một phần/chờ đối soát |
+
 <a id="xu-ly-loi"></a>
 ## 12. Xử lý lỗi thường gặp
 
