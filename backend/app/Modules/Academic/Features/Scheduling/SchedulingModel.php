@@ -19,7 +19,7 @@ final class SchedulingModel extends \CodeIgniter\Model
     }
     public static function session(array $row): array
     {
-        $data=self::fields($row,['id'=>'id','lopId'=>'lop_id','maLop'=>'ma_lop','tenLop'=>'ten_lop',
+        $data=self::fields($row,['id'=>'id','lopId'=>'lop_id','maLop'=>'ma_lop','tenLop'=>'ten_lop','loaiLop'=>'loai_lop',
             'lichHocId'=>'lich_hoc_id','loai'=>'loai','buoiGocId'=>'buoi_goc_id','ngay'=>'ngay',
             'gioBatDau'=>'gio_bat_dau','gioKetThuc'=>'gio_ket_thuc','coSoId'=>'co_so_id','phongHoc'=>'phong_hoc',
             'chuDeBaiHoc'=>'chu_de_bai_hoc','noiDungBaiHoc'=>'noi_dung_bai_hoc','fileBaiGiangUrl'=>'file_bai_giang_url',

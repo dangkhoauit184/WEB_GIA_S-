@@ -53,3 +53,10 @@ SELECT 'CAN_XAC_NHAN','giao_dich_phu_huynh_khac_hien_tai',COUNT(*) FROM giao_dic
 WHERE g.phu_huynh_id<>fn_phu_huynh_hoa_don(g.hoa_don_id);
 SELECT 'CAN_XAC_NHAN','ghi_danh_cu_chua_co_nguoi_xep',COUNT(*) FROM lop_hoc_vien
 WHERE dang_ky_khoa_hoc_id IS NOT NULL AND xep_boi IS NULL;
+-- [THÊM] 006: Đơn ứng tuyển đã duyệt phải khớp đúng ca, người dùng và vai trò phân công; không duyệt vượt số lượng.
+SELECT 'VI_PHAM','ung_tuyen_duyet_lech_phan_cong',COUNT(*) FROM ung_tuyen_ca u
+JOIN de_xuat_tuyen_ca d ON d.id=u.de_xuat_id
+JOIN phan_cong_buoi_hoc pc ON pc.id=u.phan_cong_id
+WHERE u.trang_thai='da_duyet' AND (pc.buoi_hoc_id<>d.buoi_hoc_id OR pc.user_id<>u.user_id OR pc.vai_tro<>d.vai_tro);
+SELECT 'VI_PHAM','de_xuat_ca_vuot_so_luong',COUNT(*) FROM de_xuat_tuyen_ca d
+WHERE d.so_luong<(SELECT COUNT(*) FROM ung_tuyen_ca u WHERE u.de_xuat_id=d.id AND u.trang_thai='da_duyet');

@@ -15,6 +15,7 @@
     "firebase/php-jwt": "^7.0",
     "guzzlehttp/guzzle": "^7.0",
     "khanamiryan/qrcode-detector-decoder": "^2.0",
+    "openspout/openspout": "^5.15",
     "payos/payos": "^2.0"
   },
   "autoload": {

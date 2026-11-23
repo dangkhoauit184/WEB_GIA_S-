@@ -14,6 +14,7 @@ final class Portal extends \CodeIgniter\Controller
         'leave-requests.js'=>'modules/academic/features/leave-requests/leave-requests.js',
         'staff.js'=>'modules/administration/features/staff/staff.js',
         'schedule.js'=>'modules/academic/features/scheduling/admin-schedule.js',
+        'shift-recruitment.js'=>'modules/academic/features/scheduling/shift-recruitment.js',
         'catalog.js'=>'modules/administration/features/catalog/catalog.js',
         'permissions.js'=>'modules/administration/features/permissions/permissions.js',
         'audit.js'=>'modules/administration/features/audit/audit.js',
@@ -97,6 +98,10 @@ final class Portal extends \CodeIgniter\Controller
                 $html = $this->frontendPage('src/modules/people/features/parents/parents.html');
             } elseif ($user['role'] === 'GIAO_VIEN') {
                 $html = $this->frontendPage('src/modules/people/features/teachers/teachers.html');
+            } elseif ($user['role'] === 'GIA_SU') {
+                $html = $this->frontendPage('src/modules/people/features/tutors/tutors.html');
+            } elseif ($user['role'] === 'TRO_GIANG') {
+                $html = $this->frontendPage('src/modules/people/features/assistants/assistants.html');
             } else {
                 $html = $this->frontendPage('src/modules/academic/features/attendance/attendance.html');
             }

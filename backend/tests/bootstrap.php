@@ -55,6 +55,28 @@ function startServer(): array
     if(!$ready) { proc_terminate($process); throw new \RuntimeException('HTTP server failed to start'); }
     return [$process,$log];
 }
+function httpMultipart(string $path, array $fields, array $files, ?string $token = null): array
+{
+    global $baseUrl;
+    $boundary = '----EduCenterTest' . bin2hex(random_bytes(8));
+    $body = '';
+    foreach ($fields as $name => $val) {
+        $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"{$name}\"\r\n\r\n{$val}\r\n";
+    }
+    foreach ($files as $name => [$filename, $content, $mime]) {
+        $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"{$name}\"; filename=\"{$filename}\"\r\nContent-Type: {$mime}\r\n\r\n{$content}\r\n";
+    }
+    $body .= "--{$boundary}--\r\n";
+    $headers = "Content-Type: multipart/form-data; boundary={$boundary}\r\n" . ($token ? "Authorization: Bearer $token\r\n" : '');
+    $context = stream_context_create(['http' => [
+        'method' => 'POST', 'header' => $headers, 'content' => $body,
+        'ignore_errors' => true, 'timeout' => 20, 'follow_location' => 0,
+    ]]);
+    $text = file_get_contents($baseUrl . $path, false, $context);
+    if ($text === false) throw new \RuntimeException('HTTP server unavailable');
+    preg_match('/\s(\d{3})\s/', $http_response_header[0], $match);
+    return [(int)$match[1], json_decode($text, true), $text, $http_response_header];
+}
 function requestOk(string $path,string $method='GET',?array $data=null,?string $token=null,int $expected=200): mixed
 {
     [$status,$body]=http($path,$method,$data,$token);

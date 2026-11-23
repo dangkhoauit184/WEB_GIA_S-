@@ -186,7 +186,9 @@ final class ParentsRepository
             $schedRows = Store::rows("SELECT b.id AS buoiHocId, b.ngay, b.gio_bat_dau AS gioBatDau,
                     b.gio_ket_thuc AS gioKetThuc, b.phong_hoc AS phongHoc, b.trang_thai AS trangThai,
                     b.loai, b.chu_de_bai_hoc AS chuDe, b.noi_dung_bai_hoc AS noiDung,
-                    bt.tieu_de AS baiTap, bt.file_de_bai_url AS fileUrl, bt.han_nop AS hanNop,
+                    b.file_bai_giang_url AS fileBaiGiangUrl,
+                    bt.id AS baiTapId, bt.tieu_de AS baiTap, bt.noi_dung AS ghiChuTaiLieu,
+                    bt.file_de_bai_url AS fileUrl, bt.han_nop AS hanNop,
                     cs.ten_co_so AS tenCoSo,
                     l.ten_lop AS tenLop, l.ma_lop AS maLop, l.hinh_thuc AS hinhThuc,
                     COALESCE(k.ten, m.ten, l.ten_lop) AS tenKhoaHoc,
@@ -217,6 +219,10 @@ final class ParentsRepository
                 $room = $r['hinhThuc'] === 'online'
                     ? 'Online' . ($r['phongHoc'] ? ' (' . $r['phongHoc'] . ')' : '')
                     : 'Offline' . ($r['phongHoc'] ? ' - ' . $r['phongHoc'] : '');
+                $material = \App\Modules\Academic\Features\Attendance\SessionMaterialService::describe(
+                    ['id' => (int)$r['buoiHocId'], 'file_bai_giang_url' => $r['fileBaiGiangUrl']],
+                    $r['baiTapId'] ? ['id' => (int)$r['baiTapId'], 'tieu_de' => $r['baiTap'], 'noi_dung' => $r['ghiChuTaiLieu'], 'file_de_bai_url' => $r['fileUrl']] : null
+                );
                 return [
                     'buoiHocId' => (int)$r['buoiHocId'],
                     'ngay' => $r['ngay'],
@@ -227,7 +233,9 @@ final class ParentsRepository
                     'chuDe' => $r['chuDe'],
                     'noiDung' => $r['noiDung'],
                     'baiTap' => $r['baiTap'],
-                    'fileUrl' => $r['fileUrl'],
+                    'fileUrl' => $material['url'] ?: $r['fileUrl'],
+                    'fileName' => $material['ten_tep'],
+                    'ghiChuTaiLieu' => $r['ghiChuTaiLieu'],
                     'hanNop' => $r['hanNop'] ? date('d/m/Y H:i', strtotime($r['hanNop'])) : null,
                     'date' => date('d/m/Y', strtotime((string)$r['ngay'])),
                     'time' => substr((string)$r['gioBatDau'], 0, 5) . ' - ' . substr((string)$r['gioKetThuc'], 0, 5),

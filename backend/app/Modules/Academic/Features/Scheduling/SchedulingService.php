@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Academic\Features\Scheduling;
 
-use App\Shared\{Access,ApiException};
+use App\Shared\{Access,ApiException,Store};
 
 final class SchedulingService
 {
@@ -34,8 +34,17 @@ final class SchedulingService
     }
     public static function assign(int $id,array $input): array
     {
-        $user=SchedulingFilter::check('add',true); self::session($id,$user);
-        $rows=SchedulingRepository::assignment($id,SchedulingValidator::assignment($input),(int)$user['userId']);
+        $user=SchedulingFilter::check('add',true); $session=self::session($id,$user);
+        $data=SchedulingValidator::assignment($input);
+        if($user['role']==='GIAO_VU' && $data['vaiTro']==='day_chinh') {
+            $class=Store::one('SELECT loai_lop FROM lop_hoc WHERE id=?',[$session['lopId']]);
+            $person=Store::one("SELECT phan_loai FROM nhan_su_chuyen_mon WHERE user_id=? AND deleted_at IS NULL AND trang_thai='hoat_dong'",[$data['userId']]);
+            $types=array_filter(explode(',',(string)($person['phan_loai']??'')));
+            if($class && $class['loai_lop']==='nhom' && in_array('gia_su',$types,true) && !in_array('giao_vien',$types,true)) {
+                throw new ApiException(400,'Gia sư chỉ được xếp ca thuộc lớp kèm gia sư (1:1 hoặc 1:2), không xếp vào lớp nhóm.');
+            }
+        }
+        $rows=SchedulingRepository::assignment($id,$data,(int)$user['userId']);
         if($user['role']!=='ADMIN') foreach($rows as &$row) unset($row['donGia']);
         return $rows;
     }

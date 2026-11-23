@@ -912,6 +912,8 @@ CREATE TABLE thong_bao (
   PRIMARY KEY (id),
   UNIQUE KEY uq_tb_chong_trung (user_id, khoa_chong_trung),
   KEY idx_tb_user (user_id, da_doc, created_at),
+  -- [THÊM] Chỉ mục hỗ trợ worker CLI quét hàng đợi email chờ gửi và retry theo thời điểm.
+  KEY idx_tb_email_queue (co_gui_email, trang_thai_email, email_thu_tiep_luc),
   CONSTRAINT fk_tb_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -1026,4 +1028,62 @@ CREATE TABLE su_kien_thanh_toan (
   CONSTRAINT fk_sk_gd FOREIGN KEY (giao_dich_id,nha_cung_cap) REFERENCES giao_dich_truc_tuyen(id,nha_cung_cap),
   CONSTRAINT ck_sk_hash CHECK (REGEXP_LIKE(payload_sha256,'^[a-fA-F0-9]{64}$','c')),
   CONSTRAINT ck_sk_xu_ly CHECK ((trang_thai='cho_xu_ly' AND xu_ly_luc IS NULL) OR (trang_thai<>'cho_xu_ly' AND xu_ly_luc IS NOT NULL))
+) ENGINE=InnoDB;
+
+-- [THÊM] 006: Đề xuất tuyển Giáo viên hoặc Trợ giảng cho ca học đã có; không đổi lịch buổi học hay lớp học.
+CREATE TABLE de_xuat_tuyen_ca (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  ma_de_xuat VARCHAR(30) NOT NULL,
+  buoi_hoc_id BIGINT UNSIGNED NOT NULL,
+  vai_tro ENUM('day_chinh','tro_giang') NOT NULL,
+  so_luong TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  yeu_cau VARCHAR(500) NULL,
+  trang_thai ENUM('dang_mo','da_du_nguoi','da_dong') NOT NULL DEFAULT 'dang_mo',
+  nguoi_tao_id BIGINT UNSIGNED NOT NULL,
+  dong_boi BIGINT UNSIGNED NULL,
+  dong_luc DATETIME NULL,
+  mo_key VARCHAR(40) GENERATED ALWAYS AS (IF(trang_thai='dang_mo',CONCAT(buoi_hoc_id,':',vai_tro),NULL)) VIRTUAL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_dxtc_ma (ma_de_xuat),
+  UNIQUE KEY uq_dxtc_mo (mo_key),
+  KEY idx_dxtc_buoi (buoi_hoc_id,vai_tro,trang_thai),
+  KEY idx_dxtc_tt (trang_thai,created_at),
+  CONSTRAINT fk_dxtc_buoi FOREIGN KEY (buoi_hoc_id) REFERENCES buoi_hoc(id),
+  CONSTRAINT fk_dxtc_tao FOREIGN KEY (nguoi_tao_id) REFERENCES users(user_id),
+  CONSTRAINT fk_dxtc_dong FOREIGN KEY (dong_boi) REFERENCES users(user_id),
+  CONSTRAINT ck_dxtc_sl CHECK (so_luong>=1 AND (vai_tro<>'day_chinh' OR so_luong=1)),
+  CONSTRAINT ck_dxtc_dong CHECK ((dong_boi IS NULL)=(dong_luc IS NULL))
+) ENGINE=InnoDB;
+
+-- [THÊM] 006: Đơn ứng tuyển ca của Giáo viên/Trợ giảng; chỉ khi được Giáo vụ duyệt mới gắn phan_cong_id.
+CREATE TABLE ung_tuyen_ca (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  de_xuat_id BIGINT UNSIGNED NOT NULL,
+  nhan_su_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  ghi_chu VARCHAR(500) NULL,
+  trang_thai ENUM('cho_duyet','da_duyet','tu_choi','da_huy') NOT NULL DEFAULT 'cho_duyet',
+  nguoi_duyet_id BIGINT UNSIGNED NULL,
+  duyet_luc DATETIME NULL,
+  ly_do_tu_choi VARCHAR(255) NULL,
+  phan_cong_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_utc_dx_ns (de_xuat_id,nhan_su_id),
+  UNIQUE KEY uq_utc_dx_user (de_xuat_id,user_id),
+  KEY idx_utc_user (user_id,trang_thai,created_at),
+  KEY idx_utc_dx (de_xuat_id,trang_thai,created_at),
+  CONSTRAINT fk_utc_dx FOREIGN KEY (de_xuat_id) REFERENCES de_xuat_tuyen_ca(id),
+  CONSTRAINT fk_utc_ns FOREIGN KEY (nhan_su_id) REFERENCES nhan_su_chuyen_mon(id),
+  CONSTRAINT fk_utc_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+  CONSTRAINT fk_utc_duyet FOREIGN KEY (nguoi_duyet_id) REFERENCES users(user_id),
+  CONSTRAINT fk_utc_pc FOREIGN KEY (phan_cong_id) REFERENCES phan_cong_buoi_hoc(id),
+  CONSTRAINT ck_utc_duyet CHECK (
+    (trang_thai IN ('da_duyet','tu_choi') AND nguoi_duyet_id IS NOT NULL AND duyet_luc IS NOT NULL)
+    OR (trang_thai IN ('cho_duyet','da_huy') AND nguoi_duyet_id IS NULL AND duyet_luc IS NULL)),
+  CONSTRAINT ck_utc_tuchoi CHECK (ly_do_tu_choi IS NULL OR trang_thai='tu_choi'),
+  CONSTRAINT ck_utc_pc CHECK ((trang_thai='da_duyet' AND phan_cong_id IS NOT NULL) OR (trang_thai<>'da_duyet' AND phan_cong_id IS NULL))
 ) ENGINE=InnoDB;

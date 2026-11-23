@@ -197,12 +197,12 @@ audit_log ghi actor, hành động, bảng/id, dữ liệu trước/sau, metadat
 <a id="kien-truc"></a>
 ## 5. Cấu trúc mã nguồn và MVC
 
-Manifest [shared/modules.json](../shared/modules.json) là danh sách chuẩn6 module/21 feature:
+Manifest [shared/modules.json](../shared/modules.json) là danh sách chuẩn 6 module / 22 feature:
 
 | Module | Feature |
 | --- | --- |
 | Administration | Auth, Permissions, Staff, Catalog, Audit |
-| People | Students, Teachers, Tutors, Parents |
+| People | Students, Teachers, Tutors, Parents, Assistants |
 | Academic | Admissions, AcademicAffairs, Classes, Scheduling, Attendance, LeaveRequests, MakeupClasses |
 | Finance | Tuition, Timekeeping, Payroll |
 | Communication | Notifications |
@@ -359,21 +359,21 @@ Lần rà soát đọc trực tiếp danh mục và nhóm màn khóa/học phí;
 <a id="tien-do"></a>
 ## 10. Tiến độ, kiểm chứng và phần tiếp theo
 
-Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Ngày 17/11/2026 bổ sung cổng Giáo viên theo tám màn trong index, chi tiết tại mục 12.6. Gia sư/Trợ giảng có màn xác nhận vai trò, giao diện nghiệp vụ tiếp tục ở trạng thái đang triển khai. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
+Ngày 14/11/2026, web dùng chung trang đăng nhập gốc `/login` và địa chỉ làm việc `/app` cho sáu vai trò. PHP xác thực cookie phiên và quyền hiện hành trước khi chọn giao diện Admin/Giáo vụ/Phụ huynh. Ngày 17/11/2026 bổ sung cổng Giáo viên theo tám màn trong index, chi tiết tại mục 12.6. Ngày 22/11/2026 bổ sung cổng Trợ giảng (vai trò `TRO_GIANG`) với feature `assistants` độc lập, đồng bộ giao diện cổng Giáo viên theo DB 005/006 (chi tiết tại mục 12.7). Ngày 23/11/2026 hoàn thiện cổng Gia sư (vai trò `GIA_SU`) đồng bộ giao diện và chức năng với cổng Giáo viên, đồng thời áp quy tắc Giáo vụ chỉ xếp ca và tuyển Gia sư cho lớp kèm gia sư (`kem_1_1`, `kem_1_2`), chi tiết tại mục 12.8. F5 giữ phiên hợp lệ; đăng xuất thu hồi JWT, xóa cookie và quay về `/login`. Frontend được phục vụ qua PHP cùng origin; các API nghiệp vụ vẫn yêu cầu Bearer JWT và kiểm tra quyền ở backend.
 
-Ngày 18/11/2026 bổ sung và đồng bộ menu hồ sơ, sửa thông tin cá nhân, đổi mật khẩu cho Giáo vụ, Giáo viên, Gia sư, Trợ giảng và Phụ huynh. Đây là phần tài khoản cá nhân, không đánh dấu hoàn tất các màn nghiệp vụ Gia sư/Trợ giảng còn planned.
+Ngày 18/11/2026 bổ sung và đồng bộ menu hồ sơ, sửa thông tin cá nhân, đổi mật khẩu cho Giáo vụ, Giáo viên, Gia sư, Trợ giảng và Phụ huynh.
 
 | Phần | Đã có | Còn phải làm |
 | --- | --- | --- |
-| DB/server | Schema005, migration/seed/check, Docker PHP/MySQL, SMTP local, backup/restore, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
-| PHP nền | Auth/JWT/scope, hồ sơ, lớp/lịch, matching, Catalog/Permissions; Admin-only xếp lớp và che lương ở các API liên quan | Tiếp tục kiểm chứng scope theo từng luồng/cơ sở khi nối các cổng |
-| Administration | Cổng Admin 10 màn theo prototype đã chốt, khóa/cấu hình, tài khoản/quyền, nhân sự/hồ sơ, audit | Nghiệm thu cùng chủ đồ án và tích hợp các cổng của đồng đội |
-| Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp lớp độc lập tiền; Admissions tiếp nhận, ghép, đề xuất, API phản hồi theo người và bàn giao Admin | Tiếp tục đăng ký khóa theo phạm vi Phụ huynh và tích hợp cổng Gia sư/Trợ giảng |
-| Học vụ/nghỉ/bù | Admin giám sát và duyệt nghỉ cả lớp; Giáo vụ xem lịch/lớp/sĩ số, xếp/sửa ca, duyệt nghỉ cá nhân và lưu bù theo thỏa thuận | Cổng Gia sư/Trợ giảng và kiểm thử liên thông học vụ |
-| Tài chính/công | Hóa đơn trọn khóa, công nợ/phiếu thu; Admin đối soát thủ công, cấu hình QR mặc định; adapter checkout/webhook payOS có kiểm chứng; công/đơn giá/chốt/trả/mở khóa | Cấp credentials và nghiệm thu payOS thực tế; cổng Gia sư/Trợ giảng |
-| Thông báo | Dữ liệu, trigger học phí, SMTP thử, tổng việc chờ Admin | API thông báo đầy đủ, worker/retry/template/mail thật |
-| FE | Cổng Admin, Giáo vụ, Phụ huynh và 8 màn Giáo viên dùng API PHP/MySQL; giao diện gốc ở docs/demo/index.html | Cổng Gia sư/Trợ giảng, kiểm thử nghiệm thu và liên thông |
-| Báo cáo/nộp bài | Dashboard Admin, in phiếu công/lương và lịch đang lọc | Báo cáo khác, xuất dữ liệu, báo cáo môn học, kịch bản trình diễn |
+| DB/server | Schema 005 + cộng dồn 006 (`de_xuat_tuyen_ca`, `ung_tuyen_ca`), migration/seed/check, Docker PHP/MySQL, SMTP local, backup/restore, release config | Vận hành public, dịch vụ ngoài và kiểm thử tải/thực tế |
+| PHP nền | Auth/JWT/scope, hồ sơ, lớp/lịch, matching, Catalog/Permissions; Admin-only xếp lớp và che lương ở các API liên quan | Tiếp tục kiểm chứng scope theo từng luồng/cơ sở khi nghiệm thu |
+| Administration | Cổng Admin 10 màn theo prototype đã chốt, khóa/cấu hình, tài khoản/quyền, nhân sự/hồ sơ, audit | Nghiệm thu cùng chủ đồ án |
+| Khóa/tuyển sinh | CRUD khóa, giữ giá đăng ký, Admin xếp lớp độc lập tiền; Admissions tiếp nhận, ghép, đề xuất, API phản hồi theo người và bàn giao Admin | Nghiệm thu đăng ký khóa theo phạm vi Phụ huynh |
+| Học vụ/nghỉ/bù | Admin giám sát và duyệt nghỉ cả lớp; Giáo vụ xem lịch/lớp/sĩ số, xếp/sửa ca (chặn xếp Gia sư thuần vào lớp nhóm), đăng tuyển ca/duyệt ứng tuyển, duyệt nghỉ cá nhân và lưu bù theo thỏa thuận | Kiểm thử nghiệm thu liên thông đa vai trò |
+| Tài chính/công | Hóa đơn trọn khóa, công nợ/phiếu thu; Admin đối soát thủ công, cấu hình QR mặc định; adapter checkout/webhook payOS có kiểm chứng; công/đơn giá/chốt/trả/mở khóa | Cấp credentials và nghiệm thu payOS thực tế |
+| Thông báo | Dữ liệu, trigger học phí (`co_gui_email=1`), SMTP/Mailpit, thông báo web theo người dùng, Worker CLI (`php spark educenter:email-worker`) với template HTML tiếng Việt, nhắc lịch chống trùng, claim `SKIP LOCKED` + lease và retry backoff | Cấu hình SMTP thật và bật cron/Task Scheduler khi triển khai public |
+| FE | Đủ 6 cổng kết nối API PHP/MySQL thật: Admin, Giáo vụ, Phụ huynh, Giáo viên, Gia sư, Trợ giảng; màn hình `Báo cáo & Xuất dữ liệu` cho Admin; dùng chung `AccountUI` cho hồ sơ/lịch rảnh; giao diện gốc ở docs/demo/index.html | Kiểm thử nghiệm thu trình duyệt và responsive cuối kỳ |
+| Báo cáo/nộp bài | Dashboard Admin, 3 báo cáo chi tiết (Chuyên cần, Doanh thu khóa học & cơ sở, Hiệu suất lớp) kèm xuất CSV (UTF-8 BOM) và Excel `.xlsx` (`openspout/openspout`) chống formula injection, in phiếu công/lương và lịch đang lọc | Kịch bản trình diễn cuối kỳ |
 
 Phạm vi local ngày 11/11/2026 theo mục 12.1. Phần Admin đã nối API thật gồm xếp lớp, đối soát tiền, công/lương và lịch. Các feature có nhiều cổng tiếp tục giữ `planned` cho luồng còn thiếu trong manifest. Các số liệu trên dashboard lấy DB của máy đang chạy.
 
@@ -751,7 +751,83 @@ Sổ buổi học yêu cầu đã check-in. Backend kiểm tra danh sách học 
 
 Ứng tuyển kiểm tra lại chuyên môn, khu vực, lịch rảnh, xung đột lịch và trạng thái yêu cầu trước khi tạo `de_xuat_nhan_su`. Giáo viên ứng tuyển có phản hồi `dong_y`, phụ huynh tiếp tục ở `cho`. Cả hai đồng ý mới bàn giao Admin xếp lớp. Gọi lại cùng ứng tuyển trả đề xuất đã có. Danh sách cơ hội chỉ trả nhu cầu, môn/khối, hình thức và lịch, giữ thông tin liên hệ gia đình trong các luồng có quyền. Các thao tác ghi có audit. Hồ sơ cá nhân chỉ nhận các trường được phép, quyền tài khoản, trạng thái hợp tác và đơn giá tiếp tục do Admin quản lý.
 
-Bộ kiểm thử chạy trên DB `_test` gồm quyền theo người/ca, chống giả giờ và sửa đơn giá, ghi sổ trước check-in, revision cũ, học viên ngoài ca, lặp check-in/out, khóa kỳ, ba loại đơn/đúng người duyệt, điều chỉnh 18:10–19:30 thành 80 phút/trễ và ứng tuyển → phản hồi phụ huynh. Kiểm tra giao diện trên trình duyệt có lưu sổ/tải lại, đơn từ, phản hồi/ứng tuyển, hồ sơ/lịch rảnh và responsive. Gia sư/Trợ giảng vẫn chờ triển khai cổng riêng theo phân công nhóm.
+Bộ kiểm thử chạy trên DB `_test` gồm quyền theo người/ca, chống giả giờ và sửa đơn giá, ghi sổ trước check-in, revision cũ, học viên ngoài ca, lặp check-in/out, khóa kỳ, ba loại đơn/đúng người duyệt, điều chỉnh 18:10–19:30 thành 80 phút/trễ và ứng tuyển → phản hồi phụ huynh. Kiểm tra giao diện trên trình duyệt có lưu sổ/tải lại, đơn từ, phản hồi/ứng tuyển, hồ sơ/lịch rảnh và responsive. Gia sư vẫn chờ triển khai cổng riêng theo phân công nhóm.
+
+### 12.7. Cổng Trợ giảng ngày 22/11/2026
+
+Cổng Trợ giảng xây dựng riêng cho vai trò `TRO_GIANG`, mã nguồn backend đặt tại `backend/app/Modules/People/Features/Assistants/` (Controller, Filter, Service, Repository, Validator, Model, Routes) và frontend tại `frontend/src/modules/people/features/assistants/assistants.html`, `assistants.css`, `assistants.js`. Đăng nhập chung tại `/login`, PHP `Portal.php` chọn giao diện tại `/app` theo vai trò `TRO_GIANG`.
+
+Giao diện SPA đồng bộ hoàn toàn thiết kế, bố cục và thao tác với cổng Giáo viên (tái sử dụng `AccountUI` cho hồ sơ cá nhân, đổi mật khẩu, đăng xuất và lịch rảnh cá nhân), áp dụng đúng phạm vi quyền Trợ giảng theo xác nhận ngày 22–23/11/2026:
+1. **Tổng quan hỗ trợ:** 4 thẻ thống kê thực từ DB (ca hôm nay, lớp hỗ trợ, ca tuyển Trợ giảng phù hợp, phút công tháng này — không hiển thị tiền/thù lao), banner ca hôm nay mở chi tiết ca, bảng ca phân công trong tuần, danh sách đề xuất tuyển Trợ giảng phù hợp, lối tắt công việc và thông báo gần đây.
+2. **Lịch ca trợ giảng & Check-in / Check-out trực tiếp từ lịch:** Không còn mục Check-in / Check-out riêng trên sidebar và không còn dropdown chọn ca; đồng bộ 3 chế độ xem `Lịch Tuần` / `Lịch Tháng` / `Danh sách` cho cả Giáo viên và Trợ giảng. Bấm trực tiếp vào một ca trên lịch mở chi tiết ca đó kèm nút Check-in / Check-out theo giờ máy chủ `NOW()`, xem hiện diện, phút tính công giao khung lịch (kèm lý do khi 0 phút), cờ đi trễ, kỳ công, mở sổ buổi học và gửi đơn. Check-in/out của Trợ giảng hoạt động độc lập, không thay đổi `buoi_hoc.trang_thai`.
+3. **Sổ buổi học & Chấm bài:** Tải từ `GET /api/people/assistants/sessions/:id` và lưu qua `PUT /api/people/assistants/sessions/:id/log` (đồng bộ giao diện `<details>` từng học viên như Giáo viên: chủ đề/nội dung buổi học, điểm danh 4 mức, chấm điểm bài tập giấy `0–10`, mức tiếp thu `1–5`, thái độ, nhận xét bài tập/buổi học/hướng cải thiện, tên/hạn nộp/nội dung bài tập). **Trợ giảng không được gắn hoặc chỉnh sửa tệp đề bài PDF (`fileDeBaiUrl`)** — backend chặn HTTP `403` và bảo toàn URL PDF nếu Giáo viên chính đã gắn trước đó (UI chỉ hiển thị nút mở xem đề bài đã giao nếu có).
+4. **Lớp hỗ trợ & Lịch rảnh:** Bảng lớp đang hỗ trợ (Xem lịch, Danh sách học viên che thông tin liên hệ gia đình và tài chính) kết hợp **Thời khóa biểu lịch rảnh** (Lịch Tuần/Lịch Tháng, thêm/sửa/xóa khung giờ lặp hàng tuần qua `/api/people/assistants/availability`, hiển thị đồng bộ cả trong Hồ sơ cá nhân `AccountUI` cho cả Giáo viên và Trợ giảng).
+5. **Đề xuất & Ứng tuyển ca (`006_shift_recruitment`):** Giáo vụ đăng đề xuất tuyển Giáo viên (`day_chinh`) hoặc Trợ giảng (`tro_giang`) cho ca sắp diễn ra qua `POST /api/academic/scheduling/openings` (tại màn `Đề xuất & Duyệt ứng tuyển` hoặc nút nhanh từ chi tiết ca trên thời khóa biểu). Giáo viên chỉ thấy/ứng tuyển `day_chinh`; Trợ giảng chỉ thấy/ứng tuyển `tro_giang`. Backend kiểm tra đầy đủ chuyên môn (`nhan_su_mon`), hình thức (`hinh_thuc_day`), khu vực (`nhan_su_khu_vuc`), lịch rảnh (`nhan_su_lich_ranh`), không trùng lịch (`phan_cong_buoi_hoc`), kỳ công mở và chống ứng tuyển/duyệt trùng. Khi Giáo vụ duyệt qua `POST /api/academic/scheduling/applications/:id/review`, hệ thống tạo phân công chính thức (`phan_cong_buoi_hoc`) đưa ca lên thời khóa biểu cá nhân mà **không sửa lịch lớp/buổi học**; đơn chờ duyệt hoặc từ chối (kèm lý do) không hiển thị như ca đã phân công.
+6. **Đơn nghỉ cá nhân / Đổi giờ / Công:** Chỉ cho phép gửi **Xin nghỉ cá nhân** (`bao_ban`, lưu `don_xin_nghi` với `doi_tuong='tro_giang'`, Giáo vụ duyệt), **Đổi giờ hỗ trợ** (`doi_gio`, Giáo vụ duyệt) và **Điều chỉnh công** (`dieu_chinh_cong`, Admin duyệt). **Không cho phép gửi đơn nghỉ cả lớp (`nghi_day` / `yeu_cau_nghi_lop`)**.
+7. **Bảng công cá nhân:** Đồng bộ cổng Giáo viên (chọn tháng, nút `In bảng công`, tổng giờ/phút công, số ca đã check-out, trạng thái kỳ công theo tháng từ `periods`, nút `Xem ca` và `Điều chỉnh` cho từng ca — tuyệt đối không hiển thị đơn giá, thù lao, tổng tiền hay tài khoản ngân hàng).
+
+| API | Phương thức | Mô tả và quyền |
+| --- | --- | --- |
+| `/api/people/assistants/workspace` | GET | Tải tổng quan, danh sách ca, lớp hỗ trợ, đơn từ, kỳ công (`periods`), hồ sơ chuyên môn kèm lịch rảnh và tóm tắt tháng hiện tại (không tiền/ngân hàng) |
+| `/api/people/assistants/sessions/:id` | GET | Chi tiết ca học, danh sách học viên kèm sổ điểm danh/chấm điểm/nhận xét, bài tập và mã revision |
+| `/api/people/assistants/sessions/:id/checkin` | POST | Trợ giảng check-in ca phân công; body rỗng; giờ máy chủ; không đổi `buoi_hoc.trang_thai` |
+| `/api/people/assistants/sessions/:id/checkout` | POST | Trợ giảng check-out ca phân công; body rỗng; giờ máy chủ; cập nhật phút tính công |
+| `/api/people/assistants/sessions/:id/log` | PUT | Lưu sổ buổi học, điểm danh, điểm bài tập giấy, nhận xét và thông tin bài tập (chặn `fileDeBaiUrl` bằng `403`, bảo toàn PDF giáo viên chính đã gắn, kiểm tra `revision`, ghi audit) |
+| `/api/people/assistants/sessions/:id/attendance` | PUT | Lưu riêng điểm danh 4 mức (tương thích ngược, không ghi đè điểm/nhận xét) |
+| `/api/people/assistants/availability` (`/:id`) | POST / PUT / DELETE | Trợ giảng tự thêm/sửa/xóa lịch rảnh cá nhân lặp hàng tuần (chống trùng giờ, giới hạn 100 khung, ghi audit) |
+| `/api/people/assistants/requests` | POST | Chỉ nhận `bao_ban` (nghỉ cá nhân), `doi_gio` (đổi giờ hỗ trợ) và `dieu_chinh_cong` (điều chỉnh công); từ chối `nghi_day` (nghỉ cả lớp) |
+| `/api/academic/scheduling/openings` | GET / POST | Giáo vụ/Admin quản lý đề xuất tuyển ca (`de_xuat_tuyen_ca`); Giáo viên chỉ xem `day_chinh`, Trợ giảng chỉ xem `tro_giang` kèm đánh giá điều kiện |
+| `/api/academic/scheduling/openings/:id/close` | POST | Giáo vụ/Admin đóng đề xuất đang mở và chuyển các đơn chờ sang từ chối |
+| `/api/academic/scheduling/openings/:id/apply` | POST | Giáo viên/Trợ giảng ứng tuyển đúng vị trí vào ca khớp chuyên môn, hình thức, khu vực, lịch rảnh và không trùng lịch (`ung_tuyen_ca`) |
+| `/api/academic/scheduling/applications/:id/review` | POST | Giáo vụ/Admin duyệt (tạo `phan_cong_buoi_hoc`, không đổi lịch ca) hoặc từ chối kèm lý do bắt buộc |
+
+Ràng buộc bảo mật & nghiệp vụ:
+- Quyền: Nhóm vai trò `TRO_GIANG` chỉ sở hữu quyền `VanHanhBuoiHoc` (view + edit) và `ChamCongLuong = 0`. Trợ giảng không truy cập luồng đề xuất/ứng tuyển nhu cầu phụ huynh mới (`AdmissionsFilter` dành cho `GIAO_VIEN`/`GIA_SU`), và trong luồng tuyển ca chỉ ứng tuyển vị trí `tro_giang`.
+- Che dữ liệu nhạy cảm: `AssistantsModel::stripMoney`, `AuthService::profile` và `ShiftRecruitment` loại bỏ toàn bộ khóa liên quan đến tiền tệ, đơn giá, thù lao, học phí và ngân hàng.
+- Hồ sơ cá nhân dùng chung: Cả Giáo viên và Trợ giảng sử dụng chung `AccountUI` (`/api/auth/me/profile`, `/api/auth/change-password`, `/api/auth/logout`) kèm `Thời khóa biểu lịch rảnh`, tự động đồng bộ lại giao diện sau khi lưu vào DB.
+- Khả năng tương thích: Schema cộng dồn `006_shift_recruitment` (45 bảng, không phá hủy dữ liệu cũ); phục vụ tại `/app` khi đăng nhập `GIAO_VIEN`, `GIA_SU`, `TRO_GIANG`, `GIAO_VU`, `ADMIN`.
+
+### 12.8. Cổng Gia sư ngày 23/11/2026
+
+Cổng Gia sư xây dựng cho vai trò `GIA_SU`, mã nguồn backend đặt tại `backend/app/Modules/People/Features/Tutors/` (`TutorsController`, `TutorsFilter`, `TutorsService`, `TutorsRepository`, `TutorsValidator`, `TutorsModel`, `Routes`) và frontend tại `frontend/src/modules/people/features/tutors/tutors.html`, `tutors.css`, `tutors.js`. Khi đăng nhập tại `/login` với vai trò `GIA_SU`, `Portal.php` phục vụ `tutors.html` tại `/app`.
+
+Giao diện và luồng thao tác được đồng bộ hoàn toàn với cổng Giáo viên (6 mục điều hướng chính, bỏ mục Check-in / Check-out riêng trên sidebar và bỏ dropdown chọn ca, bấm trực tiếp ca trên thời khóa biểu để Check-in/Check-out bằng giờ máy chủ, đầy đủ sổ buổi học/điểm danh/chấm điểm/nhận xét/gắn đề bài PDF, quản lý lịch rảnh tuần/tháng đồng bộ trong `AccountUI`, đơn nghỉ lớp/đổi lịch/điều chỉnh công, bảng công cá nhân kèm trạng thái kỳ công theo tháng và nút in — che toàn bộ đơn giá/tiền lương/tài khoản ngân hàng).
+
+**Điểm khác biệt nghiệp vụ so với Giáo viên (xác nhận trực tiếp ngày 23/11/2026):**
+- **Giáo vụ chỉ xếp Gia sư thuần (`phan_loai` có `gia_su` và không có `giao_vien`) vào ca thuộc lớp kèm gia sư (`loai_lop IN ('kem_1_1', 'kem_1_2')`), không xếp vào lớp nhóm (`loai_lop = 'nhom'`):**
+  - Ràng buộc cứng ở backend trong `AdminSchedule::save` (`POST/PUT /api/academic/scheduling/operations-sessions`) và `SchedulingService::assign` (`POST /api/academic/scheduling/sessions/:id/assign`) khi người thao tác là `GIAO_VU` (trả HTTP `400`).
+  - Trong luồng tuyển ca (`ShiftRecruitment.php`): tài khoản `GIA_SU` chỉ thấy và được ứng tuyển các đề xuất `day_chinh` thuộc lớp `kem_1_1` / `kem_1_2`; gửi ứng tuyển vào đề xuất lớp `nhom` bị chặn HTTP `403`; khi Giáo vụ mở đề xuất tuyển lớp `nhom`, hệ thống không gửi thông báo tới Gia sư thuần.
+  - Trong luồng cơ hội từ nhu cầu phụ huynh (`GET/POST /api/people/tutors/me/opportunities`): chỉ hiển thị và cho phép ứng tuyển yêu cầu có `loai_lop_mong_muon IN ('kem_1_1', 'kem_1_2')` (trả `403` với `nhom`).
+  - Giao diện Giáo vụ (`admin-schedule.js`, `shift-recruitment.js`) hiển thị nhãn loại lớp (`Kèm 1:1`, `Kèm 1:2`, `Lớp nhóm`) và tự khóa chọn Gia sư thuần khi Giáo vụ xếp ca lớp nhóm.
+
+| API | Phương thức | Mô tả và quyền |
+| --- | --- | --- |
+| `/api/people/tutors/me/workspace` | GET | Tổng quan cổng Gia sư: hồ sơ chuyên môn kèm lịch rảnh, danh sách ca được phân công, lớp kèm, đơn từ, kỳ công (`periods`); chỉ `GIA_SU`, che tiền/ngân hàng |
+| `/api/people/tutors/me/sessions/:id` | GET | Chi tiết ca kèm được phân công, danh sách học viên, bài tập (gồm URL đề bài PDF) và mã `revision` |
+| `/api/people/tutors/me/sessions/:id/checkin` | POST | Gia sư bấm Check-in theo giờ máy chủ `NOW()`, body rỗng |
+| `/api/people/tutors/me/sessions/:id/checkout` | POST | Gia sư bấm Check-out theo giờ máy chủ `NOW()`, cập nhật phút công giao khung lịch |
+| `/api/people/tutors/me/sessions/:id/log` | PUT | Lưu sổ buổi học, điểm danh, điểm/nhận xét học viên và bài tập kèm tệp đề bài PDF (yêu cầu đã Check-in, kiểm `revision`, ghi audit) |
+| `/api/people/tutors/me/requests` | POST | Gửi yêu cầu `nghi_day` (Admin duyệt), `doi_lich` (Giáo vụ duyệt) hoặc `dieu_chinh_cong` (Admin duyệt) |
+| `/api/people/tutors/me/availability` (`/:id`) | POST / PUT / DELETE | Tự thêm/sửa/xóa lịch rảnh cá nhân lặp hàng tuần (chống trùng khung giờ, ghi audit) |
+| `/api/people/tutors/me/opportunities` (`/:id/apply`) | GET / POST | Xem và ứng tuyển nhu cầu học kèm (`kem_1_1`, `kem_1_2`) phù hợp chuyên môn, khu vực, lịch rảnh; chặn lớp nhóm (`403`) |
+
+### 12.9. Worker gửi email thông báo nghiệp vụ & Báo cáo thống kê xuất CSV/XLSX (23/11/2026)
+
+1. **Worker gửi email thông báo (`EmailWorkerService`, `EmailTemplate`, CLI `educenter:email-worker` & `educenter:email-status`):**
+   - Dùng trực tiếp các cột hàng đợi trên `thong_bao` (`co_gui_email`, `so_lan_thu_email`, `trang_thai_email`, `loi_email`, `email_gui_luc`, `email_thu_gan_nhat_luc`, `email_thu_tiep_luc`) kèm chỉ mục cộng thêm `idx_tb_email_queue` (`database/migrations/007_email_queue_index.sql`).
+   - Hỗ trợ: nhắc lịch học định kỳ (`nhac_checkin`, khóa chống trùng `reminder:staff:{buoiId}:{vaiTro}` và `reminder:parent:{buoiId}`, mặc định trước 24 giờ theo múi giờ `Asia/Ho_Chi_Minh`), thông báo học phí & xác nhận phiếu thu (`hoa_don`, trigger `payments.sql`), phân công / gỡ phân công ca (`phan_cong`, `go_phan_cong`), xếp lớp học mới (`lop_moi`), kết quả duyệt nghỉ cá nhân / nghỉ cả lớp / điều chỉnh công / ứng tuyển ca (`duyet_don`, `doi_lich`).
+   - An toàn đồng thời & retry: claim lô ngắn bằng `SELECT ... FOR UPDATE SKIP LOCKED` + lease 5 phút trên `email_thu_tiep_luc`; chỉ chuyển `da_gui` sau khi SMTP trả `true`; lỗi vĩnh viễn (email sai định dạng, tài khoản khóa/xóa, sai chủ hóa đơn, chứa OTP/mật khẩu) dừng ngay không retry; lỗi SMTP tạm thời backoff lũy tiến (2 → 10 → 30 → 120 → 360 phút, tối đa 5 lần mặc định) và làm sạch mật khẩu/token trước khi lưu `loi_email` và ghi log.
+   - API trạng thái hàng đợi: `GET /api/communication/notifications/email-stats` (chỉ Admin).
+   - Chưa áp dụng email tự động cho `chot_cong` (lương/công là dữ liệu nhạy cảm chỉ Admin quản trị) và giữ nguyên luồng OTP đồng bộ ở `AuthService::sendOtp`.
+
+2. **Báo cáo thống kê chi tiết & xuất CSV/XLSX (`ReportsService`, `ReportsRepository`, `ReportsValidator`, `SpreadsheetExport`):**
+   - Route: `GET /api/reporting/dashboard/reports/meta`, `GET /api/reporting/dashboard/reports/(attendance|revenue|class-performance)`, `GET /api/reporting/dashboard/reports/(attendance|revenue|class-performance)/export?format=csv|xlsx`.
+   - Quyền truy cập: `ADMIN` xem và xuất cả 3 báo cáo; `GIAO_VU` (có quyền `BaoCaoThongKe`, tự động khóa theo `coSoId` nếu thuộc cơ sở cụ thể) chỉ xem/xuất `attendance` và `class-performance`, bị chặn `403` trên `revenue`; `GIAO_VIEN`, `GIA_SU`, `TRO_GIANG`, `PHU_HUYNH` bị chặn `403` trên toàn bộ báo cáo.
+   - Ba báo cáo dùng dữ liệu DB trực tiếp (không số liệu giả, không suy diễn):
+     - **Chuyên cần (`attendance`):** phân tách rõ `co_mat`, `di_tre`, `vang_co_phep`, `vang_khong_phep`, `chua_diem_danh`, `chua_dien_ra` (không tính buổi chưa diễn ra/chưa điểm danh thành vắng); `tyLeChuyenCan = (co_mat + di_tre) / daDiemDanh * 100`.
+     - **Doanh thu theo khóa học và cơ sở (`revenue`):** `phaiThu` từ hóa đơn đã phát hành (`nhap`/`huy` bị loại); `thucThuRong = tongThu - tongHoan` chỉ từ `thanh_toan.trang_thai = 'hop_le'`; giao dịch trực tuyến `cho_xac_nhan`/`khoi_tao` chỉ hiển thị tham khảo riêng, không cộng vào thực thu; không tự bịa cơ sở/khóa học khi FK NULL.
+     - **Hiệu suất lớp (`class-performance`):** sĩ số đang học / tối đa (`tyLeLapDay`), số buổi đã diễn ra (`da_day`), hủy (`huy`), đổi (`doi`), học bù (`bu`), số buổi có sổ học vụ và tỷ lệ chuyên cần.
+   - Xuất file qua backend dùng chung bộ lọc & phân quyền: CSV UTF-8 BOM + CRLF tương thích Excel tiếng Việt; XLSX nhiều sheet bằng `openspout/openspout`; mọi ô chuỗi bắt đầu bằng `=`, `+`, `-`, `@`, `\t`, `\r` đều được tiền tố hóa `'` chống formula injection.
 
 <a id="tu-dien-du-lieu"></a>
 ## 13. Từ điển dữ liệu toàn bộ 43 bảng

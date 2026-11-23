@@ -48,6 +48,16 @@ final class TimekeepingRepository
                 [$data['trangThai'],$actor['userId'],$data['ghiChu'],$id]);
             $after=Store::one('SELECT * FROM dieu_chinh_cong WHERE id=?',[$id]);
             Store::recordAudit((int)$actor['userId'],'duyet','dieu_chinh_cong',$id,$before,$after);
+            Store::execute("INSERT IGNORE INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+                VALUES (?,'duyet_don',?,?,'dieu_chinh_cong',?,?,1)", [
+                (int)$target['user_id'],
+                'Kết quả điều chỉnh giờ công #'.$id,
+                $data['trangThai']==='da_duyet'
+                    ? 'Yêu cầu điều chỉnh giờ công của bạn đã được Admin phê duyệt.'.($data['ghiChu']?' Ghi chú: '.$data['ghiChu']:'')
+                    : 'Yêu cầu điều chỉnh giờ công chưa được duyệt.'.($data['ghiChu']?' Lý do: '.$data['ghiChu']:''),
+                $id,
+                'timekeeping-decision:'.$id,
+            ]);
             return $after;
         });
     }

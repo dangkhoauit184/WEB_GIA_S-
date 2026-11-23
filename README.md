@@ -16,7 +16,7 @@ Schema hiện hành **005_operations_ready**. Nền DB/server và một số API
 | [database](database/README.md) | Schema, migrations, routines, triggers, seed, kiểm tra và công cụ DB |
 | docs | Đúng2 tài liệu chính thức ở trên |
 | reference | Word, SQL và demo gốc, giữ hash để tham khảo lịch sử |
-| config / shared | Mẫu cấu hình / manifest6 module21 feature |
+| config / shared | Mẫu cấu hình / manifest 6 module 22 feature |
 
 Giữ4 README làm chỉ dẫn ngắn và 1 mẫu PR. Không commit secret, env riêng, vendor, writable hoặc backup. Không viết Node backend song song.
 

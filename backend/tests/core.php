@@ -74,6 +74,29 @@ try {
     $logInput['hocViens'][0]['diemBaiTapGiay']=8;
     $logInput['hocViens'][]=$logInput['hocViens'][0];
     rejects(fn()=>AttendanceValidator::log($logInput),'duplicate student in teacher log refused');
+    rejects(fn()=>AttendanceValidator::log(['revision'=>'v1','chuDe'=>'Bài học','baiTap'=>['tieuDe'=>'Giao mới'],'hocViens'=>[['hocVienId'=>1,'trangThaiDiemDanh'=>'co_mat']]]),'teacher log refuses creating new homework');
+    // ShiftRequestPolicy state machine unit checks
+    $now = '2026-11-23 19:45:00';
+    $capUp = \App\Modules\Academic\Features\Attendance\ShiftRequestPolicy::capabilities([
+        'vai_tro'=>'day_chinh','phan_cong_trang_thai'=>'da_phan_cong','trang_thai'=>'du_kien',
+        'ngay'=>'2026-11-24','gio_bat_dau'=>'18:00:00','gio_ket_thuc'=>'20:00:00','checkin_luc'=>null,'checkout_luc'=>null
+    ], $now, 'day_chinh');
+    check($capUp['co_the_doi_lich']===true && $capUp['co_the_chinh_cong']===false,'upcoming shift allows only reschedule');
+    $capRun = \App\Modules\Academic\Features\Attendance\ShiftRequestPolicy::capabilities([
+        'vai_tro'=>'day_chinh','phan_cong_trang_thai'=>'da_phan_cong','trang_thai'=>'dang_day',
+        'ngay'=>'2026-11-23','gio_bat_dau'=>'19:30:00','gio_ket_thuc'=>'21:30:00','checkin_luc'=>'2026-11-23 19:40:00','checkout_luc'=>null
+    ], $now, 'day_chinh');
+    check($capRun['co_the_doi_lich']===false && $capRun['co_the_chinh_cong']===false,'in-progress shift hides both requests');
+    $capDone = \App\Modules\Academic\Features\Attendance\ShiftRequestPolicy::capabilities([
+        'vai_tro'=>'tro_giang','phan_cong_trang_thai'=>'da_phan_cong','trang_thai'=>'da_day',
+        'ngay'=>'2026-11-20','gio_bat_dau'=>'18:00:00','gio_ket_thuc'=>'20:00:00','checkin_luc'=>'2026-11-20 18:00:00','checkout_luc'=>'2026-11-20 20:00:00'
+    ], $now, 'tro_giang');
+    check($capDone['co_the_doi_lich']===false && $capDone['co_the_chinh_cong']===true,'completed shift allows only time adjustment');
+    $capCancel = \App\Modules\Academic\Features\Attendance\ShiftRequestPolicy::capabilities([
+        'vai_tro'=>'day_chinh','phan_cong_trang_thai'=>'da_phan_cong','trang_thai'=>'huy',
+        'ngay'=>'2026-11-24','gio_bat_dau'=>'18:00:00','gio_ket_thuc'=>'20:00:00','checkin_luc'=>null,'checkout_luc'=>null
+    ], $now, 'day_chinh');
+    check($capCancel['co_the_doi_lich']===false && $capCancel['co_the_chinh_cong']===false,'cancelled shift hides both requests');
     foreach([1644=>[400,'BUSINESS_RULE_VIOLATION'],1062=>[409,'DUPLICATE_ENTRY'],1452=>[400,'DATA_CONSTRAINT_ERROR']] as $number=>[$status,$code]) {
         $response=ApiController::error(new \RuntimeException('test',$number));
         check($response->getStatusCode()===$status && json_decode($response->getBody(),true)['code']===$code,'SQL error mapping '.$number);

@@ -315,16 +315,12 @@
   background: #0f172a80;
   backdrop-filter: blur(3px);
 }
-#teacher-dialog.teacher-profile-dialog {
-  width: min(1400px, calc(100vw - 32px));
-}
-.teacher-profile-details summary {
-  cursor: pointer;
-  font-weight: 700;
-  padding: 12px 0;
-}
-.teacher-profile-dialog .teacher-dialog-foot {
-  margin: 12px 0 24px;
+.teacher-elig-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--err);
+  line-height: 1.45;
 }
 .teacher-dialog-head {
   display: flex;
@@ -501,10 +497,6 @@
   color: var(--err);
   border-top: 1px solid var(--g100);
 }
-.teacher-profile-intro {
-  margin-top: 18px;
-  white-space: pre-wrap;
-}
 .teacher-students {
   display: grid;
   gap: 10px;
@@ -596,4 +588,18 @@
 }
 .teacher-portal .cal-col-body {
   min-height: 300px;
+}
+
+.teacher-material-current,
+.teacher-prev-homework {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  border: 1px solid var(--bd, #e2e8f0);
+  border-radius: 10px;
+  background: var(--bg-soft, #f8fafc);
 }

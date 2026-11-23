@@ -42,21 +42,18 @@ final class AttendanceValidator
 
     public static function log(array $body): array
     {
-        self::fields($body, ['revision', 'chuDe', 'noiDung', 'fileBaiGiangUrl', 'baiTap', 'hocViens']);
-        $data = Input::validate($body, ['revision'=>['string', true], 'hocViens'=>['array', true]]);
+        if (array_key_exists('baiTap', $body) && $body['baiTap'] !== null) {
+            throw new ApiException(400, 'Sổ buổi học không dùng để giao bài tập về nhà mới. Vui lòng chuẩn bị tài liệu trước buổi học.');
+        }
+        unset($body['baiTap']);
+        self::fields($body, ['revision', 'chuDe', 'noiDung', 'baiTapChamId', 'hocViens']);
+        $data = Input::validate($body, [
+            'revision' => ['string', true],
+            'baiTapChamId' => ['id', false],
+            'hocViens' => ['array', true],
+        ]);
         $data['chuDe'] = self::text($body['chuDe'] ?? null, 255, true);
         $data['noiDung'] = self::text($body['noiDung'] ?? null, 15000);
-        $data['fileBaiGiangUrl'] = self::url($body['fileBaiGiangUrl'] ?? null);
-        $homework = $body['baiTap'] ?? null;
-        if ($homework !== null) {
-            if (!is_array($homework) || array_is_list($homework)) throw new ApiException(400, 'Bài tập không hợp lệ.');
-            self::fields($homework, ['tieuDe', 'noiDung', 'fileDeBaiUrl', 'hanNop']);
-            $homework = ['tieuDe'=>self::text($homework['tieuDe'] ?? null, 255, true),
-                'noiDung'=>self::text($homework['noiDung'] ?? null, 15000),
-                'fileDeBaiUrl'=>self::url($homework['fileDeBaiUrl'] ?? null),
-                'hanNop'=>self::dateTime($homework['hanNop'] ?? null, 'Hạn nộp bài')];
-        }
-        $data['baiTap'] = $homework;
         if (count($data['hocViens']) > 300) throw new ApiException(400, 'Danh sách học viên quá dài.');
         $seen = [];
         foreach ($data['hocViens'] as &$student) {
