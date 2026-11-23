@@ -109,7 +109,7 @@ try:
         if table not in ['role_group_function', 'cau_hinh', 'schema_migrations']:
             assert before[table] == after[table], f'Original values changed: {table}'
     old_versions = sql("SELECT COUNT(*) FROM schema_migrations WHERE status='applied'", old_db)
-    assert old_versions == '5'
+    assert old_versions == '6'
     full_fields, full_hash = snapshot(old_db)
     run_action('migrate', old_db)
     assert full_hash == snapshot(old_db, full_fields)[1], 'Repeated migrate changed data'

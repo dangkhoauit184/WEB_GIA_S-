@@ -60,16 +60,16 @@ DROP TRIGGER IF EXISTS trg_hd_thong_bao_ai$$
 CREATE TRIGGER trg_hd_thong_bao_ai AFTER INSERT ON hoa_don FOR EACH ROW
 BEGIN
   IF NEW.dang_ky_khoa_hoc_id IS NOT NULL AND NEW.trang_thai NOT IN ('nhap','huy') THEN
-    INSERT INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung)
-      VALUES(fn_phu_huynh_hoa_don(NEW.id),'hoa_don','Thông báo học phí khóa học',CONCAT('Hóa đơn ',NEW.ma_hd,': ',NEW.phai_thu,' VND.'),'hoa_don',NEW.id,CONCAT('hocphi:',NEW.id));
+    INSERT INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+      VALUES(fn_phu_huynh_hoa_don(NEW.id),'hoa_don','Thông báo học phí khóa học',CONCAT('Hóa đơn ',NEW.ma_hd,': ',NEW.phai_thu,' VND.'),'hoa_don',NEW.id,CONCAT('hocphi:',NEW.id),1);
   END IF;
 END$$
 DROP TRIGGER IF EXISTS trg_hd_thong_bao_au$$
 CREATE TRIGGER trg_hd_thong_bao_au AFTER UPDATE ON hoa_don FOR EACH ROW
 BEGIN
   IF NEW.dang_ky_khoa_hoc_id IS NOT NULL AND OLD.trang_thai='nhap' AND NEW.trang_thai NOT IN ('nhap','huy') THEN
-    INSERT INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung)
-      VALUES(fn_phu_huynh_hoa_don(NEW.id),'hoa_don','Thông báo học phí khóa học',CONCAT('Hóa đơn ',NEW.ma_hd,': ',NEW.phai_thu,' VND.'),'hoa_don',NEW.id,CONCAT('hocphi:',NEW.id))
+    INSERT INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+      VALUES(fn_phu_huynh_hoa_don(NEW.id),'hoa_don','Thông báo học phí khóa học',CONCAT('Hóa đơn ',NEW.ma_hd,': ',NEW.phai_thu,' VND.'),'hoa_don',NEW.id,CONCAT('hocphi:',NEW.id),1)
       ON DUPLICATE KEY UPDATE id=thong_bao.id;
   END IF;
 END$$
@@ -81,8 +81,8 @@ BEGIN
       SELECT a.user_id,'hoa_don','Đã ghi nhận học phí',CONCAT('Hóa đơn #',NEW.hoa_don_id,' nhận ',NEW.so_tien,' VND.'),'thanh_toan',NEW.id,CONCAT('thu:',NEW.id)
       FROM account a JOIN users u ON u.user_id=a.user_id JOIN role_group g ON g.group_id=a.group_id
       WHERE a.status='active' AND a.is_deleted=0 AND u.is_deleted=0 AND g.is_deleted=0 AND g.group_name IN ('Admin','NhanVien');
-    INSERT INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung)
-      VALUES(fn_phu_huynh_hoa_don(NEW.hoa_don_id),'hoa_don','Đã ghi nhận thanh toán',CONCAT('Đã nhận ',NEW.so_tien,' VND cho hóa đơn #',NEW.hoa_don_id,'.'),'thanh_toan',NEW.id,CONCAT('thu:',NEW.id));
+    INSERT INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+      VALUES(fn_phu_huynh_hoa_don(NEW.hoa_don_id),'hoa_don','Đã ghi nhận thanh toán',CONCAT('Đã nhận ',NEW.so_tien,' VND cho hóa đơn #',NEW.hoa_don_id,'.'),'thanh_toan',NEW.id,CONCAT('thu:',NEW.id),1);
   END IF;
 END$$
 
