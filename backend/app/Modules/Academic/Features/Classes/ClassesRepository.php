@@ -83,6 +83,17 @@ final class ClassesRepository
                 'ngay_vao'=>$data['ngayVao'],'ngay_roi'=>$data['ngayRoi'],'trang_thai'=>$data['trangThai'],
                 'xep_boi'=>$actor,'xep_luc'=>date('Y-m-d H:i:s')]);
             Store::recordAudit($actor,'them','lop_hoc_vien',$placement,null,Store::one('SELECT * FROM lop_hoc_vien WHERE id=?',[$placement]));
+            $info=Store::one('SELECT l.ma_lop,l.ten_lop,hv.ho_ten,hv.phu_huynh_user_id FROM lop_hoc l JOIN hoc_vien hv ON hv.id=? WHERE l.id=?',[$data['hocVienId'],$id]);
+            if($info && $info['phu_huynh_user_id']) {
+                Store::execute("INSERT IGNORE INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+                    VALUES (?,'lop_moi',?,?,'lop_hoc',?,?,1)", [
+                    (int)$info['phu_huynh_user_id'],
+                    'Thông báo xếp lớp · '.$info['ma_lop'],
+                    'Học viên '.$info['ho_ten'].' đã được xếp vào lớp '.$info['ma_lop'].' — '.$info['ten_lop'].' (từ ngày '.$data['ngayVao'].').',
+                    $id,
+                    'class-enroll:'.$id.':'.$data['hocVienId'],
+                ]);
+            }
             return $placement;
         });
     }

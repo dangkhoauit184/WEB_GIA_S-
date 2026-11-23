@@ -11,6 +11,12 @@ final class NotificationsService
         return NotificationsRepository::forUser((int)$user['userId']);
     }
 
+    public static function emailStats(): array
+    {
+        \App\Modules\Administration\Features\Permissions\PermissionsFilter::administer();
+        return EmailWorkerService::stats();
+    }
+
     public static function markRead(int $id): array
     {
         $user = Access::user();

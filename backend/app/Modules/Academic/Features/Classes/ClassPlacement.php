@@ -54,6 +54,17 @@ final class ClassPlacement
             Store::execute("UPDATE dang_ky_khoa_hoc SET trang_thai='dang_hoc' WHERE id=?",[$id]);
             $after=Store::one('SELECT * FROM lop_hoc_vien WHERE id=?',[$placementId]);
             Store::recordAudit((int)$actor['userId'],'sua','lop_hoc_vien',$placementId,['previous'=>$current],$after);
+            $student=Store::one('SELECT ho_ten,phu_huynh_user_id FROM hoc_vien WHERE id=? AND deleted_at IS NULL',[$registration['hoc_vien_id']]);
+            if($student && $student['phu_huynh_user_id']) {
+                Store::execute("INSERT IGNORE INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+                    VALUES (?,'lop_moi',?,?,'lop_hoc',?,?,1)", [
+                    (int)$student['phu_huynh_user_id'],
+                    'Thông báo xếp lớp · '.$class['ma_lop'],
+                    'Học viên '.$student['ho_ten'].' đã được Admin xếp vào lớp '.$class['ma_lop'].' — '.$class['ten_lop'].'.',
+                    $classId,
+                    'class-placement:'.$classId.':'.$registration['hoc_vien_id'],
+                ]);
+            }
             return $after;
         });
     }

@@ -31,7 +31,7 @@ final class LeaveRequestsRepository
             $after=Store::one('SELECT * FROM don_xin_nghi WHERE id=?',[$id]);
             Store::recordAudit((int)$actor['userId'],'duyet','don_xin_nghi',$id,$before,$after);
             Store::insert('thong_bao',['user_id'=>$before['nguoi_gui_id'],'loai'=>'duyet_don','tieu_de'=>'Kết quả đơn nghỉ cá nhân #'.$id,
-                'noi_dung'=>$data['trangThai']==='da_duyet'?'Đơn đã được duyệt.':$data['lyDoTuChoi'],'doi_tuong_loai'=>'don_xin_nghi','doi_tuong_id'=>$id,'khoa_chong_trung'=>'leave-decision:'.$id]);
+                'noi_dung'=>$data['trangThai']==='da_duyet'?'Đơn đã được duyệt.':$data['lyDoTuChoi'],'doi_tuong_loai'=>'don_xin_nghi','doi_tuong_id'=>$id,'khoa_chong_trung'=>'leave-decision:'.$id,'co_gui_email'=>1]);
             return $after;
         });
     }
@@ -55,6 +55,34 @@ final class LeaveRequestsRepository
                 [$data['trangThai'],$actor['userId'],$data['ghiChu'],$id]);
             $after=Store::one('SELECT * FROM yeu_cau_nghi_lop WHERE id=?',[$id]);
             Store::recordAudit((int)$actor['userId'],'duyet','yeu_cau_nghi_lop',$id,$before,$after);
+            $sessionInfo=Store::one('SELECT b.id, b.lop_id, b.ngay, b.gio_bat_dau, b.gio_ket_thuc, l.ma_lop, l.ten_lop FROM buoi_hoc b JOIN lop_hoc l ON l.id=b.lop_id WHERE b.id=?',[$before['buoi_hoc_id']]);
+            $approved=$data['trangThai']==='da_duyet';
+            Store::execute("INSERT IGNORE INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+                VALUES (?,'duyet_don',?,?,'yeu_cau_nghi_lop',?,?,1)", [
+                (int)$before['nguoi_gui_id'],
+                'Kết quả yêu cầu nghỉ cả lớp #'.$id.($sessionInfo?' · '.$sessionInfo['ma_lop']:''),
+                $approved
+                    ? 'Yêu cầu nghỉ cả lớp đã được Admin phê duyệt.'.($data['ghiChu']?' Ghi chú: '.$data['ghiChu']:'')
+                    : 'Yêu cầu nghỉ cả lớp chưa được duyệt.'.($data['ghiChu']?' Lý do: '.$data['ghiChu']:''),
+                $id,
+                'class-leave-decision:'.$id,
+            ]);
+            if($approved && $sessionInfo) {
+                $parents=Store::rows("SELECT DISTINCT hv.phu_huynh_user_id AS user_id FROM lop_hoc_vien x JOIN hoc_vien hv ON hv.id=x.hoc_vien_id
+                    WHERE x.lop_id=? AND hv.deleted_at IS NULL AND x.trang_thai IN ('dang_hoc','hoc_thu')
+                      AND x.ngay_vao<=? AND (x.ngay_roi IS NULL OR x.ngay_roi>=?)",
+                    [$sessionInfo['lop_id'],$sessionInfo['ngay'],$sessionInfo['ngay']]);
+                foreach($parents as $parent) {
+                    Store::execute("INSERT IGNORE INTO thong_bao(user_id,loai,tieu_de,noi_dung,doi_tuong_loai,doi_tuong_id,khoa_chong_trung,co_gui_email)
+                        VALUES (?,'doi_lich',?,?,'buoi_hoc',?,?,1)", [
+                        (int)$parent['user_id'],
+                        'Thông báo nghỉ buổi học · '.$sessionInfo['ma_lop'],
+                        'Buổi học lớp '.$sessionInfo['ten_lop'].' ngày '.$sessionInfo['ngay'].' ('.substr($sessionInfo['gio_bat_dau'],0,5).'–'.substr($sessionInfo['gio_ket_thuc'],0,5).') đã được trung tâm phê duyệt nghỉ cả lớp.',
+                        (int)$sessionInfo['id'],
+                        'class-leave-parent:'.$id,
+                    ]);
+                }
+            }
             return $after;
         });
     }
