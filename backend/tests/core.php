@@ -165,6 +165,47 @@ try {
         check($status===200 && str_contains($html,'EduCenter'),'public MVC page');
         [$status,,$html]=http('/login');
         check($status===200 && str_contains($html,'id="loginForm"') && str_contains($html,'id="googleBtnContainer"') && str_contains($html,'id="rememberMe"'),'shared login page includes Google and rememberMe');
+        // P2.3 Static asset ETag & 304 Not Modified without no-store
+        [$assetStatus,,,$assetHeaders]=http('/frontend/src/config/app.config.js');
+        $etagHeader=''; $cacheHeader='';
+        foreach($assetHeaders as $h) {
+            if(stripos($h,'etag:')===0) $etagHeader=trim(substr($h,5));
+            if(stripos($h,'cache-control:')===0) $cacheHeader=strtolower(trim(substr($h,14)));
+        }
+        check($assetStatus===200 && $etagHeader!=='' && !str_contains($cacheHeader,'no-store'),'static JS asset returns ETag and cacheable Cache-Control');
+        [$notModStatus]=http('/frontend/src/config/app.config.js','GET',null,null,null,['If-None-Match: '.$etagHeader]);
+        check($notModStatus===304,'static JS asset returns 304 on matching If-None-Match');
     } finally { proc_terminate($server); proc_close($server); }
+    // P1.3 RateLimiter sliding-window & cleanup unit check
+    $rlKey='core_test_'.bin2hex(random_bytes(4));
+    try {
+        \App\Shared\RateLimiter::clear($rlKey);
+        \App\Shared\RateLimiter::record($rlKey, 60);
+        \App\Shared\RateLimiter::hit($rlKey, 2, 60, 'Quá giới hạn');
+        check(true,'rate limiter allows requests up to threshold');
+        $rejectsStatus(fn()=>\App\Shared\RateLimiter::assertAllowed($rlKey, 2, 60, 'Quá giới hạn'),429,'rate limiter blocks once threshold reached');
+        $rejectsStatus(fn()=>\App\Shared\RateLimiter::hit($rlKey, 2, 60, 'Quá giới hạn'),429,'rate limiter hit throws 429 on overflow');
+        \App\Shared\RateLimiter::clear($rlKey);
+        \App\Shared\RateLimiter::assertAllowed($rlKey, 1, 60, 'Quá giới hạn');
+        check(true,'rate limiter clear resets bucket');
+    } finally { \App\Shared\RateLimiter::clear($rlKey); }
+    // P1.2 AuthRepository::isTokenRevoked unit check
+    $revHash=hash('sha256','revoked-sample');
+    $expHash=hash('sha256','expired-sample');
+    $acctSample=['revoked_tokens_json'=>json_encode([$revHash=>time()+300,$expHash=>time()-10])];
+    check(\App\Modules\Administration\Features\Auth\AuthRepository::isTokenRevoked($acctSample,$revHash)===true,'active revoked token hash rejected');
+    check(\App\Modules\Administration\Features\Auth\AuthRepository::isTokenRevoked($acctSample,$expHash)===false,'expired revoked token entry ignored');
+    check(\App\Modules\Administration\Features\Auth\AuthRepository::isTokenRevoked($acctSample,hash('sha256','other'))===false,'unrevoked token allowed');
+    // P1.4 Strict origin normalization & trusted proxy IP checks
+    $normOrigin=new ReflectionMethod(\App\Shared\Access::class,'normalizeOrigin');
+    $normOrigin->setAccessible(true);
+    check($normOrigin->invoke(null,'http://example.com:80')==='http://example.com','normalizeOrigin strips default http port');
+    check($normOrigin->invoke(null,'https://example.com:443')==='https://example.com','normalizeOrigin strips default https port');
+    check($normOrigin->invoke(null,'http://example.com')!==$normOrigin->invoke(null,'https://example.com'),'normalizeOrigin distinguishes scheme');
+    check($normOrigin->invoke(null,'http://example.com:8080')!==$normOrigin->invoke(null,'http://example.com'),'normalizeOrigin distinguishes non-default port');
+    $trustedProxy=new ReflectionMethod(\App\Shared\Access::class,'isTrustedProxyIp');
+    $trustedProxy->setAccessible(true);
+    check($trustedProxy->invoke(null,'127.0.0.1')===true && $trustedProxy->invoke(null,'172.18.0.1')===true,'loopback and RFC1918 proxies trusted');
+    check($trustedProxy->invoke(null,'8.8.8.8')===false,'public IP not trusted for X-Forwarded-Proto');
     echo "PASS: $assertions PHP core assertions (no database writes).\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); exit(1); }

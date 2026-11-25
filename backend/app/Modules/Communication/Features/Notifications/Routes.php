@@ -2,6 +2,7 @@
 
 /** @var \CodeIgniter\Router\RouteCollection $routes */
 $routes->get('api/communication/notifications', '\App\Modules\Communication\Features\Notifications\NotificationsController::index');
+$routes->get('api/communication/notifications/admin-summary', '\App\Modules\Communication\Features\Notifications\NotificationsController::adminSummary');
 $routes->get('api/communication/notifications/email-stats', '\App\Modules\Communication\Features\Notifications\NotificationsController::emailStats');
 $routes->post('api/communication/notifications', '\App\Modules\Communication\Features\Notifications\NotificationsController::create');
 $routes->post('api/communication/notifications/read-all', '\App\Modules\Communication\Features\Notifications\NotificationsController::readAll');

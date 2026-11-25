@@ -1004,8 +1004,9 @@
   StaffUI.register('staff-parents','Hồ sơ Phụ huynh',()=>Admin.api('/api/people/parents'),rows=>{
     render(rows);
     StaffUI.search('parentsTableBody',async q=>render(await Admin.api('/api/people/parents?'+Admin.query({q}))));
-    document.querySelector('#staff-parents [onclick="openParentFormModal()"]').hidden=!StaffUI.can('TiepNhanYeuCau','add');
+    document.querySelector('#staff-parents [data-act="open-parent-form"]').hidden=!StaffUI.can('TiepNhanYeuCau','add');
   });
+  Admin.actions({ 'open-parent-form': () => window.openParentFormModal() });
   window.openParentFormModal = async id => {
     try {
       const [catalog,parent]=await Promise.all([Admin.api('/api/administration/catalog'),id?Admin.api('/api/people/parents/'+id):Promise.resolve(null)]);

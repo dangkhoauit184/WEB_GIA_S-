@@ -11,6 +11,12 @@ final class NotificationsService
         return NotificationsRepository::forUser((int)$user['userId']);
     }
 
+    public static function adminSummary(): array
+    {
+        \App\Modules\Administration\Features\Permissions\PermissionsFilter::administer();
+        return NotificationsRepository::adminSummary();
+    }
+
     public static function emailStats(): array
     {
         \App\Modules\Administration\Features\Permissions\PermissionsFilter::administer();

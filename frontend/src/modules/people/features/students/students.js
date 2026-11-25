@@ -15,8 +15,9 @@
   StaffUI.register('staff-students', 'Học viên & Đăng ký khóa', () => Admin.api('/api/people/students'), rows => {
     render(rows);
     StaffUI.search('stuBody', async q => render(await Admin.api('/api/people/students?'+Admin.query({q}))));
-    document.querySelector('#staff-students [onclick="openStudentForm()"]').hidden = !StaffUI.can('QuanLyLopHoc','add');
+    document.querySelector('#staff-students [data-act="open-student-form"]').hidden = !StaffUI.can('QuanLyLopHoc','add');
   });
+  Admin.actions({ 'open-student-form': () => window.openStudentForm() });
   window.openStudentForm = async (id, parentId) => {
     try {
       const [lookups, parents, student] = await Promise.all([StaffUI.lookups(), Admin.api('/api/people/parents'), id ? Admin.api('/api/people/students/'+id) : Promise.resolve(null)]);

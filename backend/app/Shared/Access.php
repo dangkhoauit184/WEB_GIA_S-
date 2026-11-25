@@ -19,18 +19,59 @@ final class Access
         self::$token = null;
     }
 
+    private static function isTrustedProxyIp(string $ip): bool
+    {
+        if ($ip === '') {
+            return false;
+        }
+        $extra = array_filter(array_map('trim', explode(',', getenv('TRUSTED_PROXY_IPS') ?: '')));
+        if (in_array($ip, $extra, true)) {
+            return true;
+        }
+        if ($ip === '::1' || $ip === '127.0.0.1') {
+            return true;
+        }
+        // Standard RFC1918 / loopback ranges (e.g., Docker bridge network with Caddy reverse proxy).
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
+            && filter_var($ip, FILTER_VALIDATE_IP) !== false;
+    }
+
     public static function isSecureRequest(\CodeIgniter\HTTP\IncomingRequest $request): bool
     {
-        if ($request->isSecure()) return true;
-        $forwarded = strtolower(trim(explode(',', $request->getHeaderLine('X-Forwarded-Proto'))[0] ?? ''));
-        if ($forwarded === 'https') return true;
+        if ($request->isSecure()) {
+            return true;
+        }
+        if (self::isTrustedProxyIp((string)$request->getIPAddress())) {
+            $forwarded = strtolower(trim(explode(',', $request->getHeaderLine('X-Forwarded-Proto'))[0] ?? ''));
+            if ($forwarded === 'https') {
+                return true;
+            }
+        }
         return str_starts_with(strtolower(trim(getenv('APP_BASE_URL') ?: '')), 'https://');
+    }
+
+    private static function normalizeOrigin(string $raw): ?string
+    {
+        $parts = parse_url(trim($raw));
+        if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+            return null;
+        }
+        $scheme = strtolower($parts['scheme']);
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+        $host = strtolower($parts['host']);
+        $port = $parts['port'] ?? null;
+        $defaultPort = ($scheme === 'https' && $port === 443) || ($scheme === 'http' && $port === 80);
+        return $scheme . '://' . $host . ($port && !$defaultPort ? ':' . $port : '');
     }
 
     private static function verifyCookieCsrf(\CodeIgniter\HTTP\IncomingRequest $request): void
     {
         $method = strtoupper($request->getMethod());
-        if (in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) return;
+        if (in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
+            return;
+        }
 
         $isXhr = strtolower($request->getHeaderLine('X-Requested-With')) === 'xmlhttprequest';
         $isJson = str_starts_with(strtolower($request->getHeaderLine('Content-Type')), 'application/json');
@@ -40,14 +81,19 @@ final class Access
 
         $origin = trim($request->getHeaderLine('Origin'));
         if ($origin !== '') {
-            $originHost = strtolower((string)parse_url($origin, PHP_URL_HOST));
-            $originPort = parse_url($origin, PHP_URL_PORT);
-            $requestHost = strtolower((string)$request->getUri()->getHost());
+            $normalizedOrigin = self::normalizeOrigin($origin);
+            if ($normalizedOrigin === null) {
+                throw new ApiException(403, 'Nguồn gửi yêu cầu không hợp lệ.', 'CSRF_REJECTED');
+            }
+            $scheme = self::isSecureRequest($request) ? 'https' : 'http';
             $hostHeader = strtolower(trim($request->getHeaderLine('Host')));
-            $expectedHostPort = $hostHeader !== '' ? $hostHeader : $requestHost;
-            $originHostPort = $originPort ? ($originHost . ':' . $originPort) : $originHost;
-            $allowed = array_filter(array_map('trim', explode(',', getenv('CORS_ORIGINS') ?: 'http://localhost:5000,http://127.0.0.1:5000')));
-            if ($originHostPort !== $expectedHostPort && $originHost !== $requestHost && !in_array($origin, $allowed, true)) {
+            $expectedHostPort = $hostHeader !== '' ? $hostHeader : strtolower((string)$request->getUri()->getHost());
+            $expectedOrigin = self::normalizeOrigin($scheme . '://' . $expectedHostPort);
+            $allowed = array_values(array_filter(array_map(
+                static fn(string $item): ?string => self::normalizeOrigin($item),
+                explode(',', getenv('CORS_ORIGINS') ?: 'http://localhost:5000,http://127.0.0.1:5000')
+            )));
+            if ($normalizedOrigin !== $expectedOrigin && !in_array($normalizedOrigin, $allowed, true)) {
                 throw new ApiException(403, 'Nguồn gửi yêu cầu không hợp lệ.', 'CSRF_REJECTED');
             }
         }
@@ -109,7 +155,7 @@ final class Access
         }
         $account = AuthRepository::account((int)$claims->accountId);
         if (!$account || $account['status'] !== 'active' || !hash_equals(self::fingerprint($account), $claims->pwd)
-            || AuthRepository::revoked((int)$claims->accountId, hash('sha256', $rawToken))) {
+            || AuthRepository::isTokenRevoked($account, hash('sha256', $rawToken))) {
             throw new ApiException(401, 'Phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại.', 'INVALID_TOKEN');
         }
         self::$token = $rawToken; self::$claims = $claims;

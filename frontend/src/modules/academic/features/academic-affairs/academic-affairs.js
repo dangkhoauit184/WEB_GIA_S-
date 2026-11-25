@@ -37,7 +37,7 @@ window.StaffUI = (() => {
     container.addEventListener('submit', event => { event.preventDefault(); Admin.busy(event.submitter, () => callback(new FormData(container).get('q').trim())); });
   }
   function print(title, html) {
-    Admin.dialog(title, `<div class="dialog-body staff-print"><h2>EDUCENTER ERP</h2>${html}</div><div class="dialog-foot"><button class="btn p" onclick="window.print()">In / Lưu PDF</button></div>`);
+    Admin.dialog(title, `<div class="dialog-body staff-print"><h2>EDUCENTER ERP</h2>${html}</div><div class="dialog-foot"><button type="button" class="btn p" data-act="print-window">In / Lưu PDF</button></div>`);
   }
   return { prefix, can, view, register, rows, lookups, select, search, print };
 })();
@@ -52,15 +52,15 @@ StaffUI.register('staff-dash', 'Tổng quan công việc Giáo vụ', () => Admi
     ...data.leave.map(row => [`Đơn nghỉ #${row.id} · ${row.hoTen} · ${row.maLop}`, 'Duyệt đơn', 'staff-approve']),
     ...data.invoices.slice(0, 5).map(row => [`${row.maHd} · ${row.tenHocVien} · ${row.trangThai === 'nhap' ? 'Chờ phát hành' : 'Còn '+Admin.money(Number(row.phaiThu)-Number(row.daThu))}`, 'Xem hóa đơn', 'staff-billing'])
   ];
-  Admin.$('staffTaskList').innerHTML = tasks.map(([label, button, screen]) => `<div class="item"><span>${Admin.esc(label)}</span><button class="btn sm p" onclick="showS('${screen}')">${button}</button></div>`).join('') || '<div class="admin-empty">Chưa có công việc chờ xử lý.</div>';
-  document.querySelectorAll('#staff-dash [onclick]').forEach(button => {
-    const oc = button.getAttribute('onclick') || '';
-    const feature = oc.includes('staff-billing') ? 'HocPhiThanhToan'
-      : oc.includes('staff-intake') ? 'TiepNhanYeuCau'
-      : oc.includes('staff-reports') ? 'BaoCaoThongKe'
+  Admin.$('staffTaskList').innerHTML = tasks.map(([label, button, screen]) => `<div class="item"><span>${Admin.esc(label)}</span><button type="button" class="btn sm p" data-nav="${Admin.esc(screen)}">${button}</button></div>`).join('') || '<div class="admin-empty">Chưa có công việc chờ xử lý.</div>';
+  document.querySelectorAll('#staff-dash [data-nav]').forEach(button => {
+    const target = button.dataset.nav || '';
+    const feature = target === 'staff-billing' ? 'HocPhiThanhToan'
+      : target === 'staff-intake' ? 'TiepNhanYeuCau'
+      : target === 'staff-reports' ? 'BaoCaoThongKe'
       : 'VanHanhBuoiHoc';
     button.disabled = !StaffUI.can(feature);
-    if (oc.includes('staff-reports') && !StaffUI.can('BaoCaoThongKe', 'view')) button.hidden = true;
+    if (target === 'staff-reports' && !StaffUI.can('BaoCaoThongKe', 'view')) button.hidden = true;
   });
 });
 
@@ -69,7 +69,7 @@ StaffUI.register('staff-schedule', 'Thời khóa biểu', async () => { currentP
 window.loadStaffNotifications = async () => {
   try {
     const rows = await Admin.api(`${StaffUI.prefix}/notifications`);
-    Admin.$('notifList').innerHTML = rows.map(row => `<div class="np-item ${row.docLuc ? '' : 'unread'}" data-notif-id="${row.id}" onclick="readStaffNotification(${row.id},'${row.doiTuongLoai === 'hoa_don' ? 'staff-billing' : (row.doiTuongLoai === 'ung_tuyen_ca' || row.doiTuongLoai === 'de_xuat_tuyen_ca') ? 'staff-recruitment' : row.loai === 'de_xuat' ? 'staff-intake' : row.loai === 'duyet_don' ? 'staff-approve' : 'staff-schedule'}')"><div><b>${Admin.esc(row.tieuDe)}</b><p>${Admin.esc(row.noiDung || '')}</p><small>${Admin.esc(Admin.date(row.createdAt))}</small></div></div>`).join('') || '<div class="admin-empty">Chưa có thông báo.</div>';
+    Admin.$('notifList').innerHTML = rows.map(row => `<div class="np-item ${row.docLuc ? '' : 'unread'}" data-notif-id="${row.id}" data-act="read-staff-notif" data-id="${row.id}" data-screen="${row.doiTuongLoai === 'hoa_don' ? 'staff-billing' : (row.doiTuongLoai === 'ung_tuyen_ca' || row.doiTuongLoai === 'de_xuat_tuyen_ca') ? 'staff-recruitment' : row.loai === 'de_xuat' ? 'staff-intake' : row.loai === 'duyet_don' ? 'staff-approve' : 'staff-schedule'}"><div><b>${Admin.esc(row.tieuDe)}</b><p>${Admin.esc(row.noiDung || '')}</p><small>${Admin.esc(Admin.date(row.createdAt))}</small></div></div>`).join('') || '<div class="admin-empty">Chưa có thông báo.</div>';
     window.syncNotifBadge();
   } catch (error) { Admin.notify(error.message, true); }
 };
@@ -77,6 +77,10 @@ window.readStaffNotification = async (id, screen) => {
   try { await Admin.api(`${StaffUI.prefix}/notifications/${id}/read`, 'POST', {}); await loadStaffNotifications(); showS(screen); Admin.$('notifPanel').classList.remove('open'); }
   catch (error) { Admin.notify(error.message, true); }
 };
+Admin.actions({
+  'read-staff-notif': el => window.readStaffNotification(Number(el.dataset.id), el.dataset.screen),
+  'open-shift-recruitment-form': () => window.openShiftRecruitmentForm?.(),
+});
 if (document.body.dataset.portal === 'admissions') {
   window.markAllNotifsRead = async () => {
     try {

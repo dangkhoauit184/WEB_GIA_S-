@@ -71,11 +71,33 @@ final class PayOsPayments
         if (!$row) throw new ApiException(404,'Không tìm thấy hóa đơn của bạn.');
         return $row;
     }
-    private static function metadata(int $id,string $action): ?array
+    private static function metadata(int $id, string $action): ?array
     {
-        $row=Store::one("SELECT du_lieu_moi FROM audit_log WHERE bang='giao_dich_truc_tuyen' AND ban_ghi_id=?
-            AND JSON_UNQUOTE(JSON_EXTRACT(du_lieu_moi,'$.action'))=? ORDER BY id DESC LIMIT 1",[$id,$action]);
-        return $row?json_decode($row['du_lieu_moi'],true):null;
+        $gd = Store::one('SELECT metadata_json FROM giao_dich_truc_tuyen WHERE id=?', [$id]);
+        if ($gd && !empty($gd['metadata_json'])) {
+            $decoded = json_decode((string)$gd['metadata_json'], true);
+            if (is_array($decoded) && isset($decoded[$action]) && is_array($decoded[$action])) {
+                return $decoded[$action];
+            }
+        }
+        // Fallback for legacy pre-008 records only.
+        $row = Store::one("SELECT du_lieu_moi FROM audit_log WHERE bang='giao_dich_truc_tuyen' AND ban_ghi_id=?
+            AND JSON_UNQUOTE(JSON_EXTRACT(du_lieu_moi,'$.action'))=? ORDER BY id DESC LIMIT 1", [$id, $action]);
+        return $row ? json_decode($row['du_lieu_moi'], true) : null;
+    }
+
+    private static function saveMetadata(int $id, string $action, array $payload): void
+    {
+        $row = Store::one('SELECT metadata_json FROM giao_dich_truc_tuyen WHERE id=?', [$id]);
+        $existing = ($row && !empty($row['metadata_json'])) ? json_decode((string)$row['metadata_json'], true) : [];
+        if (!is_array($existing)) {
+            $existing = [];
+        }
+        $existing[$action] = $payload;
+        Store::execute('UPDATE giao_dich_truc_tuyen SET metadata_json=? WHERE id=?', [
+            json_encode($existing, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            $id,
+        ]);
     }
     public static function checkout(int $invoice,array $actor): array
     {
@@ -91,9 +113,9 @@ final class PayOsPayments
             $quote=TuitionService::paymentQr($invoice,$actor);
             if ($quote['bank']['isDemo']) throw new ApiException(409,'Tài khoản minh họa không nhận tiền thật. Admin cần chọn tài khoản ngân hàng thật.');
             $order=random_int(1000000000000,9999999999999);
-            $id=Store::insert('giao_dich_truc_tuyen',['ma_yeu_cau'=>'PAYOS-'.$order,'hoa_don_id'=>$invoice,'phu_huynh_id'=>$actor['userId'],'nha_cung_cap'=>'PAYOS','so_tien'=>$amount]);
-            Store::recordAudit((int)$actor['userId'],'them','giao_dich_truc_tuyen',$id,null,
-                ['action'=>'payos_reserved','bank'=>$quote['bank'],'memo'=>'EDU'.$order,'orderCode'=>$order]);
+            $reservedMeta=['action'=>'payos_reserved','bank'=>$quote['bank'],'memo'=>'EDU'.$order,'orderCode'=>$order];
+            $id=Store::insert('giao_dich_truc_tuyen',['ma_yeu_cau'=>'PAYOS-'.$order,'hoa_don_id'=>$invoice,'phu_huynh_id'=>$actor['userId'],'nha_cung_cap'=>'PAYOS','so_tien'=>$amount,'metadata_json'=>json_encode(['payos_reserved'=>$reservedMeta],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
+            Store::recordAudit((int)$actor['userId'],'them','giao_dich_truc_tuyen',$id,null,$reservedMeta);
             return Store::one('SELECT * FROM giao_dich_truc_tuyen WHERE id=?',[$id]);
         });
         $id=(int)$intent['id']; $meta=self::metadata($id,'payos_link');
@@ -125,6 +147,7 @@ final class PayOsPayments
                 $current=Store::one('SELECT * FROM giao_dich_truc_tuyen WHERE id=? FOR UPDATE',[$id]);
                 if ($current['trang_thai']==='khoi_tao') {
                     Store::execute("UPDATE giao_dich_truc_tuyen SET trang_thai='cho_xac_nhan',ma_giao_dich_cong=? WHERE id=?",[$meta['paymentLinkId'],$id]);
+                    self::saveMetadata($id,'payos_link',$meta);
                     Store::recordAudit((int)$actor['userId'],'khac','giao_dich_truc_tuyen',$id,null,$meta);
                 }
             });
@@ -229,12 +252,15 @@ final class PayOsPayments
             $event=Store::one("SELECT * FROM su_kien_thanh_toan WHERE nha_cung_cap='PAYOS' AND ma_su_kien=? FOR UPDATE",[$eventKey]);
             if ((int)$event['giao_dich_id']!==$id) $reason='Mã giao dịch ngân hàng đã gắn với hóa đơn khác. Admin cần đối soát.';
             if ($reason) {
+                $reviewMeta=['action'=>'payos_review','reason'=>$reason];
                 if ((int)$event['giao_dich_id']===$id && $event['trang_thai']==='cho_xu_ly') {
                     Store::execute("UPDATE su_kien_thanh_toan SET trang_thai='loi',loi=?,xu_ly_luc=NOW() WHERE id=?",[$reason,$event['id']]);
-                    Store::recordAudit((int)$operator['userId'],'khac','giao_dich_truc_tuyen',$id,null,['action'=>'payos_review','reason'=>$reason]);
+                    if (in_array($current['trang_thai'],['khoi_tao','cho_xac_nhan'],true)) self::saveMetadata($id,'payos_review',$reviewMeta);
+                    Store::recordAudit((int)$operator['userId'],'khac','giao_dich_truc_tuyen',$id,null,$reviewMeta);
                 }
                 if ((int)$event['giao_dich_id']!==$id && (self::metadata($id,'payos_review')['reason']??null)!==$reason) {
-                    Store::recordAudit((int)$operator['userId'],'khac','giao_dich_truc_tuyen',$id,null,['action'=>'payos_review','reason'=>$reason]);
+                    if (in_array($current['trang_thai'],['khoi_tao','cho_xac_nhan'],true)) self::saveMetadata($id,'payos_review',$reviewMeta);
+                    Store::recordAudit((int)$operator['userId'],'khac','giao_dich_truc_tuyen',$id,null,$reviewMeta);
                 }
                 return ['paid'=>false,'review'=>$reason];
             }

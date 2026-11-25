@@ -44,6 +44,9 @@ CREATE TABLE account (
   username      VARCHAR(100) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   status        ENUM('active','locked','pending') NOT NULL DEFAULT 'active',
+  -- [THÊM] 008: Tách phiên bản phiên và token thu hồi khỏi audit_log để xác thực nhanh, không phụ thuộc log kiểm toán.
+  session_version INT UNSIGNED NOT NULL DEFAULT 0,
+  revoked_tokens_json JSON NULL,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_deleted    TINYINT(1) NOT NULL DEFAULT 0,
   -- [THÊM] Phiên bản 003: thông tin vận hành và truy vết; NULL giữ nghĩa chưa biết với dữ liệu cũ.
@@ -829,6 +832,9 @@ CREATE TABLE hoa_don (
   UNIQUE KEY uq_hd_ma (ma_hd),
   UNIQUE KEY uq_hd_ky (lop_hoc_vien_id, nam, thang),
   KEY idx_hd_tt (trang_thai, han_thanh_toan),
+  -- [THÊM] 008: Chỉ mục hỗ trợ báo cáo doanh thu lọc theo thời điểm phát hành / ngày lập hóa đơn.
+  KEY idx_hd_phat_hanh (phat_hanh_luc, trang_thai),
+  KEY idx_hd_created (created_at, trang_thai),
   CONSTRAINT fk_hd_lhv  FOREIGN KEY (lop_hoc_vien_id) REFERENCES lop_hoc_vien(id),
   CONSTRAINT fk_hd_user FOREIGN KEY (nguoi_lap_id) REFERENCES users(user_id),
   CONSTRAINT ck_hd_tien CHECK (tong_tien >= 0 AND giam_gia >= 0 AND giam_gia <= tong_tien AND da_thu >= 0),
@@ -877,6 +883,8 @@ CREATE TABLE thanh_toan (
   PRIMARY KEY (id),
   KEY idx_tt_hd (hoa_don_id),
   KEY idx_tt_ngay (ngay_thanh_toan),
+  -- [THÊM] 008: Chỉ mục tổ hợp trạng thái & ngày thanh toán cho báo cáo doanh thu.
+  KEY idx_tt_tt_ngay (trang_thai, ngay_thanh_toan),
   CONSTRAINT fk_tt_hd   FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id),
   CONSTRAINT fk_tt_user FOREIGN KEY (nguoi_thu_id) REFERENCES users(user_id),
   CONSTRAINT ck_tt_tien CHECK (so_tien > 0)
@@ -930,6 +938,7 @@ CREATE TABLE audit_log (
   created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_al_bang (bang, ban_ghi_id),
+  KEY idx_al_bang_hd (bang, ban_ghi_id, hanh_dong, id),
   KEY idx_al_user (user_id, created_at),
   CONSTRAINT fk_al_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
@@ -990,6 +999,8 @@ CREATE TABLE giao_dich_truc_tuyen (
   xac_nhan_boi BIGINT UNSIGNED NULL,
   xac_nhan_luc DATETIME NULL,
   het_han_luc DATETIME NULL,
+  -- [THÊM] 008: Lưu metadata giao dịch/payOS trực tiếp trên bản ghi thay vì trích JSON từ audit_log.
+  metadata_json JSON NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),

@@ -2,8 +2,8 @@
   <div class="pg-head">
     <div><h1>Tổng quan công việc Giáo vụ / Điều phối</h1><p class="sub">Theo dõi yêu cầu tuyển sinh, đơn nghỉ cá nhân, lịch học bù và hóa đơn khóa học cần xử lý</p></div>
     <div class="row">
-      <button class="btn sm" onclick="showS('staff-reports')" id="staffDashReportBtn">Báo cáo &amp; Thống kê</button>
-      <button class="btn p sm" onclick="showS('staff-schedule')">Thời khóa biểu &amp; Xếp ca</button>
+      <button type="button" class="btn sm" data-nav="staff-reports" id="staffDashReportBtn">Báo cáo &amp; Thống kê</button>
+      <button type="button" class="btn p sm" data-nav="staff-schedule">Thời khóa biểu &amp; Xếp ca</button>
     </div>
   </div>
   <div class="stats">
@@ -20,12 +20,12 @@
     <div class="card">
       <h2>Lối tắt nghiệp vụ</h2>
       <div class="btn-group" style="flex-direction:column;gap:8px">
-        <button class="btn p" onclick="showS('staff-schedule')">Thời khóa biểu &amp; Xếp ca / Học bù</button>
-        <button class="btn" onclick="showS('staff-intake')">Tuyển sinh &amp; Ghép người dạy (4 bước)</button>
-        <button class="btn" onclick="showS('staff-recruitment')">Đề xuất tuyển GV / Trợ giảng &amp; Duyệt ứng tuyển</button>
-        <button class="btn" onclick="showS('staff-students')">Học viên &amp; Đăng ký khóa học</button>
-        <button class="btn" onclick="showS('staff-parents')">Hồ sơ Phụ huynh &amp; Liên kết con</button>
-        <button class="btn" onclick="showS('staff-billing')">Hóa đơn Trọn khóa &amp; Theo dõi thu phí</button>
+        <button type="button" class="btn p" data-nav="staff-schedule">Thời khóa biểu &amp; Xếp ca / Học bù</button>
+        <button type="button" class="btn" data-nav="staff-intake">Tuyển sinh &amp; Ghép người dạy (4 bước)</button>
+        <button type="button" class="btn" data-nav="staff-recruitment">Đề xuất tuyển GV / Trợ giảng &amp; Duyệt ứng tuyển</button>
+        <button type="button" class="btn" data-nav="staff-students">Học viên &amp; Đăng ký khóa học</button>
+        <button type="button" class="btn" data-nav="staff-parents">Hồ sơ Phụ huynh &amp; Liên kết con</button>
+        <button type="button" class="btn" data-nav="staff-billing">Hóa đơn Trọn khóa &amp; Theo dõi thu phí</button>
       </div>
     </div>
   </div>
@@ -35,8 +35,8 @@
   <div class="pg-head">
     <div><h1>Thời khóa biểu &amp; Lưu lịch học bù</h1><p class="sub">Xếp ca học định kỳ, lặp tuần, kiểm tra xung đột phòng/người dạy và lưu lịch học bù theo thỏa thuận</p></div>
     <div class="row">
-      <button class="btn sm" onclick="openShiftRecruitmentForm()">Đăng tuyển GV / Trợ giảng</button>
-      <button class="btn p sm" onclick="openSessionForm()">+ Xếp ca học mới</button>
+      <button type="button" class="btn sm" data-act="open-shift-recruitment-form">Đăng tuyển GV / Trợ giảng</button>
+      <button type="button" class="btn p sm" data-act="open-session-form">+ Xếp ca học mới</button>
     </div>
   </div>
   <div id="staffCalContainer"></div>
@@ -85,8 +85,8 @@
   <div class="pg-head">
     <div><h1>Lớp học &amp; Sĩ số</h1><p class="sub">Theo dõi danh sách lớp, sĩ số đang học, lịch tuần và mở nhanh thao tác xếp ca học</p></div>
     <div class="row">
-      <button class="btn sm" onclick="setPortal('admin', true, 'admin-courses')">Mở Admin Xếp lớp</button>
-      <button class="btn p sm" onclick="openSessionForm()">+ Xếp ca học cho lớp</button>
+      <button type="button" class="btn sm" data-act="set-portal" data-portal="admin" data-screen="admin-courses">Mở Admin Xếp lớp</button>
+      <button type="button" class="btn p sm" data-act="open-session-form">+ Xếp ca học cho lớp</button>
     </div>
   </div>
   <div class="ec-kpis" id="staffClassesKpis"></div>
@@ -113,9 +113,9 @@
   <div class="pg-head">
     <div><h1>Học viên &amp; Đăng ký khóa học</h1><p class="sub">Quản lý hồ sơ học viên, liên kết phụ huynh đại diện và đăng ký khóa học trọn khóa theo giá snapshot</p></div>
     <div class="row">
-      <button class="btn sm" onclick="showS('staff-registrations')">Tra cứu đăng ký khóa</button>
-      <button class="btn sm" onclick="showS('staff-parents')">Danh sách Phụ huynh</button>
-      <button class="btn p sm" onclick="openStudentForm()">+ Thêm học viên &amp; ĐK khóa</button>
+      <button type="button" class="btn sm" data-nav="staff-registrations">Tra cứu đăng ký khóa</button>
+      <button type="button" class="btn sm" data-nav="staff-parents">Danh sách Phụ huynh</button>
+      <button type="button" class="btn p sm" data-act="open-student-form">+ Thêm học viên &amp; ĐK khóa</button>
     </div>
   </div>
   <div class="card">
@@ -129,7 +129,7 @@
 <template id="view-staff-parents"><section class="screen active" id="staff-parents">
   <div class="pg-head">
     <div><h1>Hồ sơ Phụ huynh &amp; Liên kết con</h1><p class="sub">Một học viên gắn đúng một phụ huynh đại diện; một phụ huynh có thể quản lý nhiều con</p></div>
-    <button class="btn p sm" onclick="openParentFormModal()">+ Thêm hồ sơ Phụ huynh</button>
+    <button type="button" class="btn p sm" data-act="open-parent-form">+ Thêm hồ sơ Phụ huynh</button>
   </div>
   <div class="card">
     <div class="tw"><table>
@@ -142,7 +142,7 @@
 <template id="view-staff-approve"><section class="screen active" id="staff-approve">
   <div class="pg-head">
     <div><h1>Duyệt nghỉ cá nhân, Đổi lịch &amp; Học bù</h1><p class="sub">Giáo vụ duyệt nghỉ cá nhân/đổi lịch người dạy và theo dõi lịch học bù đã thỏa thuận; nghỉ cả lớp do Admin phê duyệt</p></div>
-    <div class="row"><button class="btn p sm" onclick="showS('staff-schedule')">+ Xếp buổi học bù trên Lịch</button></div>
+    <div class="row"><button type="button" class="btn p sm" data-nav="staff-schedule">+ Xếp buổi học bù trên Lịch</button></div>
   </div>
   <div class="ec-kpis" id="staffApproveKpis"></div>
   <div class="card ec-shell">
@@ -186,7 +186,7 @@
 <template id="view-staff-billing"><section class="screen active" id="staff-billing">
   <div class="pg-head">
     <div><h1>Hóa đơn trọn khóa &amp; Thu phí</h1><p class="sub">Lập hóa đơn nháp theo giá snapshot đăng ký khóa, phát hành gửi phụ huynh và theo dõi kết quả đối soát thu tiền</p></div>
-    <button class="btn p sm" onclick="createCourseInvoicePrompt()">+ Tạo hóa đơn khóa học</button>
+    <button type="button" class="btn p sm" data-act="create-course-invoice">+ Tạo hóa đơn khóa học</button>
   </div>
   <div class="ec-kpis" id="staffBillingKpis"></div>
   <div class="g2">
@@ -213,8 +213,8 @@
       <div id="invDetailPanel" hidden>
         <div id="invMetaGrid"></div>
         <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <button class="btn p sm" id="btnPublishInv" onclick="publishSelectedInvoice()">Phát hành &amp; Gửi TB Phụ huynh</button>
-          <button class="btn sm" onclick="printSelectedInvoice()">In Hóa đơn / Phiếu thu</button>
+          <button type="button" class="btn p sm" id="btnPublishInv" data-act="publish-selected-invoice">Phát hành &amp; Gửi TB Phụ huynh</button>
+          <button type="button" class="btn sm" data-act="print-selected-invoice">In Hóa đơn / Phiếu thu</button>
         </div>
         <div id="invReceiptsBox" style="margin-bottom:14px"></div>
         <div id="invAdminPayBox" hidden style="padding-top:12px;border-top:1px dashed var(--g200)">
@@ -224,7 +224,7 @@
             <label>Phương thức<select id="payMethodSel"><option value="chuyen_khoan">Chuyển khoản</option><option value="tien_mat">Tiền mặt tại quầy</option><option value="vi_dien_tu">Ví điện tử</option><option value="the">Thẻ</option></select></label>
             <label class="full">Ghi chú chứng từ<input id="payNote" placeholder="VD: Thu học phí trọn khóa…"></label>
           </div>
-          <button class="btn p sm" style="margin-top:10px" onclick="doPayment()">Xác nhận &amp; Lập phiếu thu</button>
+          <button type="button" class="btn p sm" style="margin-top:10px" data-act="do-payment">Xác nhận &amp; Lập phiếu thu</button>
         </div>
         <div id="invStaffPayNote" class="ec-info-box pri" hidden>Việc đối soát và lập phiếu thu thực hiện tại cổng <b>Admin</b>. Kết quả thanh toán sẽ tự động cập nhật ở đây sau khi Admin xác nhận.</div>
       </div>

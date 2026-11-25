@@ -3,8 +3,7 @@
   let invoices = [], selected = null, keepSelectedId = null, invFilter = 'all', invQuery = '';
   const invStatusLabel = { nhap:'Nháp', chua_thanh_toan:'Chưa thanh toán', mot_phan:'Thu một phần', da_thanh_toan:'Đã thu đủ', huy:'Đã hủy' };
   const invStatusTone = s => s === 'da_thanh_toan' ? 'ok' : (s === 'nhap' ? 'i' : (s === 'huy' ? 'r' : 'w'));
-  const kpi = (l, v, s, tone = '', primary = false) =>
-    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${Admin.esc(l)}</span><b class="ec-kpi-v">${Admin.esc(v)}</b><span class="ec-kpi-s">${Admin.esc(s)}</span></div>`;
+  const kpi = Admin.kpi;
 
   function renderBillingKpis() {
     const el = Admin.$('staffBillingKpis');
@@ -183,11 +182,8 @@
 
 (() => {
   const Admin = window.Admin;
-  const money = Admin.money, esc = Admin.esc;
-  const empty = columns => `<tr><td colspan="${columns}" class="admin-empty">Chưa có dữ liệu.</td></tr>`;
+  const money = Admin.money, esc = Admin.esc, empty = Admin.emptyRow, kpi = Admin.kpi;
   const confirmation = Admin.confirmDialog;
-  const kpi = (l, v, s, tone = '', primary = false) =>
-    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${esc(l)}</span><b class="ec-kpi-v">${esc(v)}</b><span class="ec-kpi-s">${esc(s)}</span></div>`;
 
   let transactions = [], bankAccounts = [], payosStatus = {}, activePayTab = 'tx', txFilter = 'pending', txQuery = '';
 
@@ -196,14 +192,14 @@
       <span>${payosStatus.ready
         ? 'payOS đã kết nối webhook · Hệ thống chỉ ghi nhận phiếu thu sau khi xác thực giao dịch ngân hàng.'
         : `payOS chưa kích hoạt tự động (${!payosStatus.enabled ? 'chưa bật kết nối' : esc((payosStatus.missing || []).join(' · '))}). Dùng đối soát chuyển khoản thủ công hoặc thêm tài khoản nhận học phí bên dưới.`}</span>
-      <div class="row">${payosStatus.configured ? '<button class="btn sm" onclick="adminConnectPayos()">Kiểm tra webhook</button>' : ''}<button class="btn p sm" onclick="adminBankForm()">+ Thêm tài khoản QR</button></div>
+      <div class="row">${payosStatus.configured ? '<button type="button" class="btn sm" data-act="admin-connect-payos">Kiểm tra webhook</button>' : ''}<button type="button" class="btn p sm" data-act="admin-bank-form">+ Thêm tài khoản QR</button></div>
     </div>` + Admin.table([
-      { label:'Ảnh QR', render:r => r.qrImageHash ? `<button class="btn sm" onclick="adminQrPreview('${esc(r.id)}')">Xem QR</button>` : 'Chưa tải ảnh' },
+      { label:'Ảnh QR', render:r => r.qrImageHash ? `<button type="button" class="btn sm" data-act="admin-qr-preview" data-id="${esc(r.id)}">Xem QR</button>` : 'Chưa tải ảnh' },
       { label:'Ngân hàng', render:r => `${esc(r.bankName)} · <span class="mono">${esc(r.bankBin)}</span>` },
       { label:'Số tài khoản', key:'accountNo' },
       { label:'Chủ tài khoản', key:'accountName' },
       { label:'Trạng thái', render:r => Admin.tag(r.isDefault ? 'Mặc định' : (r.active ? 'Đang dùng' : 'Ngừng dùng'), r.isDefault ? 'ok' : '') + (r.isDemo ? ' · DEMO' : '') },
-      { label:'Thao tác', render:r => `<div class="row"><button class="btn sm" onclick="adminBankForm('${esc(r.id)}')">Sửa</button>${!r.isDefault && r.active ? `<button class="btn sm p" onclick="adminBankDefault('${esc(r.id)}')">Chọn mặc định</button>` : ''}</div>` }
+      { label:'Thao tác', render:r => `<div class="row"><button type="button" class="btn sm" data-act="admin-bank-form" data-id="${esc(r.id)}">Sửa</button>${!r.isDefault && r.active ? `<button type="button" class="btn sm p" data-act="admin-bank-default" data-id="${esc(r.id)}">Chọn mặc định</button>` : ''}</div>` }
     ], bankAccounts, 'Chưa có tài khoản nhận học phí. Bấm “+ Thêm tài khoản QR” để cấu hình tài khoản ngân hàng.');
   }
 
@@ -234,9 +230,9 @@
       <td class="mono" style="font-size:11px">${esc(row.maYeuCau)}<br>${transferDetails(row)}</td>
       <td>${Admin.tag(row.trangThai === 'thanh_cong' ? 'Đã xác nhận · ' + (row.tenAdmin || 'Admin') : ({ cho_xac_nhan:'Chờ đối soát', khoi_tao:'Đang khởi tạo', that_bai:'Thất bại', het_han:'Hết hạn', da_huy:'Đã hủy', huy:'Đã hủy' }[row.trangThai] || row.trangThai), row.trangThai === 'thanh_cong' ? 'ok' : (['cho_xac_nhan', 'khoi_tao'].includes(row.trangThai) ? 'w' : 'r'))}</td>
       <td>${row.nhaCungCap === 'PAYOS' && row.trangThai !== 'thanh_cong'
-        ? `<div class="row"><button class="btn p sm" onclick="adminCheckPayos(${row.id})">Kiểm tra payOS</button>${['khoi_tao', 'cho_xac_nhan'].includes(row.trangThai) ? `<button class="btn sm" onclick="adminCancelPayos(${row.id})">Hủy</button>` : ''}</div>`
+        ? `<div class="row"><button type="button" class="btn p sm" data-act="admin-check-payos" data-id="${row.id}">Kiểm tra payOS</button>${['khoi_tao', 'cho_xac_nhan'].includes(row.trangThai) ? `<button type="button" class="btn sm" data-act="admin-cancel-payos" data-id="${row.id}">Hủy</button>` : ''}</div>`
         : row.trangThai === 'cho_xac_nhan'
-          ? `<button class="btn p sm" onclick="adminConfirmOnlineTx(${row.id})">Xác nhận &amp; Lập phiếu thu</button>`
+          ? `<button type="button" class="btn p sm" data-act="admin-confirm-tx" data-id="${row.id}">Xác nhận &amp; Lập phiếu thu</button>`
           : esc(row.thanhToanId ? 'Phiếu thu #' + row.thanhToanId : '—')}</td>
     </tr>`).join('') || empty(8);
   }
@@ -348,4 +344,17 @@
       Admin.render();
     });
   };
+  Admin.actions({
+    'create-course-invoice': () => window.createCourseInvoicePrompt?.(),
+    'publish-selected-invoice': () => window.publishSelectedInvoice?.(),
+    'print-selected-invoice': () => window.printSelectedInvoice?.(),
+    'do-payment': () => window.doPayment?.(),
+    'admin-bank-form': el => window.adminBankForm(el.dataset.id || ''),
+    'admin-qr-preview': el => window.adminQrPreview(el.dataset.id),
+    'admin-connect-payos': () => window.adminConnectPayos(),
+    'admin-cancel-payos': el => window.adminCancelPayos(Number(el.dataset.id)),
+    'admin-check-payos': el => window.adminCheckPayos(Number(el.dataset.id)),
+    'admin-bank-default': el => window.adminBankDefault(el.dataset.id),
+    'admin-confirm-tx': el => window.adminConfirmOnlineTx(Number(el.dataset.id)),
+  });
 })();

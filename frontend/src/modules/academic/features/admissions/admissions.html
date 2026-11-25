@@ -4,14 +4,14 @@
       <h1>Tuyển sinh &amp; Ghép người dạy</h1>
       <p class="sub">Quy trình 4 bước: Tiếp nhận yêu cầu học → Tìm người dạy phù hợp → Gửi đề xuất → Bàn giao Admin xếp lớp</p>
     </div>
-    <button class="btn p sm" onclick="openRequestForm()">+ Tiếp nhận yêu cầu mới</button>
+    <button type="button" class="btn p sm" data-act="open-request-form">+ Tiếp nhận yêu cầu mới</button>
   </div>
   <div class="card ec-shell">
     <div class="ec-tabs" id="intakeWF" role="tablist">
-      <button type="button" class="ec-tab ws on" onclick="intakeStep(0)">1. Yêu cầu học <span class="ec-count" id="intakeStep0Count">0</span></button>
-      <button type="button" class="ec-tab ws" onclick="intakeStep(1)">2. Tìm người dạy</button>
-      <button type="button" class="ec-tab ws" onclick="intakeStep(2)">3. Đề xuất nhân sự <span class="ec-count" id="intakeStep2Count">0</span></button>
-      <button type="button" class="ec-tab ws" onclick="intakeStep(3)">4. Bàn giao xếp lớp <span class="ec-count warn" id="intakeStep3Count">0</span></button>
+      <button type="button" class="ec-tab ws on" data-act="intake-step" data-step="0">1. Yêu cầu học <span class="ec-count" id="intakeStep0Count">0</span></button>
+      <button type="button" class="ec-tab ws" data-act="intake-step" data-step="1">2. Tìm người dạy</button>
+      <button type="button" class="ec-tab ws" data-act="intake-step" data-step="2">3. Đề xuất nhân sự <span class="ec-count" id="intakeStep2Count">0</span></button>
+      <button type="button" class="ec-tab ws" data-act="intake-step" data-step="3">4. Bàn giao xếp lớp <span class="ec-count warn" id="intakeStep3Count">0</span></button>
     </div>
     <div class="ec-pane intake-step" id="istep0">
       <div id="admissionsRequestFilters"></div>
@@ -26,11 +26,11 @@
         <div class="card" style="box-shadow:none;background:var(--g50)">
           <h2 style="margin:0 0 10px">Tiêu chí lọc người dạy</h2>
           <label>Yêu cầu học viên</label>
-          <select id="matchReqSel" onchange="runMatch()"><option value="">Chọn yêu cầu học</option></select>
+          <select id="matchReqSel" data-on-change="run-match"><option value="">Chọn yêu cầu học</option></select>
           <label>Khu vực</label><input id="matchRegion" readonly>
           <label>Ngân sách học phí dự kiến</label>
           <input id="budgetSel" readonly>
-          <button class="btn p sm" style="width:100%;justify-content:center;margin-top:14px" onclick="runMatch()">Tìm lại ứng viên</button>
+          <button type="button" class="btn p sm" style="width:100%;justify-content:center;margin-top:14px" data-act="run-match">Tìm lại ứng viên</button>
         </div>
         <div>
           <h2 id="matchTitle" style="margin:0 0 10px">Người dạy phù hợp</h2>

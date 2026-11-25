@@ -98,10 +98,10 @@
       [data.pending.corrections + data.pending.classLeave, 'Điều chỉnh giờ công và nghỉ nguyên buổi cả lớp chờ Admin duyệt', 'Phê duyệt', 'admin-exceptions', 'warn']
     ];
     Admin.$('adminPendingWork').innerHTML = pending
-      .map(([count, label, button, screen, style]) => `<div class="item"><span><b>${count}</b> ${Admin.esc(label)}</span><button class="btn sm ${style}" onclick="showS('${screen}')">${button}</button></div>`)
+      .map(([count, label, button, screen, style]) => `<div class="item"><span><b>${count}</b> ${Admin.esc(label)}</span><button type="button" class="btn sm ${style}" data-nav="${Admin.esc(screen)}">${button}</button></div>`)
       .join('')
-      + `<div class="item"><span>Mở khóa kỳ công đã chốt chưa chi trả</span><button class="btn sm purple" onclick="showS('admin-exceptions')">Xem xét</button></div>`
-      + `<div class="item"><span>Báo cáo chuyên cần, doanh thu, công/lương, công nợ &amp; xuất Excel/CSV</span><button class="btn sm" onclick="showS('admin-reports')">Mở báo cáo</button></div>`;
+      + `<div class="item"><span>Mở khóa kỳ công đã chốt chưa chi trả</span><button type="button" class="btn sm purple" data-nav="admin-exceptions">Xem xét</button></div>`
+      + `<div class="item"><span>Báo cáo chuyên cần, doanh thu, công/lương, công nợ &amp; xuất Excel/CSV</span><button type="button" class="btn sm" data-nav="admin-reports">Mở báo cáo</button></div>`;
     appendEmailAlert();
 
     Admin.$('adminRecentAudit').innerHTML = data.recent
@@ -894,8 +894,8 @@
         ${detailHtml}
       </div>
       <div class="dialog-foot">
-        <button type="button" class="btn sm" onclick="document.getElementById('admin-dialog').close()">Đóng</button>
-        <button type="button" class="btn p sm" onclick="window.print()">In / Lưu PDF</button>
+        <button type="button" class="btn sm" data-close-dialog="1">Đóng</button>
+        <button type="button" class="btn p sm" data-act="print-window">In / Lưu PDF</button>
       </div>`);
   }
 

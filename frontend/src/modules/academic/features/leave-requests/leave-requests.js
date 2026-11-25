@@ -7,8 +7,7 @@ window.AdminClassLeave = {
 (() => {
   let requests = [], classRequests = [], makeups = [], filter = 'pending', activeTab = 'personal';
   const statusLbl = { cho_duyet:'Chờ duyệt', da_duyet:'Đã duyệt', tu_choi:'Từ chối', da_huy:'Đã hủy' };
-  const kpi = (l, v, s, tone = '', primary = false) =>
-    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${Admin.esc(l)}</span><b class="ec-kpi-v">${Admin.esc(v)}</b><span class="ec-kpi-s">${Admin.esc(s)}</span></div>`;
+  const kpi = Admin.kpi;
 
   function switchTab(tab) {
     activeTab = tab;
@@ -94,7 +93,7 @@ window.AdminClassLeave = {
       <td>${Admin.esc(row.nguoiGui)}</td>
       <td>${Admin.esc(row.lyDo)}</td>
       <td>${Admin.tag(statusLbl[row.trangThai] || row.trangThai, row.trangThai === 'da_duyet' ? 'ok' : (row.trangThai === 'cho_duyet' ? 'w' : 'r'))}</td>
-      <td>${Admin.user.role === 'ADMIN' ? '<button class="btn sm" onclick="setPortal(\'admin\',true,\'admin-exceptions\')">Mở Admin duyệt</button>' : (row.trangThai === 'cho_duyet' ? 'Chờ Admin xử lý' : 'Đã xử lý')}</td>
+      <td>${Admin.user.role === 'ADMIN' ? '<button type="button" class="btn sm" data-act="set-portal" data-portal="admin" data-screen="admin-exceptions">Mở Admin duyệt</button>' : (row.trangThai === 'cho_duyet' ? 'Chờ Admin xử lý' : 'Đã xử lý')}</td>
     </tr>`), 'Chưa có đơn nghỉ cả lớp nào.');
 
     StaffUI.rows('makeupStudentsBody', 6, makeups.map(row => `<tr>

@@ -57,17 +57,17 @@ function renderSharedCalendar(targetContainerId, roleScope){
     filterBarHtml = `
       <div class="cal-filter-bar">
         <span style="font-weight:600;color:var(--g700)">Bộ lọc:</span>
-        <select onchange="onCalFilterChange('branch', this.value)">${calendarOptions('branch')}</select>
-        <select onchange="onCalFilterChange('teacher', this.value)">${calendarOptions('teacher')}</select>
-        <select onchange="onCalFilterChange('classCode', this.value)">${calendarOptions('classCode')}</select>
-        <select onchange="onCalFilterChange('status', this.value)">
+        <select data-on-change="cal-filter" data-key="branch">${calendarOptions('branch')}</select>
+        <select data-on-change="cal-filter" data-key="teacher">${calendarOptions('teacher')}</select>
+        <select data-on-change="cal-filter" data-key="classCode">${calendarOptions('classCode')}</select>
+        <select data-on-change="cal-filter" data-key="status">
           <option value="">Tất cả trạng thái</option>
           <option value="upcoming" ${calFilters.status==='upcoming'?'selected':''}>Sắp diễn ra</option>
           <option value="completed" ${calFilters.status==='completed'?'selected':''}>Đã hoàn thành</option>
           <option value="makeup" ${calFilters.status==='makeup'?'selected':''}>Buổi dạy bù</option>
           <option value="cancelled" ${calFilters.status==='cancelled'?'selected':''}>Đã hủy</option>
         </select>
-        <button class="btn sm" onclick="resetCalFilters()" style="margin-left:auto;color:var(--err)">Đặt lại lọc</button>
+        <button type="button" class="btn sm" data-act="cal-reset" style="margin-left:auto;color:var(--err)">Đặt lại lọc</button>
       </div>
     `;
   }
@@ -90,7 +90,7 @@ function renderSharedCalendar(targetContainerId, roleScope){
           </div>
           <div class="cal-col-body">
             ${daySessions.length > 0 ? daySessions.map(s => renderSessionCardHtml(s)).join('') : '<div class="cal-col-empty">—</div>'}
-            ${roleScope==='staff' ? `<button onclick="openSessionForm('${dYMD}')" class="btn sm" style="margin-top:auto;width:100%;font-size:10.5px;padding:3px;justify-content:center;border-style:dashed;color:var(--g500)">+ Thêm ca</button>` : ''}
+            ${roleScope==='staff' ? `<button type="button" data-act="open-session-form" data-id="${dYMD}" class="btn sm" style="margin-top:auto;width:100%;font-size:10.5px;padding:3px;justify-content:center;border-style:dashed;color:var(--g500)">+ Thêm ca</button>` : ''}
           </div>
         </div>
       `;
@@ -123,11 +123,11 @@ function renderSharedCalendar(targetContainerId, roleScope){
         <div class="cal-month-cell ${isToday?'is-today':''} ${isOther?'other-month':''}">
           <div class="row-b" style="margin-bottom:2px">
             <span style="font-size:11px;font-weight:700;color:${isToday?'var(--pri-d)':'var(--g700)'}">${d.getDate()}</span>
-            ${roleScope==='staff' ? `<button onclick="openSessionForm('${dYMD}')" style="border:0;background:0;font-size:10px;color:var(--pri);font-weight:700">+</button>` : ''}
+            ${roleScope==='staff' ? `<button type="button" data-act="open-session-form" data-id="${dYMD}" style="border:0;background:0;font-size:10px;color:var(--pri);font-weight:700">+</button>` : ''}
           </div>
           <div style="display:flex;flex-direction:column;gap:2px">
             ${daySessions.slice(0,2).map(s => `
-              <div class="cal-m-chip ${s.status}" onclick="openSessionDetail('${s.id}')">
+              <div class="cal-m-chip ${s.status}" data-act="open-session-detail" data-id="${Admin.esc(s.id)}">
                 <span>${s.startTime}</span> <b>${Admin.esc(s.classCode)}</b>
               </div>
             `).join('')}
@@ -155,17 +155,17 @@ function renderSharedCalendar(targetContainerId, roleScope){
     <div class="cal-box">
       <div class="cal-bar">
         <div class="row" style="gap:6px">
-          <button class="cal-nav-btn" onclick="calPrevPeriod('${targetContainerId}','${roleScope}')">
+          <button type="button" class="cal-nav-btn" data-act="cal-prev" data-cid="${Admin.esc(targetContainerId)}" data-role="${Admin.esc(roleScope)}">
             <svg class="svg-ico sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> Trước
           </button>
-          <button class="btn sm" onclick="calGoToday('${targetContainerId}','${roleScope}')">Hôm nay</button>
-          <button class="cal-nav-btn" onclick="calNextPeriod('${targetContainerId}','${roleScope}')">
+          <button type="button" class="btn sm" data-act="cal-today" data-cid="${Admin.esc(targetContainerId)}" data-role="${Admin.esc(roleScope)}">Hôm nay</button>
+          <button type="button" class="cal-nav-btn" data-act="cal-next" data-cid="${Admin.esc(targetContainerId)}" data-role="${Admin.esc(roleScope)}">
             Sau <svg class="svg-ico sm" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
 
         <div>
-          <button class="cal-range-btn" onclick="toast('Đang xem khoảng ngày: ${rangeTitle}','info')">
+          <button type="button" class="cal-range-btn" data-act="show-toast" data-msg="Đang xem khoảng ngày: ${Admin.esc(rangeTitle)}" data-tone="info">
             <svg class="svg-ico" style="color:var(--pri)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span>${rangeTitle}</span>
           </button>
@@ -173,8 +173,8 @@ function renderSharedCalendar(targetContainerId, roleScope){
 
         <div class="row">
           <div class="seg">
-            <button class="${calViewMode==='week'?'on':''}" onclick="setCalViewMode('week','${targetContainerId}','${roleScope}')">Lịch Tuần</button>
-            <button class="${calViewMode==='month'?'on':''}" onclick="setCalViewMode('month','${targetContainerId}','${roleScope}')">Lịch Tháng</button>
+            <button type="button" class="${calViewMode==='week'?'on':''}" data-act="cal-mode" data-mode="week" data-cid="${Admin.esc(targetContainerId)}" data-role="${Admin.esc(roleScope)}">Lịch Tuần</button>
+            <button type="button" class="${calViewMode==='month'?'on':''}" data-act="cal-mode" data-mode="month" data-cid="${Admin.esc(targetContainerId)}" data-role="${Admin.esc(roleScope)}">Lịch Tháng</button>
           </div>
         </div>
       </div>
@@ -195,7 +195,7 @@ function renderSessionCardHtml(s){
     : `<svg class="svg-ico sm" style="color:var(--g400)" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${Admin.esc(s.branch)}`;
 
   return `
-    <div class="ses-card ${s.status}" onclick="openSessionDetail('${s.id}')">
+    <div class="ses-card ${s.status}" data-act="open-session-detail" data-id="${Admin.esc(s.id)}">
       ${badgeHtml}
       <div class="sc-code">${Admin.esc(s.classCode)}</div>
       <div class="sc-subj">${Admin.esc(s.subject)} · ${Admin.esc(s.className)}</div>
@@ -316,7 +316,7 @@ function openSessionDetail(id) {
   if(!session)return;
   selectedSessionId=id;
   document.getElementById('dtModalTitle').textContent=session.classCode+' · '+session.date;
-  document.getElementById('dtModalContent').innerHTML=`<div class="item"><span>Lớp</span><b>${Admin.esc(session.className)}${session.loaiLop?` <span class="tag i">${Admin.esc(CLASS_TYPE_LABELS[session.loaiLop]||session.loaiLop)}</span>`:''}</b></div><div class="item"><span>Thời gian</span><b>${session.startTime} – ${session.endTime}</b></div><div class="item"><span>Người dạy</span><b>${Admin.esc(session.mainTeacher||'Chưa phân công')}</b></div><div class="item"><span>Trợ giảng</span><b>${Admin.esc(session.ta||'—')}</b></div><div class="item"><span>Địa điểm</span><span>${Admin.esc(session.branch+' · '+session.room)}</span></div><p>${Admin.esc(session.topic)}</p>${session.isOnline&&/^https?:\/\//i.test(session.onlineLink)?`<p><a target="_blank" rel="noopener noreferrer" href="${Admin.esc(session.onlineLink)}">Mở phòng học trực tuyến</a></p>`:''}<div class="modal-act">${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','add')&&session.chuaBatDau&&typeof openShiftRecruitmentForm==='function'?`<button class="btn sm p" onclick="closeModalSessionDetail();openShiftRecruitmentForm(${session._id})">Đăng tuyển GV / Gia sư / TG</button>`:''}${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','edit')?`<button class="btn sm" onclick="rescheduleSessionDetail()">Chỉnh sửa / Dời lịch</button>${session.chuaBatDau&&!session.lyDoKhongXoa?'<button class="btn sm danger" onclick="deleteSessionDetail()">Xóa ca học</button>':''}${Admin.user.role==='ADMIN'?'<button class="btn sm danger" onclick="cancelSessionDetail()">Admin hủy buổi</button>':''}`:''}</div>`;
+  document.getElementById('dtModalContent').innerHTML=`<div class="item"><span>Lớp</span><b>${Admin.esc(session.className)}${session.loaiLop?` <span class="tag i">${Admin.esc(CLASS_TYPE_LABELS[session.loaiLop]||session.loaiLop)}</span>`:''}</b></div><div class="item"><span>Thời gian</span><b>${session.startTime} – ${session.endTime}</b></div><div class="item"><span>Người dạy</span><b>${Admin.esc(session.mainTeacher||'Chưa phân công')}</b></div><div class="item"><span>Trợ giảng</span><b>${Admin.esc(session.ta||'—')}</b></div><div class="item"><span>Địa điểm</span><span>${Admin.esc(session.branch+' · '+session.room)}</span></div><p>${Admin.esc(session.topic)}</p>${session.isOnline&&/^https?:\/\//i.test(session.onlineLink)?`<p><a target="_blank" rel="noopener noreferrer" href="${Admin.esc(session.onlineLink)}">Mở phòng học trực tuyến</a></p>`:''}<div class="modal-act">${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','add')&&session.chuaBatDau&&typeof openShiftRecruitmentForm==='function'?`<button type="button" class="btn sm p" data-act="open-shift-recruit-for-session" data-id="${session._id}">Đăng tuyển GV / Gia sư / TG</button>`:''}${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','edit')?`<button type="button" class="btn sm" data-act="reschedule-session-detail">Chỉnh sửa / Dời lịch</button>${session.chuaBatDau&&!session.lyDoKhongXoa?'<button type="button" class="btn sm danger" data-act="delete-session-detail">Xóa ca học</button>':''}${Admin.user.role==='ADMIN'?'<button type="button" class="btn sm danger" data-act="cancel-session-detail">Admin hủy buổi</button>':''}`:''}</div>`;
   if(StaffUI.can('VanHanhBuoiHoc','edit') && session.chuaBatDau && session.lyDoKhongXoa) {
     document.getElementById('dtModalContent').insertAdjacentHTML('beforeend',`<p class="form-error">${Admin.esc(session.lyDoKhongXoa)}</p>`);
   }
@@ -432,7 +432,7 @@ function exportSchedulePdf(){
   const start=formatYMD(calViewMode==='week'?getMonday(calCurrentDate):new Date(calCurrentDate.getFullYear(),calCurrentDate.getMonth(),1));
   const end=formatYMD(calViewMode==='week'?addDays(getMonday(calCurrentDate),7):new Date(calCurrentDate.getFullYear(),calCurrentDate.getMonth()+1,1));
   const rows=SESSIONS.filter(row=>row.date>=start&&row.date<end&&(!calFilters.branch||row.branch===calFilters.branch)&&(!calFilters.teacher||row.mainTeacher===calFilters.teacher)&&(!calFilters.classCode||row.classCode===calFilters.classCode)&&(!calFilters.status||row.status===calFilters.status));
-  Admin.dialog('Báo cáo Lịch toàn chuỗi',`<div class="dialog-body"><h2>EDUCENTER ERP</h2>${Admin.table([{key:'date',label:'Ngày'},{key:'classCode',label:'Lớp'},{label:'Giờ',render:row=>row.startTime+'–'+row.endTime},{key:'mainTeacher',label:'Người dạy'},{key:'branch',label:'Cơ sở'},{key:'room',label:'Phòng'},{key:'status',label:'Trạng thái'}],rows)}</div><div class="dialog-foot"><button class="btn p" onclick="window.print()">In / Lưu PDF</button></div>`);
+  Admin.dialog('Báo cáo Lịch toàn chuỗi',`<div class="dialog-body"><h2>EDUCENTER ERP</h2>${Admin.table([{key:'date',label:'Ngày'},{key:'classCode',label:'Lớp'},{label:'Giờ',render:row=>row.startTime+'–'+row.endTime},{key:'mainTeacher',label:'Người dạy'},{key:'branch',label:'Cơ sở'},{key:'room',label:'Phòng'},{key:'status',label:'Trạng thái'}],rows)}</div><div class="dialog-foot"><button type="button" class="btn p" data-act="print-window">In / Lưu PDF</button></div>`);
 }
 function onSfTypeChanged(){
   const makeup=document.getElementById('sfSessionType').value==='makeup';
@@ -452,3 +452,28 @@ function checkSfConflicts(){
   document.getElementById('sfConflictBanner').style.display=conflict?'block':'none';
   if(conflict)document.getElementById('sfConflictText').textContent='Người dạy đã được phân công tại '+conflict.classCode+' '+conflict.startTime+'–'+conflict.endTime+'.';
 }
+
+Admin.actions({
+  'export-schedule-pdf': () => exportSchedulePdf(),
+  'open-session-form': el => openSessionForm(el.dataset.id || undefined),
+  'close-session-form': () => closeModalSessionForm(),
+  'submit-session-form': (_form, ev) => handleSessionFormSubmit(ev),
+  'open-session-detail': el => openSessionDetail(el.dataset.id),
+  'close-session-detail': () => closeModalSessionDetail(),
+  'open-shift-recruit-for-session': el => { closeModalSessionDetail(); window.openShiftRecruitmentForm?.(Number(el.dataset.id)); },
+  'reschedule-session-detail': () => rescheduleSessionDetail(),
+  'delete-session-detail': () => deleteSessionDetail(),
+  'cancel-session-detail': () => cancelSessionDetail(),
+  'cal-filter': el => onCalFilterChange(el.dataset.key, el.value),
+  'cal-reset': () => resetCalFilters(),
+  'cal-prev': el => calPrevPeriod(el.dataset.cid, el.dataset.role),
+  'cal-today': el => calGoToday(el.dataset.cid, el.dataset.role),
+  'cal-next': el => calNextPeriod(el.dataset.cid, el.dataset.role),
+  'cal-mode': el => setCalViewMode(el.dataset.mode, el.dataset.cid, el.dataset.role),
+  'sf-class-changed': () => onSfClassChanged(),
+  'sf-type-changed': () => onSfTypeChanged(),
+  'sf-check-conflicts': () => checkSfConflicts(),
+  'sf-branch-changed': () => onSfBranchChanged(),
+  'sf-online-mode': el => setSfOnlineMode(el.dataset.online === '1'),
+  'sf-toggle-recurring': el => { const box = document.getElementById('sfRecurOptions'); if (box) box.style.display = el.checked ? 'block' : 'none'; },
+});

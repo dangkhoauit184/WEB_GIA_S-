@@ -6,11 +6,10 @@ use App\Shared\Store;
 final class AuthRepository
 {
     private const SELECT = "SELECT a.account_id, a.user_id, a.group_id, a.username, a.password_hash, a.status,
+        a.session_version, a.revoked_tokens_json,
         g.group_name, u.hoten, u.sdt, u.email, u.ngaysinh, u.diachi, u.nghe_nghiep, u.khu_vuc_id,
         nv.id AS nhan_vien_id, nv.ma_nv, nv.chuc_vu, nv.co_so_id,
-        ns.id AS nhan_su_id, ns.ma_ns, ns.phan_loai,
-        (SELECT COALESCE(MAX(al.id),0) FROM audit_log al WHERE al.bang='account' AND al.ban_ghi_id=a.account_id
-            AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action'))='account_status_changed') AS session_version
+        ns.id AS nhan_su_id, ns.ma_ns, ns.phan_loai
         FROM account a JOIN users u ON u.user_id=a.user_id JOIN role_group g ON g.group_id=a.group_id
         LEFT JOIN nhan_vien nv ON nv.user_id=a.user_id
         LEFT JOIN nhan_su_chuyen_mon ns ON ns.user_id=a.user_id AND ns.deleted_at IS NULL
@@ -54,9 +53,51 @@ final class AuthRepository
         return $rows;
     }
 
+    public static function bumpSessionVersion(int $accountId): void
+    {
+        Store::execute('UPDATE account SET session_version = session_version + 1 WHERE account_id = ?', [$accountId]);
+    }
+
+    public static function revokeToken(int $accountId, string $hash, int $expiresAt): void
+    {
+        Store::transaction(function () use ($accountId, $hash, $expiresAt) {
+            $row = Store::one('SELECT revoked_tokens_json FROM account WHERE account_id = ? FOR UPDATE', [$accountId]);
+            if (!$row) {
+                return;
+            }
+            $now = time();
+            $map = !empty($row['revoked_tokens_json']) ? json_decode((string)$row['revoked_tokens_json'], true) : [];
+            if (!is_array($map)) {
+                $map = [];
+            }
+            // Prune expired hashes so the JSON column stays compact.
+            $map = array_filter($map, static fn($exp) => is_int($exp) && $exp > $now);
+            $map[$hash] = max($expiresAt, $now + 60);
+            if (count($map) > 100) {
+                asort($map, SORT_NUMERIC);
+                $map = array_slice($map, -100, null, true);
+            }
+            Store::execute('UPDATE account SET revoked_tokens_json = ? WHERE account_id = ?', [
+                json_encode($map, JSON_THROW_ON_ERROR),
+                $accountId,
+            ]);
+        });
+    }
+
+    public static function isTokenRevoked(array $account, string $hash): bool
+    {
+        if (!empty($account['revoked_tokens_json'])) {
+            $map = json_decode((string)$account['revoked_tokens_json'], true);
+            if (is_array($map) && isset($map[$hash]) && is_numeric($map[$hash]) && (int)$map[$hash] > time()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static function revoked(int $accountId, string $hash): bool
     {
-        return Store::one("SELECT id FROM audit_log WHERE bang='account' AND ban_ghi_id=?
-            AND hanh_dong='khac' AND JSON_UNQUOTE(JSON_EXTRACT(du_lieu_moi, '$.tokenHash'))=? LIMIT 1", [$accountId, $hash]) !== null;
+        $row = Store::one('SELECT revoked_tokens_json FROM account WHERE account_id = ?', [$accountId]);
+        return $row ? self::isTokenRevoked($row, $hash) : false;
     }
 }

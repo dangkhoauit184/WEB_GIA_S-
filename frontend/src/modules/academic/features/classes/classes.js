@@ -1,8 +1,7 @@
 'use strict';
 (() => {
   const states = { sap_bat_dau:'Sắp bắt đầu', dang_hoc:'Đang học', tam_dung:'Tạm dừng', hoan_thanh:'Hoàn thành', huy:'Đã hủy' };
-  const kpi = (l, v, s, tone = '', primary = false) =>
-    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${Admin.esc(l)}</span><b class="ec-kpi-v">${Admin.esc(v)}</b><span class="ec-kpi-s">${Admin.esc(s)}</span></div>`;
+  const kpi = Admin.kpi;
 
   let allClasses = [], clsFilter = 'all', clsQ = '';
 
@@ -50,11 +49,12 @@
       renderClasses();
     }));
 
-    const adminButton = document.querySelector('#staff-classes [onclick*="setPortal"]');
+    const adminButton = document.querySelector('#staff-classes [data-act="set-portal"]');
     if (adminButton) adminButton.hidden = Admin.user.role !== 'ADMIN';
-    const scheduleButton = document.querySelector('#staff-classes [onclick="openSessionForm()"]');
+    const scheduleButton = document.querySelector('#staff-classes [data-act="open-session-form"]');
     if (scheduleButton) {
-      scheduleButton.onclick = async () => { try { await loadAdminCalendar(); openSessionForm(); } catch (error) { toast(error.message, 'err'); } };
+      scheduleButton.removeAttribute('data-act');
+      scheduleButton.addEventListener('click', async () => { try { await loadAdminCalendar(); openSessionForm(); } catch (error) { toast(error.message, 'err'); } });
       scheduleButton.disabled = !StaffUI.can('VanHanhBuoiHoc', 'add');
     }
   });
@@ -68,8 +68,8 @@
         ${Admin.table([{ key:'maHv', label:'Mã học viên' }, { key:'hoTen', label:'Học viên' }, { key:'trangThai', label:'Trạng thái' }], row.hocViens || [], 'Chưa có học viên.')}
         <h3 style="margin:12px 0 6px;font-size:13.5px">Lịch tuần</h3>
         ${Admin.table([{ label:'Thứ', render:r => Number(r.thu) === 8 ? 'CN' : 'Thứ ' + r.thu }, { key:'gioBatDau', label:'Bắt đầu' }, { key:'gioKetThuc', label:'Kết thúc' }, { key:'phongHoc', label:'Phòng' }], row.lichHocs || [], 'Chưa có lịch tuần.')}
-      </div><div class="dialog-foot"><button type="button" class="btn sm" onclick="document.getElementById('admin-dialog').close()">Đóng</button><button class="btn p sm" id="staff-class-calendar">Mở thời khóa biểu</button></div>`);
-      Admin.$('staff-class-calendar').onclick = () => { Admin.$('admin-dialog').close(); calFilters.classCode = row.maLop; showS('staff-schedule'); };
+      </div><div class="dialog-foot"><button type="button" class="btn sm" data-close-dialog="1">Đóng</button><button type="button" class="btn p sm" id="staff-class-calendar">Mở thời khóa biểu</button></div>`);
+      Admin.$('staff-class-calendar').addEventListener('click', () => { Admin.$('admin-dialog').close(); calFilters.classCode = row.maLop; showS('staff-schedule'); });
     } catch (error) { toast(error.message, 'err'); }
   }
 })();

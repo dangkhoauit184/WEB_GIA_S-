@@ -1247,7 +1247,7 @@
       const heroLink = document.getElementById('heroPortalLink');
       if (user && navContainer) {
         navContainer.innerHTML = `
-          <button type="button" class="btn p sm" onclick="AccessService.redirectByRole()">
+          <button type="button" class="btn p sm" data-landing-act="redirect-role">
             ${escapeHtml(user.hoTen || user.username)} · Vào cổng
           </button>
         `;
@@ -1341,7 +1341,7 @@
           </div>
           <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px;">
             <a class="btn sm" href="/login?switch=1">Đăng nhập tài khoản khác</a>
-            <button type="button" class="btn p sm" onclick="AccessService.redirectByRole()">Vào cổng làm việc</button>
+            <button type="button" class="btn p sm" data-landing-act="redirect-role">Vào cổng làm việc</button>
           </div>
         `;
         return;
@@ -1391,7 +1391,7 @@
             </div>
           </div>
           <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
-            <button type="button" class="btn sm" onclick="document.getElementById('modalCourseEnrollQr').classList.remove('show')">Hủy</button>
+            <button type="button" class="btn sm" data-landing-act="close-enroll-qr">Hủy</button>
             <button type="submit" id="btnSubmitEnrollStep" class="btn p sm">Xác nhận đăng ký</button>
           </div>
         </form>
@@ -1440,7 +1440,7 @@
           document.getElementById('enrollQrModalBody').innerHTML = `
             <p style="margin:0 0 14px;">Hóa đơn <b>${escapeHtml(enrollment.hoaDon.code)}</b> đã được phát hành. Bạn có thể mở cổng Phụ huynh để xem mã QR thanh toán và theo dõi xếp lớp.</p>
             <div style="display:flex;justify-content:flex-end;gap:8px;">
-              <button type="button" class="btn sm" onclick="document.getElementById('modalCourseEnrollQr').classList.remove('show')">Đóng</button>
+              <button type="button" class="btn sm" data-landing-act="close-enroll-qr">Đóng</button>
               <a class="btn p sm" href="/app#/parent/parent-billing">Mở hóa đơn &amp; thanh toán</a>
             </div>
           `;
@@ -1640,13 +1640,21 @@
     }
 
     function renderErrorStates(message) {
-      const box = `<div class="l-state error"><div>${escapeHtml(message)}</div><button type="button" class="btn sm" onclick="loadPublicLandingData()">Thử lại</button></div>`;
+      const box = `<div class="l-state error"><div>${escapeHtml(message)}</div><button type="button" class="btn sm" data-landing-act="retry-landing">Thử lại</button></div>`;
       document.getElementById('coursesListContainer').innerHTML = box;
       document.getElementById('tutorsListContainer').innerHTML = box;
       document.getElementById('campusesContainer').innerHTML = box;
       document.getElementById('footerCampuses').innerHTML = '<p>Chưa tải được thông tin cơ sở.</p>';
       refreshAllCarousels(true);
     }
+
+    document.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-landing-act]');
+      if (!btn) return;
+      if (btn.dataset.landingAct === 'redirect-role') AccessService.redirectByRole();
+      else if (btn.dataset.landingAct === 'close-enroll-qr') document.getElementById('modalCourseEnrollQr')?.classList.remove('show');
+      else if (btn.dataset.landingAct === 'retry-landing') loadPublicLandingData();
+    });
 
     async function loadPublicLandingData() {
       if (typeof HttpService === 'undefined') return;

@@ -1,12 +1,10 @@
 'use strict';
 (() => {
   const Admin = window.Admin;
-  const esc = Admin.esc;
-  const empty = columns => `<tr><td colspan="${columns}" class="admin-empty">Chưa có dữ liệu phù hợp.</td></tr>`;
+  const esc = Admin.esc, kpi = Admin.kpi;
+  const empty = columns => Admin.emptyRow(columns, 'Chưa có dữ liệu phù hợp.');
   const confirmation = Admin.confirmDialog;
   const decisionLabel = value => ({ cho_duyet:'Chờ Admin duyệt', da_duyet:'Đã duyệt', tu_choi:'Đã từ chối' }[value] || value);
-  const kpi = (l, v, s, tone = '', primary = false) =>
-    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${esc(l)}</span><b class="ec-kpi-v">${esc(v)}</b><span class="ec-kpi-s">${esc(s)}</span></div>`;
 
   let classLeaves = [], corrections = [], closedPayrolls = [];
   let activeTab = 'class-leave', leaveFilter = 'cho_duyet', corrFilter = 'cho_duyet';
@@ -20,7 +18,7 @@
       <td>${esc(row.lyDo)}</td>
       <td>${Admin.tag(decisionLabel(row.trangThai), row.trangThai === 'cho_duyet' ? 'w' : (row.trangThai === 'da_duyet' ? 'ok' : 'r'))}</td>
       <td>${row.trangThai === 'cho_duyet'
-        ? `<div class="row"><button class="btn p sm" onclick="adminApproveLeaveOrAdj('class',${row.id},'da_duyet')">Duyệt nghỉ lớp</button><button class="btn sm danger" onclick="adminApproveLeaveOrAdj('class',${row.id},'tu_choi')">Từ chối</button></div>`
+        ? `<div class="row"><button type="button" class="btn p sm" data-act="approve-leave-or-adj" data-type="class" data-id="${row.id}" data-status="da_duyet">Duyệt nghỉ lớp</button><button type="button" class="btn sm danger" data-act="approve-leave-or-adj" data-type="class" data-id="${row.id}" data-status="tu_choi">Từ chối</button></div>`
         : 'Đã xử lý'}</td>
     </tr>`).join('') || empty(6);
   }
@@ -35,7 +33,7 @@
       <td><b>${row.loai === 'huy_cong' ? '0 giờ' : (row.phutDeXuat != null ? Number((Number(row.phutDeXuat) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ giờ')}</b></td>
       <td>${Admin.tag(decisionLabel(row.trangThai), row.trangThai === 'cho_duyet' ? 'w' : (row.trangThai === 'da_duyet' ? 'ok' : 'r'))}</td>
       <td>${row.trangThai === 'cho_duyet'
-        ? `<div class="row"><button class="btn p sm" onclick="adminApproveLeaveOrAdj('correction',${row.id},'da_duyet')">Duyệt chỉnh công</button><button class="btn sm danger" onclick="adminApproveLeaveOrAdj('correction',${row.id},'tu_choi')">Từ chối</button></div>`
+        ? `<div class="row"><button type="button" class="btn p sm" data-act="approve-leave-or-adj" data-type="correction" data-id="${row.id}" data-status="da_duyet">Duyệt chỉnh công</button><button type="button" class="btn sm danger" data-act="approve-leave-or-adj" data-type="correction" data-id="${row.id}" data-status="tu_choi">Từ chối</button></div>`
         : 'Đã xử lý'}</td>
     </tr>`).join('') || empty(7);
   }
@@ -89,7 +87,7 @@
           <td>${esc(Admin.period)}</td>
           <td>${esc(row.ghiChu || '—')}</td>
           <td>${Admin.tag('Đã chốt, chưa trả', 'purple')}</td>
-          <td><button class="btn purple sm" onclick="adminUnlockPayroll(${row.id})">Mở khóa bảng công</button></td>
+          <td><button type="button" class="btn purple sm" data-act="unlock-payroll" data-id="${row.id}">Mở khóa bảng công</button></td>
         </tr>`).join('') || empty(6);
 
         Admin.$('adminExcTabs')?.querySelectorAll('[data-ex-tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.exTab)));
@@ -111,6 +109,9 @@
     };
   });
 
+  Admin.actions({
+    'approve-leave-or-adj': el => window.adminApproveLeaveOrAdj(el.dataset.type, Number(el.dataset.id), el.dataset.status),
+  });
   window.adminApproveLeaveOrAdj = (type, id, status) => confirmation(
     status === 'da_duyet' ? 'Admin phê duyệt' : 'Admin từ chối',
     type === 'class' ? 'Yêu cầu nghỉ cả lớp' : 'Yêu cầu điều chỉnh giờ công',

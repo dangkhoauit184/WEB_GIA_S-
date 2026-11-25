@@ -41,6 +41,7 @@ final class ParentsService
 
     public static function createPublicConsultation(array $body): array
     {
+        \App\Shared\RateLimiter::hit('public:consultation:' . \App\Shared\RateLimiter::clientIp(), 10, 600, 'Quá nhiều yêu cầu đăng ký tư vấn từ địa chỉ này. Vui lòng thử lại sau ít phút.');
         $data = ParentsValidator::consultation($body);
         return ParentsRepository::createPublicConsultation($data);
     }

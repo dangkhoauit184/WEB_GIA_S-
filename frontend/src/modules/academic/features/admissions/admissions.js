@@ -302,7 +302,7 @@
     return { title:'Tuyển sinh & Ghép người dạy', html:template, bind() {
       Admin.$('admissionsRequestFilters').innerHTML = filterForm('admissions-request-filter', requestFilters, requestStates);
       bindFilter('admissions-request-filter', requestFilters, loadRequests);
-      document.querySelector('[onclick="openRequestForm()"]').hidden = !can('add');
+      document.querySelector('[data-act="open-request-form"]').hidden = !can('add');
       document.querySelectorAll('#intakeWF .ws').forEach((element, index) => {
         element.setAttribute('role', 'button'); element.tabIndex = 0;
         element.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); intakeStep(index); } });
@@ -333,6 +333,11 @@
         bindFilter('admissions-registration-filter', registrationFilters, Admin.render);
         Admin.bindPager(page => { registrationFilters.page = page; Admin.render(); });
       }};
+  });
+  Admin.actions({
+    'open-request-form': () => window.openRequestForm?.(),
+    'intake-step': el => window.intakeStep?.(Number(el.dataset.step)),
+    'run-match': () => window.runMatch?.(),
   });
 
   window.intakeStep = intakeStep;
