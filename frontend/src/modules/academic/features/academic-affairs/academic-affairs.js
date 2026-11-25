@@ -54,8 +54,13 @@ StaffUI.register('staff-dash', 'Tổng quan công việc Giáo vụ', () => Admi
   ];
   Admin.$('staffTaskList').innerHTML = tasks.map(([label, button, screen]) => `<div class="item"><span>${Admin.esc(label)}</span><button class="btn sm p" onclick="showS('${screen}')">${button}</button></div>`).join('') || '<div class="admin-empty">Chưa có công việc chờ xử lý.</div>';
   document.querySelectorAll('#staff-dash [onclick]').forEach(button => {
-    const feature = button.getAttribute('onclick').includes('staff-billing') ? 'HocPhiThanhToan' : button.getAttribute('onclick').includes('staff-intake') ? 'TiepNhanYeuCau' : 'VanHanhBuoiHoc';
+    const oc = button.getAttribute('onclick') || '';
+    const feature = oc.includes('staff-billing') ? 'HocPhiThanhToan'
+      : oc.includes('staff-intake') ? 'TiepNhanYeuCau'
+      : oc.includes('staff-reports') ? 'BaoCaoThongKe'
+      : 'VanHanhBuoiHoc';
     button.disabled = !StaffUI.can(feature);
+    if (oc.includes('staff-reports') && !StaffUI.can('BaoCaoThongKe', 'view')) button.hidden = true;
   });
 });
 

@@ -58,8 +58,8 @@ final class AssistantsService
             self::writable($session);
 
             if ($direction === 'in') {
-                if ($session['trang_thai'] === 'da_day') {
-                    throw new ApiException(409, 'Ca học đã kết thúc. Vui lòng gửi đề nghị điều chỉnh công.');
+                if ($session['phan_cong_trang_thai'] === 'da_day') {
+                    throw new ApiException(409, 'Ca hỗ trợ của bạn đã hoàn tất. Vui lòng gửi đề nghị điều chỉnh công.');
                 }
                 Store::execute("UPDATE phan_cong_buoi_hoc SET checkin_luc=NOW(), trang_thai_cong='cho_duyet' WHERE id=?",
                     [$session['phan_cong_id']]);

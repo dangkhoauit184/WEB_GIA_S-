@@ -559,6 +559,17 @@ try {
     check($taSessionFinalStatus === $taSessionOldStatus, 'assistant checkout does NOT alter buoi_hoc.trang_thai');
     check(requestOk('/api/people/assistants/sessions/'.$taSession.'/checkout', 'POST', [], $assistantToken)['checkoutLuc'] === $taClockOut['checkoutLuc'], 'assistant checkout replay idempotent');
 
+    // Regression: Assistant check-in & check-out MUST still work independently AFTER Main Teacher has checked out (buoi_hoc.trang_thai='da_day')
+    $taAfterTeacherSess = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>'2098-01-27', 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00', 'trang_thai'=>'da_day']);
+    Store::insert('phan_cong_buoi_hoc', ['buoi_hoc_id'=>$taAfterTeacherSess, 'user_id'=>$taUser, 'vai_tro'=>'tro_giang', 'don_gia'=>80000, 'trang_thai'=>'da_phan_cong']);
+    $taIndepIn = requestOk('/api/people/assistants/sessions/'.$taAfterTeacherSess.'/checkin', 'POST', [], $assistantToken);
+    check($taIndepIn['checkinLuc'] !== null && $taIndepIn['trangThai'] === 'da_day', 'assistant can check-in independently after teacher marked buoi_hoc da_day');
+    Store::execute('UPDATE phan_cong_buoi_hoc SET checkin_luc=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE buoi_hoc_id=? AND user_id=?', [$taAfterTeacherSess, $taUser]);
+    $taIndepOut = requestOk('/api/people/assistants/sessions/'.$taAfterTeacherSess.'/checkout', 'POST', [], $assistantToken);
+    check($taIndepOut['checkoutLuc'] !== null && $taIndepOut['phanCongTrangThai'] === 'da_day', 'assistant can check-out independently after teacher marked buoi_hoc da_day');
+    Store::execute('DELETE FROM phan_cong_buoi_hoc WHERE buoi_hoc_id=?', [$taAfterTeacherSess]);
+    Store::execute('DELETE FROM buoi_hoc WHERE id=?', [$taAfterTeacherSess]);
+
     // Timekeeping calculation: 18:10 -> 19:30 => 80 minutes + late; 17:50 -> 20:10 => 120 minutes + no late (distinct deterministic dates)
     $schedDay1 = '2098-02-01';
     $schedDay2 = '2098-02-02';
@@ -1011,27 +1022,68 @@ try {
     $rptFrom = '2026-11-01';
     $rptTo = '2026-12-31';
     $rptMetaAdmin = requestOk('/api/reporting/dashboard/reports/meta', 'GET', null, $token);
-    check(in_array('revenue', $rptMetaAdmin['allowedReports'], true), 'admin report meta includes revenue');
+    check(in_array('revenue', $rptMetaAdmin['allowedReports'], true)
+        && in_array('payroll', $rptMetaAdmin['allowedReports'], true)
+        && in_array('debt', $rptMetaAdmin['allowedReports'], true)
+        && in_array('admissions', $rptMetaAdmin['allowedReports'], true), 'admin report meta includes all six reports');
     $rptMetaStaff = requestOk('/api/reporting/dashboard/reports/meta', 'GET', null, $staffToken);
-    check(!in_array('revenue', $rptMetaStaff['allowedReports'], true), 'staff report meta excludes revenue');
+    check(!in_array('revenue', $rptMetaStaff['allowedReports'], true)
+        && !in_array('payroll', $rptMetaStaff['allowedReports'], true)
+        && !in_array('debt', $rptMetaStaff['allowedReports'], true)
+        && in_array('admissions', $rptMetaStaff['allowedReports'], true), 'staff report meta excludes revenue, payroll, and debt');
     foreach ([$teacherToken, $tutorToken, $assistantToken, $parentToken] as $nonMgrToken) {
         check(http('/api/reporting/dashboard/reports/meta', 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read report meta');
         check(http('/api/reporting/dashboard/reports/attendance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read attendance report');
         check(http('/api/reporting/dashboard/reports/revenue?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read revenue report');
+        check(http('/api/reporting/dashboard/reports/payroll?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read payroll report');
+        check(http('/api/reporting/dashboard/reports/debt?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot read debt report');
         check(http('/api/reporting/dashboard/reports/revenue/export?format=xlsx&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot export revenue report');
+        check(http('/api/reporting/dashboard/reports/payroll/export?format=xlsx&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $nonMgrToken)[0] === 403, 'non-manager cannot export payroll report');
     }
     check(http('/api/reporting/dashboard/reports/revenue?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot access admin-only revenue report');
     check(http('/api/reporting/dashboard/reports/revenue/export?format=csv&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot export admin-only revenue report');
+    check(http('/api/reporting/dashboard/reports/payroll?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot access admin-only payroll report');
+    check(http('/api/reporting/dashboard/reports/payroll/export?format=xlsx&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot export admin-only payroll report');
+    check(http('/api/reporting/dashboard/reports/debt?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot access admin-only debt report');
+    check(http('/api/reporting/dashboard/reports/debt/export?format=csv&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken)[0] === 403, 'staff cannot export admin-only debt report');
     requestOk('/api/reporting/dashboard/reports/attendance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken);
     requestOk('/api/reporting/dashboard/reports/class-performance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken);
+    requestOk('/api/reporting/dashboard/reports/admissions?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $staffToken);
+    if (!empty($rptMetaStaff['scopedCampusId'])) {
+        $otherCampusId = (int)$rptMetaStaff['scopedCampusId'] + 999;
+        check(http('/api/reporting/dashboard/reports/attendance?tuNgay='.$rptFrom.'&denNgay='.$rptTo.'&coSoId='.$otherCampusId, 'GET', null, $staffToken)[0] === 403, 'campus-scoped staff blocked from querying another campus');
+    }
 
     $attReport = requestOk('/api/reporting/dashboard/reports/attendance?tuNgay='.$rptFrom.'&denNgay='.$rptTo.'&lopId='.$classId, 'GET', null, $token);
     check($attReport['summary']['coMat'] >= 1 && $attReport['summary']['daDiemDanh'] >= 1, 'attendance report counts real marked attendance');
     check(isset($attReport['summary']['chuaDiemDanh'], $attReport['summary']['chuaDienRa']), 'attendance report separates unrecorded and upcoming slots');
     $revReport = requestOk('/api/reporting/dashboard/reports/revenue?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
-    check(isset($revReport['summary']['thucThuRong'], $revReport['summary']['phaiThu'], $revReport['summary']['giaoDichChoDoiSoat']), 'revenue report separates receivable, confirmed actuals, and pending intents');
+    check(isset($revReport['summary']['thucThuRong'], $revReport['summary']['phaiThu'], $revReport['summary']['giaoDichChoDoiSoat'], $revReport['summary']['tongCongNoTonHienHanh']) && is_array($revReport['trend']), 'revenue report separates receivable, confirmed actuals, outstanding debt, pending intents, and trend');
     $perfReport = requestOk('/api/reporting/dashboard/reports/class-performance?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
     check($perfReport['summary']['soLop'] >= 1 && isset($perfReport['classes'][0]['tyLeLapDay']), 'class performance report returns real DB class KPIs');
+    $payReport = requestOk('/api/reporting/dashboard/reports/payroll?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
+    check(isset($payReport['summary']['tongTienCongCa'], $payReport['summary']['thucThuRong'], $payReport['summary']['chenhLechThuLuong']) && count($payReport['byRole']) === 3, 'payroll report returns teaching hours, role breakdown, and tuition comparison');
+    // Regression: Closed payroll period with 0-minute / 0-VND shift must still report trangThaiKy = 'da_chot'
+    $zeroSessId = Store::insert('buoi_hoc', ['lop_id'=>$classId, 'ngay'=>'2097-03-10', 'gio_bat_dau'=>'18:00', 'gio_ket_thuc'=>'20:00', 'trang_thai'=>'da_day']);
+    $zeroPcId = Store::insert('phan_cong_buoi_hoc', [
+        'buoi_hoc_id'=>$zeroSessId, 'user_id'=>$teacher['userId'], 'vai_tro'=>'day_chinh', 'don_gia'=>200000,
+        'checkin_luc'=>'2097-03-10 21:00:00', 'checkout_luc'=>'2097-03-10 21:05:00',
+        'trang_thai'=>'da_day', 'trang_thai_cong'=>'hop_le',
+    ]);
+    requestOk('/api/finance/payroll/close', 'POST', ['userId'=>$teacher['userId'], 'month'=>'2097-03'], $token);
+    $zeroBcId = (int)Store::one('SELECT id FROM bang_cong_thang WHERE user_id=? AND nam=2097 AND thang=3', [$teacher['userId']])['id'];
+    $zeroPayRpt = requestOk('/api/reporting/dashboard/reports/payroll?tuNgay=2097-03-01&denNgay=2097-03-31', 'GET', null, $token);
+    $zeroPerson = $zeroPayRpt['byPerson'][0] ?? null;
+    check($zeroPerson !== null && (int)$zeroPerson['tienCongCa'] === 0 && $zeroPerson['trangThaiKy'] === 'da_chot', 'payroll report detects da_chot period even when shift wage is 0 VND');
+    requestOk('/api/finance/payroll/'.$zeroBcId.'/unlock', 'POST', ['lyDo'=>'Test cleanup'], $token);
+    Store::execute('UPDATE phan_cong_buoi_hoc SET bang_cong_id=NULL WHERE id=?', [$zeroPcId]);
+    Store::execute('DELETE FROM bang_cong_thang WHERE id=?', [$zeroBcId]);
+    Store::execute('DELETE FROM phan_cong_buoi_hoc WHERE id=?', [$zeroPcId]);
+    Store::execute('DELETE FROM buoi_hoc WHERE id=?', [$zeroSessId]);
+    $debtReport = requestOk('/api/reporting/dashboard/reports/debt?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
+    check(isset($debtReport['summary']['tongConNo'], $debtReport['summary']['tienQuaHan'], $debtReport['summary']['tienChuaDenHan']), 'debt report separates overdue and upcoming outstanding invoices');
+    $admReport = requestOk('/api/reporting/dashboard/reports/admissions?tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
+    check(isset($admReport['summary']['tongYeuCau'], $admReport['summary']['daChot']) && is_array($admReport['bySource']), 'admissions report returns real request counts and sources');
 
     // Formula injection sanitization unit checks + live HTTP CSV & XLSX export checks
     check(\App\Modules\Reporting\Features\Dashboard\SpreadsheetExport::sanitizeCell('=CMD|calc') === "'=CMD|calc", 'CSV/XLSX sanitizes leading =');
@@ -1040,7 +1092,14 @@ try {
     check(\App\Modules\Reporting\Features\Dashboard\SpreadsheetExport::sanitizeCell('@HYPERLINK') === "'@HYPERLINK", 'CSV/XLSX sanitizes leading @');
     [$csvStatus, , $csvRaw, $csvHeaders] = http('/api/reporting/dashboard/reports/attendance/export?format=csv&tuNgay='.$rptFrom.'&denNgay='.$rptTo.'&lopId='.$classId, 'GET', null, $token);
     check($csvStatus === 200 && str_starts_with($csvRaw, "\xEF\xBB\xBF") && str_contains(implode("\n", $csvHeaders), 'bao-cao-chuyen-can-2026-11-01-den-2026-12-31.csv'), 'CSV export returns UTF-8 BOM and structured filename');
-    foreach (['attendance' => 'chuyen-can', 'revenue' => 'doanh-thu', 'class-performance' => 'hieu-suat-lop'] as $rType => $rSlug) {
+    foreach ([
+        'attendance' => 'chuyen-can',
+        'revenue' => 'doanh-thu',
+        'class-performance' => 'hieu-suat-lop',
+        'payroll' => 'cong-day-quy-luong',
+        'debt' => 'cong-no-ton',
+        'admissions' => 'tuyen-sinh',
+    ] as $rType => $rSlug) {
         [$xStatus, , $xRaw, $xHeaders] = http('/api/reporting/dashboard/reports/'.$rType.'/export?format=xlsx&tuNgay='.$rptFrom.'&denNgay='.$rptTo, 'GET', null, $token);
         check($xStatus === 200 && str_starts_with($xRaw, "PK\x03\x04") && str_contains(implode("\n", $xHeaders), "bao-cao-$rSlug-$rptFrom-den-$rptTo.xlsx"), 'XLSX export produces valid OpenSpout workbook for '.$rType);
     }

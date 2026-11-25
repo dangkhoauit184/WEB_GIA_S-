@@ -92,6 +92,11 @@ try {
         'ngay'=>'2026-11-20','gio_bat_dau'=>'18:00:00','gio_ket_thuc'=>'20:00:00','checkin_luc'=>'2026-11-20 18:00:00','checkout_luc'=>'2026-11-20 20:00:00'
     ], $now, 'tro_giang');
     check($capDone['co_the_doi_lich']===false && $capDone['co_the_chinh_cong']===true,'completed shift allows only time adjustment');
+    $capTaIndep = \App\Modules\Academic\Features\Attendance\ShiftRequestPolicy::capabilities([
+        'vai_tro'=>'tro_giang','phan_cong_trang_thai'=>'da_phan_cong','trang_thai'=>'da_day',
+        'ngay'=>'2026-11-24','gio_bat_dau'=>'18:00:00','gio_ket_thuc'=>'20:00:00','checkin_luc'=>null,'checkout_luc'=>null
+    ], $now, 'tro_giang');
+    check($capTaIndep['co_the_doi_lich']===true && $capTaIndep['co_the_chinh_cong']===false,'future TA shift stays upcoming even if teacher marked session da_day');
     $capCancel = \App\Modules\Academic\Features\Attendance\ShiftRequestPolicy::capabilities([
         'vai_tro'=>'day_chinh','phan_cong_trang_thai'=>'da_phan_cong','trang_thai'=>'huy',
         'ngay'=>'2026-11-24','gio_bat_dau'=>'18:00:00','gio_ket_thuc'=>'20:00:00','checkin_luc'=>null,'checkout_luc'=>null

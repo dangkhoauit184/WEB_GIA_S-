@@ -61,7 +61,7 @@
     const body = Admin.$('recruitmentOpeningsBody');
     if (!body) return;
     if (!openings.length) {
-      body.innerHTML = '<tr><td colspan="8" class="admin-empty">Chưa có đề xuất tuyển Giáo viên / Trợ giảng nào. Bấm “+ Đăng đề xuất tuyển nhân sự” để tạo mới.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" class="admin-empty">Chưa có đề xuất tuyển Giáo viên / Trợ giảng nào. Bấm “+ Đăng đề xuất tuyển ca” để tạo mới.</td></tr>';
       return;
     }
     body.innerHTML = openings.map(row => {

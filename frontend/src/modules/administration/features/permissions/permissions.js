@@ -96,10 +96,19 @@
   window.renderPerms = function() {
     if (!A.$('permCards')) return;
     const isAdmin = currentMatrix.group.groupName === 'Admin';
-    A.$('permRoleTabs').innerHTML = permissionGroups.map(group => `<button class="chip ${group.groupId===selectedGroup?'on':''}" ${savingMatrix?'disabled':''} onclick="setPermRole(${group.groupId})">${A.esc(groupNames[group.groupName]||group.groupName)}</button>`).join('');
-    A.$('permVersionBadge').textContent = 'version '+currentMatrix.version.slice(0,10)+'…'+currentMatrix.version.slice(-6);
-    A.$('permRoleLabel').textContent = 'Cấu hình phân quyền cho nhóm '+(groupNames[currentMatrix.group.groupName]||currentMatrix.group.groupName)+(isAdmin?' · Nhóm Admin gốc được bảo vệ cố định':'');
-    A.$('permCards').innerHTML = currentMatrix.permissions.map(row => `<div class="card" style="padding:10px 14px;margin-bottom:8px"><div class="row-b"><b>${A.esc(functions[row.functionName]||row.functionName)}</b><div class="row" style="gap:12px">${Object.entries(actions).map(([flag,label]) => `<label style="margin:0;font-size:12px;display:flex;align-items:center;gap:4px"><input style="width:14px;height:14px" type="checkbox" ${row[flag]?'checked':''} ${savingMatrix||isAdmin||row.functionName==='ChamCongLuong'||flag!=='view'&&!row.view?'disabled':''} onchange="changeAdminPermission(${row.functionId},'${flag}',this.checked)">${label}</label>`).join('')}</div></div></div>`).join('');
+    A.$('permRoleTabs').innerHTML = permissionGroups.map(group => `<button type="button" class="ec-tab ${group.groupId===selectedGroup?'on':''}" ${savingMatrix?'disabled':''} onclick="setPermRole(${group.groupId})">${A.esc(groupNames[group.groupName]||group.groupName)}</button>`).join('');
+    A.$('permVersionBadge').textContent = 'Phiên bản: '+currentMatrix.version.slice(0,8)+'…'+currentMatrix.version.slice(-4);
+    A.$('permRoleLabel').innerHTML = 'Đang cấu hình nhóm <b>'+A.esc(groupNames[currentMatrix.group.groupName]||currentMatrix.group.groupName)+'</b>'+(isAdmin?' · <span class="tag i">Nhóm Admin gốc được bảo vệ cố định</span>':'');
+    A.$('permCards').innerHTML = `<div class="tw ec-matrix"><table>
+      <thead><tr><th>Phân hệ nghiệp vụ</th>${Object.values(actions).map(lbl => `<th class="chk">${A.esc(lbl)}</th>`).join('')}</tr></thead>
+      <tbody>${currentMatrix.permissions.map(row => {
+        const lockedSalary = row.functionName === 'ChamCongLuong' && !isAdmin;
+        return `<tr class="${isAdmin || lockedSalary ? 'locked-row' : ''}">
+          <td><b>${A.esc(functions[row.functionName]||row.functionName)}</b>${lockedSalary ? ' <span class="tag purple">Chỉ Admin</span>' : ''}</td>
+          ${Object.keys(actions).map(flag => `<td class="chk"><input type="checkbox" aria-label="${A.esc((functions[row.functionName]||row.functionName)+' - '+actions[flag])}" ${row[flag]?'checked':''} ${savingMatrix||isAdmin||row.functionName==='ChamCongLuong'||(flag!=='view'&&!row.view)?'disabled':''} onchange="changeAdminPermission(${row.functionId},'${flag}',this.checked)"></td>`).join('')}
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
     A.$('btnPermAllOn').disabled = savingMatrix || isAdmin;
     A.$('btnPermAllOff').disabled = savingMatrix || isAdmin;
     document.querySelector('[onclick="savePermissionsMatrix()"]').disabled = savingMatrix || isAdmin;

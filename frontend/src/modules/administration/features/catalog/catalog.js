@@ -5,6 +5,12 @@
   let courses = [], registrations = [], classes = [], currentCatalog = 'rooms', catalogData = {};
   const empty = columns => `<tr><td colspan="${columns}" class="admin-empty">Chưa có dữ liệu.</td></tr>`;
   const activeOptions = [{ value:1,label:'Đang mở đăng ký' },{ value:0,label:'Ngừng nhận đăng ký' }];
+  const classTypeLabels = { kem_1_1:'Kèm 1:1', kem_1_2:'Kèm 1:2', nhom:'Lớp nhóm' };
+  const classStatusLabels = { sap_bat_dau:'Sắp bắt đầu', dang_hoc:'Đang học', tam_dung:'Tạm dừng', hoan_thanh:'Hoàn thành', huy:'Đã hủy' };
+  const kpi = (l, v, s, tone = '', primary = false) =>
+    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${Admin.esc(l)}</span><b class="ec-kpi-v">${Admin.esc(v)}</b><span class="ec-kpi-s">${Admin.esc(s)}</span></div>`;
+
+  let acTab = 'enrollments', acEnrollFilter = 'all', acEnrollQ = '', acClassFilter = 'all', acClassQ = '', acCourseQ = '';
 
   window.openCourseModal = function(id) {
     const item = courses.find(row => row.id === Number(id));
@@ -22,13 +28,121 @@
     }});
   };
 
+  window.openAdminClassModal = async function(id) {
+    try {
+      const [cat, staffList, existing] = await Promise.all([
+        Admin.api(catalog),
+        Admin.api('/api/administration/staff'),
+        id ? Admin.api('/api/academic/classes/' + id) : Promise.resolve(null),
+      ]);
+      const teachers = staffList.filter(s => s.nhanSuId && s.status === 'active' && (s.phanLoai?.includes('giao_vien') || s.phanLoai?.includes('gia_su')));
+      if (!teachers.length) {
+        toast('Chưa có Giáo viên / Gia sư đang hoạt động. Hãy tạo hoặc kích hoạt hồ sơ nhân sự trước.', 'err');
+        return;
+      }
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const val = (k, def = '') => Admin.esc(existing?.[k] ?? def);
+      const selOpt = (rows, vk, lk, cur, emptyLbl = '') =>
+        (emptyLbl ? `<option value="">${Admin.esc(emptyLbl)}</option>` : '') +
+        rows.map(r => `<option value="${Admin.esc(r[vk])}" ${String(r[vk]) === String(cur ?? '') ? 'selected' : ''}>${Admin.esc(r[lk])}</option>`).join('');
+
+      Admin.dialog(existing ? `Sửa lớp ${existing.maLop}` : 'Tạo Lớp học mới', `
+        <form id="adminClassForm">
+          <div class="dialog-body">
+            <div class="ec-form-grid">
+              <label>Mã lớp <span style="color:var(--err)">*</span><input name="maLop" required maxlength="30" placeholder="VD: EC26-LOP01" value="${val('maLop')}" ${existing ? 'disabled' : ''}></label>
+              <label>Tên lớp học <span style="color:var(--err)">*</span><input name="tenLop" required maxlength="150" placeholder="VD: Toán 9 — Luyện thi A1" value="${val('tenLop')}"></label>
+              <label>Thuộc Khóa học<select name="khoaHocId">${selOpt(courses, 'id', 'ten', existing?.khoaHocId, 'Chưa gắn khóa học')}</select></label>
+              <label>Loại lớp <span style="color:var(--err)">*</span><select name="loaiLop">${Object.entries(classTypeLabels).map(([k, l]) => `<option value="${k}" ${(existing?.loaiLop || 'nhom') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+              <label>Môn học <span style="color:var(--err)">*</span><select name="monHocId" required>${selOpt(cat.subjects || [], 'id', 'ten', existing?.monHocId, 'Chọn môn học')}</select></label>
+              <label>Cấp lớp <span style="color:var(--err)">*</span><select name="capLopId" required>${selOpt(cat['grade-levels'] || [], 'id', 'ten', existing?.capLopId, 'Chọn cấp lớp')}</select></label>
+              <label>Người dạy chính <span style="color:var(--err)">*</span><select name="nguoiDayChinhId" required>${selOpt(teachers.map(t => ({ id:t.nhanSuId, label:`${t.hoTen} (${t.phanLoai?.includes('giao_vien') ? 'GV' : 'Gia sư'})` })), 'id', 'label', existing?.nguoiDayChinhId, 'Chọn người dạy chính')}</select></label>
+              <label>Hình thức <span style="color:var(--err)">*</span><select name="hinhThuc" id="acClassMode"><option value="offline" ${(existing?.hinhThuc || 'offline') === 'offline' ? 'selected' : ''}>Offline tại cơ sở / tại nhà</option><option value="online" ${existing?.hinhThuc === 'online' ? 'selected' : ''}>Online trực tuyến</option></select></label>
+              <label id="acWrapCampus">Cơ sở đào tạo<select name="coSoId">${selOpt(cat.campuses || [], 'id', 'tenCoSo', existing?.coSoId, 'Không gắn cơ sở / Tại nhà')}</select></label>
+              <label id="acWrapRoom">Phòng học<input name="phongHoc" maxlength="50" placeholder="VD: P201" value="${val('phongHoc')}"></label>
+              <label id="acWrapLink" class="full" style="display:${existing?.hinhThuc === 'online' ? '' : 'none'}">Link phòng học Online<input name="linkHoc" maxlength="255" placeholder="https://meet.google.com/…" value="${val('linkHoc')}"></label>
+              <label>Sĩ số tối thiểu <span style="color:var(--err)">*</span><input name="siSoToiThieu" type="number" min="1" max="100" required value="${val('siSoToiThieu', 1)}"></label>
+              <label>Sĩ số tối đa <span style="color:var(--err)">*</span><input name="siSoToiDa" type="number" min="1" max="100" required value="${val('siSoToiDa', 12)}"></label>
+              <label>Ngày bắt đầu <span style="color:var(--err)">*</span><input name="ngayBatDau" type="date" required value="${val('ngayBatDau', today)}"></label>
+              <label>Ngày kết thúc (tùy chọn)<input name="ngayKetThuc" type="date" value="${val('ngayKetThuc')}"></label>
+              <label class="full">Trạng thái lớp<select name="trangThai">${Object.entries(classStatusLabels).map(([k, l]) => `<option value="${k}" ${(existing?.trangThai || 'dang_hoc') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+            </div>
+            <p id="dialog-error" class="form-error" role="alert"></p>
+          </div>
+          <div class="dialog-foot">
+            <button type="button" class="btn sm" onclick="document.getElementById('admin-dialog').close()">Hủy</button>
+            <button type="submit" class="btn p sm" id="dialog-submit">${existing ? 'Lưu thay đổi' : 'Tạo lớp học'}</button>
+          </div>
+        </form>
+      `);
+      const form = Admin.$('adminClassForm');
+      const syncMode = () => {
+        const isOn = form.elements.hinhThuc.value === 'online';
+        Admin.$('acWrapLink').style.display = isOn ? '' : 'none';
+        Admin.$('acWrapCampus').style.display = isOn ? 'none' : '';
+        Admin.$('acWrapRoom').style.display = isOn ? 'none' : '';
+      };
+      form.elements.hinhThuc.addEventListener('change', syncMode);
+      syncMode();
+      form.addEventListener('submit', async ev => {
+        ev.preventDefault();
+        const raw = Object.fromEntries(new FormData(form));
+        const body = {
+          tenLop: raw.tenLop,
+          loaiLop: raw.loaiLop,
+          khoaHocId: raw.khoaHocId ? Number(raw.khoaHocId) : null,
+          monHocId: Number(raw.monHocId),
+          capLopId: Number(raw.capLopId),
+          nguoiDayChinhId: Number(raw.nguoiDayChinhId),
+          hinhThuc: raw.hinhThuc,
+          coSoId: raw.hinhThuc === 'offline' && raw.coSoId ? Number(raw.coSoId) : null,
+          phongHoc: raw.hinhThuc === 'offline' && raw.phongHoc ? raw.phongHoc : null,
+          linkHoc: raw.hinhThuc === 'online' && raw.linkHoc ? raw.linkHoc : null,
+          siSoToiThieu: Number(raw.siSoToiThieu),
+          siSoToiDa: Number(raw.siSoToiDa),
+          ngayBatDau: raw.ngayBatDau,
+          ngayKetThuc: raw.ngayKetThuc || null,
+          trangThai: raw.trangThai,
+        };
+        if (!existing) {
+          body.maLop = raw.maLop;
+          body.cachThuPhi = 'theo_khoa';
+          body.cachTinhLuong = 'theo_gio';
+        }
+        Admin.$('dialog-error').textContent = '';
+        await Admin.busy(Admin.$('dialog-submit'), async () => {
+          await Admin.api('/api/academic/classes' + (existing ? '/' + existing.id : ''), existing ? 'PUT' : 'POST', body);
+          Admin.$('admin-dialog').close();
+          toast(existing ? 'Đã cập nhật lớp học.' : 'Đã tạo lớp học mới.', 'ok');
+          acTab = 'classes';
+          Admin.render();
+        });
+      });
+    } catch (error) { toast(error.message, 'err'); }
+  };
+
+  window.openAdminClassDetail = async function(id) {
+    try {
+      const row = await Admin.api('/api/academic/classes/' + id);
+      Admin.dialog(`${row.maLop} · ${row.tenLop}`, `<div class="dialog-body">
+        <div class="ec-info-box">${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)} · Dạy chính: <b>${Admin.esc(row.tenNguoiDayChinh || '—')}</b> · Sĩ số: <b>${row.siSoHienTai}/${row.siSoToiDa}</b></div>
+        <h3 style="margin:8px 0 6px;font-size:13.5px">Học viên trong lớp (${(row.hocViens || []).length})</h3>
+        ${Admin.table([{ key:'maHv', label:'Mã HV' }, { key:'hoTen', label:'Học viên' }, { key:'ngayVao', label:'Ngày vào' }, { key:'trangThai', label:'Trạng thái' }], row.hocViens || [], 'Chưa có học viên nào được xếp vào lớp.')}
+        <h3 style="margin:12px 0 6px;font-size:13.5px">Lịch học định kỳ (${(row.lichHocs || []).length})</h3>
+        ${Admin.table([{ label:'Thứ', render:r => Number(r.thu) === 8 ? 'CN' : 'Thứ ' + r.thu }, { key:'gioBatDau', label:'Bắt đầu' }, { key:'gioKetThuc', label:'Kết thúc' }, { key:'phongHoc', label:'Phòng' }], row.lichHocs || [], 'Chưa có lịch tuần.')}
+      </div><div class="dialog-foot"><button type="button" class="btn sm" onclick="document.getElementById('admin-dialog').close()">Đóng</button><button type="button" class="btn p sm" onclick="document.getElementById('admin-dialog').close();openAdminClassModal(${row.id})">Sửa lớp học</button></div>`);
+    } catch (error) { toast(error.message, 'err'); }
+  };
+
   function fillEnrollmentClasses() {
     const selected = registrations.find(row => row.id === Number(Admin.$('aeEnrollmentSelect').value));
     const valid = classes.filter(row => row.khoaHocId === selected?.khoaHocId && ['sap_bat_dau','dang_hoc'].includes(row.trangThai));
-    Admin.$('aeClassSelect').innerHTML = '<option value="">Chọn lớp đúng khóa</option>'+valid.map(row => `<option value="${row.id}">${Admin.esc(row.maLop+' · '+row.tenLop)} (${row.siSoHienTai}/${row.siSoToiDa} HV)</option>`).join('');
+    Admin.$('aeClassSelect').innerHTML = '<option value="">' + (valid.length ? 'Chọn lớp đúng khóa' : 'Chưa có lớp đang mở cho khóa này — tạo lớp trước') + '</option>' +
+      valid.map(row => `<option value="${row.id}">${Admin.esc(row.maLop+' · '+row.tenLop)} (${row.siSoHienTai}/${row.siSoToiDa} HV)</option>`).join('');
   }
   window.openAdminEnrollModal = function(id) {
     const available = registrations.filter(row => ['cho_xep_lop','dang_hoc'].includes(row.trangThai));
+    if (!available.length) { toast('Chưa có đăng ký khóa nào chờ xếp lớp.', 'info'); return; }
     Admin.$('aeEnrollmentSelect').innerHTML = available.map(row => `<option value="${row.id}" ${row.id===Number(id)?'selected':''}>DK-${row.id} · ${Admin.esc(row.hoTen+' · '+row.tenKhoa)}</option>`).join('');
     Admin.$('aeEnrollmentSelect').onchange = fillEnrollmentClasses;
     fillEnrollmentClasses();
@@ -45,15 +159,116 @@
       closeAdminEnrollModal(); toast('Admin đã xếp lớp và lưu dấu vết.','ok'); Admin.render();
     });
   };
-  Admin.register('admin-courses',async () => {
-    const data = await Promise.all([Admin.api(catalog+'/courses'),Admin.api('/api/academic/classes/registrations'),Admin.api('/api/academic/classes')]);
-    return {title:'Khóa học & Xếp lớp',html:Admin.view('admin-courses'),bind() {
-      [courses,registrations,classes] = data;
-      const subtitle=document.querySelector('#admin-courses .pg-head .sub');
-      subtitle.textContent=subtitle.textContent.replace('5 sản phẩm',`${courses.length} sản phẩm`);
-      Admin.$('adminCoursesBody').innerHTML = courses.map(row => `<tr><td><b class="mono">${Admin.esc(row.ma)}</b></td><td><b>${Admin.esc(row.ten)}</b></td><td>${Admin.esc(row.moTa||'—')}</td><td><b style="color:var(--ok)">${Admin.money(row.hocPhi)}</b></td><td>${Admin.tag(row.isActive?'Đang mở ĐK':'Tạm đóng ĐK',row.isActive?'ok':'r')}</td><td><button class="btn sm" onclick="openCourseModal(${row.id})">Chi tiết / Sửa</button></td></tr>`).join('') || empty(6);
-      Admin.$('adminEnrollmentsBody').innerHTML = registrations.map(row => `<tr><td><b>DK-${row.id}</b></td><td><b>${Admin.esc(row.hoTen)}</b><small> ${Admin.esc(row.maHv)}</small></td><td><span class="mono">${Admin.esc(row.maKhoa)}</span> · ${Admin.esc(row.tenKhoa)}</td><td>${Admin.money(row.hocPhiSnapshot)}</td><td>${Admin.tag(row.maHd ? (row.tinhTrangThu==='da_thanh_toan'?'Đã thu đủ':row.tinhTrangThu) : 'Chưa phát hành hóa đơn',row.tinhTrangThu==='da_thanh_toan'?'ok':'w')}</td><td>${row.maLop?Admin.tag(row.maLop,'purple'):Admin.tag('Chờ Admin xếp lớp','r')}</td><td>${Admin.esc(row.nguoiXep||'—')}<br>${Admin.esc(Admin.date(row.xepLuc))}</td><td>${['cho_xep_lop','dang_hoc'].includes(row.trangThai)?`<button class="btn sm p" onclick="openAdminEnrollModal(${row.id})">${row.maLop?'Đổi lớp':'Xếp lớp ngay'}</button>`:Admin.tag(row.trangThai)}</td></tr>`).join('') || empty(8);
-    }};
+
+  function renderAdminCoursesTabContent() {
+    const eq = acEnrollQ.trim().toLowerCase();
+    const eRows = registrations.filter(r => {
+      if (acEnrollFilter === 'cho_xep_lop' && r.trangThai !== 'cho_xep_lop') return false;
+      if (acEnrollFilter === 'dang_hoc' && r.trangThai !== 'dang_hoc') return false;
+      if (acEnrollFilter === 'other' && ['cho_xep_lop', 'dang_hoc'].includes(r.trangThai)) return false;
+      if (eq && ![`DK-${r.id}`, r.hoTen, r.maHv, r.maKhoa, r.tenKhoa, r.maLop].join(' ').toLowerCase().includes(eq)) return false;
+      return true;
+    });
+    Admin.$('adminEnrollmentsBody').innerHTML = eRows.map(row => `<tr>
+      <td><b>DK-${row.id}</b></td>
+      <td><b>${Admin.esc(row.hoTen)}</b><br><small>${Admin.esc(row.maHv)}</small></td>
+      <td><span class="mono">${Admin.esc(row.maKhoa)}</span><br><small>${Admin.esc(row.tenKhoa)}</small></td>
+      <td>${Admin.money(row.hocPhiSnapshot)}</td>
+      <td>${Admin.tag(row.maHd ? ({ da_thanh_toan:'Đã thu đủ', mot_phan:'Thu một phần', chua_thanh_toan:'Chưa thu', nhap:'HĐ nháp' }[row.tinhTrangThu] || row.tinhTrangThu) : 'Chưa lập HĐ', row.tinhTrangThu === 'da_thanh_toan' ? 'ok' : 'w')}</td>
+      <td>${row.maLop ? Admin.tag(row.maLop, 'purple') : Admin.tag('Chờ xếp lớp', 'r')}</td>
+      <td>${Admin.esc(row.nguoiXep || '—')}<br><small>${Admin.esc(Admin.date(row.xepLuc))}</small></td>
+      <td>${['cho_xep_lop','dang_hoc'].includes(row.trangThai) ? `<button class="btn sm p" onclick="openAdminEnrollModal(${row.id})">${row.maLop ? 'Đổi lớp' : 'Xếp lớp ngay'}</button>` : Admin.tag(row.trangThai)}</td>
+    </tr>`).join('') || empty(8);
+
+    const cq = acClassQ.trim().toLowerCase();
+    const cRows = classes.filter(r => {
+      if (acClassFilter === 'dang_hoc' && r.trangThai !== 'dang_hoc') return false;
+      if (acClassFilter === 'sap_bat_dau' && r.trangThai !== 'sap_bat_dau') return false;
+      if (acClassFilter === 'closed' && ['dang_hoc', 'sap_bat_dau'].includes(r.trangThai)) return false;
+      if (cq && ![r.maLop, r.tenLop, r.tenKhoa, r.tenMonHoc, r.tenNguoiDayChinh].join(' ').toLowerCase().includes(cq)) return false;
+      return true;
+    });
+    Admin.$('adminClassesBody').innerHTML = cRows.map(row => `<tr>
+      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(row.tenLop)}</small></td>
+      <td>${Admin.esc(row.tenKhoa || 'Chưa gắn khóa')}<br><small>${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)}</small></td>
+      <td>${Admin.tag(classTypeLabels[row.loaiLop] || row.loaiLop, 'i')}<br><small>${row.hinhThuc === 'online' ? 'Online' : Admin.esc(row.tenCoSo || 'Offline')}</small></td>
+      <td>${Admin.esc(row.tenNguoiDayChinh || '—')}</td>
+      <td><b>${row.siSoHienTai}/${row.siSoToiDa}</b></td>
+      <td>${Admin.tag(classStatusLabels[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : (row.trangThai === 'huy' ? 'r' : 'w'))}</td>
+      <td><div class="row"><button class="btn sm" onclick="openAdminClassDetail(${row.id})">Chi tiết</button><button class="btn sm p" onclick="openAdminClassModal(${row.id})">Sửa</button></div></td>
+    </tr>`).join('') || empty(7);
+
+    const kq = acCourseQ.trim().toLowerCase();
+    const kRows = courses.filter(r => !kq || [r.ma, r.ten, r.moTa].join(' ').toLowerCase().includes(kq));
+    Admin.$('adminCoursesBody').innerHTML = kRows.map(row => `<tr>
+      <td><b class="mono">${Admin.esc(row.ma)}</b></td>
+      <td><b>${Admin.esc(row.ten)}</b></td>
+      <td>${Admin.esc(row.moTa || '—')}</td>
+      <td><b style="color:var(--ok)">${Admin.money(row.hocPhi)}</b></td>
+      <td>${Admin.tag(row.isActive ? 'Đang mở ĐK' : 'Tạm đóng', row.isActive ? 'ok' : 'r')}</td>
+      <td><button class="btn sm" onclick="openCourseModal(${row.id})">Chi tiết / Sửa</button></td>
+    </tr>`).join('') || empty(6);
+  }
+
+  function switchAcTab(tab) {
+    acTab = tab;
+    Admin.$('acPaneEnrollments').hidden = tab !== 'enrollments';
+    Admin.$('acPaneClasses').hidden = tab !== 'classes';
+    Admin.$('acPaneCourses').hidden = tab !== 'courses';
+    Admin.$('adminCoursesTabs')?.querySelectorAll('[data-ac-tab]').forEach(b => b.classList.toggle('on', b.dataset.acTab === tab));
+  }
+
+  Admin.register('admin-courses', async () => {
+    const data = await Promise.all([
+      Admin.api(catalog + '/courses'),
+      Admin.api('/api/academic/classes/registrations'),
+      Admin.api('/api/academic/classes')
+    ]);
+    [courses, registrations, classes] = data;
+    return {
+      title: 'Khóa học, Lớp học & Xếp lớp',
+      html: Admin.view('admin-courses'),
+      bind() {
+        const pendingRegs = registrations.filter(r => r.trangThai === 'cho_xep_lop').length;
+        const activeCourses = courses.filter(r => r.isActive).length;
+        const activeClasses = classes.filter(r => ['dang_hoc', 'sap_bat_dau'].includes(r.trangThai)).length;
+        const totalStudents = classes.reduce((a, r) => a + Number(r.siSoHienTai || 0), 0);
+
+        Admin.$('adminCoursesKpis').innerHTML = [
+          kpi('Đăng ký chờ xếp lớp', String(pendingRegs), `Tổng ${registrations.length} lượt đăng ký`, pendingRegs ? 'w' : 'g', true),
+          kpi('Lớp học hoạt động', String(activeClasses), `Tổng ${classes.length} lớp học`, 'i'),
+          kpi('Khóa học đang mở', String(activeCourses), `Tổng ${courses.length} khóa trọn gói`, 'g'),
+          kpi('Tổng sĩ số đang học', String(totalStudents), 'Trên các lớp đang vận hành', 'p'),
+        ].join('');
+
+        Admin.$('acPendingCount').textContent = String(pendingRegs);
+        Admin.$('acClassCount').textContent = String(classes.length);
+        Admin.$('acCourseCount').textContent = String(courses.length);
+
+        acEnrollQ = ''; acClassQ = ''; acCourseQ = '';
+        acEnrollFilter = pendingRegs > 0 ? 'cho_xep_lop' : 'all';
+        acClassFilter = 'all';
+        Admin.$('acEnrollPills')?.querySelectorAll('[data-ef]').forEach(b => b.classList.toggle('on', b.dataset.ef === acEnrollFilter));
+
+        Admin.$('adminCoursesTabs')?.querySelectorAll('[data-ac-tab]').forEach(b => b.addEventListener('click', () => switchAcTab(b.dataset.acTab)));
+        Admin.$('acEnrollSearch')?.addEventListener('input', e => { acEnrollQ = e.target.value; renderAdminCoursesTabContent(); });
+        Admin.$('acClassSearch')?.addEventListener('input', e => { acClassQ = e.target.value; renderAdminCoursesTabContent(); });
+        Admin.$('acCourseSearch')?.addEventListener('input', e => { acCourseQ = e.target.value; renderAdminCoursesTabContent(); });
+        Admin.$('acEnrollPills')?.querySelectorAll('[data-ef]').forEach(btn => btn.addEventListener('click', () => {
+          acEnrollFilter = btn.dataset.ef;
+          Admin.$('acEnrollPills').querySelectorAll('[data-ef]').forEach(b => b.classList.toggle('on', b === btn));
+          renderAdminCoursesTabContent();
+        }));
+        Admin.$('acClassPills')?.querySelectorAll('[data-cf]').forEach(btn => btn.addEventListener('click', () => {
+          acClassFilter = btn.dataset.cf;
+          Admin.$('acClassPills').querySelectorAll('[data-cf]').forEach(b => b.classList.toggle('on', b === btn));
+          renderAdminCoursesTabContent();
+        }));
+
+        renderAdminCoursesTabContent();
+        switchAcTab(acTab);
+      }
+    };
   });
 
   const definitions = {
