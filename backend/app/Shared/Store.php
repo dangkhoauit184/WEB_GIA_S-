@@ -150,8 +150,7 @@ final class Store
 
     public static function recordAudit(int $userId, string $action, string $table, ?int $record, ?array $before, ?array $after): void
     {
-        $req = service('request');
-        $ip = ($req instanceof \CodeIgniter\HTTP\IncomingRequest) ? $req->getIPAddress() : '127.0.0.1';
+        $ip = Access::clientIp();
         self::insert('audit_log', [
             'user_id' => $userId, 'hanh_dong' => $action, 'bang' => $table, 'ban_ghi_id' => $record,
             'du_lieu_cu' => $before === null ? null : json_encode($before, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),

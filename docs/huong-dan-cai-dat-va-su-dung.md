@@ -750,6 +750,54 @@ Cách chạy thủ công (sau khi đã sao lưu DB): mở `database/seeders/lam-
 | Trợ giảng | `demo_trogiang` | Nguyễn Thảo Vy | Ca hỗ trợ lớp nhóm Ngữ văn 9, lịch rảnh, đơn ứng tuyển Trợ giảng |
 | Phụ huynh & Học viên | `demo_phuhuynh`, `demo_ph02`, `demo_ph03` | Nguyễn Thị Lan, Trần Văn Hùng, Lê Thị Hạnh | 6 học viên (1 phụ huynh nhiều con), điểm danh, điểm/bài tập, hóa đơn đã thu/một phần/chờ đối soát |
 
+### 11.4. Triển khai công khai qua Cloudflare Tunnel (Docker trên Windows / Linux)
+
+Phù hợp khi chạy Docker trực tiếp trên máy Windows/server nội bộ không có IP tĩnh hoặc không mở được cổng 80/443. Container `cloudflared` nằm trên mạng cô lập `tunnel`, chỉ nối được tới `backend:80` và không nhìn thấy container `educenter-mysql`.
+
+1. **Named Tunnel (tên miền cố định, khuyến nghị cho sử dụng lâu dài & payOS):**
+   - Tạo tài khoản miễn phí tại [Cloudflare](https://dash.cloudflare.com/), thêm tên miền của bạn (đổi Nameserver tại nhà đăng ký tên miền về 2 Nameserver Cloudflare cấp).
+   - Mở **Cloudflare Zero Trust** → **Networks** → **Tunnels** → **Create a tunnel** → chọn **Cloudflared** → đặt tên (ví dụ `educenter-erp`).
+   - Sao chép chuỗi **Tunnel Token** (phần sau `--token ...`) dán vào file riêng `config/cloudflare.env` (tạo từ `config/cloudflare.env.example`, tuyệt đối không commit).
+   - Ở bước **Published application routes / Public Hostname**, thêm tên miền (ví dụ `erp.tenmiencuaban.com`) trỏ tới:
+     - **Type:** `HTTP`
+     - **URL:** `backend:80`
+   - Trong `config/server.env`, cập nhật `APP_BASE_URL=https://erp.tenmiencuaban.com/` và bổ sung `https://erp.tenmiencuaban.com` vào `CORS_ORIGINS` (giữ lại `http://localhost:5000,http://127.0.0.1:5000` nếu muốn vừa chạy local vừa chạy public).
+   - Khởi động stack kèm Named Tunnel:
+
+```powershell
+docker compose --env-file config/cloudflare.env -f compose.yaml -f compose.cloudflare.yaml --profile cloudflare up -d
+docker compose --env-file config/cloudflare.env -f compose.yaml -f compose.cloudflare.yaml --profile cloudflare logs --tail=30 cloudflared
+```
+
+2. **Quick Tunnel (dùng thử HTTPS nhanh không cần tên miền / tài khoản Cloudflare):**
+   - Tạo URL tạm dạng `https://<random>.trycloudflare.com` (đổi link mỗi lần khởi động lại container):
+
+```powershell
+docker compose -f compose.yaml -f compose.cloudflare.yaml --profile quick up -d
+docker compose -f compose.yaml -f compose.cloudflare.yaml --profile quick logs --tail=40 cloudflared-quick
+```
+
+   - Dừng tunnel khi không cần mở public nữa:
+
+```powershell
+docker compose -f compose.yaml -f compose.cloudflare.yaml --profile quick stop cloudflared-quick
+docker compose -f compose.yaml -f compose.cloudflare.yaml --profile cloudflare stop cloudflared
+```
+
+### 11.5. Triển khai 24/7 tự cập nhật từ GitHub trên Railway
+
+Phù hợp khi cần web chạy liên tục 24/7 (kể cả khi tắt máy cá nhân) và tự động build/deploy mỗi lần `git push`. Dự án đã có sẵn `railway.json` trỏ tới `backend/Dockerfile` (stage `application`, hỗ trợ biến `PORT` động, healthcheck `/api/health`) và `Database.php` tự nhận biến `DB_*` hoặc `MYSQL*`.
+
+1. Đăng nhập [Railway](https://railway.com/) bằng tài khoản GitHub → **New Project** → **Deploy from GitHub repo** → chọn repo `WEB_GIA_S-` (nhánh `develop` hoặc `main`).
+2. Trong cùng Project, bấm **+ Create** → **Database** → **Add MySQL** (MySQL 8.x).
+3. Vào service Web → tab **Variables**, đặt các biến môi trường:
+   - `CI_ENVIRONMENT=production`
+   - `JWT_SECRET=<chuỗi ngẫu nhiên >= 32 ký tự>`
+   - `DB_HOST=${{MySQL.MYSQLHOST}}`, `DB_PORT=${{MySQL.MYSQLPORT}}`, `DB_NAME=${{MySQL.MYSQLDATABASE}}`, `DB_USER=${{MySQL.MYSQLUSER}}`, `DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}`
+   - `APP_BASE_URL=https://<domain-railway-cua-ban>/` và `CORS_ORIGINS=https://<domain-railway-cua-ban>` (lấy sau khi bật Public Networking → **Generate Domain** ở tab Settings; có thể gắn thêm custom domain `.id.vn`).
+4. Khởi tạo schema + triggers + routines + seeders **một lần duy nhất** trên DB MySQL rỗng của Railway (theo đúng thứ tự `schema.sql` → `install-order.json` → `seeders/001_reference.sql`, `004_business_policy.sql`, `005_operations_policy.sql` → ghi lịch sử `schema_migrations` tới `008_security_perf`; không chạy đè lên DB đã có dữ liệu).
+5. Bấm **Settings → Volumes → Add Volume** gắn tại `/var/www/educenter/backend/writable` để bảo toàn ảnh QR/tài liệu buổi học giữa các lần redeploy.
+
 <a id="xu-ly-loi"></a>
 ## 12. Xử lý lỗi thường gặp
 

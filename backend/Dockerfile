@@ -26,4 +26,9 @@ COPY frontend/index.html /var/www/educenter/frontend/index.html
 RUN composer dump-autoload --no-dev --optimize \
     && mkdir -p writable/cache writable/logs writable/session writable/uploads \
     && chown -R www-data:www-data writable
+COPY backend/scripts/docker-entrypoint.sh /usr/local/bin/educenter-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/educenter-entrypoint.sh \
+    && chmod +x /usr/local/bin/educenter-entrypoint.sh
 EXPOSE 80
+ENTRYPOINT ["educenter-entrypoint.sh"]
+CMD ["apache2-foreground"]

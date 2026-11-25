@@ -23,11 +23,7 @@ final class RateLimiter
 
     public static function clientIp(): string
     {
-        $req = service('request');
-        if ($req instanceof \CodeIgniter\HTTP\IncomingRequest) {
-            return trim((string)$req->getIPAddress()) ?: '127.0.0.1';
-        }
-        return '127.0.0.1';
+        return Access::clientIp();
     }
 
     /**

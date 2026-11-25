@@ -206,6 +206,20 @@ try {
     $trustedProxy=new ReflectionMethod(\App\Shared\Access::class,'isTrustedProxyIp');
     $trustedProxy->setAccessible(true);
     check($trustedProxy->invoke(null,'127.0.0.1')===true && $trustedProxy->invoke(null,'172.18.0.1')===true,'loopback and RFC1918 proxies trusted');
+    check($trustedProxy->invoke(null,'100.64.0.5')===true && $trustedProxy->invoke(null,'100.128.0.1')===false,'RFC6598 100.64.0.0/10 trusted for Railway edge proxy while outside range rejected');
     check($trustedProxy->invoke(null,'8.8.8.8')===false,'public IP not trusted for X-Forwarded-Proto');
+    // Cloudflare Tunnel real client IP resolution (trusted vs untrusted proxy)
+    $cfReq = new \CodeIgniter\HTTP\IncomingRequest(new \Config\App(), new \CodeIgniter\HTTP\URI('http://localhost/api/health'), null, new \CodeIgniter\HTTP\UserAgent());
+    $cfReq->setGlobal('server', ['REMOTE_ADDR' => '172.18.0.5']);
+    $cfReq->setHeader('CF-Connecting-IP', '203.0.113.45');
+    check(\App\Shared\Access::clientIp($cfReq) === '203.0.113.45', 'clientIp reads CF-Connecting-IP from trusted Docker proxy');
+    $xffReq = new \CodeIgniter\HTTP\IncomingRequest(new \Config\App(), new \CodeIgniter\HTTP\URI('http://localhost/api/health'), null, new \CodeIgniter\HTTP\UserAgent());
+    $xffReq->setGlobal('server', ['REMOTE_ADDR' => '172.18.0.5']);
+    $xffReq->setHeader('X-Forwarded-For', '198.51.100.12, 172.18.0.5');
+    check(\App\Shared\Access::clientIp($xffReq) === '198.51.100.12', 'clientIp reads first X-Forwarded-For IP from trusted proxy');
+    $spoofReq = new \CodeIgniter\HTTP\IncomingRequest(new \Config\App(), new \CodeIgniter\HTTP\URI('http://localhost/api/health'), null, new \CodeIgniter\HTTP\UserAgent());
+    $spoofReq->setGlobal('server', ['REMOTE_ADDR' => '198.51.100.99']);
+    $spoofReq->setHeader('CF-Connecting-IP', '10.0.0.1');
+    check(\App\Shared\Access::clientIp($spoofReq) === '198.51.100.99', 'clientIp ignores forged CF-Connecting-IP from untrusted public IP');
     echo "PASS: $assertions PHP core assertions (no database writes).\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); exit(1); }

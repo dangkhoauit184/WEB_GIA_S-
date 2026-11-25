@@ -31,23 +31,48 @@ final class Access
         if ($ip === '::1' || $ip === '127.0.0.1') {
             return true;
         }
-        // Standard RFC1918 / loopback ranges (e.g., Docker bridge network with Caddy reverse proxy).
+        // RFC 6598 Shared Address Space (100.64.0.0/10 — Railway edge proxy / private mesh).
+        $long = ip2long($ip);
+        if ($long !== false && (($long & 0xFFC00000) === 0x64400000)) {
+            return true;
+        }
+        // Standard RFC1918 / loopback ranges (e.g., Docker bridge network with Caddy / cloudflared reverse proxy).
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
             && filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
-    public static function isSecureRequest(\CodeIgniter\HTTP\IncomingRequest $request): bool
+    public static function clientIp(?\CodeIgniter\HTTP\IncomingRequest $request = null): string
     {
-        if ($request->isSecure()) {
-            return true;
+        if ($request === null) {
+            $req = service('request');
+            if (!$req instanceof \CodeIgniter\HTTP\IncomingRequest) {
+                return '127.0.0.1';
+            }
+            $request = $req;
         }
-        if (self::isTrustedProxyIp((string)$request->getIPAddress())) {
-            $forwarded = strtolower(trim(explode(',', $request->getHeaderLine('X-Forwarded-Proto'))[0] ?? ''));
-            if ($forwarded === 'https') {
-                return true;
+        $remote = trim((string)($request->getServer('REMOTE_ADDR') ?? ''));
+        if ($remote === '') {
+            $remote = trim((string)$request->getIPAddress()) ?: '127.0.0.1';
+        }
+        if (self::isTrustedProxyIp($remote)) {
+            $cfIp = trim((string)$request->getHeaderLine('CF-Connecting-IP'));
+            if ($cfIp !== '' && filter_var($cfIp, FILTER_VALIDATE_IP) !== false) {
+                return $cfIp;
+            }
+            $xff = trim((string)$request->getHeaderLine('X-Forwarded-For'));
+            if ($xff !== '') {
+                $first = trim(explode(',', $xff)[0] ?? '');
+                if ($first !== '' && filter_var($first, FILTER_VALIDATE_IP) !== false) {
+                    return $first;
+                }
             }
         }
-        return str_starts_with(strtolower(trim(getenv('APP_BASE_URL') ?: '')), 'https://');
+        return $remote;
+    }
+
+    public static function isSecureRequest(\CodeIgniter\HTTP\IncomingRequest $request): bool
+    {
+        return $request->isSecure();
     }
 
     private static function normalizeOrigin(string $raw): ?string

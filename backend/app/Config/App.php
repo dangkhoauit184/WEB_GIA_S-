@@ -10,6 +10,9 @@ class App extends BaseConfig
     {
         parent::__construct();
         if (getenv('APP_BASE_URL')) $this->baseURL = rtrim(getenv('APP_BASE_URL'), '/') . '/';
+        foreach (array_filter(array_map('trim', explode(',', getenv('TRUSTED_PROXY_IPS') ?: ''))) as $ip) {
+            $this->proxyIPs[$ip] = 'X-Forwarded-For';
+        }
     }
     /**
      * --------------------------------------------------------------------------
@@ -185,7 +188,14 @@ class App extends BaseConfig
      *
      * @var array<string, string>
      */
-    public array $proxyIPs = [];
+    public array $proxyIPs = [
+        '127.0.0.1'      => 'X-Forwarded-For',
+        '::1'            => 'X-Forwarded-For',
+        '10.0.0.0/8'     => 'X-Forwarded-For',
+        '100.64.0.0/10'  => 'X-Forwarded-For',
+        '172.16.0.0/12'  => 'X-Forwarded-For',
+        '192.168.0.0/16' => 'X-Forwarded-For',
+    ];
 
     /**
      * --------------------------------------------------------------------------

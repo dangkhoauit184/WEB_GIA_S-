@@ -57,25 +57,30 @@ final class Portal extends \CodeIgniter\Controller
         return $user ? $this->injectPortalSession($html, $user) : $html;
     }
 
+    private function relativeRedirect(string $path, int $code = 303): \CodeIgniter\HTTP\ResponseInterface
+    {
+        return $this->response->setStatusCode($code)->setHeader('Location', $path);
+    }
+
     public function login()
     {
         $allowStay = $this->request->getGet('loggedOut') === '1'
             || $this->request->getGet('passwordChanged') === '1'
             || $this->request->getGet('switch') === '1';
         if (!$allowStay && $this->authenticatedCookieUser() !== null) {
-            return redirect()->to('/app', 303);
+            return $this->relativeRedirect('/app', 303);
         }
         return $this->frontendPage('src/modules/administration/features/auth/auth.html');
     }
 
     public function administration()
     {
-        return redirect()->to('/app', 303);
+        return $this->relativeRedirect('/app', 303);
     }
 
     public function admissions()
     {
-        return redirect()->to('/app', 303);
+        return $this->relativeRedirect('/app', 303);
     }
 
     public function application()
@@ -108,7 +113,7 @@ final class Portal extends \CodeIgniter\Controller
             }
             return $this->injectPortalSession($html, $user);
         } catch (\App\Shared\ApiException) {
-            return redirect()->to('/login', 303)->setCookie([
+            return $this->relativeRedirect('/login', 303)->setCookie([
                 'name' => 'educenter_session', 'value' => '', 'expire' => time() - 3600,
                 'path' => '/', 'secure' => \App\Shared\Access::isSecureRequest($this->request),
                 'httponly' => true, 'samesite' => 'Lax',
