@@ -5,7 +5,8 @@ use App\Shared\{ApiException, Input};
 
 final class ReportsValidator
 {
-    public const TYPES = ['attendance', 'revenue', 'class-performance'];
+    public const TYPES = ['attendance', 'revenue', 'class-performance', 'payroll', 'debt', 'admissions'];
+    public const ADMIN_ONLY_TYPES = ['revenue', 'payroll', 'debt'];
 
     public static function type(string $raw): string
     {
@@ -17,7 +18,7 @@ final class ReportsValidator
 
     public static function filters(array $query, string $type, bool $export = false): array
     {
-        $allowed = ['tuNgay', 'denNgay', 'coSoId', 'khoaHocId', 'lopId', 'trangThai'];
+        $allowed = ['tuNgay', 'denNgay', 'coSoId', 'khoaHocId', 'lopId', 'trangThai', 'nhomNhanSu', 'monHocId'];
         if ($export) $allowed[] = 'format';
         if (array_diff(array_keys($query), $allowed)) {
             Input::fail('fields');
@@ -35,6 +36,8 @@ final class ReportsValidator
             'khoaHocId' => ['id', false],
             'lopId' => ['id', false],
             'trangThai' => ['string', false],
+            'nhomNhanSu' => [['giao_vien', 'gia_su', 'tro_giang'], false],
+            'monHocId' => ['id', false],
         ];
         if ($export) {
             $rules['format'] = [['csv', 'xlsx'], false, 'xlsx'];
@@ -59,6 +62,9 @@ final class ReportsValidator
             'attendance' => ['co_mat', 'di_tre', 'vang_co_phep', 'vang_khong_phep', 'chua_diem_danh', 'chua_dien_ra'],
             'revenue' => ['chua_thanh_toan', 'mot_phan', 'da_thanh_toan'],
             'class-performance' => ['sap_bat_dau', 'dang_hoc', 'tam_dung', 'hoan_thanh', 'huy'],
+            'payroll' => ['mo', 'da_chot', 'da_tra'],
+            'debt' => ['qua_han', 'chua_den_han', 'khong_co_han', 'chua_thanh_toan', 'mot_phan'],
+            'admissions' => ['moi', 'dang_tim', 'da_de_xuat', 'da_chot', 'huy'],
             default => [],
         };
         if (!empty($data['trangThai']) && !in_array($data['trangThai'], $allowedStatuses, true)) {

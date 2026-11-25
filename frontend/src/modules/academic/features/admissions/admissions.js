@@ -59,6 +59,7 @@
     const data = await Admin.api(`${base}/requests?${Admin.query(requestFilters)}`);
     if (!Admin.$('reqRows')) return;
     requestRows = data.items;
+    if (Admin.$('intakeStep0Count')) Admin.$('intakeStep0Count').textContent = String(data.total ?? data.items.length);
     Admin.$('reqRows').innerHTML = data.items.map(row => `<tr>
       <td><b>${Admin.esc(row.maYc)}</b></td><td><b>${Admin.esc(row.tenHocVien || row.hoTenLienHe || 'Khách tư vấn')}</b>${row.maHv ? `<br><small>${Admin.esc(row.maHv)}</small>` : ''}</td>
       <td>${Admin.esc(row.tenPhuHuynh || row.hoTenLienHe || '—')}<br><small>${Admin.esc(row.sdtLienHe || row.sdtPhuHuynh || '—')}</small></td>
@@ -155,6 +156,8 @@
     const data = await Admin.api(`${base}/proposals?${Admin.query({ page, ...(handoff ? { trangThai:'san_sang' } : {}) })}`);
     const body = Admin.$(handoff ? 'createClassBody' : 'proposalBody');
     if (!body || version !== stepVersion) return;
+    const countEl = Admin.$(handoff ? 'intakeStep3Count' : 'intakeStep2Count');
+    if (countEl) countEl.textContent = String(data.total ?? data.items.length);
     body.innerHTML = data.items.map(row => {
       const request = `${Admin.esc(row.maYc)}<br><small>${Admin.esc(row.tenHocVien || row.hoTenLienHe || '')}</small>`;
       const ready = row.ttNhanSu === 'dong_y' && row.ttPhuHuynh === 'dong_y' && row.trangThaiYeuCau === 'da_chot';
@@ -305,6 +308,13 @@
         element.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); intakeStep(index); } });
       });
       intakeStep(0);
+      Promise.all([
+        Admin.api(`${base}/proposals?page=1`).catch(() => null),
+        Admin.api(`${base}/proposals?page=1&trangThai=san_sang`).catch(() => null),
+      ]).then(([allP, readyP]) => {
+        if (allP && Admin.$('intakeStep2Count')) Admin.$('intakeStep2Count').textContent = String(allP.total ?? allP.items.length);
+        if (readyP && Admin.$('intakeStep3Count')) Admin.$('intakeStep3Count').textContent = String(readyP.total ?? readyP.items.length);
+      });
     }};
   });
 

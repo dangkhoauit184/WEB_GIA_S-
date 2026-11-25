@@ -187,11 +187,11 @@ try {
     check(http('/api/administration/audit?tuNgay=2026-11-20&denNgay=2026-11-01','GET',null,$token)[0]===400,'audit date order validated');
     check(http('/api/administration/audit/99999999','GET',null,$token)[0]===404,'missing audit returns 404');
     $summary=requestOk('/api/reporting/dashboard?month=2026-11','GET',null,$token);
-    check(count($summary['revenue'])===4 && isset($summary['counts']['debt']),'dashboard returns four months and debt');
+    check(count($summary['revenue'])===6 && isset($summary['counts']['debt'],$summary['payroll']['total'],$summary['previousMonth']),'dashboard returns six months, debt, and admin payroll summary');
     check(http('/api/reporting/dashboard','GET',null,$staffToken)[0]===403,'admin dashboard blocked for staff');
     check(http('/api/reporting/dashboard?month=2026-99','GET',null,$token)[0]===400,'invalid dashboard month');
     check(http('/admin')[0]===303,'administration alias redirects to shared application');
-    check(http('/admin-assets/administration.js')[0]===200,'administration assets served');
+    check(http('/admin-assets/administration.js')[0]===200 && http('/admin-assets/dashboard.css')[0]===200,'administration and reporting assets served');
     check(http('/admin-assets/server.env')[0]===404,'asset whitelist blocks private paths');
 
     // Approved prototype flows use the same isolated database as the administration suite.

@@ -482,7 +482,7 @@
   }
   function calendarStatus(session) {
     if (["huy", "doi"].includes(session.trangThai)) return "cancelled";
-    if (session.checkoutLuc || session.trangThai === "da_day")
+    if (session.checkoutLuc || session.phanCongTrangThai === "da_day")
       return "completed";
     if (session.checkinLuc) return "active";
     return session.loai === "bu" ? "makeup" : "upcoming";
@@ -632,7 +632,7 @@
         button("← Thời khóa biểu", "tab", "schedule") +
           button("Tải lại ca", "reload-session"),
       ) +
-      `<div class="assistant-session-banner"><p>${date(session.ngay)} · ${time(session.gioBatDau)}–${time(session.gioKetThuc)}${session.loai === "bu" ? " · Học bù" : ""}</p><h2>${escape(session.tenLop)}</h2><p>${escape(session.maLop)} · ${escape(session.hinhThuc === "online" ? "Trực tuyến" : session.tenCoSo || session.diaDiem || "Chưa cập nhật địa điểm")} ${escape(session.phongHoc || "")}${session.tenGiaoVienChinh ? ` · GV chính: ${escape(session.tenGiaoVienChinh)}` : ""}</p><div class="assistant-actions">${button("Bấm Check-in", "checkin", session.id, "p", blocked || Boolean(session.checkinLuc) || session.trangThai === "da_day")}${button("Bấm Check-out", "checkout", session.id, "", blocked || !session.checkinLuc || Boolean(session.checkoutLuc))}${link(session.linkHoc, "Vào phòng học trực tuyến")}</div></div>` +
+      `<div class="assistant-session-banner"><p>${date(session.ngay)} · ${time(session.gioBatDau)}–${time(session.gioKetThuc)}${session.loai === "bu" ? " · Học bù" : ""}</p><h2>${escape(session.tenLop)}</h2><p>${escape(session.maLop)} · ${escape(session.hinhThuc === "online" ? "Trực tuyến" : session.tenCoSo || session.diaDiem || "Chưa cập nhật địa điểm")} ${escape(session.phongHoc || "")}${session.tenGiaoVienChinh ? ` · GV chính: ${escape(session.tenGiaoVienChinh)}` : ""}</p><div class="assistant-actions">${button("Bấm Check-in", "checkin", session.id, "p", blocked || Boolean(session.checkinLuc) || session.phanCongTrangThai === "da_day")}${button("Bấm Check-out", "checkout", session.id, "", blocked || !session.checkinLuc || Boolean(session.checkoutLuc))}${link(session.linkHoc, "Vào phòng học trực tuyến")}</div></div>` +
       `<div class="assistant-grid"><div class="card"><h2>Thông tin chấm công</h2>${[
         ["Trạng thái buổi học", tag(session.trangThai)],
         ["Check-in", datetime(session.checkinLuc)],

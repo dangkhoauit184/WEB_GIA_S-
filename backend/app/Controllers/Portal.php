@@ -19,6 +19,7 @@ final class Portal extends \CodeIgniter\Controller
         'permissions.js'=>'modules/administration/features/permissions/permissions.js',
         'audit.js'=>'modules/administration/features/audit/audit.js',
         'dashboard.js'=>'modules/reporting/features/dashboard/dashboard.js',
+        'dashboard.css'=>'modules/reporting/features/dashboard/dashboard.css',
         'admissions.js'=>'modules/academic/features/admissions/admissions.js',
         'admissions.css'=>'modules/academic/features/admissions/admissions.css',
         'admissions.html'=>'modules/academic/features/admissions/admissions.html',

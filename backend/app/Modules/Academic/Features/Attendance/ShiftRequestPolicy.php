@@ -60,8 +60,8 @@ final class ShiftRequestPolicy
             ];
         }
 
-        // Completed: checked out, or session marked taught, or scheduled end time already passed.
-        if (($hasCheckin && $hasCheckout) || $sessionStatus === 'da_day' || (!$hasCheckin && $endAt <= $serverNow)) {
+        // Completed: checked out, or (for main teacher/tutor) session marked taught, or scheduled end time already passed.
+        if (($hasCheckin && $hasCheckout) || ($expectedRole !== 'tro_giang' && $sessionStatus === 'da_day') || (!$hasCheckin && $endAt <= $serverNow)) {
             return [
                 'trang_thai_ca' => self::PHASE_COMPLETED,
                 'co_the_doi_lich' => false,
