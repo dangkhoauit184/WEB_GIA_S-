@@ -646,7 +646,7 @@ final class ShiftRecruitment
                         VALUES (?,'go_phan_cong',?,?,'buoi_hoc',?,?,1)", [
                         (int)$existingMain['user_id'],
                         'Cập nhật phân công ca · '.$opening['ma_lop'],
-                        'Ca ngày '.$opening['ngay'].' '.substr($opening['gio_bat_dau'], 0, 5).'–'.substr($opening['gio_ket_thuc'], 0, 5).' đã được điều phối sang giáo viên khác qua đề xuất '.$opening['ma_de_xuat'].'.',
+                        'Ca ngày '.date('d/m/Y', strtotime((string)$opening['ngay'])).' '.substr($opening['gio_bat_dau'], 0, 5).'–'.substr($opening['gio_ket_thuc'], 0, 5).' đã được điều phối sang giáo viên khác qua đề xuất '.$opening['ma_de_xuat'].'.',
                         (int)$opening['buoi_hoc_id'],
                         'opening-replace:'.$opening['id'].':'.$existingMain['id'],
                     ]);
@@ -712,7 +712,7 @@ final class ShiftRecruitment
                 VALUES (?,'phan_cong',?,?,'buoi_hoc',?,?,1)", [
                 (int)$app['user_id'],
                 'Đã duyệt phân công '.$roleLabel.' · '.$opening['ma_lop'],
-                'Ca ngày '.$opening['ngay'].' '.substr($opening['gio_bat_dau'], 0, 5).'–'.substr($opening['gio_ket_thuc'], 0, 5).' đã được thêm vào thời khóa biểu cá nhân của bạn.',
+                'Ca ngày '.date('d/m/Y', strtotime((string)$opening['ngay'])).' '.substr($opening['gio_bat_dau'], 0, 5).'–'.substr($opening['gio_ket_thuc'], 0, 5).' đã được thêm vào thời khóa biểu cá nhân của bạn.',
                 (int)$opening['buoi_hoc_id'],
                 'opening-approved:'.$appId,
             ]);

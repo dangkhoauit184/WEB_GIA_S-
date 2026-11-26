@@ -63,7 +63,7 @@
       Admin.dialog(row.maLop + ' · ' + row.tenLop, `<div class="dialog-body">
         <div class="ec-info-box">${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)} · Dạy chính: <b>${Admin.esc(row.tenNguoiDayChinh || '—')}</b> · Sĩ số: <b>${row.siSoHienTai}/${row.siSoToiDa}</b></div>
         <h3 style="margin:8px 0 6px;font-size:13.5px">Học viên trong lớp</h3>
-        ${Admin.table([{ key:'maHv', label:'Mã học viên' }, { key:'hoTen', label:'Học viên' }, { key:'trangThai', label:'Trạng thái' }], row.hocViens || [], 'Chưa có học viên.')}
+        ${Admin.table([{ key:'maHv', label:'Mã học viên' }, { key:'hoTen', label:'Học viên' }, { label:'Trạng thái', render:r => Admin.tag({ dang_hoc:'Đang học', hoc_thu:'Học thử', tam_nghi:'Tạm nghỉ', hoan_thanh:'Hoàn thành', nghi_han:'Nghỉ hẳn' }[r.trangThai] || r.trangThai, r.trangThai === 'dang_hoc' ? 'ok' : (r.trangThai === 'nghi_han' ? 'r' : 'w')) }], row.hocViens || [], 'Chưa có học viên.')}
         <h3 style="margin:12px 0 6px;font-size:13.5px">Lịch tuần</h3>
         ${Admin.table([{ label:'Thứ', render:r => Number(r.thu) === 8 ? 'CN' : 'Thứ ' + r.thu }, { key:'gioBatDau', label:'Bắt đầu' }, { key:'gioKetThuc', label:'Kết thúc' }, { key:'phongHoc', label:'Phòng' }], row.lichHocs || [], 'Chưa có lịch tuần.')}
       </div><div class="dialog-foot"><button type="button" class="btn sm" data-close-dialog="1">Đóng</button><button type="button" class="btn p sm" id="staff-class-calendar">Mở thời khóa biểu</button></div>`);

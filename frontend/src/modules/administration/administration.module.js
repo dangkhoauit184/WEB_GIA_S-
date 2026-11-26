@@ -12,7 +12,7 @@ window.Admin = (() => {
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
   const money = value => new Intl.NumberFormat('vi-VN', { style:'currency', currency:'VND', maximumFractionDigits:0 }).format(Number(value || 0));
-  const date = value => value ? String(value).replace('T', ' ').slice(0, 19) : '—';
+  const date = value => window.ECDate ? window.ECDate.dateTime(value) : (value ? String(value).replace('T', ' ').slice(0, 19) : '—');
   const query = values => new URLSearchParams(Object.entries(values).filter(([,value]) => value !== '' && value != null)).toString();
 
   function notify(message, error = false) {
@@ -155,19 +155,9 @@ window.Admin = (() => {
     formDialog({ title, fields:[{ name:'summary', type:'summary', label:message, disabled:true }, ...fields], submit:'Xác nhận', onSubmit:work });
   }
 
-  const EN_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  let selectedDayNum = new Date().getDate();
-
   function formatPeriodLabel(ym) {
     const [y, m] = String(ym || period).split('-');
-    const dayStr = String(selectedDayNum || 11).padStart(2, '0');
-    return `${dayStr}/${String(m || '11').padStart(2, '0')}/${y || '2026'} (Kỳ ${String(m || '11').padStart(2, '0')}/${y || '2026'})`;
-  }
-
-  function shiftMonth(ym, delta) {
-    const [y, m] = String(ym || period).split('-').map(Number);
-    const d = new Date(y || 2026, (m || 1) - 1 + delta, 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return `Tháng ${Number(m || 1)} / ${y || '2026'}`;
   }
 
   function mountPeriodPicker(inputId = 'payrollMonth') {
@@ -175,133 +165,25 @@ window.Admin = (() => {
     const wrap = document.querySelector(`[data-period-picker="${inputId}"]`);
     if (!input || !wrap) return;
     if (!input.value) input.value = period;
-    let viewYm = input.value || period;
-    let showMonthsGrid = false;
-
-    const buildCalendarCells = (year, monthIdx) => {
-      const firstDayDow = new Date(year, monthIdx, 1).getDay(); // 0 = Su .. 6 = Sa
-      const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
-      const daysInPrev = new Date(year, monthIdx, 0).getDate();
-      const cells = [];
-      for (let i = firstDayDow - 1; i >= 0; i--) {
-        const d = daysInPrev - i;
-        const pm = new Date(year, monthIdx - 1, d);
-        cells.push({ day: d, ym: `${pm.getFullYear()}-${String(pm.getMonth() + 1).padStart(2, '0')}`, other: true });
-      }
-      const curYmStr = `${year}-${String(monthIdx + 1).padStart(2, '0')}`;
-      for (let d = 1; d <= daysInMonth; d++) {
-        cells.push({ day: d, ym: curYmStr, other: false });
-      }
-      let nextDay = 1;
-      while (cells.length < 42) {
-        const nm = new Date(year, monthIdx + 1, nextDay);
-        cells.push({ day: nextDay++, ym: `${nm.getFullYear()}-${String(nm.getMonth() + 1).padStart(2, '0')}`, other: true });
-      }
-      return cells;
-    };
-
-    const renderPop = (open = false) => {
+    const renderTrigger = () => {
       const activeYm = input.value || period;
-      const [vY, vM] = String(viewYm || activeYm).split('-').map(Number);
-      const year = vY || 2026;
-      const monthIdx = (vM || 11) - 1;
-      const titleText = `${EN_MONTHS[monthIdx]} ${year}`;
-      const cells = buildCalendarCells(year, monthIdx);
-      const safeDay = Math.min(selectedDayNum, new Date(year, monthIdx + 1, 0).getDate());
-
-      const bodyHtml = showMonthsGrid
-        ? `<div class="period-months-grid">${EN_MONTHS.map((mName, idx) => {
-            const mYm = `${year}-${String(idx + 1).padStart(2, '0')}`;
-            return `<button type="button" class="period-m-cell ${mYm === activeYm ? 'on' : ''}" data-pick-ym="${mYm}">${mName.slice(0, 3)}</button>`;
-          }).join('')}</div>`
-        : `<div class="period-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
-           <div class="period-days">${cells.map(c => {
-             const isOn = !c.other && c.ym === activeYm && c.day === safeDay;
-             return `<button type="button" class="period-day ${c.other ? 'other' : ''} ${isOn ? 'on' : ''}" data-pick-day="${c.day}" data-pick-ym="${c.ym}">${c.day}</button>`;
-           }).join('')}</div>`;
-
       wrap.innerHTML = `
-        <button type="button" class="period-trigger" data-toggle-pop="1" aria-expanded="${open ? 'true' : 'false'}">
+        <button type="button" class="period-trigger" data-toggle-pop="1" aria-haspopup="dialog" aria-expanded="false">
           <span>${esc(formatPeriodLabel(activeYm))}</span>
-          <svg class="svg-ico sm" style="color:var(--g600)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </button>
-        <div class="period-pop ${open ? 'open' : ''}">
-          <div class="period-pop-head">
-            <button type="button" class="period-month-title" data-toggle-grid="1">
-              <span>${esc(titleText)}</span>
-              <span style="font-size:10px">▾</span>
-            </button>
-            <div class="period-arrows">
-              <button type="button" class="period-arr" data-nav-month="-1" title="Previous month" aria-label="Previous month">
-                <svg class="svg-ico sm" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
-              </button>
-              <button type="button" class="period-arr" data-nav-month="1" title="Next month" aria-label="Next month">
-                <svg class="svg-ico sm" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
-              </button>
-            </div>
-          </div>
-          ${bodyHtml}
-          <div class="period-pop-foot">
-            <button type="button" class="period-foot-link" data-clear-date="1">Clear</button>
-            <button type="button" class="period-foot-link" data-today-date="1">Today</button>
-          </div>
-        </div>
-      `;
-
+          <svg class="svg-ico sm" style="color:var(--g500)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>`;
       wrap.querySelector('[data-toggle-pop]')?.addEventListener('click', ev => {
         ev.stopPropagation();
-        const pop = wrap.querySelector('.period-pop');
-        const nextOpen = !pop.classList.contains('open');
-        viewYm = input.value || period;
-        showMonthsGrid = false;
-        renderPop(nextOpen);
-      });
-      wrap.querySelector('[data-toggle-grid]')?.addEventListener('click', ev => {
-        ev.stopPropagation();
-        showMonthsGrid = !showMonthsGrid;
-        renderPop(true);
-      });
-      wrap.querySelectorAll('[data-nav-month]').forEach(btn => btn.addEventListener('click', ev => {
-        ev.stopPropagation();
-        const delta = Number(btn.dataset.navMonth);
-        viewYm = showMonthsGrid ? shiftMonth(viewYm, delta * 12) : shiftMonth(viewYm, delta);
-        renderPop(true);
-      }));
-      wrap.querySelectorAll('[data-pick-day]').forEach(btn => btn.addEventListener('click', ev => {
-        ev.stopPropagation();
-        selectedDayNum = Number(btn.dataset.pickDay) || 1;
-        const nextYm = btn.dataset.pickYm;
-        input.value = nextYm;
-        viewYm = nextYm;
-        renderPop(false);
-        window.changePayrollMonth?.(nextYm);
-      }));
-      wrap.querySelectorAll('[data-pick-ym]').forEach(btn => btn.addEventListener('click', ev => {
-        ev.stopPropagation();
-        const nextYm = btn.dataset.pickYm;
-        input.value = nextYm;
-        viewYm = nextYm;
-        showMonthsGrid = false;
-        renderPop(false);
-        window.changePayrollMonth?.(nextYm);
-      }));
-      wrap.querySelector('[data-today-date]')?.addEventListener('click', ev => {
-        ev.stopPropagation();
-        const now = new Date();
-        selectedDayNum = now.getDate();
-        const nowYm = now.toLocaleDateString('sv-SE').slice(0, 7);
-        input.value = nowYm;
-        viewYm = nowYm;
-        renderPop(false);
-        window.changePayrollMonth?.(nowYm);
-      });
-      wrap.querySelector('[data-clear-date]')?.addEventListener('click', ev => {
-        ev.stopPropagation();
-        renderPop(false);
+        const trigger = ev.currentTarget;
+        window.ECPicker?.openMonthMenu(trigger, input.value || period, nextYm => {
+          if (!nextYm) return;
+          input.value = nextYm;
+          renderTrigger();
+          window.changePayrollMonth?.(nextYm);
+        }, false);
       });
     };
-
-    renderPop(false);
+    renderTrigger();
   }
 
   document.addEventListener('click', ev => {
@@ -518,8 +400,8 @@ window.loadNotifications = async () => {
       html += `<div class="np-date-group">${Admin.esc(gName)}</div>`;
       html += gItems.map(item => `
         <div class="np-item ${readNotifIds.has(item.id) ? '' : 'unread'}" data-notif-id="${Admin.esc(item.id)}" data-act="open-notif" data-screen="${Admin.esc(item.screen)}">
-          <div class="np-item-top"><b>${Admin.esc(item.title)}</b><time>${Admin.esc(item.timeStr)}</time></div>
-          <p>${Admin.esc(item.desc)}</p>
+          <div class="np-item-top"><b>${Admin.esc(window.ECDate ? window.ECDate.replaceInlineDates(item.title) : item.title)}</b><time>${Admin.esc(item.timeStr)}</time></div>
+          <p>${Admin.esc(window.ECDate ? window.ECDate.replaceInlineDates(item.desc) : item.desc)}</p>
         </div>
       `).join('');
     }

@@ -172,7 +172,7 @@
     if (!selected) { toast('Chọn hóa đơn cần in.', 'err'); return; }
     try {
       const row = await Admin.api('/api/finance/tuition/invoices/' + selected.id);
-      StaffUI.print('Hóa đơn / Phiếu thu', `<h3>${Admin.esc(row.maHd)}</h3><p>${Admin.esc(row.tenHocVien)} · ${Admin.esc(row.tenPhuHuynh)} · ${Admin.esc(row.tenKhoa || '')}</p><p>Học phí trọn khóa ${Admin.money(row.phaiThu)} · Đã thu ${Admin.money(row.daThu)} · Còn lại ${Admin.money(Number(row.phaiThu) - Number(row.daThu))}</p>${Admin.table([{ key:'ngayThanhToan', label:'Ngày thu' }, { key:'maGiaoDich', label:'Mã chứng từ' }, { label:'Số tiền', render:r => Admin.money(r.soTien) }, { key:'tenNguoiThu', label:'Người xác nhận' }], row.receipts)}`);
+      StaffUI.print('Hóa đơn / Phiếu thu', `<h3>${Admin.esc(row.maHd)}</h3><p>${Admin.esc(row.tenHocVien)} · ${Admin.esc(row.tenPhuHuynh)} · ${Admin.esc(row.tenKhoa || '')}</p><p>Học phí trọn khóa ${Admin.money(row.phaiThu)} · Đã thu ${Admin.money(row.daThu)} · Còn lại ${Admin.money(Number(row.phaiThu) - Number(row.daThu))}</p>${Admin.table([{ label:'Ngày thu', render:r => Admin.esc(Admin.date(r.ngayThanhToan)) }, { key:'maGiaoDich', label:'Mã chứng từ' }, { label:'Số tiền', render:r => Admin.money(r.soTien) }, { key:'tenNguoiThu', label:'Người xác nhận' }], row.receipts)}`);
     } catch (error) { toast(error.message, 'err'); }
   };
 })();

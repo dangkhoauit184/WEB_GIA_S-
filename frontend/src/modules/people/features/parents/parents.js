@@ -316,7 +316,7 @@
       const monday = shiftDay(calendarDay, -((date.getUTCDay() + 6) % 7));
       const sunday = shiftDay(monday, 6);
       $("parentCalendarRange").textContent =
-        `${displayDate(monday)} – ${displayDate(sunday)}`;
+        `Tuần: ${displayDate(monday).slice(0, 5)} – ${displayDate(sunday)}`;
       document.querySelectorAll("[data-calendar-view]").forEach((element) => {
         element.classList.toggle(
           "on",
@@ -358,7 +358,17 @@
           const events = rows.filter(
             (row) => dateKey(row.ngay || row.date) === key,
           );
-          return `<div class="cal-day-col ${today ? "is-today" : ""}"><div class="cal-col-head ${today ? "is-today" : ""}"><span class="d-name">${days[index]}</span><span class="d-num">${displayDate(key).slice(0, 5)}</span></div><div class="cal-col-body">${events.map((row) => `<button type="button" class="ses-card ${sessionState(row)}" data-action="session" data-id="${esc(row.buoiHocId)}"><div class="sc-code">${esc(row.maLop || row.course)}</div><div class="sc-subj">${esc(row.course)}</div><span class="sc-time">${esc(row.time)}</span><div class="sc-loc">${esc(row.teacher)}</div><div class="sc-loc">${esc(row.room)}</div>${tag(row.loai === "bu" ? "Học bù" : row.status, row.loai === "bu" ? "purple" : "i")}</button>`).join("") || '<div class="cal-col-empty">—</div>'}</div></div>`;
+          return `<div class="cal-day-col ${today ? "is-today" : ""}"><div class="cal-col-head ${today ? "is-today" : ""}"><span class="d-name">${days[index]}${today ? '<span class="d-today-badge">Hôm nay</span>' : ""}</span><span class="d-num">${displayDate(key).slice(0, 5)}</span></div><div class="cal-col-body">${events.map((row) => {
+            const st = sessionState(row);
+            const cardBadge = row.loai === "bu"
+              ? tag("Học bù", "purple")
+              : st === "completed"
+                ? tag("Hoàn tất", "ok")
+                : st === "cancelled"
+                  ? tag(row.trangThai === "doi" ? "Đổi lịch" : "Đã hủy", "r")
+                  : "";
+            return `<button type="button" class="ses-card ${st}" data-action="session" data-id="${esc(row.buoiHocId)}"><div class="sc-code">${esc(row.maLop || row.course)}</div><div class="sc-subj">${esc(row.course)}</div><span class="sc-time">${esc(row.time)}</span><div class="sc-loc">${esc(row.teacher)}</div><div class="sc-loc">${esc(row.room)}</div>${cardBadge}</button>`;
+          }).join("") || '<div class="cal-col-empty">—</div>'}</div></div>`;
         },
       ).join("")}</div>`;
     }
@@ -486,19 +496,20 @@
       $("notificationCount").textContent = unread > 99 ? "99+" : unread;
       $("btnMarkAllRead").disabled = unread === 0;
       $("parentReadAll").disabled = unread === 0;
+      const fmtNotif = text => window.ECDate ? window.ECDate.replaceInlineDates(text || "") : (text || "");
       $("parentNotificationPreview").innerHTML =
         notifications
           .slice(0, 5)
           .map(
             (row) =>
-              `<article class="np-item ${row.daDoc ? "" : "unread"}"><div class="np-item-top"><b>${esc(row.tieuDe)}</b></div><p>${esc(row.noiDung)}</p><time>${esc(displayTime(row.createdAt))}</time>${row.daDoc ? "" : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
+              `<article class="np-item ${row.daDoc ? "" : "unread"}"><div class="np-item-top"><b>${esc(fmtNotif(row.tieuDe))}</b></div><p>${esc(fmtNotif(row.noiDung))}</p><time>${esc(displayTime(row.createdAt))}</time>${row.daDoc ? "" : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
           )
           .join("") || empty("Chưa có thông báo.");
       $("notificationsListContainer").innerHTML =
         notifications
           .map(
             (row) =>
-              `<article class="parent-notification ${row.daDoc ? "" : "unread"}"><div><h2>${esc(row.tieuDe)}</h2><p>${esc(row.noiDung)}</p><time>${esc(displayTime(row.createdAt))}</time></div>${row.daDoc ? tag("Đã đọc", "ok") : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
+              `<article class="parent-notification ${row.daDoc ? "" : "unread"}"><div><h2>${esc(fmtNotif(row.tieuDe))}</h2><p>${esc(fmtNotif(row.noiDung))}</p><time>${esc(displayTime(row.createdAt))}</time></div>${row.daDoc ? tag("Đã đọc", "ok") : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
           )
           .join("") || empty("Chưa có thông báo.");
     }
@@ -900,6 +911,14 @@
         case "today":
           calendarDay = dayKey(serverNow);
           renderCalendar();
+          break;
+        case "pick-month":
+          event.stopPropagation();
+          window.ECPicker?.openMonthMenu(control, calendarDay.slice(0, 7), (ym) => {
+            if (!ym) return;
+            calendarDay = `${ym}-01`;
+            renderCalendar();
+          });
           break;
         case "session":
           openSession(id);

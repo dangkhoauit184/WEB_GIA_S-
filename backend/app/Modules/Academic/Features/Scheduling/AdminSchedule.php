@@ -114,7 +114,7 @@ final class AdminSchedule
                             VALUES (?,'phan_cong',?,?,'buoi_hoc',?,?,1)", [
                             (int)$userId,
                             'Phân công ca học ('.$roleLabel.') · '.$class['ma_lop'],
-                            'Bạn được phân công ca '.$class['ma_lop'].' ngày '.$date.' lúc '.substr($data['gioBatDau'],0,5).'–'.substr($data['gioKetThuc'],0,5).'.',
+                            'Bạn được phân công ca '.$class['ma_lop'].' ngày '.date('d/m/Y', strtotime($date)).' lúc '.substr($data['gioBatDau'],0,5).'–'.substr($data['gioKetThuc'],0,5).'.',
                             $sessionId,
                             'assign-session:'.$sessionId.':'.$role,
                         ]);

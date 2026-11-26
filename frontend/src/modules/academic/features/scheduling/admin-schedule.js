@@ -165,9 +165,10 @@ function renderSharedCalendar(targetContainerId, roleScope){
         </div>
 
         <div>
-          <button type="button" class="cal-range-btn" data-act="show-toast" data-msg="Đang xem khoảng ngày: ${Admin.esc(rangeTitle)}" data-tone="info">
+          <button type="button" class="cal-range-btn" data-act="cal-pick-month" data-cid="${Admin.esc(targetContainerId)}" data-role="${Admin.esc(roleScope)}" title="Chọn nhanh tháng / năm">
             <svg class="svg-ico" style="color:var(--pri)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span>${rangeTitle}</span>
+            <span style="font-size:10px;color:var(--g400)">▾</span>
           </button>
         </div>
 
@@ -252,6 +253,10 @@ function setSfOnlineMode(isOnline){
 var calendarStaff=[], calendarCampuses=[], calendarRooms=[];
 var editingSessionId=null, selectedSessionId=null, makeupOriginId=null, calendarRequestVersion=0;
 const CLASS_TYPE_LABELS={kem_1_1:'Kèm 1:1',kem_1_2:'Kèm 1:2',nhom:'Lớp nhóm'};
+const SESSION_STATUS_LABELS={upcoming:'Sắp diễn ra',completed:'Đã hoàn thành',makeup:'Buổi học bù',cancelled:'Đã hủy / Đổi lịch'};
+const SESSION_STATUS_TONES={upcoming:'i',completed:'ok',makeup:'purple',cancelled:'r'};
+const RAW_SESSION_STATES={du_kien:'Sắp diễn ra',dang_day:'Đang diễn ra',da_day:'Đã dạy',huy:'Đã hủy',doi:'Đã đổi lịch'};
+function fmtCalDate(ymd){return window.ECDate?window.ECDate.date(ymd):ymd;}
 function isPureTutorPerson(item){
   const types=String(item?.phanLoai||'').split(',').map(v=>v.trim()).filter(Boolean);
   return types.includes('gia_su') && !types.includes('giao_vien');
@@ -315,7 +320,7 @@ function openSessionDetail(id) {
   const session=SESSIONS.find(row=>row.id===id);
   if(!session)return;
   selectedSessionId=id;
-  document.getElementById('dtModalTitle').textContent=session.classCode+' · '+session.date;
+  document.getElementById('dtModalTitle').textContent=session.classCode+' · '+fmtCalDate(session.date);
   document.getElementById('dtModalContent').innerHTML=`<div class="item"><span>Lớp</span><b>${Admin.esc(session.className)}${session.loaiLop?` <span class="tag i">${Admin.esc(CLASS_TYPE_LABELS[session.loaiLop]||session.loaiLop)}</span>`:''}</b></div><div class="item"><span>Thời gian</span><b>${session.startTime} – ${session.endTime}</b></div><div class="item"><span>Người dạy</span><b>${Admin.esc(session.mainTeacher||'Chưa phân công')}</b></div><div class="item"><span>Trợ giảng</span><b>${Admin.esc(session.ta||'—')}</b></div><div class="item"><span>Địa điểm</span><span>${Admin.esc(session.branch+' · '+session.room)}</span></div><p>${Admin.esc(session.topic)}</p>${session.isOnline&&/^https?:\/\//i.test(session.onlineLink)?`<p><a target="_blank" rel="noopener noreferrer" href="${Admin.esc(session.onlineLink)}">Mở phòng học trực tuyến</a></p>`:''}<div class="modal-act">${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','add')&&session.chuaBatDau&&typeof openShiftRecruitmentForm==='function'?`<button type="button" class="btn sm p" data-act="open-shift-recruit-for-session" data-id="${session._id}">Đăng tuyển GV / Gia sư / TG</button>`:''}${(session.status==='upcoming'||session.status==='makeup')&&StaffUI.can('VanHanhBuoiHoc','edit')?`<button type="button" class="btn sm" data-act="reschedule-session-detail">Chỉnh sửa / Dời lịch</button>${session.chuaBatDau&&!session.lyDoKhongXoa?'<button type="button" class="btn sm danger" data-act="delete-session-detail">Xóa ca học</button>':''}${Admin.user.role==='ADMIN'?'<button type="button" class="btn sm danger" data-act="cancel-session-detail">Admin hủy buổi</button>':''}`:''}</div>`;
   if(StaffUI.can('VanHanhBuoiHoc','edit') && session.chuaBatDau && session.lyDoKhongXoa) {
     document.getElementById('dtModalContent').insertAdjacentHTML('beforeend',`<p class="form-error">${Admin.esc(session.lyDoKhongXoa)}</p>`);
@@ -328,7 +333,7 @@ function deleteSessionDetail(){
   const row=SESSIONS.find(item=>item.id===selectedSessionId);
   if(!row)return;
   if(row.lyDoKhongXoa){toast(row.lyDoKhongXoa,'err');return;}
-  Admin.confirmDialog('Xóa ca học',`${row.classCode} · ${row.date} · ${row.startTime}–${row.endTime}`,async()=>{
+  Admin.confirmDialog('Xóa ca học',`${row.classCode} · ${fmtCalDate(row.date)} · ${row.startTime}–${row.endTime}`,async()=>{
     await Admin.api(`/api/academic/scheduling/sessions/${row._id}`,'DELETE',{});
     closeModalSessionDetail();
     toast('Đã xóa ca học.','ok');
@@ -396,7 +401,7 @@ async function onSfClassChanged(){
   try {
     const [origin,students]=await Promise.all([Admin.api('/api/academic/scheduling/sessions?lopId='+cls.id),Admin.api(`/api/academic/classes/${cls.id}/enrollments`)]);
     if(Number(document.getElementById('sfClassSelect').value)!==cls.id)return;
-    document.getElementById('sfMakeupOrigin').innerHTML='<option value="">Chọn buổi gốc</option>'+origin.filter(item=>item.loai==='thuong').map(item=>`<option value="${item.id}">${Admin.esc(item.ngay+' '+item.gioBatDau.slice(0,5)+' · '+item.trangThai)}</option>`).join('');
+    document.getElementById('sfMakeupOrigin').innerHTML='<option value="">Chọn buổi gốc</option>'+origin.filter(item=>item.loai==='thuong').map(item=>`<option value="${item.id}">${Admin.esc(fmtCalDate(item.ngay)+' '+item.gioBatDau.slice(0,5)+' · '+(RAW_SESSION_STATES[item.trangThai]||item.trangThai))}</option>`).join('');
     document.getElementById('sfMakeupOrigin').value=String(makeupOriginId||'');
     document.getElementById('sfMakeupStudent').innerHTML='<option value="">Chọn học viên</option>'+students.map(item=>`<option value="${item.hocVienId}">${Admin.esc(item.hoTen+' ('+item.maHv+')')}</option>`).join('');
     const existing=SESSIONS.find(item=>item._id===editingSessionId);
@@ -432,7 +437,15 @@ function exportSchedulePdf(){
   const start=formatYMD(calViewMode==='week'?getMonday(calCurrentDate):new Date(calCurrentDate.getFullYear(),calCurrentDate.getMonth(),1));
   const end=formatYMD(calViewMode==='week'?addDays(getMonday(calCurrentDate),7):new Date(calCurrentDate.getFullYear(),calCurrentDate.getMonth()+1,1));
   const rows=SESSIONS.filter(row=>row.date>=start&&row.date<end&&(!calFilters.branch||row.branch===calFilters.branch)&&(!calFilters.teacher||row.mainTeacher===calFilters.teacher)&&(!calFilters.classCode||row.classCode===calFilters.classCode)&&(!calFilters.status||row.status===calFilters.status));
-  Admin.dialog('Báo cáo Lịch toàn chuỗi',`<div class="dialog-body"><h2>EDUCENTER ERP</h2>${Admin.table([{key:'date',label:'Ngày'},{key:'classCode',label:'Lớp'},{label:'Giờ',render:row=>row.startTime+'–'+row.endTime},{key:'mainTeacher',label:'Người dạy'},{key:'branch',label:'Cơ sở'},{key:'room',label:'Phòng'},{key:'status',label:'Trạng thái'}],rows)}</div><div class="dialog-foot"><button type="button" class="btn p" data-act="print-window">In / Lưu PDF</button></div>`);
+  Admin.dialog('Báo cáo Lịch toàn chuỗi',`<div class="dialog-body"><h2>EDUCENTER ERP</h2>${Admin.table([
+    {label:'Ngày',render:row=>`<span style="white-space:nowrap">${Admin.esc(fmtCalDate(row.date))}</span>`},
+    {key:'classCode',label:'Lớp'},
+    {label:'Giờ',render:row=>`<span style="white-space:nowrap">${Admin.esc(row.startTime+'–'+row.endTime)}</span>`},
+    {key:'mainTeacher',label:'Người dạy'},
+    {key:'branch',label:'Cơ sở'},
+    {key:'room',label:'Phòng'},
+    {label:'Trạng thái',render:row=>Admin.tag(SESSION_STATUS_LABELS[row.status]||row.status,SESSION_STATUS_TONES[row.status]||'i')}
+  ],rows)}</div><div class="dialog-foot"><button type="button" class="btn sm" data-close-dialog="1">Đóng</button><button type="button" class="btn p sm" data-act="print-window">In / Lưu PDF</button></div>`);
 }
 function onSfTypeChanged(){
   const makeup=document.getElementById('sfSessionType').value==='makeup';
@@ -444,7 +457,8 @@ function checkSfConflicts(){
   const cls=CLASSES.find(item=>item.id===Number(document.getElementById('sfClassSelect')?.value));
   const person=calendarStaff.find(item=>Number(item.userId)===Number(document.getElementById('sfTeacherSelect').value));
   const tutorHint=currentPortal==='staff'&&cls?.loaiLop==='nhom'?' · Lớp nhóm chỉ xếp Giáo viên (Gia sư chỉ xếp lớp kèm 1:1/1:2).':'';
-  document.getElementById('sfTeacherAvailability').textContent=(person?(person.lichRanh?'Lịch rảnh đã đăng ký · '+person.lichRanh:'Người dạy chưa đăng ký lịch rảnh.'):'')+tutorHint;
+  const availText=person?(person.lichRanh?'Lịch rảnh đã đăng ký · '+String(person.lichRanh).replace(/\bT8\b/g,'CN'):'Người dạy chưa đăng ký lịch rảnh.'):'';
+  document.getElementById('sfTeacherAvailability').textContent=availText+tutorHint;
   const date=document.getElementById('sfDate').value;
   const start=document.getElementById('sfStartTime').value, end=document.getElementById('sfEndTime').value;
   const userId=Number(document.getElementById('sfTeacherSelect').value);
@@ -470,6 +484,16 @@ Admin.actions({
   'cal-today': el => calGoToday(el.dataset.cid, el.dataset.role),
   'cal-next': el => calNextPeriod(el.dataset.cid, el.dataset.role),
   'cal-mode': el => setCalViewMode(el.dataset.mode, el.dataset.cid, el.dataset.role),
+  'cal-pick-month': (el, ev) => {
+    ev?.stopPropagation();
+    const curYm=`${calCurrentDate.getFullYear()}-${pad(calCurrentDate.getMonth()+1)}`;
+    window.ECPicker?.openMonthMenu(el,curYm,ym=>{
+      if(!ym)return;
+      const [y,m]=ym.split('-').map(Number);
+      calCurrentDate=new Date(y,m-1,1);
+      refreshActiveCalendars();
+    });
+  },
   'sf-class-changed': () => onSfClassChanged(),
   'sf-type-changed': () => onSfTypeChanged(),
   'sf-check-conflicts': () => checkSfConflicts(),

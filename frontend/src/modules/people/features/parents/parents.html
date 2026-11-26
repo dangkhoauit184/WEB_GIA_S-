@@ -103,13 +103,6 @@
             >
               ☰
             </button>
-            <a class="btn sm parent-website" href="/">
-              <svg class="svg-ico" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M2 12h20M12 2a16 16 0 0 1 0 20 16 16 0 0 1 0-20" />
-              </svg>
-              Website Trung tâm
-            </a>
           </div>
           <div class="row parent-top-actions">
             <span class="parent-date" id="parentDate"></span>
@@ -276,26 +269,42 @@
             </div>
             <div class="cal-box">
               <div class="cal-bar">
-                <div class="row">
+                <div class="row" style="gap:6px">
                   <button
                     class="cal-nav-btn"
                     type="button"
                     data-action="previous-week"
                     aria-label="Tuần trước"
                   >
-                    ‹
+                    ‹ Trước
                   </button>
-                  <strong id="parentCalendarRange"></strong>
+                  <button class="btn sm" type="button" data-action="today">
+                    Hôm nay
+                  </button>
                   <button
                     class="cal-nav-btn"
                     type="button"
                     data-action="next-week"
                     aria-label="Tuần sau"
                   >
-                    ›
+                    Sau ›
                   </button>
-                  <button class="btn sm" type="button" data-action="today">
-                    Hôm nay
+                </div>
+                <div>
+                  <button
+                    class="cal-range-btn"
+                    type="button"
+                    data-action="pick-month"
+                    title="Chọn nhanh tháng / năm"
+                  >
+                    <svg class="svg-ico" style="color:var(--pri)" viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <span id="parentCalendarRange"></span>
+                    <span style="font-size:10px;color:var(--g400)">▾</span>
                   </button>
                 </div>
                 <div class="seg" aria-label="Chế độ xem lịch">
@@ -305,7 +314,14 @@
                     class="on"
                     aria-pressed="true"
                   >
-                    Tuần
+                    Lịch Tuần
+                  </button>
+                  <button
+                    type="button"
+                    data-calendar-view="month"
+                    aria-pressed="false"
+                  >
+                    Lịch Tháng
                   </button>
                   <button
                     type="button"
@@ -313,13 +329,6 @@
                     aria-pressed="false"
                   >
                     Danh sách
-                  </button>
-                  <button
-                    type="button"
-                    data-calendar-view="month"
-                    aria-pressed="false"
-                  >
-                    Tháng
                   </button>
                 </div>
               </div>

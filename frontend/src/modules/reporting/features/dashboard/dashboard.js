@@ -1179,7 +1179,7 @@
         };
         filterBtn.addEventListener('click', e => { e.stopPropagation(); setFilterOpen(filterPop.hidden); });
         Admin.$('rptApplyCloseBtn').addEventListener('click', () => setFilterOpen(false));
-        document.addEventListener('click', ev => { if (!Admin.$('rptFilterWrap')?.contains(ev.target)) setFilterOpen(false); });
+        document.addEventListener('click', ev => { if (!Admin.$('rptFilterWrap')?.contains(ev.target) && !ev.target.closest('[data-ec-dp-pop]')) setFilterOpen(false); });
 
         tabsEl.querySelectorAll('[data-rpt-tab]').forEach(btn => btn.addEventListener('click', () => {
           if (rptState.tab === btn.dataset.rptTab) return;

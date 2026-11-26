@@ -431,7 +431,7 @@ window.TeachingPortal = (() => {
       if (session.ngay + " " + session.gioBatDau <= state.workspace.serverNow)
         return `<span class="tag w">${escape(text.onTimeBadge)}</span>`;
       return session.loai === "bu"
-        ? '<span class="tag purple">Đã xếp lịch bù</span>'
+        ? '<span class="tag purple">Học bù · Sắp tới</span>'
         : '<span class="tag i">Sắp diễn ra</span>';
     }
 
@@ -572,7 +572,7 @@ window.TeachingPortal = (() => {
             .slice(0, 4)
             .map(
               (notification) =>
-                `<div class="tp-row"><div><b>${escape(notification.tieuDe)}</b><small>${escape(notification.noiDung)}</small></div></div>`,
+                `<div class="tp-row"><div><b>${escape(window.ECDate ? window.ECDate.replaceInlineDates(notification.tieuDe) : notification.tieuDe)}</b><small>${escape(window.ECDate ? window.ECDate.replaceInlineDates(notification.noiDung) : notification.noiDung)}</small></div></div>`,
             )
             .join("") || empty("Chưa có thông báo.")
         }${button("Xem thông báo", "notifications")}</div></div></div>`
@@ -593,13 +593,13 @@ window.TeachingPortal = (() => {
         completed: "Hoàn tất",
         active: "Đã Check-in",
         makeup: text.calendarMakeupLabel,
-        upcoming: "Đã xếp lịch",
+        upcoming: "",
       }[status];
-      const title = escape(sessionTitle(session) + " · " + statusLabel);
+      const title = escape(sessionTitle(session) + (statusLabel ? " · " + statusLabel : ""));
       if (compact)
         return `<button type="button" class="cal-m-chip ${status}" data-action="session" data-id="${session.id}" title="${title}"><span>${time(session.gioBatDau)}</span><b>${escape(session.maLop)}</b>${session.checkinLuc ? "<span>✓</span>" : ""}</button>`;
       return `<button type="button" class="ses-card ${status}" data-action="session" data-id="${session.id}" title="${title}">
-        <span class="tp-calendar-badge">${escape(statusLabel)}</span>
+        ${statusLabel ? `<span class="tp-calendar-badge">${escape(statusLabel)}</span>` : ""}
         <span class="sc-code">${escape(session.maLop)}</span>
         <span class="sc-subj">${escape(session.tenMon)} · ${escape(session.tenLop)}</span>
         <span class="sc-time">${time(session.gioBatDau)} – ${time(session.gioKetThuc)}</span>
@@ -615,16 +615,19 @@ window.TeachingPortal = (() => {
       nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
       const monthEnd = addDays(nextMonth.toISOString().slice(0, 10), -1);
       const count = (Date.parse(monthEnd) - Date.parse(start)) / 86400000 + 1;
+      const endWeek = addDays(start, 6);
       return {
         start,
         days: view === "month" ? Math.ceil(count / 7) * 7 : 7,
         range:
           view === "week"
-            ? `Tuần ${date(start)} – ${date(addDays(start, 6))}`
+            ? `Tuần: ${date(start).slice(0, 5)} – ${date(endWeek)}`
             : `Tháng ${selected.slice(5, 7)} / ${selected.slice(0, 4)}`,
         headings: ["THỨ 2", "THỨ 3", "THỨ 4", "THỨ 5", "THỨ 6", "THỨ 7", "CN"],
       };
     }
+
+    const CAL_ICON_SVG = '<svg class="svg-ico" style="color:var(--pri)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
 
     function schedule() {
       const view = state.calendarMode;
@@ -648,8 +651,8 @@ window.TeachingPortal = (() => {
           "Bấm vào một ca trên lịch để xem chi tiết, Check-in / Check-out và ghi sổ buổi học.",
         ) +
         `<div class="cal-box">
-        <div class="cal-bar"><div class="row">${button("‹ Trước", "calendar-prev")}${button("Hôm nay", "calendar-today")}${button("Sau ›", "calendar-next")}</div>
-          <div class="tp-calendar-period"><b class="cal-range-btn">${escape(range)}</b>${field("Chọn tháng", "calendar-month", selected.slice(0, 7), "month", "required")}</div>
+        <div class="cal-bar"><div class="row" style="gap:6px"><button type="button" class="cal-nav-btn" data-action="calendar-prev">‹ Trước</button>${button("Hôm nay", "calendar-today")}<button type="button" class="cal-nav-btn" data-action="calendar-next">Sau ›</button></div>
+          <div><button type="button" class="cal-range-btn" data-action="calendar-pick-month" title="Chọn nhanh tháng / năm">${CAL_ICON_SVG}<span>${escape(range)}</span><span style="font-size:10px;color:var(--g400)">▾</span></button></div>
           <div class="seg"><button type="button" class="${view === "week" ? "on" : ""}" data-action="calendar-mode" data-id="week">Lịch Tuần</button><button type="button" class="${view === "month" ? "on" : ""}" data-action="calendar-mode" data-id="month">Lịch Tháng</button><button type="button" class="${view === "list" ? "on" : ""}" data-action="calendar-mode" data-id="list">Danh sách</button></div>
         </div>
         <div class="cal-filter-bar">${select("Lớp học", "class-filter", { "": "Tất cả lớp", ...Object.fromEntries(state.workspace.classes.map((item) => [item.id, item.maLop])) }, state.classFilter)}${button("Đặt lại lọc", "calendar-reset")} ${button("Tải lại lịch", "reload")}</div>
@@ -928,8 +931,8 @@ window.TeachingPortal = (() => {
         return `<div class="cal-day-col ${isToday ? "is-today" : ""}"><div class="cal-col-head ${isToday ? "is-today" : ""}"><div class="d-name">${headings[index]}${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div><div class="d-num">${day.slice(8)}/${day.slice(5, 7)}</div></div><div class="cal-col-body">${entries}${button("+ Thêm lịch rảnh", "add-availability", weekday, "tp-add-free")}</div></div>`;
       }).join("");
       return `<section data-availability-calendar aria-label="Thời khóa biểu lịch rảnh"><div class="pg-head"><div><h2>Thời khóa biểu lịch rảnh</h2><p class="sub">Các khung giờ lặp lại hàng tuần. Bấm vào lịch để sửa hoặc xóa.</p></div>${button("+ Thêm lịch rảnh", "add-availability", "", "p")}</div><div class="cal-box">
-        <div class="cal-bar"><div class="row">${button("‹ Trước", "availability-prev")}${button("Hôm nay", "availability-today")}${button("Sau ›", "availability-next")}</div>
-          <div class="tp-calendar-period"><b class="cal-range-btn">${escape(range)}</b>${field("Chọn tháng lịch rảnh", "availability-month", selected.slice(0, 7), "month", "required")}</div>
+        <div class="cal-bar"><div class="row" style="gap:6px"><button type="button" class="cal-nav-btn" data-action="availability-prev">‹ Trước</button>${button("Hôm nay", "availability-today")}<button type="button" class="cal-nav-btn" data-action="availability-next">Sau ›</button></div>
+          <div><button type="button" class="cal-range-btn" data-action="availability-pick-month" title="Chọn nhanh tháng / năm">${CAL_ICON_SVG}<span>${escape(range)}</span><span style="font-size:10px;color:var(--g400)">▾</span></button></div>
           <div class="seg"><button type="button" class="${mode === "week" ? "on" : ""}" data-action="availability-mode" data-id="week">Lịch Tuần</button><button type="button" class="${mode === "month" ? "on" : ""}" data-action="availability-mode" data-id="month">Lịch Tháng</button></div>
         </div><div class="tp-calendar-scroll">${mode === "month" ? `<div class="tp-month-view"><div class="cal-month-head">${headings.map((label) => `<div class="cal-month-head-cell">${label}</div>`).join("")}</div><div class="cal-month-grid">${cells}</div></div>` : `<div class="cal-week-grid">${cells}</div>`}</div></div></section>`;
     }
@@ -1342,9 +1345,10 @@ window.TeachingPortal = (() => {
     }
 
     function notificationsModal() {
+      const fmt = v => (window.ECDate ? window.ECDate.replaceInlineDates(v || "") : (v || ""));
       modal(
         "Thông báo",
-        `${button("Đánh dấu tất cả đã đọc", "read-all")}<div>${state.notifications.map((notification) => `<div class="tp-row"><div><b>${escape(notification.tieuDe)}</b><p>${escape(notification.noiDung)}</p><small>${datetime(notification.createdAt)}</small></div>${Number(notification.daDoc) ? '<span class="tp-muted">Đã đọc</span>' : button("Đánh dấu đã đọc", "read", notification.id)}</div>`).join("") || empty("Chưa có thông báo.")}</div>`,
+        `${button("Đánh dấu tất cả đã đọc", "read-all")}<div>${state.notifications.map((notification) => `<div class="tp-row"><div><b>${escape(fmt(notification.tieuDe))}</b><p>${escape(fmt(notification.noiDung))}</p><small>${datetime(notification.createdAt)}</small></div>${Number(notification.daDoc) ? '<span class="tp-muted">Đã đọc</span>' : button("Đánh dấu đã đọc", "read", notification.id)}</div>`).join("") || empty("Chưa có thông báo.")}</div>`,
       );
     }
 
@@ -1473,6 +1477,14 @@ window.TeachingPortal = (() => {
         case "availability-today":
           state.availabilityDate = today();
           return refreshAvailability();
+        case "availability-pick-month":
+          event.stopPropagation();
+          window.ECPicker?.openMonthMenu(element, state.availabilityDate.slice(0, 7), (ym) => {
+            if (!ym) return;
+            state.availabilityDate = `${ym}-01`;
+            refreshAvailability();
+          });
+          return;
         case "availability-prev":
         case "availability-next": {
           const step = action === "availability-next" ? 1 : -1;
@@ -1496,6 +1508,14 @@ window.TeachingPortal = (() => {
         case "calendar-today":
           state.calendarDate = today();
           return render();
+        case "calendar-pick-month":
+          event.stopPropagation();
+          window.ECPicker?.openMonthMenu(element, state.calendarDate.slice(0, 7), (ym) => {
+            if (!ym) return;
+            state.calendarDate = `${ym}-01`;
+            render();
+          });
+          return;
         case "calendar-prev":
         case "calendar-next": {
           const step = action === "calendar-next" ? 1 : -1;
