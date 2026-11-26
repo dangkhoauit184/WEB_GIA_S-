@@ -39,7 +39,7 @@
   async function loadOpenings() {
     const body = Admin.$('recruitmentOpeningsBody');
     if (!body) return;
-    body.innerHTML = '<tr><td colspan="8" class="admin-empty">Đang tải danh sách đề xuất tuyển ca…</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="admin-empty">Đang tải danh sách đề xuất tuyển ca…</td></tr>';
     try {
       openings = await Admin.api(`${base}/openings?${Admin.query(filters)}`);
       if (!body.isConnected) return;
@@ -52,7 +52,7 @@
       renderApplications();
     } catch (error) {
       if (!body.isConnected) return;
-      body.innerHTML = `<tr><td colspan="8" class="form-error">${Admin.esc(error.message)} <button type="button" class="btn sm" id="recruitment-retry">Thử lại</button></td></tr>`;
+      body.innerHTML = `<tr><td colspan="6" class="form-error">${Admin.esc(error.message)} <button type="button" class="btn sm" id="recruitment-retry">Thử lại</button></td></tr>`;
       Admin.$('recruitment-retry')?.addEventListener('click', loadOpenings);
     }
   }
@@ -61,22 +61,20 @@
     const body = Admin.$('recruitmentOpeningsBody');
     if (!body) return;
     if (!openings.length) {
-      body.innerHTML = '<tr><td colspan="8" class="admin-empty">Chưa có đề xuất tuyển Giáo viên / Trợ giảng nào. Bấm “+ Đăng đề xuất tuyển ca” để tạo mới.</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" class="admin-empty">Chưa có đề xuất tuyển ca nào. Bấm “+ Đăng tuyển ca” để tạo mới.</td></tr>';
       return;
     }
     body.innerHTML = openings.map(row => {
       const selected = row.id === selectedOpeningId;
-      const modeText = row.hinhThuc === 'online' ? 'Trực tuyến' : `${row.tenCoSo || row.diaDiem || 'Trực tiếp'}${row.phongHoc ? ' · ' + row.phongHoc : ''}`;
+      const modeText = row.hinhThuc === 'online' ? 'Online' : `${row.tenCoSo || row.diaDiem || 'Trực tiếp'}${row.phongHoc ? ' · ' + row.phongHoc : ''}`;
       const regionText = row.hinhThuc === 'online' ? '' : (row.tenKhuVuc ? ` · ${row.tenKhuVuc}` : '');
       return `<tr class="${selected ? 'is-selected' : ''}" style="${selected ? 'background:var(--pri-ll)' : ''}">
-        <td><b>${Admin.esc(row.maDeXuat)}</b><br><small>${Admin.esc(row.tenNguoiTao || '')}</small></td>
-        <td><b>${Admin.esc(row.maLop)}</b> · ${Admin.esc(row.tenLop)} ${row.loaiLop ? `<span class="tag i">${Admin.esc(classTypeLabels[row.loaiLop] || row.loaiLop)}</span>` : ''}<br><small>${Admin.esc(row.tenMon)} · ${Admin.esc(row.tenCapLop)}</small></td>
-        <td><b>${formatDate(row.ngay)}</b><br><small>${formatTime(row.gioBatDau)}–${formatTime(row.gioKetThuc)} · ${Admin.esc(modeText + regionText)}</small></td>
-        <td><span class="tag ${row.vaiTro === 'day_chinh' ? 'i' : 'purple'}">${Admin.esc(roleLabelFor(row))}</span><br><small>Đã duyệt: ${row.soDaDuyet}/${row.soLuong}</small></td>
-        <td>${Admin.esc(row.yeuCau || '—')}<br><small>GV hiện tại: ${Admin.esc(row.tenNguoiDayChinh || 'Chưa phân công')}${row.tenTroGiang ? ' · TG: ' + Admin.esc(row.tenTroGiang) : ''}</small></td>
-        <td><b>${row.soChoDuyet}</b> chờ duyệt<br><small>Tổng ${row.tongUngTuyen} đơn</small></td>
-        <td>${openingTag(row.trangThai)}</td>
-        <td><div class="row">
+        <td><b>${Admin.esc(row.maLop)}</b> · <span class="code-short">${Admin.esc(row.maDeXuat)}</span><br><small>${Admin.esc(row.tenMon)} · ${Admin.esc(row.tenCapLop)}${row.loaiLop ? ' · ' + Admin.esc(classTypeLabels[row.loaiLop] || row.loaiLop) : ''}</small></td>
+        <td><b>${formatDate(row.ngay)}</b> <small>${formatTime(row.gioBatDau)}–${formatTime(row.gioKetThuc)}</small><br><small>${Admin.esc(modeText + regionText)}</small></td>
+        <td><span class="tag ${row.vaiTro === 'day_chinh' ? 'i' : 'purple'}">${Admin.esc(roleLabelFor(row))}</span><br><small>Duyệt: ${row.soDaDuyet}/${row.soLuong}</small></td>
+        <td><div class="clamp-2" style="font-size:12px" title="${Admin.esc(row.yeuCau || '')}">${Admin.esc(row.yeuCau || '—')}<br><small>GV: ${Admin.esc(row.tenNguoiDayChinh || 'Chưa có')}${row.tenTroGiang ? ' · TG: ' + Admin.esc(row.tenTroGiang) : ''}</small></div></td>
+        <td>${openingTag(row.trangThai)}<br><small><b>${row.soChoDuyet}</b> chờ / ${row.tongUngTuyen} đơn</small></td>
+        <td class="act-col"><div class="act-row">
           <button type="button" class="btn sm ${selected ? 'p' : ''}" data-rec-action="select" data-id="${row.id}">Ứng viên (${row.tongUngTuyen})</button>
           ${row.trangThai === 'dang_mo' && can('edit') ? `<button type="button" class="btn sm danger" data-rec-action="close" data-id="${row.id}">Đóng</button>` : ''}
         </div></td>
@@ -104,8 +102,8 @@
     const opening = openings.find(item => item.id === selectedOpeningId);
     if (!opening) {
       titleEl.textContent = 'Danh sách ứng tuyển';
-      if (metaEl) metaEl.textContent = 'Chọn một đề xuất ở bảng trên để xem và duyệt danh sách ứng viên.';
-      body.innerHTML = '<tr><td colspan="6" class="admin-empty">Chưa chọn đề xuất tuyển nhân sự.</td></tr>';
+      if (metaEl) metaEl.textContent = 'Chọn một đề xuất ở bảng trên để xem và duyệt ứng viên.';
+      body.innerHTML = '<tr><td colspan="5" class="admin-empty">Chưa chọn đề xuất tuyển nhân sự.</td></tr>';
       return;
     }
     titleEl.textContent = `Ứng viên cho ${opening.maDeXuat} · ${opening.maLop} (${roleLabelFor(opening)})`;
@@ -114,31 +112,30 @@
     }
     const apps = opening.ungTuyens || [];
     if (!apps.length) {
-      body.innerHTML = '<tr><td colspan="6" class="admin-empty">Chưa có Giáo viên / Trợ giảng nào ứng tuyển vào đề xuất này.</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="admin-empty">Chưa có ứng viên nào ứng tuyển vào đề xuất này.</td></tr>';
       return;
     }
     body.innerHTML = apps.map(app => {
       const eligHtml = app.trangThai === 'cho_duyet'
         ? (app.duDieuKien
-          ? Admin.tag('Đủ lịch rảnh & chuyên môn', 'ok')
-          : `${Admin.tag('Không còn đủ điều kiện', 'r')}<br><small>${Admin.esc((app.lyDoKhongDuDieuKien || []).join(' '))}</small>`)
-        : (app.phanCongId ? Admin.tag(`Đã tạo phân công #${app.phanCongId}`, 'ok') : '—');
+          ? Admin.tag('Đủ điều kiện', 'ok')
+          : `${Admin.tag('Không đủ ĐK', 'r')}<br><small>${Admin.esc((app.lyDoKhongDuDieuKien || []).join(' '))}</small>`)
+        : (app.phanCongId ? Admin.tag(`Phân công #${app.phanCongId}`, 'ok') : '—');
       const resultNote = app.trangThai === 'tu_choi'
         ? `<br><small style="color:var(--err)">Lý do: ${Admin.esc(app.lyDoTuChoi || '—')}</small>`
         : (app.duyetLuc ? `<br><small>${Admin.esc(app.nguoiDuyetTen || '')} · ${Admin.esc(Admin.date(app.duyetLuc))}</small>` : '');
       const actions = app.trangThai === 'cho_duyet' && opening.trangThai === 'dang_mo' && can('edit')
-        ? `<div class="row">
-            <button type="button" class="btn sm p" data-app-action="approve" data-id="${app.id}" ${app.duDieuKien ? '' : 'disabled title="Ứng viên hiện không còn đủ điều kiện lịch hoặc chuyên môn"'}>Duyệt &amp; Phân công</button>
+        ? `<div class="act-row">
+            <button type="button" class="btn sm p" data-app-action="approve" data-id="${app.id}" ${app.duDieuKien ? '' : 'disabled title="Ứng viên hiện không còn đủ điều kiện lịch hoặc chuyên môn"'}>Duyệt</button>
             <button type="button" class="btn sm danger" data-app-action="reject" data-id="${app.id}">Từ chối</button>
           </div>`
         : '—';
       return `<tr>
         <td><b>${Admin.esc(app.hoTen)}</b><br><small>${Admin.esc(app.maNs || '')}${app.donViCongTac ? ' · ' + Admin.esc(app.donViCongTac) : ''}${app.kinhNghiemNam != null ? ` · ${app.kinhNghiemNam} năm KN` : ''}</small></td>
-        <td>${Admin.esc(app.ghiChu || '—')}</td>
+        <td><span class="clamp-2" title="${Admin.esc(app.ghiChu || '')}">${Admin.esc(app.ghiChu || '—')}</span></td>
         <td>${eligHtml}</td>
-        <td>${Admin.esc(Admin.date(app.createdAt))}</td>
-        <td>${appTag(app.trangThai)}${resultNote}</td>
-        <td>${actions}</td>
+        <td>${appTag(app.trangThai)}<br><small>${Admin.esc(Admin.date(app.createdAt))}</small>${resultNote}</td>
+        <td class="act-col">${actions}</td>
       </tr>`;
     }).join('');
     body.querySelectorAll('[data-app-action]').forEach(btn => {

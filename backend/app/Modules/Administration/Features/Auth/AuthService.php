@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Administration\Features\Auth;
 
-use App\Shared\{Access, ApiException, Input, Store};
+use App\Shared\{Access, ApiException, Input, RateLimiter, Store};
 use Firebase\JWT\JWT;
 
 final class AuthService
@@ -62,10 +62,20 @@ final class AuthService
 
     public static function login(array $input): array
     {
+        $ip = RateLimiter::clientIp();
+        $identKey = strtolower(trim((string)($input['username'] ?? '')));
+        $ipBucket = 'auth:login:ip:' . $ip;
+        $acctBucket = 'auth:login:acct:' . $ip . ':' . $identKey;
+        RateLimiter::assertAllowed($ipBucket, 50, 300, 'Quá nhiều lần đăng nhập thất bại từ địa chỉ này. Vui lòng thử lại sau 5 phút.');
+        RateLimiter::assertAllowed($acctBucket, 10, 300, 'Tài khoản tạm thời bị giới hạn do đăng nhập sai nhiều lần. Vui lòng thử lại sau 5 phút.');
+
         $account = AuthRepository::username($input['username']);
         if (!$account || !password_verify($input['password'], $account['password_hash'])) {
+            RateLimiter::record($ipBucket, 300);
+            RateLimiter::record($acctBucket, 300);
             throw new ApiException(401, 'Tên đăng nhập hoặc mật khẩu không chính xác.', 'INVALID_CREDENTIALS');
         }
+        RateLimiter::clear($acctBucket);
         return self::issueSession($account, (bool)($input['rememberMe'] ?? false), 'password');
     }
 
@@ -99,7 +109,7 @@ final class AuthService
             if (!$account || !password_verify($input['currentPassword'], $account['password_hash'])) {
                 throw new ApiException(400, 'Mật khẩu hiện tại không chính xác.', 'INVALID_CURRENT_PASSWORD');
             }
-            Store::execute('UPDATE account SET password_hash=? WHERE account_id=?', [password_hash($input['newPassword'], PASSWORD_BCRYPT), $account['account_id']]);
+            Store::execute('UPDATE account SET password_hash=?, session_version=session_version+1 WHERE account_id=?', [password_hash($input['newPassword'], PASSWORD_BCRYPT), $account['account_id']]);
             Store::audit((int)$user['userId'], 'sua', (int)$user['accountId'], ['action'=>'doi_mat_khau']);
         });
         return ['updated'=>true, 'requiresLogin'=>true];
@@ -152,14 +162,17 @@ final class AuthService
     public static function logout(): array
     {
         $user = AuthFilter::user();
+        $tokenHash = hash('sha256', Access::$token);
+        AuthRepository::revokeToken((int)$user['accountId'], $tokenHash, (int)Access::$claims->exp);
         Store::audit((int)$user['userId'], 'khac', (int)$user['accountId'], [
-            'action'=>'dang_xuat', 'tokenHash'=>hash('sha256', Access::$token), 'expiresAt'=>Access::$claims->exp,
+            'action'=>'dang_xuat', 'tokenHash'=>$tokenHash, 'expiresAt'=>Access::$claims->exp,
         ]);
         return ['loggedOut'=>true];
     }
 
     public static function register(array $data): array
     {
+        RateLimiter::hit('auth:register:' . RateLimiter::clientIp(), 15, 600, 'Quá nhiều yêu cầu đăng ký từ địa chỉ này. Vui lòng thử lại sau ít phút.');
         return Store::transaction(function () use ($data) {
             if (Store::one('SELECT account_id FROM account WHERE username=? FOR UPDATE', [$data['username']])) {
                 throw new ApiException(409, 'Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác.', 'USERNAME_EXISTS');
@@ -202,24 +215,33 @@ final class AuthService
         });
     }
 
-    private static function lockRecoveryAccount(string $identifier): array
+    private static function lockRecoveryAccount(string $identifier): ?array
     {
         $account = AuthRepository::username($identifier);
-        if (!$account) throw new ApiException(404, 'Không tìm thấy tài khoản.', 'ACCOUNT_NOT_FOUND');
+        if (!$account) {
+            return null;
+        }
         Store::one('SELECT account_id FROM account WHERE account_id=? FOR UPDATE', [$account['account_id']]);
         $account = AuthRepository::account((int)$account['account_id']);
         if (!$account || $account['status'] !== 'active') {
-            throw new ApiException(403, 'Tài khoản đang bị khóa hoặc chưa kích hoạt.', 'ACCOUNT_INACTIVE');
+            return null;
         }
         return $account;
     }
 
     public static function sendOtp(array $data): array
     {
-        return Store::transaction(function () use ($data) {
+        RateLimiter::hit('auth:otp:ip:' . RateLimiter::clientIp(), 20, 600, 'Quá nhiều yêu cầu gửi mã OTP từ địa chỉ này. Vui lòng thử lại sau ít phút.');
+        $generic = [
+            'sent' => true,
+            'expiresInSeconds' => 600,
+            'message' => 'Nếu tài khoản hợp lệ và đã đăng ký email, mã OTP đã được gửi đến hộp thư của bạn.',
+        ];
+        return Store::transaction(function () use ($data, $generic) {
             $account = self::lockRecoveryAccount($data['identifier']);
-            if (!filter_var($account['email'], FILTER_VALIDATE_EMAIL)) {
-                throw new ApiException(400, 'Tài khoản chưa có email hợp lệ. Vui lòng liên hệ quản trị viên.', 'EMAIL_REQUIRED');
+            if (!$account || !filter_var($account['email'], FILTER_VALIDATE_EMAIL)) {
+                // Uniform response prevents unauthenticated username/email enumeration.
+                return $generic;
             }
             $previous = AuthRepository::latestOtp((int)$account['account_id']);
             if ((int)($previous['sentAt'] ?? 0) > time() - 60) {
@@ -244,15 +266,18 @@ final class AuthService
             if (!$mail->send()) {
                 throw new ApiException(503, 'Chưa gửi được email OTP. Vui lòng thử lại sau hoặc liên hệ quản trị viên.', 'EMAIL_UNAVAILABLE');
             }
-            return ['sent'=>true, 'expiresInSeconds'=>600,
-                'message'=>'Đã gửi mã OTP đến email đã đăng ký. Vui lòng kiểm tra hộp thư.'];
+            return $generic;
         });
     }
 
     public static function resetPassword(array $data): array
     {
+        RateLimiter::hit('auth:reset:ip:' . RateLimiter::clientIp(), 30, 600, 'Quá nhiều yêu cầu đặt lại mật khẩu từ địa chỉ này. Vui lòng thử lại sau ít phút.');
         $result = Store::transaction(function () use ($data) {
             $account = self::lockRecoveryAccount($data['identifier']);
+            if (!$account) {
+                throw new ApiException(400, 'Mã xác nhận OTP không chính xác hoặc đã hết hạn.', 'INVALID_OTP');
+            }
             $record = AuthRepository::latestOtp((int)$account['account_id']);
             if (!$record || ($record['version'] ?? 0) !== 2 || !empty($record['used'])
                 || !hash_equals((string)($record['passwordVersion'] ?? ''), Access::fingerprint($account))) {
@@ -271,7 +296,7 @@ final class AuthService
                 // Commit the failed attempt before returning the validation error.
                 return ['invalidOtp'=>true];
             }
-            Store::execute('UPDATE account SET password_hash=? WHERE account_id=?', [
+            Store::execute('UPDATE account SET password_hash=?, session_version=session_version+1 WHERE account_id=?', [
                 password_hash($data['newPassword'], PASSWORD_BCRYPT), $account['account_id'],
             ]);
             $record['used'] = true;

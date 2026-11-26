@@ -28,7 +28,11 @@ final class ApiFilter implements FilterInterface
             $response->setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With');
             $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         }
-        $response->setHeader('Cache-Control', 'no-store');
+        $path = '/' . ltrim($request->getUri()->getPath(), '/');
+        $isStaticAsset = str_starts_with($path, '/frontend/') || str_starts_with($path, '/admin-assets/');
+        if (!$isStaticAsset && !$response->hasHeader('Cache-Control')) {
+            $response->setHeader('Cache-Control', 'no-store');
+        }
         $response->setHeader('X-Content-Type-Options', 'nosniff');
     }
 }

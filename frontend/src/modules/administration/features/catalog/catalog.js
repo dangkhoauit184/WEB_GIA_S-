@@ -3,12 +3,10 @@
   const Admin = window.Admin;
   const catalog = '/api/administration/catalog';
   let courses = [], registrations = [], classes = [], currentCatalog = 'rooms', catalogData = {};
-  const empty = columns => `<tr><td colspan="${columns}" class="admin-empty">Chưa có dữ liệu.</td></tr>`;
+  const empty = Admin.emptyRow, kpi = Admin.kpi;
   const activeOptions = [{ value:1,label:'Đang mở đăng ký' },{ value:0,label:'Ngừng nhận đăng ký' }];
   const classTypeLabels = { kem_1_1:'Kèm 1:1', kem_1_2:'Kèm 1:2', nhom:'Lớp nhóm' };
   const classStatusLabels = { sap_bat_dau:'Sắp bắt đầu', dang_hoc:'Đang học', tam_dung:'Tạm dừng', hoan_thanh:'Hoàn thành', huy:'Đã hủy' };
-  const kpi = (l, v, s, tone = '', primary = false) =>
-    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${Admin.esc(l)}</span><b class="ec-kpi-v">${Admin.esc(v)}</b><span class="ec-kpi-s">${Admin.esc(s)}</span></div>`;
 
   let acTab = 'enrollments', acEnrollFilter = 'all', acEnrollQ = '', acClassFilter = 'all', acClassQ = '', acCourseQ = '';
 
@@ -70,7 +68,7 @@
             <p id="dialog-error" class="form-error" role="alert"></p>
           </div>
           <div class="dialog-foot">
-            <button type="button" class="btn sm" onclick="document.getElementById('admin-dialog').close()">Hủy</button>
+            <button type="button" class="btn sm" data-close-dialog="1">Hủy</button>
             <button type="submit" class="btn p sm" id="dialog-submit">${existing ? 'Lưu thay đổi' : 'Tạo lớp học'}</button>
           </div>
         </form>
@@ -130,7 +128,7 @@
         ${Admin.table([{ key:'maHv', label:'Mã HV' }, { key:'hoTen', label:'Học viên' }, { key:'ngayVao', label:'Ngày vào' }, { key:'trangThai', label:'Trạng thái' }], row.hocViens || [], 'Chưa có học viên nào được xếp vào lớp.')}
         <h3 style="margin:12px 0 6px;font-size:13.5px">Lịch học định kỳ (${(row.lichHocs || []).length})</h3>
         ${Admin.table([{ label:'Thứ', render:r => Number(r.thu) === 8 ? 'CN' : 'Thứ ' + r.thu }, { key:'gioBatDau', label:'Bắt đầu' }, { key:'gioKetThuc', label:'Kết thúc' }, { key:'phongHoc', label:'Phòng' }], row.lichHocs || [], 'Chưa có lịch tuần.')}
-      </div><div class="dialog-foot"><button type="button" class="btn sm" onclick="document.getElementById('admin-dialog').close()">Đóng</button><button type="button" class="btn p sm" onclick="document.getElementById('admin-dialog').close();openAdminClassModal(${row.id})">Sửa lớp học</button></div>`);
+      </div><div class="dialog-foot"><button type="button" class="btn sm" data-close-dialog="1">Đóng</button><button type="button" class="btn p sm" data-act="edit-class-from-detail" data-id="${row.id}">Sửa lớp học</button></div>`);
     } catch (error) { toast(error.message, 'err'); }
   };
 
@@ -144,7 +142,8 @@
     const available = registrations.filter(row => ['cho_xep_lop','dang_hoc'].includes(row.trangThai));
     if (!available.length) { toast('Chưa có đăng ký khóa nào chờ xếp lớp.', 'info'); return; }
     Admin.$('aeEnrollmentSelect').innerHTML = available.map(row => `<option value="${row.id}" ${row.id===Number(id)?'selected':''}>DK-${row.id} · ${Admin.esc(row.hoTen+' · '+row.tenKhoa)}</option>`).join('');
-    Admin.$('aeEnrollmentSelect').onchange = fillEnrollmentClasses;
+    Admin.$('aeEnrollmentSelect').removeEventListener('change', fillEnrollmentClasses);
+    Admin.$('aeEnrollmentSelect').addEventListener('change', fillEnrollmentClasses);
     fillEnrollmentClasses();
     Admin.$('modalAdminEnroll').classList.add('show');
   };
@@ -170,15 +169,13 @@
       return true;
     });
     Admin.$('adminEnrollmentsBody').innerHTML = eRows.map(row => `<tr>
-      <td><b>DK-${row.id}</b></td>
-      <td><b>${Admin.esc(row.hoTen)}</b><br><small>${Admin.esc(row.maHv)}</small></td>
-      <td><span class="mono">${Admin.esc(row.maKhoa)}</span><br><small>${Admin.esc(row.tenKhoa)}</small></td>
-      <td>${Admin.money(row.hocPhiSnapshot)}</td>
-      <td>${Admin.tag(row.maHd ? ({ da_thanh_toan:'Đã thu đủ', mot_phan:'Thu một phần', chua_thanh_toan:'Chưa thu', nhap:'HĐ nháp' }[row.tinhTrangThu] || row.tinhTrangThu) : 'Chưa lập HĐ', row.tinhTrangThu === 'da_thanh_toan' ? 'ok' : 'w')}</td>
+      <td><b>${Admin.esc(row.hoTen)}</b><br><small><span class="code-short">DK-${row.id}</span> · ${Admin.esc(row.maHv)}</small></td>
+      <td><b>${Admin.esc(row.tenKhoa)}</b><br><small class="code-short">${Admin.esc(row.maKhoa)}</small></td>
+      <td><b style="white-space:nowrap">${Admin.money(row.hocPhiSnapshot)}</b><br>${Admin.tag(row.maHd ? ({ da_thanh_toan:'Đã thu đủ', mot_phan:'Thu 1 phần', chua_thanh_toan:'Chưa thu', nhap:'Nháp' }[row.tinhTrangThu] || row.tinhTrangThu) : 'Chưa lập HĐ', row.tinhTrangThu === 'da_thanh_toan' ? 'ok' : 'w')}</td>
       <td>${row.maLop ? Admin.tag(row.maLop, 'purple') : Admin.tag('Chờ xếp lớp', 'r')}</td>
-      <td>${Admin.esc(row.nguoiXep || '—')}<br><small>${Admin.esc(Admin.date(row.xepLuc))}</small></td>
-      <td>${['cho_xep_lop','dang_hoc'].includes(row.trangThai) ? `<button class="btn sm p" onclick="openAdminEnrollModal(${row.id})">${row.maLop ? 'Đổi lớp' : 'Xếp lớp ngay'}</button>` : Admin.tag(row.trangThai)}</td>
-    </tr>`).join('') || empty(8);
+      <td>${Admin.esc(row.nguoiXep || '—')}${row.xepLuc ? `<br><small>${Admin.esc(Admin.date(row.xepLuc))}</small>` : ''}</td>
+      <td class="act-col">${['cho_xep_lop','dang_hoc'].includes(row.trangThai) ? `<button type="button" class="btn sm p" data-act="open-enroll-modal" data-id="${row.id}">${row.maLop ? 'Đổi lớp' : 'Xếp lớp'}</button>` : Admin.tag(row.trangThai)}</td>
+    </tr>`).join('') || empty(6);
 
     const cq = acClassQ.trim().toLowerCase();
     const cRows = classes.filter(r => {
@@ -189,25 +186,23 @@
       return true;
     });
     Admin.$('adminClassesBody').innerHTML = cRows.map(row => `<tr>
-      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(row.tenLop)}</small></td>
-      <td>${Admin.esc(row.tenKhoa || 'Chưa gắn khóa')}<br><small>${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)}</small></td>
+      <td><b>${Admin.esc(row.maLop)}</b><br><small class="clamp-2" title="${Admin.esc(row.tenLop)}">${Admin.esc(row.tenLop)}</small></td>
+      <td>${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)}<br><small>${Admin.esc(row.tenKhoa || 'Chưa gắn khóa')}</small></td>
       <td>${Admin.tag(classTypeLabels[row.loaiLop] || row.loaiLop, 'i')}<br><small>${row.hinhThuc === 'online' ? 'Online' : Admin.esc(row.tenCoSo || 'Offline')}</small></td>
       <td>${Admin.esc(row.tenNguoiDayChinh || '—')}</td>
-      <td><b>${row.siSoHienTai}/${row.siSoToiDa}</b></td>
-      <td>${Admin.tag(classStatusLabels[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : (row.trangThai === 'huy' ? 'r' : 'w'))}</td>
-      <td><div class="row"><button class="btn sm" onclick="openAdminClassDetail(${row.id})">Chi tiết</button><button class="btn sm p" onclick="openAdminClassModal(${row.id})">Sửa</button></div></td>
-    </tr>`).join('') || empty(7);
+      <td><b>${row.siSoHienTai}/${row.siSoToiDa}</b><br>${Admin.tag(classStatusLabels[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : (row.trangThai === 'huy' ? 'r' : 'w'))}</td>
+      <td class="act-col"><div class="act-row"><button type="button" class="btn sm" data-act="open-class-detail" data-id="${row.id}">Chi tiết</button><button type="button" class="btn sm p" data-act="open-class-modal" data-id="${row.id}">Sửa</button></div></td>
+    </tr>`).join('') || empty(6);
 
     const kq = acCourseQ.trim().toLowerCase();
     const kRows = courses.filter(r => !kq || [r.ma, r.ten, r.moTa].join(' ').toLowerCase().includes(kq));
     Admin.$('adminCoursesBody').innerHTML = kRows.map(row => `<tr>
-      <td><b class="mono">${Admin.esc(row.ma)}</b></td>
-      <td><b>${Admin.esc(row.ten)}</b></td>
-      <td>${Admin.esc(row.moTa || '—')}</td>
-      <td><b style="color:var(--ok)">${Admin.money(row.hocPhi)}</b></td>
-      <td>${Admin.tag(row.isActive ? 'Đang mở ĐK' : 'Tạm đóng', row.isActive ? 'ok' : 'r')}</td>
-      <td><button class="btn sm" onclick="openCourseModal(${row.id})">Chi tiết / Sửa</button></td>
-    </tr>`).join('') || empty(6);
+      <td><b>${Admin.esc(row.ten)}</b><br><small class="code-short">${Admin.esc(row.ma)}</small></td>
+      <td><span class="clamp-2" title="${Admin.esc(row.moTa || '')}">${Admin.esc(row.moTa || '—')}</span></td>
+      <td><b style="color:var(--ok);white-space:nowrap">${Admin.money(row.hocPhi)}</b></td>
+      <td>${Admin.tag(row.isActive ? 'Mở ĐK' : 'Tạm đóng', row.isActive ? 'ok' : 'r')}</td>
+      <td class="act-col"><button type="button" class="btn sm" data-act="open-course-modal" data-id="${row.id}">Sửa</button></td>
+    </tr>`).join('') || empty(5);
   }
 
   function switchAcTab(tab) {
@@ -353,18 +348,18 @@
     ` : '';
 
     Admin.$('catTabs').innerHTML = `
-      <form id="catUnifiedForm" class="cat-crud-bar" onsubmit="submitUnifiedCatalogForm(event)">
+      <form id="catUnifiedForm" class="cat-crud-bar" data-on-submit="submit-unified-catalog">
         <div class="cat-crud-head">
           <div class="row" style="gap:8px">
             <span class="tag ${editRow ? 'purple' : 'ok'}">${editRow ? 'Chế độ chỉnh sửa' : 'Biểu mẫu dùng chung'}</span>
             <b style="font-size:13.5px;color:var(--g800)">${editRow ? `Cập nhật ${Admin.esc(activeDef.title)}: ${Admin.esc(editRow.tenCoSo || editRow.ten || '')}` : 'Thêm mới hoặc cập nhật nhanh mọi thuộc tính danh mục tại một nơi'}</b>
           </div>
-          ${editRow ? `<button type="button" class="btn sm" onclick="cancelUnifiedCatalogEdit()">Hủy chỉnh sửa</button>` : ''}
+          ${editRow ? `<button type="button" class="btn sm" data-act="cancel-unified-catalog">Hủy chỉnh sửa</button>` : ''}
         </div>
         <div class="cat-crud-grid">
           <div>
             <label>Phân loại danh mục</label>
-            <select id="catUnifiedTypeSelect" onchange="onUnifiedTypeChange(this.value)" ${editRow ? 'disabled' : ''}>
+            <select id="catUnifiedTypeSelect" data-on-change="unified-type-change" ${editRow ? 'disabled' : ''}>
               <option value="subjects" ${activeType === 'subjects' ? 'selected' : ''}>Môn học</option>
               <option value="rooms" ${activeType === 'rooms' ? 'selected' : ''}>Phòng học</option>
               <option value="branches" ${activeType === 'branches' ? 'selected' : ''}>Cơ sở đào tạo</option>
@@ -381,14 +376,14 @@
 
       <div class="row-b" style="margin-bottom:10px">
         <div class="chips" style="margin-bottom:0">
-          <button type="button" class="chip ${currentFilter === 'all' ? 'on' : ''}" onclick="switchCat('all')">Tất cả (${totalCount})</button>
-          <button type="button" class="chip ${currentFilter === 'subjects' ? 'on' : ''}" onclick="switchCat('subjects')">Môn học (${counts.subjects})</button>
-          <button type="button" class="chip ${currentFilter === 'rooms' ? 'on' : ''}" onclick="switchCat('rooms')">Phòng học (${counts.rooms})</button>
-          <button type="button" class="chip ${currentFilter === 'branches' ? 'on' : ''}" onclick="switchCat('branches')">Cơ sở đào tạo (${counts.branches})</button>
-          <button type="button" class="chip ${currentFilter === 'grades' ? 'on' : ''}" onclick="switchCat('grades')">Cấp lớp (${counts.grades})</button>
+          <button type="button" class="chip ${currentFilter === 'all' ? 'on' : ''}" data-act="switch-cat" data-cat="all">Tất cả (${totalCount})</button>
+          <button type="button" class="chip ${currentFilter === 'subjects' ? 'on' : ''}" data-act="switch-cat" data-cat="subjects">Môn học (${counts.subjects})</button>
+          <button type="button" class="chip ${currentFilter === 'rooms' ? 'on' : ''}" data-act="switch-cat" data-cat="rooms">Phòng học (${counts.rooms})</button>
+          <button type="button" class="chip ${currentFilter === 'branches' ? 'on' : ''}" data-act="switch-cat" data-cat="branches">Cơ sở đào tạo (${counts.branches})</button>
+          <button type="button" class="chip ${currentFilter === 'grades' ? 'on' : ''}" data-act="switch-cat" data-cat="grades">Cấp lớp (${counts.grades})</button>
         </div>
         <div style="width:260px">
-          <input type="search" id="catUnifiedSearchInput" value="${Admin.esc(searchQuery)}" placeholder="Tìm mã, tên môn, phòng, cơ sở..." oninput="onUnifiedCatalogSearch(this.value)">
+          <input type="search" id="catUnifiedSearchInput" value="${Admin.esc(searchQuery)}" placeholder="Tìm mã, tên môn, phòng, cơ sở..." data-on-input="unified-catalog-search">
         </div>
       </div>
     `;
@@ -411,21 +406,21 @@
                 <th>Tên danh mục</th>
                 <th>Thông tin chi tiết</th>
                 <th>Trạng thái</th>
-                <th style="text-align:right">Thao tác</th>
+                <th class="act-col">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               ${rows.length ? rows.map(row => `
                 <tr>
                   <td>${Admin.tag(row.typeLabel, row.badge)}</td>
-                  <td><b class="mono" style="color:var(--pri-d)">${Admin.esc(row.code)}</b></td>
+                  <td><b class="code-short" style="color:var(--pri-d)">${Admin.esc(row.code)}</b></td>
                   <td><b>${Admin.esc(row.name)}</b></td>
-                  <td style="font-size:12px;color:var(--g600)">${Admin.esc(row.detail)}</td>
-                  <td>${Admin.tag(row.isActive ? 'Đang sử dụng' : 'Ngừng dùng', row.isActive ? 'ok' : 'r')}</td>
-                  <td style="text-align:right">
-                    <div class="row" style="justify-content:flex-end;gap:6px">
-                      ${row.key !== 'rooms' ? `<button type="button" class="btn sm" onclick="startUnifiedCatalogEdit('${row.key}', ${row.id})">Sửa</button>` : ''}
-                      ${!['rooms','grades'].includes(row.key) ? `<button type="button" class="btn sm ${row.isActive ? 'danger' : 'p'}" onclick="toggleUnifiedCatalogActive('${row.key}', ${row.id})">${row.isActive ? 'Ngừng dùng' : 'Kích hoạt'}</button>` : ''}
+                  <td style="font-size:12px;color:var(--g600)"><span class="clamp-2" title="${Admin.esc(row.detail)}">${Admin.esc(row.detail)}</span></td>
+                  <td>${Admin.tag(row.isActive ? 'Đang dùng' : 'Ngừng dùng', row.isActive ? 'ok' : 'r')}</td>
+                  <td class="act-col">
+                    <div class="act-row">
+                      ${row.key !== 'rooms' ? `<button type="button" class="btn sm" data-act="start-unified-edit" data-key="${Admin.esc(row.key)}" data-id="${row.id}">Sửa</button>` : ''}
+                      ${!['rooms','grades'].includes(row.key) ? `<button type="button" class="btn sm ${row.isActive ? 'danger' : 'p'}" data-act="toggle-unified-active" data-key="${Admin.esc(row.key)}" data-id="${row.id}">${row.isActive ? 'Ngừng' : 'Mở lại'}</button>` : ''}
                     </div>
                   </td>
                 </tr>
@@ -458,12 +453,12 @@
                   <div class="row" style="gap:8px;margin-top:4px">
                     <input type="number" id="settingInput_${Admin.esc(item.khoa)}" min="1" max="8760" value="${Admin.esc(item.giaTri)}" style="width:120px;font-weight:700;color:var(--pri-d)">
                     <span style="font-size:12px;color:var(--g600)">giờ sau buổi học</span>
-                    <button type="button" class="btn sm p" style="margin-left:auto" onclick="saveInlineAdminSetting('${Admin.esc(item.khoa)}', this)">Lưu cấu hình</button>
+                    <button type="button" class="btn sm p" style="margin-left:auto" data-act="save-inline-setting" data-key="${Admin.esc(item.khoa)}">Lưu cấu hình</button>
                   </div>
                 ` : `
                   <div class="row-b" style="margin-top:4px;padding-top:6px;border-top:1px dashed var(--g200)">
                     <span style="font-size:12px;font-weight:600;color:var(--pri-d)">${Admin.esc(displayVal)}</span>
-                    ${String(item.giaTri) !== fixed[item.khoa] && (item.khoa in fixed) ? `<button type="button" class="btn sm" onclick="editAdminSetting('${Admin.esc(item.khoa)}')">Đồng bộ chuẩn</button>` : ''}
+                    ${String(item.giaTri) !== fixed[item.khoa] && (item.khoa in fixed) ? `<button type="button" class="btn sm" data-act="edit-admin-setting" data-key="${Admin.esc(item.khoa)}">Đồng bộ chuẩn</button>` : ''}
                   </div>
                 `}
               </div>
@@ -588,5 +583,23 @@
   Admin.register('admin-catalog',async () => {
     await loadCatalog();
     return {title:'Danh mục & Cấu hình',html:Admin.view('admin-catalog'),bind(){renderUnifiedCatalog();}};
+  });
+  Admin.actions({
+    'open-course-modal': el => window.openCourseModal(el.dataset.id ? Number(el.dataset.id) : undefined),
+    'open-class-modal': el => window.openAdminClassModal(el.dataset.id ? Number(el.dataset.id) : undefined),
+    'open-class-detail': el => window.openAdminClassDetail(Number(el.dataset.id)),
+    'edit-class-from-detail': el => { Admin.$('admin-dialog')?.close(); window.openAdminClassModal(Number(el.dataset.id)); },
+    'open-enroll-modal': el => window.openAdminEnrollModal(el.dataset.id ? Number(el.dataset.id) : undefined),
+    'close-admin-enroll': () => window.closeAdminEnrollModal(),
+    'submit-admin-enroll': (_form, ev) => window.handleAdminEnrollSubmit(ev),
+    'submit-unified-catalog': (_form, ev) => window.submitUnifiedCatalogForm(ev),
+    'cancel-unified-catalog': () => window.cancelUnifiedCatalogEdit(),
+    'unified-type-change': el => window.onUnifiedTypeChange(el.value),
+    'switch-cat': el => window.switchCat(el.dataset.cat),
+    'unified-catalog-search': el => window.onUnifiedCatalogSearch(el.value),
+    'start-unified-edit': el => window.startUnifiedCatalogEdit(el.dataset.key, Number(el.dataset.id)),
+    'toggle-unified-active': el => window.toggleUnifiedCatalogActive(el.dataset.key, Number(el.dataset.id)),
+    'save-inline-setting': el => window.saveInlineAdminSetting(el.dataset.key, el),
+    'edit-admin-setting': el => window.editAdminSetting(el.dataset.key),
   });
 })();

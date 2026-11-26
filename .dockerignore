@@ -12,6 +12,7 @@ backend/writable/*
 docs
 frontend/*
 !frontend/src
+!frontend/index.html
 database
 .github
 

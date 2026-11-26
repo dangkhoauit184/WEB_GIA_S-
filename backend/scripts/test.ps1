@@ -69,7 +69,7 @@ try {
     $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/001_reference.sql'))
     $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/004_business_policy.sql'))
     $sql+="`n"+[IO.File]::ReadAllText((Join-Path $projectRoot 'database/seeders/005_operations_policy.sql'))
-    $sql+="`nINSERT INTO schema_migrations(version,status,applied_at) VALUES ('001_feature_based','applied',NOW()),('002_routine_review','applied',NOW()),('003_attribute_review','applied',NOW()),('004_business_rules','applied',NOW()),('005_operations_ready','applied',NOW()),('006_shift_recruitment','applied',NOW());"
+    $sql+="`nINSERT INTO schema_migrations(version,status,applied_at) VALUES ('001_feature_based','applied',NOW()),('002_routine_review','applied',NOW()),('003_attribute_review','applied',NOW()),('004_business_rules','applied',NOW()),('005_operations_ready','applied',NOW()),('006_shift_recruitment','applied',NOW()),('007_email_queue_index','applied',NOW()),('008_security_perf','applied',NOW());"
     $baselineSql=$sql
     [void](Invoke-TestSql $sql)
     Invoke-PhpTest 'test'

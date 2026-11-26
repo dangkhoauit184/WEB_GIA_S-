@@ -46,10 +46,10 @@ final class SessionMaterialService
     {
         $base = rtrim(WRITEPATH, DIRECTORY_SEPARATOR . '/') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'session-materials';
         if (!is_dir($base)) {
-            if (!@mkdir($base, 0777, true) && !is_dir($base)) {
+            if (!@mkdir($base, 0755, true) && !is_dir($base)) {
                 throw new ApiException(500, 'Không thể khởi tạo thư mục lưu trữ tài liệu trên máy chủ.');
             }
-            @chmod($base, 0777);
+            @chmod($base, 0755);
         }
         return $base;
     }

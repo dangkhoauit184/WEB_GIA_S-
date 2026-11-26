@@ -11,9 +11,10 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="../../../../shared/styles/common.css" />
+    <link rel="stylesheet" href="../../../../shared/styles/teaching-portal.css" />
     <link rel="stylesheet" href="teachers.css" />
   </head>
-  <body class="teacher-portal">
+  <body class="teacher-portal tp-portal">
     <div class="app">
       <aside
         class="side"
@@ -32,31 +33,30 @@
         </div>
         <div class="nav-group">Chức năng phân hệ</div>
         <nav id="teacher-nav"></nav>
-        <div class="side-foot row-b">
-          <a class="btn sm" href="/">Website Công khai</a
-          ><button type="button" class="btn sm" data-action="logout">Đăng xuất</button>
+        <div class="side-foot">
+          <button type="button" class="btn sm" data-action="logout">Đăng xuất</button>
         </div>
       </aside>
-      <div id="teacher-backdrop" hidden></div>
+      <div id="teacher-backdrop" class="tp-backdrop" hidden></div>
       <div class="main-wrap">
         <header class="topbar">
           <div class="row">
             <button
               type="button"
-              class="btn sm"
+              class="btn sm tp-menu"
               id="teacher-menu"
               aria-label="Mở menu"
               aria-controls="teacher-sidebar"
               aria-expanded="false"
             >
               ☰</button
-            ><a class="btn sm teacher-website" href="/">◎ Website Trung tâm</a>
+            ><a class="btn sm teacher-website tp-website" href="/">◎ Website Trung tâm</a>
           </div>
           <div class="row">
-            <span id="teacher-date"></span
+            <span id="teacher-date" class="tp-date"></span
             ><button
               type="button"
-              class="teacher-bell"
+              class="teacher-bell tp-bell"
               data-action="notifications"
               aria-label="Mở thông báo"
             >
@@ -64,12 +64,13 @@
                 <path
                   d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
                 /></svg
-              ><span id="teacher-unread" hidden></span>
+              ><span id="teacher-unread" class="tp-unread" hidden></span>
             </button>
-            <div class="teacher-account">
+            <div class="teacher-account tp-account">
               <button
                 type="button"
                 id="teacher-avatar"
+                class="tp-avatar"
                 data-action="account"
                 aria-label="Menu tài khoản"
                 aria-controls="teacher-account-menu"
@@ -79,7 +80,7 @@
               </button>
               <section
                 id="teacher-account-menu"
-                class="teacher-account-menu"
+                class="teacher-account-menu tp-account-menu"
                 aria-label="Tài khoản cá nhân"
                 hidden
               >
@@ -105,14 +106,15 @@
         </main>
       </div>
     </div>
-    <dialog id="teacher-dialog" aria-labelledby="teacher-dialog-title">
+    <dialog id="teacher-dialog" class="tp-dialog" aria-labelledby="teacher-dialog-title">
       <div id="teacher-dialog-content"></div>
     </dialog>
-    <div id="teacher-toast" role="status" hidden></div>
+    <div id="teacher-toast" class="tp-toast" role="status" hidden></div>
     <script src="../../../../config/app.config.js"></script>
     <script src="../../../../shared/permissions/access.js"></script>
     <script src="../../../../shared/services/http.js"></script>
     <script src="../../../../shared/utils/helpers.js"></script>
+    <script src="../../../../shared/utils/teaching-portal.js"></script>
     <script src="teachers.js"></script>
   </body>
 </html>

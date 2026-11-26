@@ -11,9 +11,10 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="../../../../shared/styles/common.css" />
+    <link rel="stylesheet" href="../../../../shared/styles/teaching-portal.css" />
     <link rel="stylesheet" href="tutors.css" />
   </head>
-  <body class="tutor-portal">
+  <body class="tutor-portal tp-portal">
     <div class="app">
       <aside
         class="side"
@@ -32,31 +33,30 @@
         </div>
         <div class="nav-group">Chức năng phân hệ</div>
         <nav id="tutor-nav"></nav>
-        <div class="side-foot row-b">
-          <a class="btn sm" href="/">Website Công khai</a
-          ><button type="button" class="btn sm" data-action="logout">Đăng xuất</button>
+        <div class="side-foot">
+          <button type="button" class="btn sm" data-action="logout">Đăng xuất</button>
         </div>
       </aside>
-      <div id="tutor-backdrop" hidden></div>
+      <div id="tutor-backdrop" class="tp-backdrop" hidden></div>
       <div class="main-wrap">
         <header class="topbar">
           <div class="row">
             <button
               type="button"
-              class="btn sm"
+              class="btn sm tp-menu"
               id="tutor-menu"
               aria-label="Mở menu"
               aria-controls="tutor-sidebar"
               aria-expanded="false"
             >
               ☰</button
-            ><a class="btn sm tutor-website" href="/">◎ Website Trung tâm</a>
+            ><a class="btn sm tutor-website tp-website" href="/">◎ Website Trung tâm</a>
           </div>
           <div class="row">
-            <span id="tutor-date"></span
+            <span id="tutor-date" class="tp-date"></span
             ><button
               type="button"
-              class="tutor-bell"
+              class="tutor-bell tp-bell"
               data-action="notifications"
               aria-label="Mở thông báo"
             >
@@ -64,12 +64,13 @@
                 <path
                   d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
                 /></svg
-              ><span id="tutor-unread" hidden></span>
+              ><span id="tutor-unread" class="tp-unread" hidden></span>
             </button>
-            <div class="tutor-account">
+            <div class="tutor-account tp-account">
               <button
                 type="button"
                 id="tutor-avatar"
+                class="tp-avatar"
                 data-action="account"
                 aria-label="Menu tài khoản"
                 aria-controls="tutor-account-menu"
@@ -79,7 +80,7 @@
               </button>
               <section
                 id="tutor-account-menu"
-                class="tutor-account-menu"
+                class="tutor-account-menu tp-account-menu"
                 aria-label="Tài khoản cá nhân"
                 hidden
               >
@@ -105,14 +106,15 @@
         </main>
       </div>
     </div>
-    <dialog id="tutor-dialog" aria-labelledby="tutor-dialog-title">
+    <dialog id="tutor-dialog" class="tp-dialog" aria-labelledby="tutor-dialog-title">
       <div id="tutor-dialog-content"></div>
     </dialog>
-    <div id="tutor-toast" role="status" hidden></div>
+    <div id="tutor-toast" class="tp-toast" role="status" hidden></div>
     <script src="../../../../config/app.config.js"></script>
     <script src="../../../../shared/permissions/access.js"></script>
     <script src="../../../../shared/services/http.js"></script>
     <script src="../../../../shared/utils/helpers.js"></script>
+    <script src="../../../../shared/utils/teaching-portal.js"></script>
     <script src="tutors.js"></script>
   </body>
 </html>

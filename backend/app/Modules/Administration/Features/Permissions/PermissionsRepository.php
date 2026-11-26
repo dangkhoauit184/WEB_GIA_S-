@@ -175,6 +175,9 @@ final class PermissionsRepository
                 self::validateProfile((int)$before['userId'],$before['groupName']);
             }
             Store::update('account','account_id',$id,$data,['username'=>'username','status'=>'status']);
+            if(isset($data['status']) && $before['status']!==$data['status']) {
+                \App\Modules\Administration\Features\Auth\AuthRepository::bumpSessionVersion($id);
+            }
             $after=self::account($id);
             Store::recordAudit((int)$actor['userId'],'sua','account',$id,$before,$after);
             if($before['status']!==$after['status']) {
@@ -189,7 +192,7 @@ final class PermissionsRepository
         return Store::transaction(function() use($id,$password,$actor) {
             self::lockAdministrator($actor);
             self::account($id,true);
-            Store::execute('UPDATE account SET password_hash=? WHERE account_id=?',[password_hash($password,PASSWORD_BCRYPT),$id]);
+            Store::execute('UPDATE account SET password_hash=?, session_version=session_version+1 WHERE account_id=?',[password_hash($password,PASSWORD_BCRYPT),$id]);
             Store::audit((int)$actor['userId'],'sua',$id,['action'=>'admin_reset_password']);
             return ['updated'=>true,'requiresLogin'=>true];
         });

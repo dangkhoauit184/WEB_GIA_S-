@@ -10,6 +10,8 @@
   height: 18px;
 }
 .parent-portal .side-foot .btn {
+  width: 100%;
+  justify-content: center;
   background: #ffffff0a;
   color: #cbd5e1;
   border-color: #ffffff1a;
@@ -138,13 +140,26 @@
   color: var(--g500);
   font-size: 10px;
 }
+.parent-portal .g2eq {
+  align-items: stretch;
+}
 .parent-portal .g2eq > div {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.parent-portal .g2eq > div > .card {
+  flex: 1;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
 .parent-card-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: auto;
+  padding-top: 14px;
 }
 .parent-summary .item {
   align-items: flex-start;

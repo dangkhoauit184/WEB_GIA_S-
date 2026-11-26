@@ -1,12 +1,9 @@
 'use strict';
 (() => {
   const Admin = window.Admin;
-  const money = Admin.money, esc = Admin.esc;
-  const empty = columns => `<tr><td colspan="${columns}" class="admin-empty">Chưa có dữ liệu.</td></tr>`;
+  const money = Admin.money, esc = Admin.esc, empty = Admin.emptyRow, kpi = Admin.kpi;
   const roleLabel = type => type?.includes('giao_vien') ? 'Giáo viên' : (type?.includes('gia_su') ? 'Gia sư' : 'Trợ giảng');
   const confirmation = Admin.confirmDialog;
-  const kpi = (l, v, s, tone = '', primary = false) =>
-    `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + tone : ''}"><span class="ec-kpi-l">${esc(l)}</span><b class="ec-kpi-v">${esc(v)}</b><span class="ec-kpi-s">${esc(s)}</span></div>`;
 
   let payroll = [], rateHistory = [], activePrTab = 'sheet', prFilter = 'all', prQuery = '', rateQuery = '';
 
@@ -22,20 +19,17 @@
     const body = Admin.$('adminPayrollBody');
     if (!body) return;
     body.innerHTML = list.map(row => `<tr>
-      <td><b class="mono">${row.id ? 'BC-' + row.id : 'Chưa chốt'}</b></td>
-      <td><b>${esc(row.hoTen)}</b></td>
-      <td>${Admin.tag(roleLabel(row.phanLoai), 'i')}</td>
-      <td><b class="mono">${money(row.donGiaGioChuan)}/giờ</b></td>
-      <td>${row.soBuoi} buổi <small>(${row.soLanTre} trễ)</small></td>
-      <td><b>${Number((Number(row.tongPhut || 0) / 60).toFixed(2))} giờ</b></td>
-      <td><b style="color:var(--ok)">${money(row.thucNhan)}</b></td>
-      <td>${Admin.tag({ mo:'Tạm tính', da_chot:'Đã chốt', da_tra:'Đã chi trả' }[row.trangThai], row.trangThai === 'mo' ? 'w' : (row.trangThai === 'da_chot' ? 'purple' : 'ok'))}</td>
-      <td><div class="row">
-        ${row.trangThai === 'mo' ? `<button class="btn p sm" onclick="closeOnePayroll(${row.userId})">Chốt công</button>`
-          : row.trangThai === 'da_chot' ? `<button class="btn p sm" onclick="adminMarkPayrollPaid(${row.userId})">Xác nhận trả</button>` : ''}
-        <button class="btn sm" onclick="printPayslip(${row.userId})">In phiếu</button>
+      <td><b>${esc(row.hoTen)}</b><br><small>${Admin.tag(roleLabel(row.phanLoai), 'i')} <span class="code-short">${row.id ? 'BC-' + row.id : 'Chưa chốt'}</span></small></td>
+      <td><b class="mono" style="white-space:nowrap">${money(row.donGiaGioChuan)}/h</b></td>
+      <td><b>${Number((Number(row.tongPhut || 0) / 60).toFixed(2))} giờ</b><br><small>${row.soBuoi} buổi${row.soLanTre ? ` · ${row.soLanTre} trễ` : ''}</small></td>
+      <td><b style="color:var(--ok);white-space:nowrap">${money(row.thucNhan)}</b></td>
+      <td>${Admin.tag({ mo:'Tạm tính', da_chot:'Đã chốt', da_tra:'Đã trả' }[row.trangThai], row.trangThai === 'mo' ? 'w' : (row.trangThai === 'da_chot' ? 'purple' : 'ok'))}</td>
+      <td class="act-col"><div class="act-row">
+        ${row.trangThai === 'mo' ? `<button type="button" class="btn p sm" data-act="close-one-payroll" data-id="${row.userId}">Chốt công</button>`
+          : row.trangThai === 'da_chot' ? `<button type="button" class="btn p sm" data-act="mark-payroll-paid" data-id="${row.userId}">Chi trả</button>` : ''}
+        <button type="button" class="btn sm" data-act="print-payslip" data-id="${row.userId}">In phiếu</button>
       </div></td>
-    </tr>`).join('') || empty(9);
+    </tr>`).join('') || empty(6);
   }
 
   function renderRateHistory() {
@@ -133,7 +127,14 @@
       const person = payroll.find(row => row.userId === userId);
       const rows = await Admin.api(`/api/finance/payroll/${userId}/sessions?month=${Admin.period}`);
       const statusLabel = { mo:'Tạm tính', da_chot:'Đã chốt', da_tra:'Đã chi trả' }[person.trangThai] || person.trangThai;
-      Admin.dialog('PHIẾU LƯƠNG & BẢNG ĐỐI SOÁT CÔNG', `<div class="dialog-body"><h2>TRUNG TÂM EDUCENTER ERP</h2><p>Kỳ công ${esc(Admin.period)} · ${esc(person.hoTen)}</p>${Admin.table([{ key:'ngay', label:'Ngày' }, { key:'maLop', label:'Lớp' }, { label:'Số giờ công', render:row => row.soPhutTinhCong != null ? Number((Number(row.soPhutTinhCong) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ giờ' }, { label:'Đơn giá giờ', render:row => money(row.donGia) }, { label:'Tiền công', render:row => money(row.tien) }], rows)}<div class="item"><span>Thưởng</span><b>${money(person.thuong)}</b></div><div class="item"><span>Khấu trừ</span><b>${money(person.khauTru)}</b></div><div class="item"><span>Thực nhận</span><b>${money(person.thucNhan)}</b></div><p>Người xác nhận ${esc(Admin.user.hoTen)} · ${esc(statusLabel)}</p></div><div class="dialog-foot"><button class="btn p" onclick="window.print()">In / Lưu PDF</button></div>`);
+      Admin.dialog('PHIẾU LƯƠNG & BẢNG ĐỐI SOÁT CÔNG', `<div class="dialog-body"><h2>TRUNG TÂM EDUCENTER ERP</h2><p>Kỳ công ${esc(Admin.period)} · ${esc(person.hoTen)}</p>${Admin.table([{ key:'ngay', label:'Ngày' }, { key:'maLop', label:'Lớp' }, { label:'Số giờ công', render:row => row.soPhutTinhCong != null ? Number((Number(row.soPhutTinhCong) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ giờ' }, { label:'Đơn giá giờ', render:row => money(row.donGia) }, { label:'Tiền công', render:row => money(row.tien) }], rows)}<div class="item"><span>Thưởng</span><b>${money(person.thuong)}</b></div><div class="item"><span>Khấu trừ</span><b>${money(person.khauTru)}</b></div><div class="item"><span>Thực nhận</span><b>${money(person.thucNhan)}</b></div><p>Người xác nhận ${esc(Admin.user.hoTen)} · ${esc(statusLabel)}</p></div><div class="dialog-foot"><button type="button" class="btn p" data-act="print-window">In / Lưu PDF</button></div>`);
     } catch (error) { toast(error.message, 'err'); }
   };
+  Admin.actions({
+    'close-payroll-month': () => window.staffClosePayrollMonth(),
+    'close-one-payroll': el => window.closeOnePayroll(Number(el.dataset.id)),
+    'mark-payroll-paid': el => window.adminMarkPayrollPaid(Number(el.dataset.id)),
+    'unlock-payroll': el => window.adminUnlockPayroll(Number(el.dataset.id)),
+    'print-payslip': el => window.printPayslip(Number(el.dataset.id)),
+  });
 })();

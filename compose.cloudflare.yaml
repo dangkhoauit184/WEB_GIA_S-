@@ -1,0 +1,51 @@
+# Cloudflare Tunnel overlay for the local Docker stack (compose.yaml).
+# Keeps MySQL isolated on the `database` network; cloudflared only reaches `backend:80` via `tunnel`.
+#
+# 1) Named Tunnel (permanent custom domain on Cloudflare Zero Trust):
+#    Copy config/cloudflare.env.example -> config/cloudflare.env, paste CLOUDFLARE_TUNNEL_TOKEN, then run:
+#      docker compose --env-file config/cloudflare.env -f compose.yaml -f compose.cloudflare.yaml --profile cloudflare up -d
+#
+# 2) Quick Tunnel (free temporary *.trycloudflare.com HTTPS link, no Cloudflare account/domain needed):
+#      docker compose -f compose.yaml -f compose.cloudflare.yaml --profile quick up -d
+#      docker compose -f compose.yaml -f compose.cloudflare.yaml --profile quick logs -f cloudflared-quick
+services:
+  backend:
+    networks:
+      - tunnel
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: [cloudflare]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tunnel
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cloudflared-quick:
+    image: cloudflare/cloudflared:latest
+    profiles: [quick]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://backend:80
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tunnel
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  tunnel:

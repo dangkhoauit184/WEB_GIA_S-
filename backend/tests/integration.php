@@ -1233,6 +1233,54 @@ try {
         $gLoader->setValue(null,null);
         putenv($prevGClient===false?'GOOGLE_CLIENT_ID':'GOOGLE_CLIENT_ID='.$prevGClient);
     }
+
+    // P1.1 Nested Store::transaction() SAVEPOINT atomicity
+    $spCode='SP_'.$suffix;
+    $outerCode='OUT_'.$suffix;
+    Store::transaction(function() use ($spCode,$outerCode) {
+        Store::execute('INSERT INTO khu_vuc(ten,is_active) VALUES (?,1)',[$outerCode]);
+        try {
+            Store::transaction(function() use ($spCode) {
+                Store::execute('INSERT INTO khu_vuc(ten,is_active) VALUES (?,1)',[$spCode]);
+                throw new \RuntimeException('inner-savepoint-abort');
+            });
+        } catch (\RuntimeException) {}
+    });
+    check(Store::one('SELECT id FROM khu_vuc WHERE ten=?',[$outerCode])!==null,'nested transaction keeps outer write when inner savepoint caught');
+    check(Store::one('SELECT id FROM khu_vuc WHERE ten=?',[$spCode])===null,'nested transaction rolls back inner savepoint on exception');
+    Store::execute('DELETE FROM khu_vuc WHERE ten=?',[$outerCode]);
+
+    // P1.2 Token revocation survives audit_log purge (decoupled via account.revoked_tokens_json & session_version)
+    $p12Login=requestOk('/api/auth/login','POST',['username'=>$username,'password'=>'Recovered@789']);
+    $p12Token=$p12Login['token'];
+    requestOk('/api/auth/logout','POST',[],$p12Token);
+    Store::execute("DELETE FROM audit_log WHERE bang='account' AND ban_ghi_id=?",[$accountId]);
+    check(http('/api/auth/me','GET',null,$p12Token)[0]===401,'revoked token remains invalid even if audit_log is purged');
+
+    // P2.4 Lightweight admin notification summary endpoint (Admin only)
+    $p24Admin=requestOk('/api/auth/login','POST',['username'=>$username,'password'=>'Recovered@789']);
+    $p24Summary=requestOk('/api/communication/notifications/admin-summary','GET',null,$p24Admin['token']);
+    check(isset($p24Summary['total']) && is_array($p24Summary['items']),'admin-summary returns bounded summary payload for Admin');
+    $p24Parent=requestOk('/api/auth/login','POST',['username'=>'ph_'.$suffix,'password'=>'  MậtKhẩu@789  ']);
+    check(http('/api/communication/notifications/admin-summary','GET',null,$p24Parent['token'])[0]===403,'admin-summary rejects non-Admin roles');
+
+    // P1.3 Non-enumerating sendOtp & login brute-force rate limiting
+    [$neStatus,$neBody]=http('/api/auth/forgot-password/send-otp','POST',['identifier'=>"does_not_exist_$suffix@example.test"]);
+    check($neStatus===200 && ($neBody['success']??false)===true,'sendOtp returns uniform 200 for nonexistent account');
+    $rlUser="bruteforce_$suffix";
+    try {
+        for($i=0;$i<10;$i++) {
+            [$bfSt]=http('/api/auth/login','POST',['username'=>$rlUser,'password'=>'WrongPass@1']);
+            check($bfSt===401,'failed login before threshold returns 401');
+        }
+        [$bfBlocked,$bfBody]=http('/api/auth/login','POST',['username'=>$rlUser,'password'=>'WrongPass@1']);
+        check($bfBlocked===429 && ($bfBody['code']??'')==='RATE_LIMITED','login rate limit returns 429 RATE_LIMITED after 10 failures');
+    } finally {
+        \App\Shared\RateLimiter::clear('login:127.0.0.1:'.strtolower($rlUser));
+        \App\Shared\RateLimiter::clear('login_ip:127.0.0.1');
+        \App\Shared\RateLimiter::clear('otp_ip:127.0.0.1');
+    }
+
     echo "PASS: $assertions HTTP/MySQL integration assertions on isolated test database.\n";
 } catch(\Throwable $error) { fwrite(STDERR,$error->getMessage()."\n"); $failed=true; }
 finally { if(is_resource($server)) { proc_terminate($server);proc_close($server); } }

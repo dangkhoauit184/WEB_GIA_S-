@@ -602,6 +602,7 @@ final class ParentsRepository
             $maGiaoDichCong = 'REF-' . strtoupper(bin2hex(random_bytes(4))) . '-' . $invoice['ma_hd'];
             $provider = strtoupper(trim($data['nhaCungCap']));
 
+            $transferMeta = ['action' => 'bank_transfer_reported', 'receivingAccount' => $quote['bank'], 'memo' => $quote['memo']];
             // Bước 1: Insert với trạng thái khoi_tao theo đúng trigger trg_gd_bi
             $txId = Store::insert('giao_dich_truc_tuyen', [
                 'ma_yeu_cau' => $maYeuCau,
@@ -612,9 +613,10 @@ final class ParentsRepository
                 'so_tien' => $remaining,
                 'tien_te' => 'VND',
                 'trang_thai' => 'khoi_tao',
+                'metadata_json' => json_encode(['bank_transfer_reported' => $transferMeta], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
             ]);
 
-            Store::recordAudit($parentUserId, 'them', 'giao_dich_truc_tuyen', $txId, null, ['action'=>'bank_transfer_reported','receivingAccount'=>$quote['bank'],'memo'=>$quote['memo']]);
+            Store::recordAudit($parentUserId, 'them', 'giao_dich_truc_tuyen', $txId, null, $transferMeta);
 
             // Bước 2: Chuyển sang cho_xac_nhan và ghi su_kien_thanh_toan để Admin đối soát
             Store::execute("UPDATE giao_dich_truc_tuyen SET trang_thai='cho_xac_nhan' WHERE id=?", [$txId]);

@@ -57,25 +57,30 @@ final class Portal extends \CodeIgniter\Controller
         return $user ? $this->injectPortalSession($html, $user) : $html;
     }
 
+    private function relativeRedirect(string $path, int $code = 303): \CodeIgniter\HTTP\ResponseInterface
+    {
+        return $this->response->setStatusCode($code)->setHeader('Location', $path);
+    }
+
     public function login()
     {
         $allowStay = $this->request->getGet('loggedOut') === '1'
             || $this->request->getGet('passwordChanged') === '1'
             || $this->request->getGet('switch') === '1';
         if (!$allowStay && $this->authenticatedCookieUser() !== null) {
-            return redirect()->to('/app', 303);
+            return $this->relativeRedirect('/app', 303);
         }
         return $this->frontendPage('src/modules/administration/features/auth/auth.html');
     }
 
     public function administration()
     {
-        return redirect()->to('/app', 303);
+        return $this->relativeRedirect('/app', 303);
     }
 
     public function admissions()
     {
-        return redirect()->to('/app', 303);
+        return $this->relativeRedirect('/app', 303);
     }
 
     public function application()
@@ -108,7 +113,7 @@ final class Portal extends \CodeIgniter\Controller
             }
             return $this->injectPortalSession($html, $user);
         } catch (\App\Shared\ApiException) {
-            return redirect()->to('/login', 303)->setCookie([
+            return $this->relativeRedirect('/login', 303)->setCookie([
                 'name' => 'educenter_session', 'value' => '', 'expire' => time() - 3600,
                 'path' => '/', 'secure' => \App\Shared\Access::isSecureRequest($this->request),
                 'httponly' => true, 'samesite' => 'Lax',
@@ -132,6 +137,35 @@ final class Portal extends \CodeIgniter\Controller
             }, $html);
     }
 
+    private function serveStaticFile(string $path, string $contentType, ?string $charset = null)
+    {
+        $mtime = (int)@filemtime($path);
+        $size = (int)@filesize($path);
+        $etag = 'W/"' . dechex($mtime) . '-' . dechex($size) . '"';
+        $isHtml = $contentType === 'text/html';
+        $cacheControl = $isHtml ? 'no-cache, must-revalidate' : 'public, max-age=300, must-revalidate';
+
+        $ifNoneMatch = trim((string)$this->request->getHeaderLine('If-None-Match'));
+        if ($ifNoneMatch !== '' && ($ifNoneMatch === $etag || $ifNoneMatch === '*')) {
+            return $this->response
+                ->setStatusCode(304)
+                ->removeHeader('Cache-Control')
+                ->setHeader('ETag', $etag)
+                ->setHeader('Cache-Control', $cacheControl);
+        }
+
+        $resp = $this->response
+            ->removeHeader('Cache-Control')
+            ->setHeader('ETag', $etag)
+            ->setHeader('Cache-Control', $cacheControl);
+        if ($charset !== null) {
+            $resp->setContentType($contentType, $charset);
+        } else {
+            $resp->setContentType($contentType);
+        }
+        return $resp->setBody((string)file_get_contents($path));
+    }
+
     public function frontendAsset(string ...$segments)
     {
         $relative = implode('/', $segments);
@@ -144,17 +178,25 @@ final class Portal extends \CodeIgniter\Controller
         if ($path === false || !str_starts_with($path, $root.DIRECTORY_SEPARATOR) || !is_file($path) || !isset($types[$extension])) {
             return $this->response->setStatusCode(404);
         }
-        return $this->response->setContentType($types[$extension])->setBody(file_get_contents($path));
+        $charset = in_array($extension, ['html', 'js', 'css', 'svg'], true) ? 'UTF-8' : null;
+        return $this->serveStaticFile($path, $types[$extension], $charset);
     }
 
     public function administrationAsset(string $name)
     {
-        $relative=self::ADMIN_ASSETS[$name]??null;
-        if($relative===null) return $this->response->setStatusCode(404);
-        $path=ROOTPATH.'../frontend/src/'.$relative;
-        $type=match(pathinfo($name, PATHINFO_EXTENSION)) {
-            'css'=>'text/css', 'html'=>'text/html', default=>'application/javascript',
+        $relative = self::ADMIN_ASSETS[$name] ?? null;
+        if ($relative === null) {
+            return $this->response->setStatusCode(404);
+        }
+        $path = ROOTPATH.'../frontend/src/'.$relative;
+        if (!is_file($path)) {
+            return $this->response->setStatusCode(404);
+        }
+        $type = match(pathinfo($name, PATHINFO_EXTENSION)) {
+            'css' => 'text/css',
+            'html' => 'text/html',
+            default => 'application/javascript',
         };
-        return $this->response->setContentType($type,'UTF-8')->setBody(file_get_contents($path));
+        return $this->serveStaticFile($path, $type, 'UTF-8');
     }
 }

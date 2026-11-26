@@ -73,6 +73,14 @@ window.Admin = (() => {
 
   function tag(text, style = '') { return `<span class="tag ${esc(style)}">${esc(text)}</span>`; }
   function button(label, action, id, style = '') { return `<button type="button" class="btn sm ${esc(style)}" data-action="${esc(action)}" data-id="${esc(id)}">${esc(label)}</button>`; }
+  function kpi(label, value, sub, tone = '', primary = false) {
+    return `<div class="ec-kpi ${primary ? 'primary' : ''} ${tone ? 'tone-' + esc(tone) : ''}"><span class="ec-kpi-l">${esc(label)}</span><b class="ec-kpi-v">${esc(value)}</b><span class="ec-kpi-s">${esc(sub)}</span></div>`;
+  }
+  function emptyRow(columns, message = 'Chưa có dữ liệu.') {
+    return `<tr><td colspan="${columns}" class="admin-empty">${esc(message)}</td></tr>`;
+  }
+  const actionHandlers = {};
+  function actions(map) { Object.assign(actionHandlers, map); }
   function options(rows, valueKey = 'id', labelKey = 'ten', selected = '') {
     return rows.map(row => `<option value="${esc(row[valueKey])}" ${String(row[valueKey]) === String(selected) ? 'selected' : ''}>${esc(row[labelKey])}</option>`).join('');
   }
@@ -305,6 +313,45 @@ window.Admin = (() => {
     if (np && np.classList.contains('open') && !np.contains(ev.target) && (!bell || !bell.contains(ev.target))) {
       np.classList.remove('open');
     }
+    const backdrop = ev.target.dataset?.backdropClose;
+    if (backdrop && actionHandlers[backdrop]) {
+      actionHandlers[backdrop](ev.target, ev);
+      return;
+    }
+    const closeDlg = ev.target.closest('[data-close-dialog]');
+    if (closeDlg) {
+      $('admin-dialog')?.close();
+      return;
+    }
+    const navEl = ev.target.closest('[data-nav]');
+    if (navEl) {
+      window.showS(navEl.dataset.nav);
+      $('notifPanel')?.classList.remove('open');
+      return;
+    }
+    const actEl = ev.target.closest('[data-act]');
+    if (actEl) {
+      const fn = actionHandlers[actEl.dataset.act];
+      if (fn) fn(actEl, ev);
+    }
+  });
+  document.addEventListener('change', ev => {
+    const el = ev.target.closest('[data-on-change]');
+    if (el && actionHandlers[el.dataset.onChange]) {
+      actionHandlers[el.dataset.onChange](el, ev);
+    }
+  });
+  document.addEventListener('input', ev => {
+    const el = ev.target.closest('[data-on-input]');
+    if (el && actionHandlers[el.dataset.onInput]) {
+      actionHandlers[el.dataset.onInput](el, ev);
+    }
+  });
+  document.addEventListener('submit', ev => {
+    const form = ev.target.closest('[data-on-submit]');
+    if (form && actionHandlers[form.dataset.onSubmit]) {
+      actionHandlers[form.dataset.onSubmit](form, ev);
+    }
   });
 
   function currentScreen() {
@@ -379,7 +426,7 @@ window.Admin = (() => {
     else reset();
   });
 
-  return { $, esc, money, date, query, api, heading, table, tag, button, options, pager, bindPager, busy,
+  return { $, esc, money, date, query, api, heading, table, tag, button, kpi, emptyRow, actions, options, pager, bindPager, busy,
     notify, dialog, formDialog, confirmDialog, mountPeriodPicker, render, currentScreen, view:name => window.AdminViews[name],
     get period() { return period; }, set period(value) { period = value; },
     register:(name, handler) => { screens[name] = handler; }, get user() { return user; } };
@@ -434,73 +481,18 @@ window.loadNotifications = async () => {
   const listEl = Admin.$('notifList');
   if (!listEl) return;
   try {
-    const [txs, regs, corrs, leaves, admissions] = await Promise.all([
-      Admin.api('/api/finance/tuition/transactions').catch(() => []),
-      Admin.api('/api/academic/classes/registrations').catch(() => []),
-      Admin.api('/api/finance/timekeeping/corrections').catch(() => []),
-      Admin.api('/api/academic/leave-requests/classes').catch(() => []),
-      Admin.api('/api/academic/admissions/proposals?trangThai=san_sang&perPage=100').then(data => data.items).catch(() => [])
-    ]);
-    const items = [];
-    const parseTs = (raw, fallbackDate) => {
-      const str = String(raw || fallbackDate || '');
+    const data = await Admin.api('/api/communication/notifications/admin-summary');
+    const parseTs = raw => {
+      const str = String(raw || '');
       const m = str.match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?/);
       if (m) return { dateStr: m[1], timeStr: m[2] || '08:00', sortKey: `${m[1]} ${m[2] || '08:00'}` };
-      const now = new Date();
-      const dStr = now.toLocaleDateString('sv-SE');
+      const dStr = new Date().toLocaleDateString('sv-SE');
       return { dateStr: dStr, timeStr: 'Mới', sortKey: `${dStr} 23:59` };
     };
-    (txs || []).filter(r => r.trangThai === 'cho_xac_nhan').forEach(r => {
-      const ts = parseTs(r.createdAt);
-      items.push({
-        id: `tx-${r.id}`,
-        ...ts,
-        title: `Phụ huynh ${r.tenPhuHuynh || ''} gửi thanh toán`,
-        desc: `Giao dịch GD-${r.id} (${Admin.money(r.soTien)}) cho hóa đơn ${r.maHd || ''} đang chờ đối soát.`,
-        screen: 'admin-payments'
-      });
-    });
-    (regs || []).filter(r => r.trangThai === 'cho_xep_lop').forEach(r => {
-      const ts = parseTs(r.xepLuc || r.createdAt);
-      items.push({
-        id: `reg-${r.id}`,
-        ...ts,
-        title: `Đăng ký khóa học mới DK-${r.id}`,
-        desc: `Học viên ${r.hoTen || ''} đăng ký khóa ${r.tenKhoa || r.maKhoa || ''} đang chờ Admin xếp lớp.`,
-        screen: 'admin-courses'
-      });
-    });
-    (corrs || []).filter(r => r.trangThai === 'cho_duyet').forEach(r => {
-      const ts = parseTs(r.createdAt, r.ngay);
-      const hText = r.loai === 'huy_cong' ? '0 giờ' : r.phutDeXuat != null ? `${Number((Number(r.phutDeXuat) / 60).toFixed(2))} giờ` : 'điều chỉnh giờ';
-      items.push({
-        id: `corr-${r.id}`,
-        ...ts,
-        title: `${r.hoTen || 'Nhân sự'} gửi đơn điều chỉnh giờ công`,
-        desc: `Lớp ${r.maLop || ''} (${r.ngay || ''}) · Đề xuất ${hText}: ${r.lyDo || ''}`,
-        screen: 'admin-exceptions'
-      });
-    });
-    (leaves || []).filter(r => r.trangThai === 'cho_duyet').forEach(r => {
-      const ts = parseTs(r.createdAt, r.ngay);
-      items.push({
-        id: `leave-${r.id}`,
-        ...ts,
-        title: `${r.nguoiGui || 'Giáo viên'} xin nghỉ buổi học ${r.maLop || ''}`,
-        desc: `Ngày ${r.ngay || ''} · Lý do: ${r.lyDo || 'Chờ Admin phê duyệt'}`,
-        screen: 'admin-exceptions'
-      });
-    });
-    (admissions || []).filter(row => !row.maLop).forEach(row => {
-      const latest = [row.nhanSuPhanHoiLuc, row.phuHuynhPhanHoiLuc, row.createdAt].filter(Boolean).sort().pop();
-      items.push({
-        id: `proposal-${row.id}`,
-        ...parseTs(latest),
-        title: `Đề xuất DX-${row.id} đã được hai bên đồng ý`,
-        desc: `${row.maYc} · ${row.tenHocVien || row.hoTenLienHe || ''} · ${row.tenNguoiDay}. Chờ Admin xếp lớp.`,
-        screen: 'staff-intake'
-      });
-    });
+    const items = (data?.items || []).map(item => ({
+      ...item,
+      ...parseTs(item.timestamp),
+    }));
     items.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
     if (!items.length) {
       listEl.innerHTML = '<div style="padding:28px 18px;text-align:center;color:var(--g400);font-size:13px">Chưa có thông báo mới.</div>';
@@ -525,7 +517,7 @@ window.loadNotifications = async () => {
     for (const [gName, gItems] of groups.entries()) {
       html += `<div class="np-date-group">${Admin.esc(gName)}</div>`;
       html += gItems.map(item => `
-        <div class="np-item ${readNotifIds.has(item.id) ? '' : 'unread'}" data-notif-id="${Admin.esc(item.id)}" onclick="markNotifItemRead(this);showS('${item.screen}');document.getElementById('notifPanel').classList.remove('open')">
+        <div class="np-item ${readNotifIds.has(item.id) ? '' : 'unread'}" data-notif-id="${Admin.esc(item.id)}" data-act="open-notif" data-screen="${Admin.esc(item.screen)}">
           <div class="np-item-top"><b>${Admin.esc(item.title)}</b><time>${Admin.esc(item.timeStr)}</time></div>
           <p>${Admin.esc(item.desc)}</p>
         </div>
@@ -545,3 +537,28 @@ window.toggleNotif = async ev => {
   panel.classList.toggle('open', willOpen);
   if (willOpen) await window.loadNotifications();
 };
+
+Admin.actions({
+  'public-landing': () => window.showPublicLanding(),
+  'toggle-notif': (_el, ev) => window.toggleNotif(ev),
+  'mark-all-notifs': () => window.markAllNotifsRead(),
+  'open-notif': el => {
+    window.markNotifItemRead(el);
+    if (el.dataset.screen) window.showS(el.dataset.screen);
+    Admin.$('notifPanel')?.classList.remove('open');
+  },
+  'toggle-user-dropdown': () => window.toggleUserDropdown(),
+  'open-account-mgmt': () => {
+    window.openAccountManagement();
+    Admin.$('userDropdown')?.classList.remove('show');
+    Admin.$('admin-avatar')?.setAttribute('aria-expanded', 'false');
+  },
+  'logout': () => {
+    window.handleLogout();
+    Admin.$('userDropdown')?.classList.remove('show');
+  },
+  'print-window': () => window.print(),
+  'set-portal': el => window.setPortal(el.dataset.portal, true, el.dataset.screen),
+  'change-payroll-month': el => window.changePayrollMonth?.(el.value),
+  'show-toast': el => window.toast(el.dataset.msg || '', el.dataset.tone || 'info'),
+});

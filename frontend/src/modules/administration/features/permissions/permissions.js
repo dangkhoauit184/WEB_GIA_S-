@@ -96,7 +96,7 @@
   window.renderPerms = function() {
     if (!A.$('permCards')) return;
     const isAdmin = currentMatrix.group.groupName === 'Admin';
-    A.$('permRoleTabs').innerHTML = permissionGroups.map(group => `<button type="button" class="ec-tab ${group.groupId===selectedGroup?'on':''}" ${savingMatrix?'disabled':''} onclick="setPermRole(${group.groupId})">${A.esc(groupNames[group.groupName]||group.groupName)}</button>`).join('');
+    A.$('permRoleTabs').innerHTML = permissionGroups.map(group => `<button type="button" class="ec-tab ${group.groupId===selectedGroup?'on':''}" ${savingMatrix?'disabled':''} data-act="set-perm-role" data-id="${group.groupId}">${A.esc(groupNames[group.groupName]||group.groupName)}</button>`).join('');
     A.$('permVersionBadge').textContent = 'Phiên bản: '+currentMatrix.version.slice(0,8)+'…'+currentMatrix.version.slice(-4);
     A.$('permRoleLabel').innerHTML = 'Đang cấu hình nhóm <b>'+A.esc(groupNames[currentMatrix.group.groupName]||currentMatrix.group.groupName)+'</b>'+(isAdmin?' · <span class="tag i">Nhóm Admin gốc được bảo vệ cố định</span>':'');
     A.$('permCards').innerHTML = `<div class="tw ec-matrix"><table>
@@ -105,13 +105,14 @@
         const lockedSalary = row.functionName === 'ChamCongLuong' && !isAdmin;
         return `<tr class="${isAdmin || lockedSalary ? 'locked-row' : ''}">
           <td><b>${A.esc(functions[row.functionName]||row.functionName)}</b>${lockedSalary ? ' <span class="tag purple">Chỉ Admin</span>' : ''}</td>
-          ${Object.keys(actions).map(flag => `<td class="chk"><input type="checkbox" aria-label="${A.esc((functions[row.functionName]||row.functionName)+' - '+actions[flag])}" ${row[flag]?'checked':''} ${savingMatrix||isAdmin||row.functionName==='ChamCongLuong'||(flag!=='view'&&!row.view)?'disabled':''} onchange="changeAdminPermission(${row.functionId},'${flag}',this.checked)"></td>`).join('')}
+          ${Object.keys(actions).map(flag => `<td class="chk"><input type="checkbox" aria-label="${A.esc((functions[row.functionName]||row.functionName)+' - '+actions[flag])}" ${row[flag]?'checked':''} ${savingMatrix||isAdmin||row.functionName==='ChamCongLuong'||(flag!=='view'&&!row.view)?'disabled':''} data-on-change="change-admin-perm" data-fn-id="${row.functionId}" data-flag="${flag}"></td>`).join('')}
         </tr>`;
       }).join('')}</tbody>
     </table></div>`;
     A.$('btnPermAllOn').disabled = savingMatrix || isAdmin;
     A.$('btnPermAllOff').disabled = savingMatrix || isAdmin;
-    document.querySelector('[onclick="savePermissionsMatrix()"]').disabled = savingMatrix || isAdmin;
+    const saveBtn = document.querySelector('[data-act="save-permissions-matrix"]');
+    if (saveBtn) saveBtn.disabled = savingMatrix || isAdmin;
   };
   window.changeAdminPermission = (id,flag,value) => {
     const row = currentMatrix.permissions.find(item => item.functionId===id);
@@ -125,7 +126,7 @@
     renderPerms();
   };
   window.savePermissionsMatrix = async () => {
-    const button = document.querySelector('[onclick="savePermissionsMatrix()"]');
+    const button = document.querySelector('[data-act="save-permissions-matrix"]');
     await A.busy(button, async () => {
       savingMatrix = true;
       renderPerms();
@@ -148,6 +149,12 @@
       }
     });
   };
+  A.actions({
+    'set-perm-role': el => window.setPermRole(Number(el.dataset.id)),
+    'change-admin-perm': el => window.changeAdminPermission(Number(el.dataset.fnId), el.dataset.flag, el.checked),
+    'perm-batch': el => window.permBatch(Number(el.dataset.val)),
+    'save-permissions-matrix': () => window.savePermissionsMatrix(),
+  });
   A.register('admin-perms',async () => {
     groupRequestVersion++;
     permissionGroups=await A.api(base+'/groups');

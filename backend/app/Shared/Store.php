@@ -6,6 +6,7 @@ use CodeIgniter\Database\BaseConnection;
 final class Store
 {
     private static ?BaseConnection $connection = null;
+    private static int $txDepth = 0;
 
     public static function db(): BaseConnection
     {
@@ -58,20 +59,72 @@ final class Store
         }
     }
 
-    public static function transaction(callable $work): mixed
+    private static function isRetryableDeadlock(\Throwable $error): bool
+    {
+        $cause = $error;
+        while ($cause->getPrevious()) {
+            $cause = $cause->getPrevious();
+        }
+        $code = (int) $cause->getCode();
+        if (in_array($code, [1213, 1205], true)) {
+            return true;
+        }
+        $msg = strtolower($cause->getMessage());
+        return str_contains($msg, 'deadlock found') || str_contains($msg, 'lock wait timeout');
+    }
+
+    public static function transaction(callable $work, int $maxRetries = 3): mixed
     {
         $db = self::db();
-        $db->transBegin();
-        try {
-            $value = $work();
-            if (!$db->transStatus()) {
-                throw new \RuntimeException('Transaction failed');
+
+        // Nested transaction: use MySQL SAVEPOINT instead of BEGIN (which implicitly commits outer tx).
+        if (self::$txDepth > 0) {
+            self::$txDepth++;
+            $sp = 'educenter_sp_' . self::$txDepth;
+            $db->query("SAVEPOINT `$sp`");
+            try {
+                $value = $work();
+                $db->query("RELEASE SAVEPOINT `$sp`");
+                self::$txDepth--;
+                return $value;
+            } catch (\Throwable $error) {
+                try {
+                    $db->query("ROLLBACK TO SAVEPOINT `$sp`");
+                } catch (\Throwable) {
+                    // Savepoint may be invalidated by deadlock; bubble up to outermost retry handler.
+                }
+                self::$txDepth--;
+                throw $error;
             }
-            $db->transCommit();
-            return $value;
-        } catch (\Throwable $error) {
-            $db->transRollback();
-            throw $error;
+        }
+
+        // Outermost transaction with bounded retry on MySQL deadlock (1213) / lock wait timeout (1205).
+        $attempt = 0;
+        while (true) {
+            $attempt++;
+            self::$txDepth = 1;
+            $db->transBegin();
+            try {
+                $value = $work();
+                if (!$db->transStatus()) {
+                    throw new \RuntimeException('Transaction failed');
+                }
+                $db->transCommit();
+                self::$txDepth = 0;
+                return $value;
+            } catch (\Throwable $error) {
+                self::$txDepth = 0;
+                try {
+                    $db->transRollback();
+                } catch (\Throwable) {
+                    // Connection may have already rolled back on deadlock.
+                }
+                if ($attempt < $maxRetries && self::isRetryableDeadlock($error)) {
+                    usleep(random_int(30000, 90000) * $attempt);
+                    continue;
+                }
+                throw $error;
+            }
         }
     }
 
@@ -97,11 +150,12 @@ final class Store
 
     public static function recordAudit(int $userId, string $action, string $table, ?int $record, ?array $before, ?array $after): void
     {
+        $ip = Access::clientIp();
         self::insert('audit_log', [
             'user_id' => $userId, 'hanh_dong' => $action, 'bang' => $table, 'ban_ghi_id' => $record,
             'du_lieu_cu' => $before === null ? null : json_encode($before, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
             'du_lieu_moi' => $after === null ? null : json_encode($after, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
-            'ip' => service('request')->getIPAddress(),
+            'ip' => $ip,
         ]);
     }
 }
