@@ -718,7 +718,15 @@
     async function showPayos(invoiceId, summary) {
       clearInterval(paymentPoll);
       const quote=(await HttpService.post(`/people/parents/invoices/${invoiceId}/checkout`,{})).data;
-      openDialog('Thanh toán học phí qua payOS',`<div class="parent-summary">${summary}</div><div id="payosQr">${buildQrPaymentCard(quote)}<p class="parent-payment-note">Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống chỉ xác nhận khi đối soát được giao dịch thực tế từ payOS.</p><a class="btn p" href="${esc(quote.checkoutUrl)}" target="_blank" rel="noopener noreferrer">Mở cổng payOS</a></div><p id="payosState" role="status">Đang chờ ngân hàng xác nhận khoản thu…</p><button class="btn" type="button" id="payosCheck">Kiểm tra giao dịch</button>`,null);
+      const isSepay = quote.mode === 'sepay';
+      const title = isSepay ? 'Thanh toán học phí tự động (SePay)' : 'Thanh toán học phí qua payOS';
+      const note = isSepay
+        ? 'Quét mã QR bằng ứng dụng ngân hàng, giữ nguyên số tiền và nội dung chuyển khoản. Hệ thống tự động xác nhận qua SePay trong vài giây sau khi tiền vào.'
+        : 'Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống chỉ xác nhận khi đối soát được giao dịch thực tế từ payOS.';
+      const portalLink = quote.checkoutUrl
+        ? `<a class="btn p" href="${esc(quote.checkoutUrl)}" target="_blank" rel="noopener noreferrer">Mở cổng payOS</a>`
+        : '';
+      openDialog(title,`<div class="parent-summary">${summary}</div><div id="payosQr">${buildQrPaymentCard(quote)}<p class="parent-payment-note">${note}</p>${portalLink}</div><p id="payosState" role="status">Đang chờ ngân hàng xác nhận khoản thu…</p><button class="btn" type="button" id="payosCheck">Kiểm tra giao dịch</button>`,null);
       let checking=false;
       const update=async(actual=false)=>{
         if(checking||!dialog.open||!$('payosState'))return;
@@ -808,7 +816,7 @@
           `<strong class="parent-due">${money(remaining)}</strong>`,
         );
       const pending=pendingPayment(invoice);
-      if (!payment || !remaining || (pending && pending.channel!=='PAYOS')) {
+      if (!payment || !remaining || (pending && !['PAYOS', 'SEPAY'].includes(pending.channel))) {
         openDialog(
           "Chi tiết hóa đơn",
           `<div class="parent-summary">${summary}</div>${pendingPayment(invoice) ? '<p class="parent-payment-note">Đã gửi thông báo chuyển khoản. Trung tâm đang đối soát, bạn không cần chuyển thêm tiền.</p>' : ""}`,
@@ -821,7 +829,7 @@
       openDialog("Chuyển khoản học phí", '<p role="status">Đang tải thông tin ngân hàng…</p>', null);
       try {
         const quote = (await HttpService.get(`/people/parents/invoices/${Number(id)}/payment-qr`)).data;
-        if(quote.automaticAvailable||pending?.channel==='PAYOS') { await showPayos(Number(id),summary); return; }
+        if(quote.automaticAvailable||['PAYOS', 'SEPAY'].includes(pending?.channel)) { await showPayos(Number(id),summary); return; }
         openDialog("Chuyển khoản học phí", `<div class="parent-summary">${summary}</div>${buildQrPaymentCard(quote)}<p class="parent-payment-note">Kiểm tra tên người nhận trên ứng dụng ngân hàng trước khi xác nhận chuyển tiền. Sau đó gửi thông báo để Admin đối soát khoản thu.</p>`, async () => {
           await HttpService.post("/people/parents/payments", {
             hoaDonId: Number(invoice.id), nhaCungCap: "VIETQR_NAPAS", soTien: quote.amount, paymentToken: quote.paymentToken,

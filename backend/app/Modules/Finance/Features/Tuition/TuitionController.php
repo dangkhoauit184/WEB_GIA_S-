@@ -20,6 +20,9 @@ final class TuitionController extends \App\Shared\ApiController
     public function payosWebhook() { return $this->respond(fn()=>PayOsPayments::webhook($this->input())); }
     public function payosCheck($id) { return $this->respond(function() { \App\Modules\Administration\Features\Permissions\PermissionsFilter::administer(); return PayOsPayments::reconcile((int)$id); }); }
     public function payosCancel($id) { return $this->respond(fn()=>PayOsPayments::cancel((int)$id,\App\Modules\Administration\Features\Permissions\PermissionsFilter::administer())); }
+    public function sepayStatus() { return $this->respond(function() { \App\Modules\Administration\Features\Permissions\PermissionsFilter::administer(); return SePayPayments::status(); }); }
+    public function sepayWebhook() { return $this->respond(fn()=>SePayPayments::webhook($this->input(), (string)$this->request->getHeaderLine('Authorization'))); }
+    public function sepayCancel($id) { return $this->respond(fn()=>SePayPayments::cancel((int)$id,\App\Modules\Administration\Features\Permissions\PermissionsFilter::administer())); }
     public function banks() { return $this->respond(fn()=>TuitionService::banks()); }
     public function saveBank($id=null) { return $this->respond(fn()=>TuitionService::saveBank($this->input(),$id)); }
     public function defaultBank($id) { return $this->respond(fn()=>TuitionService::defaultBank($id)); }

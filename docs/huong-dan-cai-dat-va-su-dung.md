@@ -705,6 +705,27 @@ WHERE g.group_name = 'Admin' AND a.status = 'active'
 
 Bộ test tự động chỉ dùng DB `_test` và phản hồi SDK có chữ ký giả lập; không thực hiện chuyển khoản thật. [payOS hiện không có sandbox riêng](https://payos.vn/docs/moi-truong-test/). Khi chủ tài khoản nghiệm thu kết nối thật, họ thực hiện và đối chiếu một khoản nhỏ có kiểm soát trên kênh production. Tham khảo [SDK PHP chính thức payOS](https://payos.vn/docs/sdks/back-end/php/) và [xác minh chữ ký webhook](https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature/).
 
+#### Tùy chọn thay thế: Thanh toán tự động bằng SePay (tài khoản ngân hàng cá nhân, miễn phí 50 GD/tháng)
+
+Hệ thống hỗ trợ song song cổng **SePay** (`SePayPayments.php`) không cần giấy phép kinh doanh:
+
+1. Đăng ký tài khoản tại `https://my.sepay.vn` và liên kết tài khoản ngân hàng thật nhận học phí.
+2. Trong **Admin → Đối soát Thanh toán Web → Tài khoản ngân hàng nhận học phí**, thêm đúng tài khoản ngân hàng thật đã liên kết với SePay (chọn loại **Tài khoản ngân hàng thật**) rồi bấm **Chọn mặc định**.
+3. Khai báo 4 biến môi trường trên Railway (`Variables`) hoặc `config/server.env` và khởi động lại backend:
+   ```dotenv
+   SEPAY_ENABLED=true
+   SEPAY_API_KEY=<chuoi-bi-mat-tu-dat-toi-thieu-16-ky-tu>
+   SEPAY_PUBLIC_URL=https://ten-mien-cua-ban
+   SEPAY_RECONCILE_USER_ID=<user_id-admin-dang-hoat-dong>
+   ```
+   *(Tùy chọn: có thể đặt thêm `SEPAY_ACCOUNT_NO=<so-tai-khoan>` để khóa chặt chỉ nhận từ 1 số tài khoản duy nhất.)*
+4. Trên `my.sepay.vn` → **Webhooks → Thêm Webhook**:
+   - **Gọi đến URL:** `https://<ten-mien-cua-ban>/api/finance/tuition/sepay/webhook`
+   - **Sự kiện:** `Có tiền vào` (`transferType = in`)
+   - **Kiểu chứng thực:** `API Key` → nhập **đúng chuỗi `SEPAY_API_KEY`** ở bước 3 (SePay sẽ gửi header `Authorization: Apikey <SEPAY_API_KEY>`).
+   - **Bỏ qua nếu nội dung không có mã thanh toán:** có thể giữ mặc định — server cũng tự bỏ qua (`200 OK`) các giao dịch cá nhân không chứa mã `EDUSPxxxxxxxx`.
+5. Khi Phụ huynh bấm **Thanh toán** trên hóa đơn, hệ thống tự sinh mã VietQR chuẩn NAPAS với nội dung `EDUSPxxxxxxxx`. Tiền vào đúng số tài khoản và đúng số tiền → SePay gửi webhook về server → hệ thống xác thực `API Key`, chống trùng theo `id` giao dịch SePay, tự lập phiếu thu, gạch nợ hóa đơn và cộng doanh thu.
+
 ### 11.2. Cấu hình SMTP / Mailpit và chạy Worker gửi email thông báo (CLI)
 
 Worker gửi email thông báo nghiệp vụ chạy bằng CodeIgniter 4 CLI (tái sử dụng `Config\Email` của luồng OTP, không gửi email trực tiếp trong request web):

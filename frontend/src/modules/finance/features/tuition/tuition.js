@@ -182,14 +182,22 @@
   const money = Admin.money, esc = Admin.esc, empty = Admin.emptyRow, kpi = Admin.kpi;
   const confirmation = Admin.confirmDialog;
 
-  let transactions = [], bankAccounts = [], payosStatus = {}, activePayTab = 'tx', txFilter = 'pending', txQuery = '';
+  let transactions = [], bankAccounts = [], payosStatus = {}, sepayStatus = {}, activePayTab = 'tx', txFilter = 'pending', txQuery = '';
 
   function bankSectionHtml() {
-    return `<div class="ec-info-box ${payosStatus.ready ? 'pri' : ''}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <span>${payosStatus.ready
+    const autoReady = Boolean(sepayStatus.ready || payosStatus.ready);
+    const statusText = sepayStatus.ready
+      ? `SePay đã kích hoạt tự động · Webhook: <span class="mono">${esc(sepayStatus.webhookUrl || '/api/finance/tuition/sepay/webhook')}</span> · Giao dịch ngân hàng khớp mã sẽ tự lập phiếu thu &amp; cộng doanh thu.`
+      : payosStatus.ready
         ? 'payOS đã kết nối webhook · Hệ thống chỉ ghi nhận phiếu thu sau khi xác thực giao dịch ngân hàng.'
-        : `payOS chưa kích hoạt tự động (${!payosStatus.enabled ? 'chưa bật kết nối' : esc((payosStatus.missing || []).join(' · '))}). Dùng đối soát chuyển khoản thủ công hoặc thêm tài khoản nhận học phí bên dưới.`}</span>
-      <div class="row">${payosStatus.configured ? '<button type="button" class="btn sm" data-act="admin-connect-payos">Kiểm tra webhook</button>' : ''}<button type="button" class="btn p sm" data-act="admin-bank-form">+ Thêm tài khoản QR</button></div>
+        : sepayStatus.enabled
+          ? `SePay chưa đủ cấu hình (${esc((sepayStatus.missing || []).join(' · '))}). Dùng đối soát thủ công hoặc bổ sung biến môi trường SePay.`
+          : payosStatus.enabled
+            ? `payOS chưa kích hoạt tự động (${esc((payosStatus.missing || []).join(' · '))}). Dùng đối soát chuyển khoản thủ công hoặc thêm tài khoản nhận học phí bên dưới.`
+            : 'Thanh toán tự động (SePay / payOS) chưa bật · Đang dùng VietQR đối soát thủ công hoặc thêm tài khoản nhận học phí bên dưới.';
+    return `<div class="ec-info-box ${autoReady ? 'pri' : ''}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <span>${statusText}</span>
+      <div class="row">${sepayStatus.webhookUrl ? '<button type="button" class="btn sm" data-act="admin-copy-sepay-webhook">Sao chép Webhook SePay</button>' : ''}${payosStatus.configured ? '<button type="button" class="btn sm" data-act="admin-connect-payos">Kiểm tra webhook</button>' : ''}<button type="button" class="btn p sm" data-act="admin-bank-form">+ Thêm tài khoản QR</button></div>
     </div>` + Admin.table([
       { label:'Ảnh QR', render:r => r.qrImageHash ? `<button type="button" class="btn sm" data-act="admin-qr-preview" data-id="${esc(r.id)}">Xem QR</button>` : 'Chưa tải ảnh' },
       { label:'Ngân hàng', render:r => `${esc(r.bankName)} · <span class="mono">${esc(r.bankBin)}</span>` },
@@ -226,6 +234,8 @@
       <td>${Admin.tag(row.trangThai === 'thanh_cong' ? 'Đã xác nhận' : ({ cho_xac_nhan:'Chờ đối soát', khoi_tao:'Khởi tạo', that_bai:'Thất bại', het_han:'Hết hạn', da_huy:'Đã hủy', huy:'Đã hủy' }[row.trangThai] || row.trangThai), row.trangThai === 'thanh_cong' ? 'ok' : (['cho_xac_nhan', 'khoi_tao'].includes(row.trangThai) ? 'w' : 'r'))}${row.trangThai === 'thanh_cong' && row.tenAdmin ? `<br><small>${esc(row.tenAdmin)}</small>` : ''}</td>
       <td class="act-col">${row.nhaCungCap === 'PAYOS' && row.trangThai !== 'thanh_cong'
         ? `<div class="act-row"><button type="button" class="btn p sm" data-act="admin-check-payos" data-id="${row.id}">Kiểm tra</button>${['khoi_tao', 'cho_xac_nhan'].includes(row.trangThai) ? `<button type="button" class="btn sm" data-act="admin-cancel-payos" data-id="${row.id}">Hủy</button>` : ''}</div>`
+        : row.nhaCungCap === 'SEPAY' && ['khoi_tao', 'cho_xac_nhan'].includes(row.trangThai)
+          ? `<div class="act-row"><button type="button" class="btn p sm" data-act="admin-confirm-tx" data-id="${row.id}">Xác nhận</button><button type="button" class="btn sm" data-act="admin-cancel-sepay" data-id="${row.id}">Hủy</button></div>`
         : row.trangThai === 'cho_xac_nhan'
           ? `<button type="button" class="btn p sm" data-act="admin-confirm-tx" data-id="${row.id}">Xác nhận</button>`
           : `<small>${esc(row.thanhToanId ? 'Phiếu #' + row.thanhToanId : '—')}</small>`}</td>
@@ -240,14 +250,16 @@
   }
 
   Admin.register('admin-payments', async () => {
-    const [data, banks, gateway] = await Promise.all([
+    const [data, banks, gateway, sepay] = await Promise.all([
       Admin.api('/api/finance/tuition/transactions'),
       Admin.api('/api/finance/tuition/bank-accounts'),
-      Admin.api('/api/finance/tuition/payos/status')
+      Admin.api('/api/finance/tuition/payos/status'),
+      Admin.api('/api/finance/tuition/sepay/status')
     ]);
     transactions = data || [];
     bankAccounts = banks || [];
     payosStatus = gateway || {};
+    sepayStatus = sepay || {};
     return {
       title: 'Đối soát Thanh toán Web',
       html: Admin.view('admin-payments'),
@@ -329,6 +341,13 @@
   window.adminQrPreview = async id => { try { const r = await Admin.api(`/api/finance/tuition/bank-accounts/${id}/qr-image`); Admin.dialog('Ảnh QR tài khoản nhận học phí', `<div class="dialog-body">${r.imageUrl ? `<img alt="QR ngân hàng" src="${esc(r.imageUrl)}" style="max-width:100%;max-height:440px;display:block;margin:auto">` : 'Ảnh chưa có trên máy chủ.'}</div>`); } catch (error) { toast(error.message, 'err'); } };
   window.adminConnectPayos = async () => { try { await Admin.api('/api/finance/tuition/payos/connect', 'POST', {}); toast('payOS đã xác minh webhook.', 'ok'); Admin.render(); } catch (error) { toast(error.message, 'err'); } };
   window.adminCancelPayos = id => confirmation('Hủy yêu cầu payOS chưa nhận tiền', 'Chỉ hủy khi payOS xác minh chưa nhận tiền.', async () => { await Admin.api(`/api/finance/tuition/transactions/${id}/cancel-payos`, 'POST', {}); toast('Đã hủy yêu cầu chưa nhận tiền.', 'ok'); Admin.render(); });
+  window.adminCancelSepay = id => confirmation('Hủy yêu cầu SePay chưa nhận tiền', 'Chỉ hủy khi đã kiểm tra ngân hàng chưa nhận tiền cho yêu cầu này.', async () => { await Admin.api(`/api/finance/tuition/transactions/${id}/cancel-sepay`, 'POST', {}); toast('Đã hủy yêu cầu SePay.', 'ok'); Admin.render(); });
+  window.adminCopySepayWebhook = async () => {
+    const url = sepayStatus?.webhookUrl;
+    if (!url) return;
+    try { await navigator.clipboard.writeText(url); toast('Đã sao chép URL Webhook SePay.', 'ok'); }
+    catch { toast(url, 'ok'); }
+  };
   window.adminCheckPayos = async id => { try { const r = await Admin.api(`/api/finance/tuition/transactions/${id}/check-payos`, 'POST', {}); toast(r.paid ? 'Đã xác minh khoản thu với payOS.' : (r.review || 'payOS chưa nhận đủ khoản thanh toán.'), r.review ? 'err' : 'ok'); Admin.render(); } catch (error) { toast(error.message, 'err'); } };
   window.adminBankDefault = id => { const row = bankAccounts.find(r => r.id === id); confirmation('Chọn tài khoản mặc định', `${row.bankName} · ${row.accountNo} · ${row.accountName}`, async () => { await Admin.api(`/api/finance/tuition/bank-accounts/${id}/default`, 'POST', {}); Admin.render(); }); };
   window.adminConfirmOnlineTx = id => {
@@ -348,6 +367,8 @@
     'admin-qr-preview': el => window.adminQrPreview(el.dataset.id),
     'admin-connect-payos': () => window.adminConnectPayos(),
     'admin-cancel-payos': el => window.adminCancelPayos(Number(el.dataset.id)),
+    'admin-cancel-sepay': el => window.adminCancelSepay(Number(el.dataset.id)),
+    'admin-copy-sepay-webhook': () => window.adminCopySepayWebhook(),
     'admin-check-payos': el => window.adminCheckPayos(Number(el.dataset.id)),
     'admin-bank-default': el => window.adminBankDefault(el.dataset.id),
     'admin-confirm-tx': el => window.adminConfirmOnlineTx(Number(el.dataset.id)),

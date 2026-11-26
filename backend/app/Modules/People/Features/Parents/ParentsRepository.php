@@ -591,7 +591,7 @@ final class ParentsRepository
                 FROM giao_dich_truc_tuyen WHERE hoa_don_id=? AND phu_huynh_id=? AND trang_thai IN ('khoi_tao','cho_xac_nhan')
                 ORDER BY id DESC LIMIT 1", [$invoice['id'], $parentUserId]);
             if ($pending) {
-                if ($pending['nha_cung_cap']==='PAYOS') throw new \App\Shared\ApiException(409,'Hóa đơn có yêu cầu payOS. Hãy mở lại mã QR và kiểm tra giao dịch, không gửi thêm thông báo chuyển khoản.');
+                if (in_array($pending['nha_cung_cap'], ['PAYOS', 'SEPAY'], true)) throw new \App\Shared\ApiException(409,'Hóa đơn có yêu cầu thanh toán tự động (' . $pending['nha_cung_cap'] . '). Hãy mở lại mã QR và kiểm tra giao dịch, không gửi thêm thông báo chuyển khoản.');
                 return ['id'=>(int)$pending['id'], 'code'=>$pending['ma_yeu_cau'], 'invCode'=>$invoice['ma_hd'],
                     'channel'=>$pending['nha_cung_cap'], 'amount'=>(int)$pending['so_tien'],
                     'ref'=>$pending['ma_giao_dich_cong'], 'time'=>date('d/m/Y H:i', strtotime($pending['created_at'])),

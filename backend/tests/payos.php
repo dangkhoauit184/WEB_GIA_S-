@@ -1,6 +1,6 @@
 <?php
 // Included by integration.php after its disposable _test fixtures exist.
-use App\Modules\Finance\Features\Tuition\{PayOsPayments,TuitionModel,PaymentQrImages};
+use App\Modules\Finance\Features\Tuition\{PayOsPayments,SePayPayments,TuitionModel,PaymentQrImages};
 
 final class PayosTestTransport implements \Psr\Http\Client\ClientInterface
 {
@@ -143,5 +143,112 @@ function testPayos(array $ctx): void
     } finally {
         $clientProperty->setValue(null,null);
         foreach($before as $k=>$v)putenv($v===false?$k:$k.'='.$v);
+    }
+}
+
+function testSepay(array $ctx): void
+{
+    extract($ctx);
+    $actor = ['userId' => $parent['userId']];
+    $apiKey = 'sepay_test_secret_key_2026_verify';
+    $variables = [
+        'SEPAY_ENABLED' => 'true',
+        'SEPAY_API_KEY' => $apiKey,
+        'SEPAY_PUBLIC_URL' => 'https://educenter.example.test',
+        'SEPAY_RECONCILE_USER_ID' => (string)$login['user']['userId'],
+        'SEPAY_ACCOUNT_NO' => '',
+    ];
+    $before = [];
+    foreach ($variables as $k => $v) {
+        $before[$k] = getenv($k);
+        putenv($k . '=' . $v);
+    }
+    try {
+        requestOk('/api/finance/tuition/bank-accounts/' . $bank['id'] . '/default', 'POST', [], $token);
+        check(http('/api/finance/tuition/sepay/status', 'GET', null, $parentToken)[0] === 403, 'SePay status is Admin only');
+        check(http('/api/finance/tuition/sepay/status', 'GET', null, $token)[0] === 200, 'SePay status HTTP endpoint reachable by Admin');
+        check(http('/api/finance/tuition/sepay/webhook', 'POST', ['id' => 90001, 'transferType' => 'in', 'transferAmount' => 120000])[0] === 503, 'unconfigured HTTP SePay webhook refuses requests');
+
+        $st = SePayPayments::status();
+        check($st['ready'] === true && $st['webhookUrl'] === 'https://educenter.example.test/api/finance/tuition/sepay/webhook', 'SePay status ready with exact webhook URL');
+
+        $newInvoice = static function (int $fee = 120000) use ($student, $token): int {
+            $course = \App\Shared\Store::insert('khoa_hoc', [
+                'ma' => 'SEPAY-' . bin2hex(random_bytes(5)),
+                'ten' => 'Khóa kiểm thử SePay',
+                'hoc_phi' => $fee,
+            ]);
+            $registration = \App\Shared\Store::insert('dang_ky_khoa_hoc', [
+                'khoa_hoc_id' => $course,
+                'hoc_vien_id' => $student['id'],
+            ]);
+            $inv = requestOk('/api/finance/tuition/invoices', 'POST', ['dangKyKhoaHocId' => $registration], $token, 201)['id'];
+            requestOk('/api/finance/tuition/invoices/' . $inv . '/publish', 'POST', [], $token);
+            return (int)$inv;
+        };
+
+        $inv = $newInvoice(120000);
+        $qrQuote = \App\Modules\Finance\Features\Tuition\TuitionService::paymentQr($inv, $actor);
+        check($qrQuote['automaticAvailable'] === true && $qrQuote['automaticProvider'] === 'SEPAY', 'paymentQr advertises SEPAY automatic checkout');
+
+        $q1 = SePayPayments::checkout($inv, $actor);
+        $q2 = SePayPayments::checkout($inv, $actor);
+        check($q1['mode'] === 'sepay' && $q1['transactionId'] === $q2['transactionId'] && $q1['memo'] === $q2['memo'], 'SePay checkout is idempotent and returns VietQR');
+        check(str_starts_with($q1['qrDataUrl'], 'data:image/svg+xml;base64,'), 'SePay checkout generates SVG VietQR');
+
+        // 1. Invalid / missing API key rejected with 401
+        try {
+            SePayPayments::webhook(['id' => 90001, 'transferType' => 'in', 'transferAmount' => 120000, 'content' => $q1['memo'], 'accountNumber' => '1234567890'], '');
+            check(false, 'SePay webhook must reject missing auth');
+        } catch (\App\Shared\ApiException $e) {
+            check($e->status === 401 && $e->errorCode === 'INVALID_SEPAY_API_KEY', 'SePay webhook rejects missing Authorization header');
+        }
+        try {
+            SePayPayments::webhook(['id' => 90001, 'transferType' => 'in', 'transferAmount' => 120000, 'content' => $q1['memo'], 'accountNumber' => '1234567890'], 'Apikey wrong_key_1234567890');
+            check(false, 'SePay webhook must reject wrong API key');
+        } catch (\App\Shared\ApiException $e) {
+            check($e->status === 401 && $e->errorCode === 'INVALID_SEPAY_API_KEY', 'SePay webhook rejects invalid API key');
+        }
+
+        $validAuth = 'Apikey ' . $apiKey;
+        // 2. Outgoing and unrelated transfers acknowledged with 200 ignored
+        $outRes = SePayPayments::webhook(['id' => 90002, 'transferType' => 'out', 'transferAmount' => 120000, 'content' => $q1['memo'], 'accountNumber' => '1234567890'], $validAuth);
+        check(($outRes['ignored'] ?? false) === true, 'SePay ignores outgoing transfer');
+        $unrelRes = SePayPayments::webhook(['id' => 90003, 'transferType' => 'in', 'transferAmount' => 50000, 'content' => 'Tien an trua', 'accountNumber' => '1234567890'], $validAuth);
+        check(($unrelRes['ignored'] ?? false) === true, 'SePay ignores unrelated personal bank transfer');
+
+        // 3. Mismatched account or amount flags review without creating receipt
+        $badAcc = SePayPayments::webhook(['id' => 90004, 'transferType' => 'in', 'transferAmount' => 120000, 'content' => 'CHUYENTIEN ' . $q1['memo'], 'accountNumber' => '9999999999', 'referenceCode' => 'FT90004'], $validAuth);
+        check(($badAcc['paid'] ?? true) === false && !empty($badAcc['review']), 'SePay flags wrong receiving bank account for review');
+        $shortPay = SePayPayments::webhook(['id' => 90005, 'transferType' => 'in', 'transferAmount' => 100000, 'content' => $q1['memo'], 'accountNumber' => '1234567890', 'referenceCode' => 'FT90005'], $validAuth);
+        check(($shortPay['paid'] ?? true) === false && !empty($shortPay['review']), 'SePay flags underpayment for review');
+        check((int)\App\Shared\Store::one('SELECT COUNT(*) AS n FROM thanh_toan WHERE hoa_don_id=?', [$inv])['n'] === 0, 'no receipt created on mismatched SePay webhook');
+
+        // 4. Valid transfer creates receipt, marks invoice paid, and stays idempotent on replay
+        $okPayload = ['id' => 90006, 'gateway' => 'MBBank', 'transactionDate' => '2026-11-26 21:00:00', 'accountNumber' => '1234567890', 'subAccount' => '', 'code' => null, 'content' => 'MBVCB123.' . $q1['memo'] . '.CT', 'transferType' => 'in', 'description' => 'Bank transfer', 'transferAmount' => 120000, 'referenceCode' => 'FT261126001'];
+        $okRes = SePayPayments::webhook($okPayload, $validAuth);
+        check(($okRes['paid'] ?? false) === true && !empty($okRes['receiptId']), 'valid SePay webhook creates receipt and marks invoice paid');
+        $replay = SePayPayments::webhook($okPayload, $validAuth);
+        check(($replay['paid'] ?? false) === true && ($replay['duplicate'] ?? false) === true, 'duplicate SePay webhook is idempotent');
+        check((int)\App\Shared\Store::one('SELECT COUNT(*) AS n FROM thanh_toan WHERE hoa_don_id=?', [$inv])['n'] === 1, 'exact single receipt after SePay replay');
+        $ps = requestOk('/api/people/parents/invoices/' . $inv . '/payment-status', 'GET', null, $parentToken);
+        check($ps['paid'] === true && $ps['remaining'] === 0, 'parent HTTP payment-status reflects paid SePay invoice immediately');
+
+        // 5. Cross-invoice replay of same SePay ID blocked & Admin cancel works over HTTP
+        $inv2 = $newInvoice(150000);
+        $q3 = SePayPayments::checkout($inv2, $actor);
+        $crossReplay = SePayPayments::webhook(['id' => 90006, 'transferType' => 'in', 'transferAmount' => 150000, 'content' => $q3['memo'], 'accountNumber' => '1234567890', 'referenceCode' => 'FT_DUP'], $validAuth);
+        check(($crossReplay['paid'] ?? true) === false, 'reusing a SePay transaction ID on another invoice is blocked');
+        check(http('/api/finance/tuition/transactions/' . $q3['transactionId'] . '/cancel-sepay', 'POST', [], $parentToken)[0] === 403, 'parent cannot cancel SePay intent');
+        $cancelled = requestOk('/api/finance/tuition/transactions/' . $q3['transactionId'] . '/cancel-sepay', 'POST', [], $token);
+        check(($cancelled['cancelled'] ?? false) === true, 'Admin can cancel unpaid SePay intent over HTTP');
+        $q4 = SePayPayments::checkout($inv2, $actor);
+        check($q4['transactionId'] !== $q3['transactionId'], 'fresh SePay intent created after cancellation');
+
+        echo "PASS: SePay API-key webhook verification, deduplication, and automatic receipt scenarios.\n";
+    } finally {
+        foreach ($before as $k => $v) {
+            putenv($v === false ? $k : $k . '=' . $v);
+        }
     }
 }
