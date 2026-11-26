@@ -100,6 +100,7 @@ final class Portal extends \CodeIgniter\Controller
                     .'<script src="/frontend/src/shared/services/http.js"></script>'
                     .'<script src="/frontend/src/shared/utils/helpers.js"></script>';
                 $html = str_replace('</head>', $scripts.'</head>', $html);
+                $html = $this->versionLocalAssets($html);
             } elseif ($user['role'] === 'PHU_HUYNH') {
                 $html = $this->frontendPage('src/modules/people/features/parents/parents.html');
             } elseif ($user['role'] === 'GIAO_VIEN') {
@@ -121,11 +122,48 @@ final class Portal extends \CodeIgniter\Controller
         }
     }
 
+    private function assetVersion(string $filePath): string
+    {
+        if (!is_file($filePath)) return '';
+        $hash = @sha1_file($filePath);
+        if ($hash !== false) return substr($hash, 0, 12);
+        return dechex((int)@filemtime($filePath)) . '-' . dechex((int)@filesize($filePath));
+    }
+
+    private function versionLocalAssets(string $html): string
+    {
+        $frontendRoot = realpath(ROOTPATH.'../frontend');
+        return preg_replace_callback(
+            '/\b(src|href)="(\/(?:admin-assets|frontend)\/[^"?#]+\.(?:js|css))(?:\?v=[^"#]*)?"/i',
+            function (array $match) use ($frontendRoot): string {
+                $attr = $match[1];
+                $url = $match[2];
+                $filePath = null;
+                if (str_starts_with($url, '/admin-assets/')) {
+                    $name = substr($url, strlen('/admin-assets/'));
+                    $relative = self::ADMIN_ASSETS[$name] ?? null;
+                    if ($relative !== null) {
+                        $filePath = ROOTPATH.'../frontend/src/'.$relative;
+                    }
+                } elseif (str_starts_with($url, '/frontend/') && $frontendRoot !== false) {
+                    $relative = substr($url, strlen('/frontend/'));
+                    $resolved = realpath($frontendRoot.'/'.$relative);
+                    if ($resolved !== false && str_starts_with($resolved, $frontendRoot.DIRECTORY_SEPARATOR)) {
+                        $filePath = $resolved;
+                    }
+                }
+                $ver = $filePath !== null ? $this->assetVersion($filePath) : '';
+                return $ver !== '' ? $attr.'="'.$url.'?v='.$ver.'"' : $match[0];
+            },
+            $html
+        );
+    }
+
     private function frontendPage(string $relative): string
     {
         $html = file_get_contents(ROOTPATH.'../frontend/'.$relative);
         $base = '/frontend/'.(dirname($relative) === '.' ? '' : dirname($relative).'/');
-        return preg_replace_callback('/\b(src|href)="(?![a-z][a-z0-9+.-]*:|\/|#)([^"]+)"/i',
+        $rewritten = preg_replace_callback('/\b(src|href)="(?![a-z][a-z0-9+.-]*:|\/|#)([^"]+)"/i',
             static function (array $match) use ($base): string {
                 $path = \CodeIgniter\HTTP\URI::removeDotSegments($base.$match[2]);
                 $path = match ($path) {
@@ -135,15 +173,18 @@ final class Portal extends \CodeIgniter\Controller
                 };
                 return $match[1].'="'.$path.'"';
             }, $html);
+        return $this->versionLocalAssets($rewritten);
     }
 
     private function serveStaticFile(string $path, string $contentType, ?string $charset = null)
     {
-        $mtime = (int)@filemtime($path);
-        $size = (int)@filesize($path);
-        $etag = 'W/"' . dechex($mtime) . '-' . dechex($size) . '"';
+        $hash = @sha1_file($path);
+        $etag = $hash !== false
+            ? 'W/"' . substr($hash, 0, 16) . '"'
+            : 'W/"' . dechex((int)@filemtime($path)) . '-' . dechex((int)@filesize($path)) . '"';
         $isHtml = $contentType === 'text/html';
-        $cacheControl = $isHtml ? 'no-cache, must-revalidate' : 'public, max-age=300, must-revalidate';
+        $hasVersion = trim((string)$this->request->getGet('v')) !== '';
+        $cacheControl = ($isHtml || !$hasVersion) ? 'no-cache, must-revalidate' : 'public, max-age=300, must-revalidate';
 
         $ifNoneMatch = trim((string)$this->request->getHeaderLine('If-None-Match'));
         if ($ifNoneMatch !== '' && ($ifNoneMatch === $etag || $ifNoneMatch === '*')) {
