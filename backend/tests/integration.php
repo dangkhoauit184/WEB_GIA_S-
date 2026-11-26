@@ -939,6 +939,10 @@ try {
     // Email Notification Worker & Detailed Reports (CSV/XLSX) Suite
     // ==========================================
     $remStart = (new \DateTimeImmutable('+4 hours', new \DateTimeZone('Asia/Ho_Chi_Minh')));
+    if ((int)$remStart->format('H') >= 22) {
+        // Stay on one calendar day inside the 24h window so +90m never wraps past midnight and violates ck_buoi_gio.
+        $remStart = $remStart->modify('tomorrow 09:00');
+    }
     $remEnd = $remStart->modify('+90 minutes');
     $remSessionId = Store::insert('buoi_hoc', [
         'lop_id' => $tutorClass['id'],
