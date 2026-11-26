@@ -57,17 +57,6 @@
   background: var(--w);
   color: var(--g600);
 }
-#notificationCount {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 17px;
-  padding: 1px 4px;
-  border-radius: 20px;
-  background: var(--err);
-  color: white;
-  font-size: 10px;
-}
 .parent-account {
   position: relative;
 }
@@ -78,36 +67,13 @@
 .parent-account summary::-webkit-details-marker {
   display: none;
 }
-#parentAvatar {
-  display: grid;
-  place-items: center;
-  height: 36px;
-  width: 36px;
-  background: var(--pri-d);
-  color: white;
-  border: 2px solid var(--pri-l);
-  border-radius: 50%;
-  font-weight: 700;
+.parent-account:not([open]) > .user-dropdown {
+  display: none;
 }
-.parent-account-pop {
-  position: absolute;
-  top: 46px;
-  right: 0;
-  min-width: 215px;
-  padding: 14px;
-  background: white;
-  border: 1px solid var(--g200);
-  border-radius: var(--r);
-  box-shadow: var(--sh-md);
-}
-.parent-account-pop strong {
-  display: block;
-  margin-bottom: 12px;
-  font-size: 13px;
-}
-.parent-account-pop .btn {
-  width: 100%;
-  margin-top: 6px;
+.parent-notif-full {
+  margin: -20px -22px;
+  border-radius: var(--rl);
+  overflow: hidden;
 }
 .parent-child-bar {
   display: flex;
@@ -314,6 +280,7 @@
 .parent-notification h2 {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
 }
 .parent-notification > div {
@@ -462,7 +429,8 @@
   }
 }
 @media (max-width: 560px) {
-  .parent-date {
+  .parent-date,
+  .parent-portal .top-r .perm {
     display: none;
   }
   .parent-top-actions {
@@ -533,20 +501,10 @@
 }
 .parent-notification-foot {
   border-top: 1px solid var(--g200);
-  padding: 12px 16px;
+  padding: 10px 16px;
   display: flex;
   justify-content: center;
-}
-.parent-portal .np-item {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-.parent-portal .np-item .btn {
-  align-self: flex-start;
-}
-.parent-portal .np-item p {
-  overflow-wrap: anywhere;
+  background: var(--w);
 }
 .parent-month-scroll {
   overflow-x: auto;

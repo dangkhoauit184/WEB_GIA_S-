@@ -12,7 +12,7 @@
   function renderClassLeave() {
     const list = leaveFilter === 'all' ? classLeaves : classLeaves.filter(r => r.trangThai === 'cho_duyet');
     Admin.$('adminClassLeaveBody').innerHTML = list.map(row => `<tr>
-      <td><b>${esc(row.maLop)}</b> · <span class="code-short">NL-${row.id}</span><br><small>${esc(row.ngay)}</small></td>
+      <td><b>${esc(row.maLop)}</b> · <span class="code-short">NL-${row.id}</span><br><small>${esc(Admin.date(row.ngay))}</small></td>
       <td>${esc(row.nguoiGui)}</td>
       <td><span class="clamp-2" title="${esc(row.lyDo || '')}">${esc(row.lyDo)}</span></td>
       <td>${Admin.tag(decisionLabel(row.trangThai), row.trangThai === 'cho_duyet' ? 'w' : (row.trangThai === 'da_duyet' ? 'ok' : 'r'))}</td>
@@ -26,7 +26,7 @@
     const list = corrFilter === 'all' ? corrections : corrections.filter(r => r.trangThai === 'cho_duyet');
     Admin.$('adminTimeAdjBody').innerHTML = list.map(row => `<tr>
       <td><b>${esc(row.hoTen)}</b><br><small class="code-short">DC-${row.id}</small></td>
-      <td><b>${esc(row.maLop)}</b><br><small>${esc(row.ngay)}</small></td>
+      <td><b>${esc(row.maLop)}</b><br><small>${esc(Admin.date(row.ngay))}</small></td>
       <td><span style="font-size:12px">${esc(Admin.date(row.checkinMoi))} → ${esc(Admin.date(row.checkoutMoi))}</span><br><small class="clamp-2" title="${esc(row.lyDo || '')}">${esc(row.lyDo)}</small></td>
       <td><b style="white-space:nowrap">${row.loai === 'huy_cong' ? '0 giờ' : (row.phutDeXuat != null ? Number((Number(row.phutDeXuat) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ')}</b></td>
       <td>${Admin.tag(decisionLabel(row.trangThai), row.trangThai === 'cho_duyet' ? 'w' : (row.trangThai === 'da_duyet' ? 'ok' : 'r'))}</td>
@@ -66,7 +66,7 @@
           kpi('Tổng đơn chờ Admin duyệt', String(totalPending), totalPending ? 'Cần xem xét ngay' : 'Đã xử lý hết', totalPending ? 'w' : 'g', true),
           kpi('Nghỉ nguyên buổi cả lớp', String(pendingLeaves), `Tổng ${classLeaves.length} đơn`, pendingLeaves ? 'r' : 'g'),
           kpi('Điều chỉnh giờ công', String(pendingCorr), `Tổng ${corrections.length} yêu cầu`, pendingCorr ? 'w' : 'i'),
-          kpi('Bảng công đã chốt chưa trả', String(closedPayrolls.length), `Kỳ ${Admin.period}`, 'p'),
+          kpi('Bảng công đã chốt chưa trả', String(closedPayrolls.length), `Kỳ ${Admin.date(Admin.period)}`, 'p'),
         ].join('');
 
         Admin.$('exLeaveCount').textContent = String(pendingLeaves);
@@ -81,7 +81,7 @@
         Admin.$('exceptionsMonth').value = Admin.period;
         Admin.$('adminUnlockBody').innerHTML = closedPayrolls.map(row => `<tr>
           <td><b>${esc(row.hoTen)}</b><br><small class="code-short">BC-${row.id}</small></td>
-          <td>${esc(Admin.period)}</td>
+          <td>${esc(Admin.date(Admin.period))}</td>
           <td><span class="clamp-2">${esc(row.ghiChu || '—')}</span></td>
           <td>${Admin.tag('Đã chốt', 'purple')}</td>
           <td class="act-col"><button type="button" class="btn purple sm" data-act="unlock-payroll" data-id="${row.id}">Mở khóa</button></td>

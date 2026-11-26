@@ -59,9 +59,6 @@
     <button type="button" data-screen="staff-approve" data-nav="staff-approve"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span>Duyệt nghỉ cá nhân &amp; Học bù</span></button>
     <button type="button" data-screen="staff-billing" data-nav="staff-billing"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span>Hóa đơn trọn khóa &amp; Thu phí</span></button>
   <?php endif; ?></nav>
-  <div class="side-foot">
-    <button type="button" class="btn sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:var(--g300);padding:6px 10px;font-size:12px;box-shadow:none" id="admin-logout">Đăng xuất</button>
-  </div>
 </aside>
 
 <!-- ═══════════════════════════════════════
@@ -71,10 +68,6 @@
 <header class="topbar">
   <div class="row">
     <button type="button" class="btn sm mob-toggle" style="display:none" id="admin-menu" aria-label="Mở menu">☰</button>
-    <button type="button" class="btn sm" style="border-color:#99f6e4;background:var(--pri-ll);color:var(--pri-d);font-weight:600" data-act="public-landing" title="Mở trang Landing Page giới thiệu Trung tâm">
-      <svg class="ui-ico" style="width:14px;height:14px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      Website Trung tâm
-    </button>
     <div class="seg" id="seg" style="display:none"></div>
   </div>
   <div class="top-r">
@@ -118,7 +111,7 @@
         <span class="field-error" id="err-sfStaffName"></span>
       </div>
 
-      <div class="row" style="gap:10px">
+      <div class="row" style="gap:10px;align-items:flex-start">
         <div class="form-group" style="flex:1">
           <label>Email liên hệ <span style="color:var(--err)">*</span></label>
           <input type="email" id="sfStaffEmail" placeholder="VD: huong.ltl@edu.vn" required>
@@ -131,7 +124,7 @@
         </div>
       </div>
 
-      <div class="row" style="gap:10px">
+      <div class="row" style="gap:10px;align-items:flex-start">
         <div class="form-group" style="flex:1">
           <label>Vai trò phân quyền <span style="color:var(--err)">*</span></label>
           <select data-on-change="staff-role-changed" id="sfStaffRole" style="font-weight:600">
@@ -209,7 +202,7 @@
         <span id="sfConflictText">Giáo viên đã có ca dạy khác vào khung giờ này.</span>
       </div>
 
-      <div class="row" style="gap:10px">
+      <div class="row" style="gap:10px;align-items:flex-start">
         <div style="flex:1.2">
           <label>Lớp học <span style="color:var(--err)">*</span></label>
           <select id="sfClassSelect" data-on-change="sf-class-changed"></select>
@@ -224,9 +217,9 @@
       </div>
 
       <div id="sfMakeupWrap" style="display:none;background:var(--purple-l);border:1px solid #ddd6fe;padding:10px;border-radius:var(--rs);margin-top:8px">
-        <div class="row" style="gap:10px">
+        <div class="row" style="gap:10px;align-items:flex-start">
           <div style="flex:1">
-            <label style="margin-top:0;color:var(--purple)">Buổi gốc</label><select id="sfMakeupOrigin"></select><label style="margin-top:0;color:var(--purple)">Phạm vi bù</label>
+            <label style="margin-top:0;color:var(--purple)">Buổi gốc</label><select id="sfMakeupOrigin"></select><label style="margin-top:8px;color:var(--purple)">Phạm vi bù</label>
             <select id="sfMakeupScope" data-on-change="sf-type-changed">
               <option value="ca_nhan">Bù cá nhân</option>
               <option value="ca_lop">Bù nguyên cả lớp</option>
@@ -241,28 +234,28 @@
         <input type="text" id="sfMakeupNote" placeholder="Ghi chú đã chốt với phụ huynh">
       </div>
 
-      <div class="row" style="gap:10px;margin-top:6px">
-        <div style="flex:1">
+      <div class="row" style="gap:10px;margin-top:6px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
           <label>Giáo viên chính <span style="color:var(--err)">*</span></label>
           <select id="sfTeacherSelect" data-on-change="sf-check-conflicts"></select>
-          <small id="sfTeacherAvailability" style="display:block;color:var(--g500);margin-top:5px"></small>
+          <small id="sfTeacherAvailability" style="display:block;color:var(--g500);margin-top:5px;line-height:1.45"></small>
         </div>
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <label>Trợ giảng</label>
           <select id="sfTaSelect"></select>
         </div>
       </div>
 
-      <div class="row" style="gap:8px;margin-top:6px">
-        <div style="flex:1.2">
+      <div class="row" style="gap:8px;margin-top:6px;align-items:flex-start">
+        <div style="flex:1.2;min-width:0">
           <label>Ngày học <span style="color:var(--err)">*</span></label>
           <input type="date" id="sfDate" data-on-change="sf-check-conflicts" required>
         </div>
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <label>Giờ lịch Bắt đầu <span style="color:var(--err)">*</span></label>
           <input type="time" id="sfStartTime" data-on-change="sf-check-conflicts" value="18:00" required>
         </div>
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <label>Giờ lịch Kết thúc <span style="color:var(--err)">*</span></label>
           <input type="time" id="sfEndTime" data-on-change="sf-check-conflicts" value="20:00" required>
         </div>
@@ -276,7 +269,7 @@
             <button type="button" id="sfBtnOnline" data-act="sf-online-mode" data-online="1">Online Trực tuyến</button>
           </div>
         </div>
-        <div id="sfOfflineFields" class="row" style="gap:8px">
+        <div id="sfOfflineFields" class="row" style="gap:8px;align-items:flex-start">
           <div style="flex:1">
             <label style="margin-top:0">Cơ sở</label>
             <select id="sfBranchSelect" data-on-change="sf-branch-changed"></select>

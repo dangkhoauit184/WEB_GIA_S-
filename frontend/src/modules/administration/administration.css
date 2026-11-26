@@ -191,7 +191,7 @@
 .ec-pill:hover { background: var(--g200); color: var(--g900); }
 .ec-pill.on { background: var(--pri-ll); color: var(--pri-d); border-color: var(--pri-l); }
 
-.ec-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.ec-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; align-items: start; }
 @media (max-width: 600px) { .ec-form-grid { grid-template-columns: 1fr; } }
 .ec-form-grid .full { grid-column: 1 / -1; }
 .ec-form-grid label { margin: 0; }

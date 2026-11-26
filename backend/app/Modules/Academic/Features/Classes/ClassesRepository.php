@@ -89,7 +89,7 @@ final class ClassesRepository
                     VALUES (?,'lop_moi',?,?,'lop_hoc',?,?,1)", [
                     (int)$info['phu_huynh_user_id'],
                     'Thông báo xếp lớp · '.$info['ma_lop'],
-                    'Học viên '.$info['ho_ten'].' đã được xếp vào lớp '.$info['ma_lop'].' — '.$info['ten_lop'].' (từ ngày '.$data['ngayVao'].').',
+                    'Học viên '.$info['ho_ten'].' đã được xếp vào lớp '.$info['ma_lop'].' — '.$info['ten_lop'].' (từ ngày '.date('d/m/Y', strtotime((string)$data['ngayVao'])).').',
                     $id,
                     'class-enroll:'.$id.':'.$data['hocVienId'],
                 ]);

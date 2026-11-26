@@ -27,7 +27,7 @@ window.AdminClassLeave = {
     const rows = list.map(row => `<tr>
       <td><b class="code-short">#${row.id}</b><br>${Admin.tag(row.doiTuong === 'hoc_vien' ? 'Nghỉ HV' : 'Đổi lịch GV', row.doiTuong === 'hoc_vien' ? 'i' : 'purple')}</td>
       <td><b>${Admin.esc(row.nguoiGui)}</b>${row.tenHocVien ? `<br><small>HV: ${Admin.esc(row.tenHocVien)}</small>` : ''}</td>
-      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(row.ngay + ' ' + row.gioBatDau.slice(0, 5))}</small></td>
+      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(Admin.date(row.ngay) + ' ' + row.gioBatDau.slice(0, 5))}</small></td>
       <td><span class="clamp-2" title="${Admin.esc(row.lyDo || '')}">${Admin.esc(row.lyDo)}</span>${row.lyDoTuChoi ? `<br><small style="color:var(--err)">Từ chối: ${Admin.esc(row.lyDoTuChoi)}</small>` : ''}</td>
       <td>${Admin.tag(statusLbl[row.trangThai] || row.trangThai, row.trangThai === 'da_duyet' ? 'ok' : (row.trangThai === 'cho_duyet' ? 'w' : 'r'))}</td>
       <td class="act-col">${row.trangThai === 'cho_duyet' && StaffUI.can('VanHanhBuoiHoc', 'edit')
@@ -87,7 +87,7 @@ window.AdminClassLeave = {
     }));
 
     StaffUI.rows('staffClassLeaveBody', 5, classRequests.map(row => `<tr>
-      <td><b>${Admin.esc(row.maLop)}</b> · <span class="code-short">NL-${row.id}</span><br><small>${Admin.esc(row.ngay)}</small></td>
+      <td><b>${Admin.esc(row.maLop)}</b> · <span class="code-short">NL-${row.id}</span><br><small>${Admin.esc(Admin.date(row.ngay))}</small></td>
       <td>${Admin.esc(row.nguoiGui)}</td>
       <td><span class="clamp-2" title="${Admin.esc(row.lyDo || '')}">${Admin.esc(row.lyDo)}</span></td>
       <td>${Admin.tag(statusLbl[row.trangThai] || row.trangThai, row.trangThai === 'da_duyet' ? 'ok' : (row.trangThai === 'cho_duyet' ? 'w' : 'r'))}</td>
@@ -96,7 +96,7 @@ window.AdminClassLeave = {
 
     StaffUI.rows('makeupStudentsBody', 5, makeups.map(row => `<tr>
       <td><b>${Admin.esc(row.tenHocVien)}</b><br><small class="code-short">HB-${row.id}</small></td>
-      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(row.ngay)} ${Admin.esc(row.gioBatDau.slice(0, 5))}–${Admin.esc(row.gioKetThuc.slice(0, 5))}</small></td>
+      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(Admin.date(row.ngay))} ${Admin.esc(row.gioBatDau.slice(0, 5))}–${Admin.esc(row.gioKetThuc.slice(0, 5))}</small></td>
       <td>${row.donXinNghiId ? 'Đơn #' + row.donXinNghiId : 'Thỏa thuận'}</td>
       <td>${Admin.esc(row.nguoiXep)}</td>
       <td><span class="clamp-2">${Admin.esc(row.ghiChu || '—')}</span></td>

@@ -7,7 +7,7 @@ class Filters extends \CodeIgniter\Config\Filters
         'secureheaders' => \CodeIgniter\Filters\SecureHeaders::class,
     ];
     public array $required = ['before' => [], 'after' => []];
-    public array $globals = ['before' => ['api'], 'after' => ['api', 'secureheaders']];
+    public array $globals = ['before' => ['api'], 'after' => ['secureheaders', 'api']];
     public array $methods = [];
     public array $filters = [];
 }

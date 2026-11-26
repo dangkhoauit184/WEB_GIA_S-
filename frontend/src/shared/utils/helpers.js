@@ -12,14 +12,15 @@ window.AccountUI = (() => {
     document.querySelectorAll("details.parent-account").forEach(el => { el.open = false; });
     document.getElementById("userDropdown")?.classList.remove("show");
     document.getElementById("admin-avatar")?.setAttribute("aria-expanded", "false");
+    document.querySelectorAll(".notif-panel.open").forEach(el => el.classList.remove("open"));
     const menu = document.getElementById("teacher-account-menu");
-    if (menu) menu.hidden = true;
+    if (menu) { menu.hidden = true; menu.classList.remove("show"); }
     document.getElementById("teacher-avatar")?.setAttribute("aria-expanded", "false");
     const assistantMenu = document.getElementById("assistant-account-menu");
-    if (assistantMenu) assistantMenu.hidden = true;
+    if (assistantMenu) { assistantMenu.hidden = true; assistantMenu.classList.remove("show"); }
     document.getElementById("assistant-avatar")?.setAttribute("aria-expanded", "false");
     const tutorMenu = document.getElementById("tutor-account-menu");
-    if (tutorMenu) tutorMenu.hidden = true;
+    if (tutorMenu) { tutorMenu.hidden = true; tutorMenu.classList.remove("show"); }
     document.getElementById("tutor-avatar")?.setAttribute("aria-expanded", "false");
   }
   function open(title, body) {
@@ -160,4 +161,558 @@ window.AccountUI = (() => {
   });
   document.addEventListener("keydown", event => { if (event.key === "Escape") closeMenus(); });
   return {view,edit,password,logout,initial,close:()=>dialog?.close(),setProfileView:handler=>{ profileView = handler; }};
+})();
+
+/* Shared Vietnamese Date/Time Formatter & Unified Date/Month/Time Picker across all portals. */
+window.ECDate = (() => {
+  "use strict";
+  const pad = n => String(n).padStart(2, "0");
+  function todayYmd() {
+    return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+  }
+  function date(value) {
+    if (!value) return "—";
+    const s = String(value).trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    const ym = s.match(/^(\d{4})-(\d{2})$/);
+    if (ym) return `${ym[2]}/${ym[1]}`;
+    return s;
+  }
+  function dateTime(value) {
+    if (!value) return "—";
+    const s = String(value).trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2})(?::\d{2})?)?/);
+    if (m) return m[4] ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}` : `${m[3]}/${m[2]}/${m[1]}`;
+    const ym = s.match(/^(\d{4})-(\d{2})$/);
+    if (ym) return `${ym[2]}/${ym[1]}`;
+    return s;
+  }
+  function month(value) {
+    if (!value) return "—";
+    const m = String(value).trim().match(/^(\d{4})-(\d{2})/);
+    return m ? `${m[2]}/${m[1]}` : String(value);
+  }
+  function replaceInlineDates(text) {
+    if (text == null || text === "") return "";
+    return String(text)
+      .replace(/(^|[^A-Za-z0-9-])(20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(?![A-Za-z0-9-])/g, "$1$4/$3/$2")
+      .replace(/\bT8\b/g, "CN");
+  }
+  return { pad, todayYmd, date, dateTime, month, replaceInlineDates };
+})();
+
+/* Unified Admin-style Notification Popover Renderer (grouped by HÔM NAY / HÔM QUA / dd/mm/yyyy). */
+window.ECNotif = (() => {
+  "use strict";
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const fmtText = v => window.ECDate ? window.ECDate.replaceInlineDates(v || "") : String(v || "");
+
+  function parseTs(raw) {
+    const str = String(raw || "");
+    const m = str.match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?/);
+    if (m) return { dateStr: m[1], timeStr: m[2] || "08:00", sortKey: `${m[1]} ${m[2] || "08:00"}` };
+    const dStr = window.ECDate ? window.ECDate.todayYmd() : new Date().toLocaleDateString("sv-SE");
+    return { dateStr: dStr, timeStr: "Mới", sortKey: `${dStr} 23:59` };
+  }
+
+  function dateGroupLabel(dStr) {
+    const todayStr = window.ECDate ? window.ECDate.todayYmd() : new Date().toLocaleDateString("sv-SE");
+    const yestDt = new Date(Date.now() - 86400000);
+    const yestStr = yestDt.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+    if (dStr === todayStr) return "HÔM NAY";
+    if (dStr === yestStr) return "HÔM QUA";
+    return window.ECDate ? window.ECDate.date(dStr) : dStr;
+  }
+
+  function renderGroupedHtml(items, emptyText = "Chưa có thông báo mới.") {
+    const list = (Array.isArray(items) ? items : []).map(item => ({
+      ...item,
+      ...parseTs(item.timestamp),
+    }));
+    list.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    if (!list.length) {
+      return `<div style="padding:28px 18px;text-align:center;color:var(--g400);font-size:13px">${esc(emptyText)}</div>`;
+    }
+    const groups = new Map();
+    list.forEach(item => {
+      const g = dateGroupLabel(item.dateStr);
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(item);
+    });
+    let html = "";
+    for (const [gName, gItems] of groups.entries()) {
+      html += `<div class="np-date-group">${esc(gName)}</div>`;
+      html += gItems.map(item => `
+        <div class="np-item ${item.unread ? "unread" : ""}" ${item.attrs || ""}>
+          <div class="np-item-top"><b>${esc(fmtText(item.title))}</b><time>${esc(item.timeStr)}</time></div>
+          <p>${esc(fmtText(item.desc))}</p>
+        </div>
+      `).join("");
+    }
+    return html;
+  }
+
+  function formatTopbarDate(ymd) {
+    const daysVi = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+    const d = ymd && /^\d{4}-\d{2}-\d{2}/.test(ymd)
+      ? new Date(`${ymd.slice(0, 10)}T12:00:00Z`)
+      : new Date();
+    const dow = ymd ? d.getUTCDay() : d.getDay();
+    const dd = String(ymd ? d.getUTCDate() : d.getDate()).padStart(2, "0");
+    const mm = String((ymd ? d.getUTCMonth() : d.getMonth()) + 1).padStart(2, "0");
+    const yyyy = ymd ? d.getUTCFullYear() : d.getFullYear();
+    return `${daysVi[dow]}, ${dd}/${mm}/${yyyy}`;
+  }
+
+  return { renderGroupedHtml, formatTopbarDate };
+})();
+
+window.ECPicker = (() => {
+  "use strict";
+  const pad = n => String(n).padStart(2, "0");
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const nativeValDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+  const MONTHS_SHORT = ["Thg 1","Thg 2","Thg 3","Thg 4","Thg 5","Thg 6","Thg 7","Thg 8","Thg 9","Thg 10","Thg 11","Thg 12"];
+  const WEEKDAYS = ["T2","T3","T4","T5","T6","T7","CN"];
+  const QUICK_TIMES = ["08:00","09:00","14:00","16:00","17:30","18:00","19:30","20:00"];
+  const ICO_CAL = '<svg class="svg-ico sm ec-dp-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  const ICO_CLK = '<svg class="svg-ico sm ec-dp-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+  let activePop = null;
+  let activeAnchor = null;
+
+  function closeActive() {
+    if (activePop) {
+      activePop.remove();
+      activePop = null;
+    }
+    if (activeAnchor) {
+      activeAnchor.classList.remove("open");
+      activeAnchor.setAttribute("aria-expanded", "false");
+      activeAnchor = null;
+    }
+  }
+
+  function positionPop(pop, anchor) {
+    const r = anchor.getBoundingClientRect();
+    const pw = pop.offsetWidth || 280;
+    const ph = pop.offsetHeight || 300;
+    let left = r.left;
+    if (left + pw > window.innerWidth - 10) left = Math.max(8, window.innerWidth - pw - 10);
+    if (left < 8) left = 8;
+    let top = r.bottom + 6;
+    if (top + ph > window.innerHeight - 10 && r.top - ph - 6 > 8) {
+      top = r.top - ph - 6;
+    } else if (top + ph > window.innerHeight - 10) {
+      top = Math.max(8, window.innerHeight - ph - 10);
+    }
+    pop.style.left = `${Math.round(left)}px`;
+    pop.style.top = `${Math.round(top)}px`;
+  }
+
+  function createPop(anchor, extraClass = "") {
+    closeActive();
+    const pop = document.createElement("div");
+    pop.className = `ec-dp-pop ${extraClass}`.trim();
+    pop.setAttribute("data-ec-dp-pop", "1");
+    pop.setAttribute("role", "dialog");
+    const host = anchor.closest("dialog") || document.body;
+    host.appendChild(pop);
+    activePop = pop;
+    activeAnchor = anchor;
+    anchor.classList.add("open");
+    anchor.setAttribute("aria-expanded", "true");
+    return pop;
+  }
+
+  function detectMode(input) {
+    if (!(input instanceof HTMLInputElement)) return null;
+    if (input.dataset.noEcPicker === "1" || input.type === "hidden") return null;
+    if (input.type === "date") return "date";
+    if (input.type === "month") return "month";
+    if (input.type === "time" || input.hasAttribute("data-time24")) return "time";
+    return null;
+  }
+
+  function formatDisplay(mode, val) {
+    if (!val) return mode === "date" ? "dd/mm/yyyy" : mode === "month" ? "Chọn tháng" : "HH:mm";
+    if (mode === "date") return window.ECDate.date(val);
+    if (mode === "month") {
+      const m = String(val).match(/^(\d{4})-(\d{2})/);
+      return m ? `Tháng ${Number(m[2])} / ${m[1]}` : val;
+    }
+    return String(val).slice(0, 5);
+  }
+
+  function setNativeValue(input, nextVal, emit = true) {
+    const prev = nativeValDesc.get.call(input);
+    nativeValDesc.set.call(input, nextVal);
+    input._ecSync?.();
+    if (emit && prev !== nextVal) {
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  function openDatePop(input, btn) {
+    const pop = createPop(btn, "ec-dp-date");
+    const today = window.ECDate.todayYmd();
+    const minStr = input.getAttribute("min") || "";
+    const maxStr = input.getAttribute("max") || "";
+    const curVal = nativeValDesc.get.call(input) || "";
+    const initYmd = /^\d{4}-\d{2}-\d{2}$/.test(curVal) ? curVal : today;
+    let viewY = Number(initYmd.slice(0, 4)) || Number(today.slice(0, 4));
+    let viewM = (Number(initYmd.slice(5, 7)) || Number(today.slice(5, 7))) - 1;
+    let viewMode = "days"; // days | months | years
+
+    const isOutOfRange = ymd => (minStr && ymd < minStr) || (maxStr && ymd > maxStr);
+
+    const render = () => {
+      const selected = nativeValDesc.get.call(input) || "";
+      let headTitle = `Tháng ${viewM + 1} / ${viewY}`;
+      if (viewMode === "months") headTitle = `Năm ${viewY}`;
+      else if (viewMode === "years") {
+        const startY = Math.floor(viewY / 12) * 12;
+        headTitle = `${startY} – ${startY + 11}`;
+      }
+
+      let body = "";
+      if (viewMode === "days") {
+        const first = new Date(viewY, viewM, 1);
+        const lead = (first.getDay() + 6) % 7;
+        const dim = new Date(viewY, viewM + 1, 0).getDate();
+        const prevDim = new Date(viewY, viewM, 0).getDate();
+        const cells = [];
+        for (let i = lead - 1; i >= 0; i--) {
+          const d = prevDim - i;
+          const dt = new Date(viewY, viewM - 1, d);
+          cells.push({ d, ymd: `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(d)}`, other: true });
+        }
+        for (let d = 1; d <= dim; d++) {
+          cells.push({ d, ymd: `${viewY}-${pad(viewM + 1)}-${pad(d)}`, other: false });
+        }
+        let nextD = 1;
+        while (cells.length % 7 !== 0 || cells.length < 35) {
+          const dt = new Date(viewY, viewM + 1, nextD);
+          cells.push({ d: nextD++, ymd: `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`, other: true });
+        }
+        body = `<div class="ec-dp-wk">${WEEKDAYS.map(w => `<span>${w}</span>`).join("")}</div>
+          <div class="ec-dp-days">${cells.map(c => {
+            const disabled = isOutOfRange(c.ymd);
+            const cls = [
+              "ec-dp-day",
+              c.other ? "other" : "",
+              c.ymd === today ? "today" : "",
+              c.ymd === selected ? "on" : "",
+            ].filter(Boolean).join(" ");
+            return `<button type="button" class="${cls}" data-pick-ymd="${c.ymd}" ${disabled ? "disabled" : ""}>${c.d}</button>`;
+          }).join("")}</div>`;
+      } else if (viewMode === "months") {
+        body = `<div class="ec-dp-grid3">${MONTHS_SHORT.map((lbl, idx) => {
+          const on = selected.startsWith(`${viewY}-${pad(idx + 1)}`);
+          return `<button type="button" class="ec-dp-cell ${on ? "on" : ""}" data-pick-m="${idx}">${lbl}</button>`;
+        }).join("")}</div>`;
+      } else {
+        const startY = Math.floor(viewY / 12) * 12;
+        body = `<div class="ec-dp-grid3">${Array.from({ length: 12 }, (_, i) => {
+          const y = startY + i;
+          const on = selected.startsWith(`${y}-`);
+          return `<button type="button" class="ec-dp-cell ${on ? "on" : ""}" data-pick-y="${y}">${y}</button>`;
+        }).join("")}</div>`;
+      }
+
+      const canToday = !isOutOfRange(today);
+      pop.innerHTML = `
+        <div class="ec-dp-head">
+          <button type="button" class="ec-dp-nav" data-nav="-1" aria-label="Trước">‹</button>
+          <button type="button" class="ec-dp-title" data-cycle-view="1">${esc(headTitle)} <span class="ec-dp-caret">▾</span></button>
+          <button type="button" class="ec-dp-nav" data-nav="1" aria-label="Sau">›</button>
+        </div>
+        ${body}
+        <div class="ec-dp-foot">
+          ${!input.required ? '<button type="button" class="ec-dp-link muted" data-clear="1">Xóa</button>' : "<span></span>"}
+          ${canToday ? '<button type="button" class="ec-dp-link" data-today="1">Hôm nay</button>' : ""}
+        </div>`;
+      positionPop(pop, btn);
+    };
+
+    pop.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const target = ev.target.closest("button");
+      if (!target || target.disabled) return;
+      if (target.dataset.nav) {
+        const delta = Number(target.dataset.nav);
+        if (viewMode === "days") {
+          const d = new Date(viewY, viewM + delta, 1);
+          viewY = d.getFullYear(); viewM = d.getMonth();
+        } else if (viewMode === "months") {
+          viewY += delta;
+        } else {
+          viewY += delta * 12;
+        }
+        render();
+      } else if (target.dataset.cycleView) {
+        viewMode = viewMode === "days" ? "months" : viewMode === "months" ? "years" : "days";
+        render();
+      } else if (target.dataset.pickY) {
+        viewY = Number(target.dataset.pickY);
+        viewMode = "months";
+        render();
+      } else if (target.dataset.pickM != null) {
+        viewM = Number(target.dataset.pickM);
+        viewMode = "days";
+        render();
+      } else if (target.dataset.pickYmd) {
+        setNativeValue(input, target.dataset.pickYmd, true);
+        closeActive();
+      } else if (target.dataset.today) {
+        setNativeValue(input, today, true);
+        closeActive();
+      } else if (target.dataset.clear) {
+        setNativeValue(input, "", true);
+        closeActive();
+      }
+    });
+
+    render();
+  }
+
+  function openMonthMenu(anchor, currentYm, onPick, allowClear = false) {
+    const pop = createPop(anchor, "ec-dp-month");
+    const todayYm = window.ECDate.todayYmd().slice(0, 7);
+    const activeYm = /^\d{4}-\d{2}$/.test(currentYm || "") ? currentYm : todayYm;
+    let viewY = Number(activeYm.slice(0, 4)) || Number(todayYm.slice(0, 4));
+
+    const render = () => {
+      pop.innerHTML = `
+        <div class="ec-dp-head">
+          <button type="button" class="ec-dp-nav" data-nav="-1" aria-label="Năm trước">‹</button>
+          <span class="ec-dp-title static">Năm ${viewY}</span>
+          <button type="button" class="ec-dp-nav" data-nav="1" aria-label="Năm sau">›</button>
+        </div>
+        <div class="ec-dp-grid3">${MONTHS_SHORT.map((lbl, idx) => {
+          const ym = `${viewY}-${pad(idx + 1)}`;
+          const isCur = ym === todayYm;
+          const on = ym === activeYm;
+          return `<button type="button" class="ec-dp-cell ${on ? "on" : ""} ${isCur ? "today" : ""}" data-pick-ym="${ym}">${lbl}</button>`;
+        }).join("")}</div>
+        <div class="ec-dp-foot">
+          ${allowClear ? '<button type="button" class="ec-dp-link muted" data-clear="1">Xóa</button>' : "<span></span>"}
+          <button type="button" class="ec-dp-link" data-this-month="1">Tháng này</button>
+        </div>`;
+      positionPop(pop, anchor);
+    };
+
+    pop.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const target = ev.target.closest("button");
+      if (!target || target.disabled) return;
+      if (target.dataset.nav) {
+        viewY += Number(target.dataset.nav);
+        render();
+      } else if (target.dataset.pickYm) {
+        closeActive();
+        onPick(target.dataset.pickYm);
+      } else if (target.dataset.thisMonth) {
+        closeActive();
+        onPick(todayYm);
+      } else if (target.dataset.clear) {
+        closeActive();
+        onPick("");
+      }
+    });
+
+    render();
+  }
+
+  function openTimePop(input, btn) {
+    const pop = createPop(btn, "ec-dp-time");
+    const curVal = (nativeValDesc.get.call(input) || "").slice(0, 5);
+    const parts = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(curVal);
+    let selH = parts ? parts[1] : "18";
+    let selM = parts ? parts[2] : "00";
+
+    const commit = (closeAfter = false) => {
+      setNativeValue(input, `${selH}:${selM}`, true);
+      if (closeAfter) closeActive();
+    };
+
+    const render = (scrollToSel = false) => {
+      const hours = Array.from({ length: 24 }, (_, i) => pad(i));
+      const mins = Array.from({ length: 12 }, (_, i) => pad(i * 5));
+      if (!mins.includes(selM)) mins.push(selM), mins.sort();
+      pop.innerHTML = `
+        <div class="ec-dp-time-top">
+          <span class="ec-dp-time-badge">${selH}:${selM}</span>
+          <input type="text" class="ec-dp-time-direct" value="${selH}:${selM}" maxlength="5" placeholder="HH:mm" aria-label="Nhập giờ 24h">
+          <button type="button" class="btn p sm" data-done="1">Xong</button>
+        </div>
+        <div class="ec-dp-quick">${QUICK_TIMES.map(t => `<button type="button" class="ec-dp-qchip ${t === `${selH}:${selM}` ? "on" : ""}" data-quick="${t}">${t}</button>`).join("")}</div>
+        <div class="ec-dp-time-cols">
+          <div class="ec-dp-tcol" data-col="h">
+            <div class="ec-dp-tcol-lbl">Giờ</div>
+            <div class="ec-dp-tlist">${hours.map(h => `<button type="button" class="ec-dp-titem ${h === selH ? "on" : ""}" data-h="${h}">${h}</button>`).join("")}</div>
+          </div>
+          <div class="ec-dp-tcol" data-col="m">
+            <div class="ec-dp-tcol-lbl">Phút</div>
+            <div class="ec-dp-tlist">${mins.map(m => `<button type="button" class="ec-dp-titem ${m === selM ? "on" : ""}" data-m="${m}">${m}</button>`).join("")}</div>
+          </div>
+        </div>`;
+      positionPop(pop, btn);
+      if (scrollToSel) {
+        pop.querySelector('.ec-dp-tlist .on')?.scrollIntoView?.({ block: "center" });
+        pop.querySelectorAll(".ec-dp-tlist").forEach(list => {
+          const on = list.querySelector(".on");
+          if (on) list.scrollTop = Math.max(0, on.offsetTop - list.clientHeight / 2 + on.offsetHeight / 2);
+        });
+      }
+      const direct = pop.querySelector(".ec-dp-time-direct");
+      direct?.addEventListener("change", () => {
+        const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(direct.value.trim());
+        if (m) {
+          selH = pad(Number(m[1]));
+          selM = m[2];
+          commit(false);
+          render(true);
+        }
+      });
+      direct?.addEventListener("keydown", ev => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(direct.value.trim());
+          if (m) { selH = pad(Number(m[1])); selM = m[2]; commit(true); }
+        }
+      });
+    };
+
+    pop.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const target = ev.target.closest("button");
+      if (!target) return;
+      if (target.dataset.quick) {
+        const [qh, qm] = target.dataset.quick.split(":");
+        selH = qh; selM = qm;
+        commit(true);
+      } else if (target.dataset.h) {
+        selH = target.dataset.h;
+        commit(false);
+        render(false);
+      } else if (target.dataset.m) {
+        selM = target.dataset.m;
+        commit(false);
+        render(false);
+      } else if (target.dataset.done) {
+        commit(true);
+      }
+    });
+
+    render(true);
+  }
+
+  function enhanceInput(input) {
+    const mode = detectMode(input);
+    if (!mode || input.dataset.ecPickerBound === "1") return;
+    if (!input.parentNode) return;
+    input.dataset.ecPickerBound = "1";
+
+    const wrap = document.createElement("span");
+    wrap.className = `ec-dp-wrap ec-dp-wrap-${mode}`;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ec-dp-btn";
+    btn.setAttribute("aria-haspopup", "dialog");
+    btn.setAttribute("aria-expanded", "false");
+    if (input.getAttribute("aria-label")) btn.setAttribute("aria-label", input.getAttribute("aria-label"));
+
+    const valSpan = document.createElement("span");
+    valSpan.className = "ec-dp-val";
+    btn.appendChild(valSpan);
+    btn.insertAdjacentHTML("beforeend", mode === "time" ? ICO_CLK : ICO_CAL);
+
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(btn);
+    wrap.appendChild(input);
+
+    input.classList.add("ec-dp-native");
+    input.tabIndex = -1;
+    input.setAttribute("aria-hidden", "true");
+
+    const sync = () => {
+      const raw = nativeValDesc.get.call(input) || "";
+      valSpan.textContent = formatDisplay(mode, raw);
+      btn.classList.toggle("placeholder", !raw);
+      btn.disabled = input.disabled;
+      btn.classList.toggle("invalid", input.getAttribute("aria-invalid") === "true");
+    };
+    input._ecSync = sync;
+
+    Object.defineProperty(input, "value", {
+      configurable: true,
+      get() { return nativeValDesc.get.call(this); },
+      set(v) { nativeValDesc.set.call(this, v); sync(); }
+    });
+
+    const attrObs = new MutationObserver(sync);
+    attrObs.observe(input, { attributes: true, attributeFilter: ["disabled", "aria-invalid", "value"] });
+    input.addEventListener("change", sync);
+    input.addEventListener("input", sync);
+    input.form?.addEventListener("reset", () => setTimeout(sync, 0));
+
+    btn.addEventListener("click", ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (btn.disabled) return;
+      if (activeAnchor === btn) { closeActive(); return; }
+      if (mode === "date") openDatePop(input, btn);
+      else if (mode === "month") openMonthMenu(btn, nativeValDesc.get.call(input), ym => setNativeValue(input, ym, true), !input.required);
+      else openTimePop(input, btn);
+    });
+
+    sync();
+  }
+
+  function enhance(root = document) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('input[type="date"], input[type="month"], input[type="time"], input[data-time24]').forEach(enhanceInput);
+  }
+
+  document.addEventListener("click", ev => {
+    if (activePop && !activePop.contains(ev.target) && (!activeAnchor || !activeAnchor.contains(ev.target))) {
+      closeActive();
+    }
+  });
+  document.addEventListener("keydown", ev => {
+    if (ev.key === "Escape" && activePop) {
+      ev.stopPropagation();
+      closeActive();
+    }
+  }, true);
+  window.addEventListener("resize", () => { if (activePop && activeAnchor) positionPop(activePop, activeAnchor); });
+  window.addEventListener("scroll", ev => {
+    if (activePop && !activePop.contains(ev.target)) closeActive();
+  }, true);
+
+  let rafPending = false;
+  function scheduleEnhance() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      enhance(document);
+    });
+  }
+
+  function boot() {
+    enhance(document);
+    if (document.body) {
+      new MutationObserver(scheduleEnhance).observe(document.body, { childList: true, subtree: true });
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+
+  return { enhance, openMonthMenu, close: closeActive };
 })();

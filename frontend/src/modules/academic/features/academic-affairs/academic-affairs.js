@@ -69,7 +69,22 @@ StaffUI.register('staff-schedule', 'Thời khóa biểu', async () => { currentP
 window.loadStaffNotifications = async () => {
   try {
     const rows = await Admin.api(`${StaffUI.prefix}/notifications`);
-    Admin.$('notifList').innerHTML = rows.map(row => `<div class="np-item ${row.docLuc ? '' : 'unread'}" data-notif-id="${row.id}" data-act="read-staff-notif" data-id="${row.id}" data-screen="${row.doiTuongLoai === 'hoa_don' ? 'staff-billing' : (row.doiTuongLoai === 'ung_tuyen_ca' || row.doiTuongLoai === 'de_xuat_tuyen_ca') ? 'staff-recruitment' : row.loai === 'de_xuat' ? 'staff-intake' : row.loai === 'duyet_don' ? 'staff-approve' : 'staff-schedule'}"><div><b>${Admin.esc(row.tieuDe)}</b><p>${Admin.esc(row.noiDung || '')}</p><small>${Admin.esc(Admin.date(row.createdAt))}</small></div></div>`).join('') || '<div class="admin-empty">Chưa có thông báo.</div>';
+    const items = (rows || []).map(row => {
+      const screen = row.doiTuongLoai === 'hoa_don' ? 'staff-billing'
+        : (row.doiTuongLoai === 'ung_tuyen_ca' || row.doiTuongLoai === 'de_xuat_tuyen_ca') ? 'staff-recruitment'
+        : row.loai === 'de_xuat' ? 'staff-intake'
+        : row.loai === 'duyet_don' ? 'staff-approve'
+        : 'staff-schedule';
+      return {
+        id: row.id,
+        title: row.tieuDe,
+        desc: row.noiDung || '',
+        timestamp: row.createdAt,
+        unread: !row.docLuc,
+        attrs: `data-notif-id="${row.id}" data-act="read-staff-notif" data-id="${row.id}" data-screen="${screen}"`,
+      };
+    });
+    Admin.$('notifList').innerHTML = window.ECNotif.renderGroupedHtml(items);
     window.syncNotifBadge();
   } catch (error) { Admin.notify(error.message, true); }
 };

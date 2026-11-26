@@ -34,5 +34,8 @@ final class ApiFilter implements FilterInterface
             $response->setHeader('Cache-Control', 'no-store');
         }
         $response->setHeader('X-Content-Type-Options', 'nosniff');
+        // Google Identity Services requires no-referrer-when-downgrade + same-origin-allow-popups.
+        $response->setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
+        $response->setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     }
 }

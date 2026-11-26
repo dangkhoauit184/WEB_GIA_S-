@@ -218,12 +218,12 @@ window.TeachingPortal = (() => {
           ${field("Giờ", name + "Time", parts[1]?.slice(0, 5) || "", "time", extra)}</div></fieldset>`;
       }
       if (type === "time") {
-        return `<div class="tp-field"><label for="${p}-input-${name}">${escape(label)} (HH:mm)</label><input id="${p}-input-${name}" name="${name}" type="text" data-time24 value="${escape(value)}" placeholder="HH:mm" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" aria-describedby="${p}-error-${name}" ${extra}><small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`;
+        return `<div class="tp-field"><label for="${p}-input-${name}">${escape(label)}</label><input id="${p}-input-${name}" name="${name}" type="text" data-time24 value="${escape(value)}" placeholder="HH:mm" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" aria-describedby="${p}-error-${name}" ${extra}><small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`;
       }
-      const control = `<label>${escape(label)}<input name="${name}" type="${type}" value="${escape(value)}" ${extra}${type === "date" ? ` aria-describedby="${p}-error-${name}"` : ""}></label>`;
-      return type === "date"
-        ? `<div class="tp-field">${control}<small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`
-        : control;
+      if (type === "date") {
+        return `<div class="tp-field"><label for="${p}-input-${name}">${escape(label)}</label><input id="${p}-input-${name}" name="${name}" type="date" value="${escape(value)}" aria-describedby="${p}-error-${name}" ${extra}><small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`;
+      }
+      return `<label>${escape(label)}<input name="${name}" type="${type}" value="${escape(value)}" ${extra}></label>`;
     }
 
     const validTime = (value) => /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
@@ -399,19 +399,23 @@ window.TeachingPortal = (() => {
       }
       const profile = state.workspace.profile;
       document.getElementById(`${p}-name`).textContent = profile.hoTen;
+      const udName = document.getElementById(`${p}-ud-name`);
+      if (udName) udName.textContent = profile.hoTen;
       document.getElementById(`${p}-avatar`).textContent = AccountUI.initial(
         profile.hoTen,
       );
-      document.getElementById(`${p}-date`).textContent =
-        new Intl.DateTimeFormat("vi-VN", {
-          dateStyle: "full",
-          timeZone: "UTC",
-        }).format(new Date(today() + "T12:00:00Z"));
+      document.getElementById(`${p}-date`).textContent = window.ECNotif
+        ? window.ECNotif.formatTopbarDate(today())
+        : date(today());
       const unread = state.notifications.filter(
         (notification) => !Number(notification.daDoc),
       ).length;
-      document.getElementById(`${p}-unread`).textContent = unread;
-      document.getElementById(`${p}-unread`).hidden = !unread;
+      const badge = document.getElementById(`${p}-unread`);
+      if (badge) {
+        badge.textContent = String(unread > 99 ? "99+" : unread);
+        badge.style.display = unread > 0 ? "grid" : "none";
+      }
+      renderNotificationsPanel();
     }
 
     function sessionRows(sessions) {
@@ -431,7 +435,7 @@ window.TeachingPortal = (() => {
       if (session.ngay + " " + session.gioBatDau <= state.workspace.serverNow)
         return `<span class="tag w">${escape(text.onTimeBadge)}</span>`;
       return session.loai === "bu"
-        ? '<span class="tag purple">Đã xếp lịch bù</span>'
+        ? '<span class="tag purple">Học bù · Sắp tới</span>'
         : '<span class="tag i">Sắp diễn ra</span>';
     }
 
@@ -572,7 +576,7 @@ window.TeachingPortal = (() => {
             .slice(0, 4)
             .map(
               (notification) =>
-                `<div class="tp-row"><div><b>${escape(notification.tieuDe)}</b><small>${escape(notification.noiDung)}</small></div></div>`,
+                `<div class="tp-row"><div><b>${escape(window.ECDate ? window.ECDate.replaceInlineDates(notification.tieuDe) : notification.tieuDe)}</b><small>${escape(window.ECDate ? window.ECDate.replaceInlineDates(notification.noiDung) : notification.noiDung)}</small></div></div>`,
             )
             .join("") || empty("Chưa có thông báo.")
         }${button("Xem thông báo", "notifications")}</div></div></div>`
@@ -593,13 +597,13 @@ window.TeachingPortal = (() => {
         completed: "Hoàn tất",
         active: "Đã Check-in",
         makeup: text.calendarMakeupLabel,
-        upcoming: "Đã xếp lịch",
+        upcoming: "",
       }[status];
-      const title = escape(sessionTitle(session) + " · " + statusLabel);
+      const title = escape(sessionTitle(session) + (statusLabel ? " · " + statusLabel : ""));
       if (compact)
         return `<button type="button" class="cal-m-chip ${status}" data-action="session" data-id="${session.id}" title="${title}"><span>${time(session.gioBatDau)}</span><b>${escape(session.maLop)}</b>${session.checkinLuc ? "<span>✓</span>" : ""}</button>`;
       return `<button type="button" class="ses-card ${status}" data-action="session" data-id="${session.id}" title="${title}">
-        <span class="tp-calendar-badge">${escape(statusLabel)}</span>
+        ${statusLabel ? `<span class="tp-calendar-badge">${escape(statusLabel)}</span>` : ""}
         <span class="sc-code">${escape(session.maLop)}</span>
         <span class="sc-subj">${escape(session.tenMon)} · ${escape(session.tenLop)}</span>
         <span class="sc-time">${time(session.gioBatDau)} – ${time(session.gioKetThuc)}</span>
@@ -615,16 +619,19 @@ window.TeachingPortal = (() => {
       nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
       const monthEnd = addDays(nextMonth.toISOString().slice(0, 10), -1);
       const count = (Date.parse(monthEnd) - Date.parse(start)) / 86400000 + 1;
+      const endWeek = addDays(start, 6);
       return {
         start,
         days: view === "month" ? Math.ceil(count / 7) * 7 : 7,
         range:
           view === "week"
-            ? `Tuần ${date(start)} – ${date(addDays(start, 6))}`
+            ? `Tuần: ${date(start).slice(0, 5)} – ${date(endWeek)}`
             : `Tháng ${selected.slice(5, 7)} / ${selected.slice(0, 4)}`,
         headings: ["THỨ 2", "THỨ 3", "THỨ 4", "THỨ 5", "THỨ 6", "THỨ 7", "CN"],
       };
     }
+
+    const CAL_ICON_SVG = '<svg class="svg-ico" style="color:var(--pri)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
 
     function schedule() {
       const view = state.calendarMode;
@@ -648,8 +655,8 @@ window.TeachingPortal = (() => {
           "Bấm vào một ca trên lịch để xem chi tiết, Check-in / Check-out và ghi sổ buổi học.",
         ) +
         `<div class="cal-box">
-        <div class="cal-bar"><div class="row">${button("‹ Trước", "calendar-prev")}${button("Hôm nay", "calendar-today")}${button("Sau ›", "calendar-next")}</div>
-          <div class="tp-calendar-period"><b class="cal-range-btn">${escape(range)}</b>${field("Chọn tháng", "calendar-month", selected.slice(0, 7), "month", "required")}</div>
+        <div class="cal-bar"><div class="row" style="gap:6px"><button type="button" class="cal-nav-btn" data-action="calendar-prev">‹ Trước</button>${button("Hôm nay", "calendar-today")}<button type="button" class="cal-nav-btn" data-action="calendar-next">Sau ›</button></div>
+          <div><button type="button" class="cal-range-btn" data-action="calendar-pick-month" title="Chọn nhanh tháng / năm">${CAL_ICON_SVG}<span>${escape(range)}</span><span style="font-size:10px;color:var(--g400)">▾</span></button></div>
           <div class="seg"><button type="button" class="${view === "week" ? "on" : ""}" data-action="calendar-mode" data-id="week">Lịch Tuần</button><button type="button" class="${view === "month" ? "on" : ""}" data-action="calendar-mode" data-id="month">Lịch Tháng</button><button type="button" class="${view === "list" ? "on" : ""}" data-action="calendar-mode" data-id="list">Danh sách</button></div>
         </div>
         <div class="cal-filter-bar">${select("Lớp học", "class-filter", { "": "Tất cả lớp", ...Object.fromEntries(state.workspace.classes.map((item) => [item.id, item.maLop])) }, state.classFilter)}${button("Đặt lại lọc", "calendar-reset")} ${button("Tải lại lịch", "reload")}</div>
@@ -928,8 +935,8 @@ window.TeachingPortal = (() => {
         return `<div class="cal-day-col ${isToday ? "is-today" : ""}"><div class="cal-col-head ${isToday ? "is-today" : ""}"><div class="d-name">${headings[index]}${isToday ? '<span class="d-today-badge">Hôm nay</span>' : ""}</div><div class="d-num">${day.slice(8)}/${day.slice(5, 7)}</div></div><div class="cal-col-body">${entries}${button("+ Thêm lịch rảnh", "add-availability", weekday, "tp-add-free")}</div></div>`;
       }).join("");
       return `<section data-availability-calendar aria-label="Thời khóa biểu lịch rảnh"><div class="pg-head"><div><h2>Thời khóa biểu lịch rảnh</h2><p class="sub">Các khung giờ lặp lại hàng tuần. Bấm vào lịch để sửa hoặc xóa.</p></div>${button("+ Thêm lịch rảnh", "add-availability", "", "p")}</div><div class="cal-box">
-        <div class="cal-bar"><div class="row">${button("‹ Trước", "availability-prev")}${button("Hôm nay", "availability-today")}${button("Sau ›", "availability-next")}</div>
-          <div class="tp-calendar-period"><b class="cal-range-btn">${escape(range)}</b>${field("Chọn tháng lịch rảnh", "availability-month", selected.slice(0, 7), "month", "required")}</div>
+        <div class="cal-bar"><div class="row" style="gap:6px"><button type="button" class="cal-nav-btn" data-action="availability-prev">‹ Trước</button>${button("Hôm nay", "availability-today")}<button type="button" class="cal-nav-btn" data-action="availability-next">Sau ›</button></div>
+          <div><button type="button" class="cal-range-btn" data-action="availability-pick-month" title="Chọn nhanh tháng / năm">${CAL_ICON_SVG}<span>${escape(range)}</span><span style="font-size:10px;color:var(--g400)">▾</span></button></div>
           <div class="seg"><button type="button" class="${mode === "week" ? "on" : ""}" data-action="availability-mode" data-id="week">Lịch Tuần</button><button type="button" class="${mode === "month" ? "on" : ""}" data-action="availability-mode" data-id="month">Lịch Tháng</button></div>
         </div><div class="tp-calendar-scroll">${mode === "month" ? `<div class="tp-month-view"><div class="cal-month-head">${headings.map((label) => `<div class="cal-month-head-cell">${label}</div>`).join("")}</div><div class="cal-month-grid">${cells}</div></div>` : `<div class="cal-week-grid">${cells}</div>`}</div></div></section>`;
     }
@@ -1222,9 +1229,9 @@ window.TeachingPortal = (() => {
         sessions[0];
       modal(
         "Làm đơn mới",
-        `<form id="${p}-request-form"><div class="tp-form-grid">${select("Loại yêu cầu", "loai", cfg.requestModalOptions, type)}<div class="full">${select("Ca học *", "buoiHocId", Object.fromEntries(sessions.map((session) => [session.id, sessionTitle(session)])), selected?.id ?? "")}</div>
-        ${type === cfg.rescheduleType ? field("Ngày đề xuất *", "ngayMoi", selected?.ngay || "", "date", "required") + field("Giờ bắt đầu *", "gioBatDau", selected ? time(selected.gioBatDau) : "", "time", "required") + field("Giờ kết thúc *", "gioKetThuc", selected ? time(selected.gioKetThuc) : "", "time", "required") : ""}
-        ${type === "dieu_chinh_cong" ? field("Check-in đề nghị *", "checkinMoi", selected?.checkinLuc || (selected ? selected.ngay + "T" + selected.gioBatDau : ""), "datetime-local", "required") + field("Check-out đề nghị *", "checkoutMoi", selected?.checkoutLuc || (selected ? selected.ngay + "T" + selected.gioKetThuc : ""), "datetime-local", "required") : ""}
+        `<form id="${p}-request-form"><div class="tp-form-grid"><div class="full">${select("Loại yêu cầu", "loai", cfg.requestModalOptions, type)}</div><div class="full">${select("Ca học *", "buoiHocId", Object.fromEntries(sessions.map((session) => [session.id, sessionTitle(session)])), selected?.id ?? "")}</div>
+        ${type === cfg.rescheduleType ? `<div class="tp-form-row-3 full">${field("Ngày đề xuất *", "ngayMoi", selected?.ngay || "", "date", "required")}${field("Giờ bắt đầu *", "gioBatDau", selected ? time(selected.gioBatDau) : "", "time", "required")}${field("Giờ kết thúc *", "gioKetThuc", selected ? time(selected.gioKetThuc) : "", "time", "required")}</div>` : ""}
+        ${type === "dieu_chinh_cong" ? `<div class="full">${field("Check-in đề nghị *", "checkinMoi", selected?.checkinLuc || (selected ? selected.ngay + "T" + selected.gioBatDau : ""), "datetime-local", "required")}</div><div class="full">${field("Check-out đề nghị *", "checkoutMoi", selected?.checkoutLuc || (selected ? selected.ngay + "T" + selected.gioKetThuc : ""), "datetime-local", "required")}</div>` : ""}
         <div class="full">${textarea("Lý do *", "lyDo", "", 255)}</div></div>${!sessions.length ? empty("Chưa có ca phù hợp theo trạng thái hiện tại để gửi loại yêu cầu này.") : ""}${formFoot()}</form>`,
       );
       dialog.querySelector("[name=lyDo]").required = true;
@@ -1330,10 +1337,15 @@ window.TeachingPortal = (() => {
     }
 
     function accountMenu(open) {
-      document.getElementById(`${p}-account-menu`).hidden = !open;
+      const el = document.getElementById(`${p}-account-menu`);
+      if (el) {
+        el.hidden = !open;
+        el.classList.toggle("show", open);
+      }
       document
         .getElementById(`${p}-avatar`)
-        .setAttribute("aria-expanded", String(open));
+        ?.setAttribute("aria-expanded", String(open));
+      if (open) notifPanel(false);
     }
 
     function viewProfile() {
@@ -1341,11 +1353,33 @@ window.TeachingPortal = (() => {
       AccountUI.view();
     }
 
-    function notificationsModal() {
-      modal(
-        "Thông báo",
-        `${button("Đánh dấu tất cả đã đọc", "read-all")}<div>${state.notifications.map((notification) => `<div class="tp-row"><div><b>${escape(notification.tieuDe)}</b><p>${escape(notification.noiDung)}</p><small>${datetime(notification.createdAt)}</small></div>${Number(notification.daDoc) ? '<span class="tp-muted">Đã đọc</span>' : button("Đánh dấu đã đọc", "read", notification.id)}</div>`).join("") || empty("Chưa có thông báo.")}</div>`,
-      );
+    function renderNotificationsPanel() {
+      const listEl = document.getElementById(`${p}-notif-list`);
+      if (!listEl || !window.ECNotif) return;
+      const items = (state.notifications || []).map((n) => ({
+        id: n.id,
+        title: n.tieuDe,
+        desc: n.noiDung || "",
+        timestamp: n.createdAt,
+        unread: !Number(n.daDoc),
+        attrs: !Number(n.daDoc)
+          ? `data-action="read" data-id="${escape(n.id)}" title="Bấm để đánh dấu đã đọc"`
+          : "",
+      }));
+      listEl.innerHTML = window.ECNotif.renderGroupedHtml(items);
+    }
+
+    function notifPanel(open) {
+      const panel = document.getElementById(`${p}-notif-panel`);
+      if (!panel) return;
+      if (open) {
+        renderNotificationsPanel();
+        accountMenu(false);
+      }
+      panel.classList.toggle("open", open);
+      document
+        .getElementById(`${p}-bell`)
+        ?.setAttribute("aria-expanded", String(open));
     }
 
     function rosterModal(id) {
@@ -1365,7 +1399,7 @@ window.TeachingPortal = (() => {
       );
     }
 
-    async function act(action, id, element) {
+    async function act(action, id, element, event) {
       switch (action) {
         case "print":
           window.print();
@@ -1448,18 +1482,20 @@ window.TeachingPortal = (() => {
           );
           return;
         }
-        case "notifications":
-          notificationsModal();
+        case "notifications": {
+          event?.stopPropagation();
+          const panel = document.getElementById(`${p}-notif-panel`);
+          notifPanel(!panel?.classList.contains("open"));
           return;
+        }
         case "read":
           await api("/communication/notifications/" + id + "/read", "post", {});
           await load();
-          notificationsModal();
           return;
         case "read-all":
           await api("/communication/notifications/read-all", "post", {});
           await load();
-          notificationsModal();
+          toast("Đã đánh dấu đọc tất cả thông báo.");
           return;
         case "reload":
           await load();
@@ -1473,6 +1509,14 @@ window.TeachingPortal = (() => {
         case "availability-today":
           state.availabilityDate = today();
           return refreshAvailability();
+        case "availability-pick-month":
+          event.stopPropagation();
+          window.ECPicker?.openMonthMenu(element, state.availabilityDate.slice(0, 7), (ym) => {
+            if (!ym) return;
+            state.availabilityDate = `${ym}-01`;
+            refreshAvailability();
+          });
+          return;
         case "availability-prev":
         case "availability-next": {
           const step = action === "availability-next" ? 1 : -1;
@@ -1496,6 +1540,14 @@ window.TeachingPortal = (() => {
         case "calendar-today":
           state.calendarDate = today();
           return render();
+        case "calendar-pick-month":
+          event.stopPropagation();
+          window.ECPicker?.openMonthMenu(element, state.calendarDate.slice(0, 7), (ym) => {
+            if (!ym) return;
+            state.calendarDate = `${ym}-01`;
+            render();
+          });
+          return;
         case "calendar-prev":
         case "calendar-next": {
           const step = action === "calendar-next" ? 1 : -1;
@@ -1584,15 +1636,27 @@ window.TeachingPortal = (() => {
 
     document.addEventListener("click", async (event) => {
       if (!event.target.closest(".tp-account")) accountMenu(false);
+      if (
+        !event.target.closest(`#${p}-notif-panel`) &&
+        !event.target.closest('[data-action="notifications"]')
+      ) {
+        notifPanel(false);
+      }
       const element = event.target.closest("[data-action]");
       if (!element || element.disabled) return;
       element.disabled = true;
       try {
-        await act(element.dataset.action, element.dataset.id, element);
+        await act(element.dataset.action, element.dataset.id, element, event);
       } catch (error) {
         toast(error.message);
       } finally {
         element.disabled = false;
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        accountMenu(false);
+        notifPanel(false);
       }
     });
 

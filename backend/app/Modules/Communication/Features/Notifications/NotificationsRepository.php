@@ -129,7 +129,7 @@ final class NotificationsRepository
                 'id' => 'leave-' . $r['id'],
                 'timestamp' => (string)$r['ngay'],
                 'title' => ($r['nguoi_gui'] ?: 'Giáo viên') . ' xin nghỉ buổi học ' . ($r['ma_lop'] ?? ''),
-                'desc' => 'Ngày ' . ($r['ngay'] ?? '') . ' · Lý do: ' . ($r['ly_do'] ?: 'Chờ Admin phê duyệt'),
+                'desc' => 'Ngày ' . (!empty($r['ngay']) ? date('d/m/Y', strtotime((string)$r['ngay'])) : '') . ' · Lý do: ' . ($r['ly_do'] ?: 'Chờ Admin phê duyệt'),
                 'screen' => 'admin-exceptions',
             ];
         }

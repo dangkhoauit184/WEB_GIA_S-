@@ -96,11 +96,11 @@
     };
   });
 
-  window.closeOnePayroll = userId => confirmation('Admin chốt công tháng', Admin.period, async () => {
+  window.closeOnePayroll = userId => confirmation('Admin chốt công tháng', `Tháng ${Admin.date(Admin.period)}`, async () => {
     await Admin.api('/api/finance/payroll/close', 'POST', { userId, month: Admin.period });
     toast('Đã chốt công.', 'ok'); Admin.render();
   });
-  window.staffClosePayrollMonth = () => confirmation('Admin chốt công tháng', Admin.period + ' · Chốt các bảng đang mở', async () => {
+  window.staffClosePayrollMonth = () => confirmation('Admin chốt công tháng', `Tháng ${Admin.date(Admin.period)} · Chốt các bảng đang mở`, async () => {
     const candidates = payroll.filter(row => row.trangThai === 'mo');
     const errors = []; let count = 0;
     for (const row of candidates) {
@@ -113,7 +113,7 @@
   });
   window.adminMarkPayrollPaid = userId => {
     const row = payroll.find(item => item.userId === userId);
-    confirmation('Xác nhận chi trả lương', `${row.hoTen} · ${Admin.period} · ${money(row.thucNhan)}`, async body => {
+    confirmation('Xác nhận chi trả lương', `${row.hoTen} · Tháng ${Admin.date(Admin.period)} · ${money(row.thucNhan)}`, async body => {
       await Admin.api(`/api/finance/payroll/${row.id}/pay`, 'POST', { maGiaoDich: body.maGiaoDich || null });
       toast('Đã ghi nhận chi trả lương.', 'ok'); Admin.render();
     }, [{ name:'maGiaoDich', label:'Mã đối chiếu chi trả', maxLength:60 }]);
@@ -127,7 +127,7 @@
       const person = payroll.find(row => row.userId === userId);
       const rows = await Admin.api(`/api/finance/payroll/${userId}/sessions?month=${Admin.period}`);
       const statusLabel = { mo:'Tạm tính', da_chot:'Đã chốt', da_tra:'Đã chi trả' }[person.trangThai] || person.trangThai;
-      Admin.dialog('PHIẾU LƯƠNG & BẢNG ĐỐI SOÁT CÔNG', `<div class="dialog-body"><h2>TRUNG TÂM EDUCENTER ERP</h2><p>Kỳ công ${esc(Admin.period)} · ${esc(person.hoTen)}</p>${Admin.table([{ key:'ngay', label:'Ngày' }, { key:'maLop', label:'Lớp' }, { label:'Số giờ công', render:row => row.soPhutTinhCong != null ? Number((Number(row.soPhutTinhCong) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ giờ' }, { label:'Đơn giá giờ', render:row => money(row.donGia) }, { label:'Tiền công', render:row => money(row.tien) }], rows)}<div class="item"><span>Thưởng</span><b>${money(person.thuong)}</b></div><div class="item"><span>Khấu trừ</span><b>${money(person.khauTru)}</b></div><div class="item"><span>Thực nhận</span><b>${money(person.thucNhan)}</b></div><p>Người xác nhận ${esc(Admin.user.hoTen)} · ${esc(statusLabel)}</p></div><div class="dialog-foot"><button type="button" class="btn p" data-act="print-window">In / Lưu PDF</button></div>`);
+      Admin.dialog('PHIẾU LƯƠNG & BẢNG ĐỐI SOÁT CÔNG', `<div class="dialog-body"><h2>TRUNG TÂM EDUCENTER ERP</h2><p>Kỳ công tháng ${esc(Admin.date(Admin.period))} · ${esc(person.hoTen)}</p>${Admin.table([{ label:'Ngày', render:row => esc(Admin.date(row.ngay)) }, { key:'maLop', label:'Lớp' }, { label:'Số giờ công', render:row => row.soPhutTinhCong != null ? Number((Number(row.soPhutTinhCong) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ giờ' }, { label:'Đơn giá giờ', render:row => money(row.donGia) }, { label:'Tiền công', render:row => money(row.tien) }], rows)}<div class="item"><span>Thưởng</span><b>${money(person.thuong)}</b></div><div class="item"><span>Khấu trừ</span><b>${money(person.khauTru)}</b></div><div class="item"><span>Thực nhận</span><b>${money(person.thucNhan)}</b></div><p>Người xác nhận ${esc(Admin.user.hoTen)} · ${esc(statusLabel)}</p></div><div class="dialog-foot"><button type="button" class="btn sm" data-close-dialog="1">Đóng</button><button type="button" class="btn p sm" data-act="print-window">In / Lưu PDF</button></div>`);
     } catch (error) { toast(error.message, 'err'); }
   };
   Admin.actions({

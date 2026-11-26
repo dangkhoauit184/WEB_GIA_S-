@@ -33,9 +33,6 @@
         </div>
         <div class="nav-group">Chức năng phân hệ</div>
         <nav id="assistant-nav"></nav>
-        <div class="side-foot">
-          <button type="button" class="btn sm" data-action="logout">Đăng xuất</button>
-        </div>
       </aside>
       <div id="assistant-backdrop" class="tp-backdrop" hidden></div>
       <div class="main-wrap">
@@ -50,50 +47,57 @@
               aria-expanded="false"
             >
               ☰</button
-            ><a class="btn sm assistant-website tp-website" href="/">◎ Website Trung tâm</a>
+            >
           </div>
-          <div class="row">
-            <span id="assistant-date" class="tp-date"></span
-            ><button
+          <div class="top-r">
+            <span class="perm">
+              <svg class="ui-ico sm" style="color:var(--g500)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="assistant-date"></span>
+            </span>
+            <button
               type="button"
-              class="assistant-bell tp-bell"
+              class="bell-btn assistant-bell"
               id="assistant-bell"
               data-action="notifications"
+              title="Thông báo hệ thống"
               aria-label="Mở thông báo"
+              aria-expanded="false"
+              aria-controls="assistant-notif-panel"
             >
-              <svg class="svg-ico" viewBox="0 0 24 24">
-                <path
-                  d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
-                /></svg
-              ><span id="assistant-unread" class="tp-unread" hidden></span>
+              <svg class="ui-ico" style="width:16px;height:16px" viewBox="0 0 24 24">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <b id="assistant-unread" style="display:none">0</b>
             </button>
-            <div class="assistant-account tp-account">
+            <div class="assistant-account tp-account" style="position:relative">
               <button
                 type="button"
                 id="assistant-avatar"
-                class="tp-avatar"
+                class="acct-btn"
                 data-action="account"
+                title="Menu tài khoản"
                 aria-label="Menu tài khoản"
                 aria-controls="assistant-account-menu"
                 aria-expanded="false"
               >
                 T
               </button>
-              <section
+              <div
                 id="assistant-account-menu"
-                class="assistant-account-menu tp-account-menu"
+                class="user-dropdown"
                 aria-label="Tài khoản cá nhân"
                 hidden
               >
-                <button type="button" data-action="profile-view">
-                  Hồ sơ cá nhân
-                </button>
-                <button type="button" data-action="profile">
-                  Chỉnh sửa hồ sơ cá nhân
-                </button>
-                <button type="button" data-account-action="password">Đổi mật khẩu</button>
-                <button type="button" data-action="logout">Đăng xuất</button>
-              </section>
+                <div class="ud-info">
+                  <b id="assistant-ud-name">Trợ giảng</b>
+                  <span style="font-size:11px;color:var(--pri-d);font-weight:600;display:block;margin-top:2px">Trợ giảng</span>
+                </div>
+                <button type="button" class="ud-item" data-action="profile-view">Hồ sơ cá nhân</button>
+                <button type="button" class="ud-item" data-action="profile">Chỉnh sửa hồ sơ cá nhân</button>
+                <button type="button" class="ud-item" data-account-action="password">Đổi mật khẩu</button>
+                <button type="button" class="ud-item danger" data-action="logout">Đăng xuất</button>
+              </div>
             </div>
           </div>
         </header>
@@ -106,6 +110,13 @@
           <div class="card" id="portalTitle">Đang tải cổng Trợ giảng…</div>
         </main>
       </div>
+    </div>
+    <div class="notif-panel" id="assistant-notif-panel" aria-label="Thông báo hệ thống">
+      <div class="np-head">
+        <h3>Thông báo</h3>
+        <button type="button" class="np-read-all" data-action="read-all">Đọc tất cả</button>
+      </div>
+      <div class="np-list" id="assistant-notif-list"></div>
     </div>
     <dialog id="assistant-dialog" class="tp-dialog" aria-labelledby="assistant-dialog-title">
       <div id="assistant-dialog-content"></div>

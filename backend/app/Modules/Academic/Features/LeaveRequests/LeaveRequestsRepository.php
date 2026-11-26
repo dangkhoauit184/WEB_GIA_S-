@@ -77,7 +77,7 @@ final class LeaveRequestsRepository
                         VALUES (?,'doi_lich',?,?,'buoi_hoc',?,?,1)", [
                         (int)$parent['user_id'],
                         'Thông báo nghỉ buổi học · '.$sessionInfo['ma_lop'],
-                        'Buổi học lớp '.$sessionInfo['ten_lop'].' ngày '.$sessionInfo['ngay'].' ('.substr($sessionInfo['gio_bat_dau'],0,5).'–'.substr($sessionInfo['gio_ket_thuc'],0,5).') đã được trung tâm phê duyệt nghỉ cả lớp.',
+                        'Buổi học lớp '.$sessionInfo['ten_lop'].' ngày '.date('d/m/Y', strtotime((string)$sessionInfo['ngay'])).' ('.substr($sessionInfo['gio_bat_dau'],0,5).'–'.substr($sessionInfo['gio_ket_thuc'],0,5).') đã được trung tâm phê duyệt nghỉ cả lớp.',
                         (int)$sessionInfo['id'],
                         'class-leave-parent:'.$id,
                     ]);
