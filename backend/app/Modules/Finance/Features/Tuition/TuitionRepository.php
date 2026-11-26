@@ -8,18 +8,20 @@ final class TuitionRepository
     private const SELECT="SELECT gd.*,hd.ma_hd,ph.hoten AS ten_phu_huynh,hv.ho_ten AS ten_hoc_vien,
         ad.hoten AS ten_admin,(SELECT MAX(sk.payload_sha256) FROM su_kien_thanh_toan sk WHERE sk.giao_dich_id=gd.id) AS webhook_hash,
         COALESCE(
+            JSON_EXTRACT(gd.metadata_json, '$.sepay_intent'),
             JSON_EXTRACT(gd.metadata_json, '$.payos_link'),
             JSON_EXTRACT(gd.metadata_json, '$.bank_transfer_reported'),
             IF(gd.metadata_json IS NULL,
                 (SELECT al.du_lieu_moi FROM audit_log al WHERE al.bang='giao_dich_truc_tuyen' AND al.ban_ghi_id=gd.id
-                 AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action')) IN ('bank_transfer_reported','payos_link') ORDER BY al.id DESC LIMIT 1),
+                 AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action')) IN ('bank_transfer_reported','payos_link','sepay_intent') ORDER BY al.id DESC LIMIT 1),
                 NULL)
         ) AS transfer_details,
         COALESCE(
+            JSON_UNQUOTE(JSON_EXTRACT(gd.metadata_json, '$.sepay_review.reason')),
             JSON_UNQUOTE(JSON_EXTRACT(gd.metadata_json, '$.payos_review.reason')),
             IF(gd.metadata_json IS NULL,
                 (SELECT JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.reason')) FROM audit_log al WHERE al.bang='giao_dich_truc_tuyen' AND al.ban_ghi_id=gd.id
-                 AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action'))='payos_review' ORDER BY al.id DESC LIMIT 1),
+                 AND JSON_UNQUOTE(JSON_EXTRACT(al.du_lieu_moi,'$.action')) IN ('payos_review','sepay_review') ORDER BY al.id DESC LIMIT 1),
                 NULL)
         ) AS payment_review
         FROM giao_dich_truc_tuyen gd JOIN hoa_don hd ON hd.id=gd.hoa_don_id

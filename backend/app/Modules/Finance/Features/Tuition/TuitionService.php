@@ -81,7 +81,10 @@ final class TuitionService
         $json=base64_encode(json_encode($quote,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR));
         $quote['paymentToken']=$json.'.'.hash_hmac('sha256',$json,\App\Shared\Access::secret());
         $quote['qrDataUrl']=null;
-        $quote['automaticAvailable']=!$bank['isDemo'] && PayOsPayments::status()['ready'];
+        $sepayReady = !$bank['isDemo'] && SePayPayments::status()['ready'];
+        $payosReady = !$bank['isDemo'] && PayOsPayments::status()['ready'];
+        $quote['automaticProvider'] = $sepayReady ? 'SEPAY' : ($payosReady ? 'PAYOS' : null);
+        $quote['automaticAvailable'] = $quote['automaticProvider'] !== null;
         $quote['originalQrImage']=PaymentQrImages::preview($bank['id']);
         if (!$bank['isDemo']) {
             $payload=TuitionModel::vietQrPayload($bank['bankBin'],$bank['accountNo'],$amount,$quote['memo']);

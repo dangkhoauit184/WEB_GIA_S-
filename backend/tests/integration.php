@@ -228,6 +228,7 @@ try {
     check((int)$portal['invoices'][$student['id']][0]['paid']===0,'reporting a transfer never confirms receipt');
     require __DIR__.'/payos.php';
     testPayos(compact('parent','parent2','student','login','token','parentToken','otherToken','bank','secondBank','bankBody','suffix'));
+    testSepay(compact('parent','parent2','student','login','token','parentToken','otherToken','bank','secondBank','bankBody','suffix'));
     // Teacher portal operations stay scoped and never accept client clock/pay data.
     $teacherToken=requestOk('/api/auth/login','POST',['username'=>'gv_'.$suffix,'password'=>'Teacher@123'])['token'];
     $work=requestOk('/api/academic/attendance/workspace','GET',null,$teacherToken);

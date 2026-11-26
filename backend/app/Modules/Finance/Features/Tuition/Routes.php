@@ -8,6 +8,9 @@ $routes->post('api/finance/tuition/payos/connect','\App\Modules\Finance\Features
 $routes->post('api/finance/tuition/payos/webhook','\App\Modules\Finance\Features\Tuition\TuitionController::payosWebhook');
 $routes->post('api/finance/tuition/transactions/(:num)/check-payos','\App\Modules\Finance\Features\Tuition\TuitionController::payosCheck/$1');
 $routes->post('api/finance/tuition/transactions/(:num)/cancel-payos','\App\Modules\Finance\Features\Tuition\TuitionController::payosCancel/$1');
+$routes->get('api/finance/tuition/sepay/status','\App\Modules\Finance\Features\Tuition\TuitionController::sepayStatus');
+$routes->post('api/finance/tuition/sepay/webhook','\App\Modules\Finance\Features\Tuition\TuitionController::sepayWebhook');
+$routes->post('api/finance/tuition/transactions/(:num)/cancel-sepay','\App\Modules\Finance\Features\Tuition\TuitionController::sepayCancel/$1');
 $routes->get('api/finance/tuition/bank-accounts','\App\Modules\Finance\Features\Tuition\TuitionController::banks');
 $routes->post('api/finance/tuition/bank-accounts','\App\Modules\Finance\Features\Tuition\TuitionController::saveBank');
 $routes->put('api/finance/tuition/bank-accounts/(:segment)','\App\Modules\Finance\Features\Tuition\TuitionController::saveBank/$1');
