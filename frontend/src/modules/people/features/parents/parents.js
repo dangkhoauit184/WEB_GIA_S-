@@ -492,26 +492,26 @@
     }
     function renderNotifications() {
       const unread = notifications.filter((row) => !row.daDoc).length;
-      $("notificationCount").hidden = unread === 0;
-      $("notificationCount").textContent = unread > 99 ? "99+" : unread;
-      $("btnMarkAllRead").disabled = unread === 0;
-      $("parentReadAll").disabled = unread === 0;
-      const fmtNotif = text => window.ECDate ? window.ECDate.replaceInlineDates(text || "") : (text || "");
-      $("parentNotificationPreview").innerHTML =
-        notifications
-          .slice(0, 5)
-          .map(
-            (row) =>
-              `<article class="np-item ${row.daDoc ? "" : "unread"}"><div class="np-item-top"><b>${esc(fmtNotif(row.tieuDe))}</b></div><p>${esc(fmtNotif(row.noiDung))}</p><time>${esc(displayTime(row.createdAt))}</time>${row.daDoc ? "" : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
-          )
-          .join("") || empty("Chưa có thông báo.");
-      $("notificationsListContainer").innerHTML =
-        notifications
-          .map(
-            (row) =>
-              `<article class="parent-notification ${row.daDoc ? "" : "unread"}"><div><h2>${esc(fmtNotif(row.tieuDe))}</h2><p>${esc(fmtNotif(row.noiDung))}</p><time>${esc(displayTime(row.createdAt))}</time></div>${row.daDoc ? tag("Đã đọc", "ok") : button("Đánh dấu đã đọc", "read", row.id)}</article>`,
-          )
-          .join("") || empty("Chưa có thông báo.");
+      const badge = $("notificationCount");
+      if (badge) {
+        badge.textContent = unread > 99 ? "99+" : String(unread);
+        badge.style.display = unread > 0 ? "grid" : "none";
+      }
+      if ($("btnMarkAllRead")) $("btnMarkAllRead").disabled = unread === 0;
+      if ($("parentReadAll")) $("parentReadAll").disabled = unread === 0;
+      const toItem = (row) => ({
+        id: row.id,
+        title: row.tieuDe,
+        desc: row.noiDung || "",
+        timestamp: row.createdAt,
+        unread: !row.daDoc,
+        attrs: !row.daDoc
+          ? `data-action="read" data-id="${esc(row.id)}" title="Bấm để đánh dấu đã đọc"`
+          : "",
+      });
+      const groupedHtml = window.ECNotif.renderGroupedHtml(notifications.map(toItem));
+      $("parentNotificationPreview").innerHTML = groupedHtml;
+      $("notificationsListContainer").innerHTML = `<div class="parent-notif-full">${groupedHtml}</div>`;
     }
     function render() {
       renderChildren();
@@ -865,7 +865,7 @@
       if (!$("parentAccountMenu").contains(event.target))
         $("parentAccountMenu").open = false;
       const control = event.target.closest(
-        "button[data-tab], button[data-action], button[data-calendar-view]",
+        "button[data-tab], button[data-action], button[data-calendar-view], .np-item[data-action='read']",
       );
       if (!control || control.disabled) return;
       if (control.dataset.tab) {
@@ -975,7 +975,7 @@
     $("studentSelector").addEventListener("change", (event) =>
       selectChild(event.target.value),
     );
-    $("btnLogout").addEventListener("click", (event) =>
+    $("btnLogout")?.addEventListener("click", (event) =>
       busy(event.currentTarget, async () => {
         await HttpService.post("/auth/logout", {});
         AccessService.markLoggedOut();

@@ -289,11 +289,14 @@ window.Admin = (() => {
     else window.loadNotifications?.();
   }
 
+  async function logout() {
+    try { await api('/api/auth/logout', 'POST', {}); }
+    catch { /* proceed to local sign-out */ }
+    reset(true);
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
-    $('admin-logout').addEventListener('click', event => busy(event.currentTarget, async () => {
-      await api('/api/auth/logout', 'POST', {});
-      reset(true);
-    }));
+    $('admin-logout')?.addEventListener('click', event => busy(event.currentTarget, logout));
     $('admin-refresh')?.addEventListener('click', render);
     $('admin-menu').addEventListener('click', () => {
       const open = $('admin-sidebar').classList.toggle('open');
@@ -309,7 +312,7 @@ window.Admin = (() => {
   });
 
   return { $, esc, money, date, query, api, heading, table, tag, button, kpi, emptyRow, actions, options, pager, bindPager, busy,
-    notify, dialog, formDialog, confirmDialog, mountPeriodPicker, render, currentScreen, view:name => window.AdminViews[name],
+    notify, dialog, formDialog, confirmDialog, mountPeriodPicker, logout, render, currentScreen, view:name => window.AdminViews[name],
     get period() { return period; }, set period(value) { period = value; },
     register:(name, handler) => { screens[name] = handler; }, get user() { return user; } };
 })();
@@ -329,11 +332,10 @@ window.setPortal = (role, focus, screen) => {
 window.toggleUserDropdown = () => {
   const open = document.getElementById('userDropdown').classList.toggle('show');
   document.getElementById('admin-avatar').setAttribute('aria-expanded', String(open));
+  if (open) document.getElementById('notifPanel')?.classList.remove('open');
 };
 window.openAccountManagement = () => showS('accounts');
-window.handleLogout = async () => {
-  document.getElementById('admin-logout').click();
-};
+window.handleLogout = async () => Admin.logout();
 window.openChangePwdModal = () => AccountUI.password();
 const readNotifIds = new Set();
 window.syncNotifBadge = () => {
@@ -364,48 +366,15 @@ window.loadNotifications = async () => {
   if (!listEl) return;
   try {
     const data = await Admin.api('/api/communication/notifications/admin-summary');
-    const parseTs = raw => {
-      const str = String(raw || '');
-      const m = str.match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?/);
-      if (m) return { dateStr: m[1], timeStr: m[2] || '08:00', sortKey: `${m[1]} ${m[2] || '08:00'}` };
-      const dStr = new Date().toLocaleDateString('sv-SE');
-      return { dateStr: dStr, timeStr: 'Mới', sortKey: `${dStr} 23:59` };
-    };
     const items = (data?.items || []).map(item => ({
-      ...item,
-      ...parseTs(item.timestamp),
+      id: item.id,
+      title: item.title,
+      desc: item.desc,
+      timestamp: item.timestamp,
+      unread: !readNotifIds.has(item.id),
+      attrs: `data-notif-id="${Admin.esc(item.id)}" data-act="open-notif" data-screen="${Admin.esc(item.screen)}"`,
     }));
-    items.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
-    if (!items.length) {
-      listEl.innerHTML = '<div style="padding:28px 18px;text-align:center;color:var(--g400);font-size:13px">Chưa có thông báo mới.</div>';
-      window.syncNotifBadge();
-      return;
-    }
-    const todayStr = new Date().toLocaleDateString('sv-SE');
-    const yestDate = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE');
-    const formatDateGroup = dStr => {
-      if (dStr === todayStr) return 'HÔM NAY';
-      if (dStr === yestDate) return 'HÔM QUA';
-      const [y, m, d] = dStr.split('-');
-      return d && m && y ? `${d}/${m}/${y}` : dStr;
-    };
-    const groups = new Map();
-    items.forEach(item => {
-      const g = formatDateGroup(item.dateStr);
-      if (!groups.has(g)) groups.set(g, []);
-      groups.get(g).push(item);
-    });
-    let html = '';
-    for (const [gName, gItems] of groups.entries()) {
-      html += `<div class="np-date-group">${Admin.esc(gName)}</div>`;
-      html += gItems.map(item => `
-        <div class="np-item ${readNotifIds.has(item.id) ? '' : 'unread'}" data-notif-id="${Admin.esc(item.id)}" data-act="open-notif" data-screen="${Admin.esc(item.screen)}">
-          <div class="np-item-top"><b>${Admin.esc(window.ECDate ? window.ECDate.replaceInlineDates(item.title) : item.title)}</b><time>${Admin.esc(item.timeStr)}</time></div>
-          <p>${Admin.esc(window.ECDate ? window.ECDate.replaceInlineDates(item.desc) : item.desc)}</p>
-        </div>
-      `).join('');
-    }
-    listEl.innerHTML = html;
+    listEl.innerHTML = window.ECNotif.renderGroupedHtml(items);
     window.syncNotifBadge();
   } catch {
     window.syncNotifBadge();

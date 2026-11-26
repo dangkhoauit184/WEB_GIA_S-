@@ -12,14 +12,15 @@ window.AccountUI = (() => {
     document.querySelectorAll("details.parent-account").forEach(el => { el.open = false; });
     document.getElementById("userDropdown")?.classList.remove("show");
     document.getElementById("admin-avatar")?.setAttribute("aria-expanded", "false");
+    document.querySelectorAll(".notif-panel.open").forEach(el => el.classList.remove("open"));
     const menu = document.getElementById("teacher-account-menu");
-    if (menu) menu.hidden = true;
+    if (menu) { menu.hidden = true; menu.classList.remove("show"); }
     document.getElementById("teacher-avatar")?.setAttribute("aria-expanded", "false");
     const assistantMenu = document.getElementById("assistant-account-menu");
-    if (assistantMenu) assistantMenu.hidden = true;
+    if (assistantMenu) { assistantMenu.hidden = true; assistantMenu.classList.remove("show"); }
     document.getElementById("assistant-avatar")?.setAttribute("aria-expanded", "false");
     const tutorMenu = document.getElementById("tutor-account-menu");
-    if (tutorMenu) tutorMenu.hidden = true;
+    if (tutorMenu) { tutorMenu.hidden = true; tutorMenu.classList.remove("show"); }
     document.getElementById("tutor-avatar")?.setAttribute("aria-expanded", "false");
   }
   function open(title, body) {
@@ -200,6 +201,72 @@ window.ECDate = (() => {
       .replace(/\bT8\b/g, "CN");
   }
   return { pad, todayYmd, date, dateTime, month, replaceInlineDates };
+})();
+
+/* Unified Admin-style Notification Popover Renderer (grouped by HÔM NAY / HÔM QUA / dd/mm/yyyy). */
+window.ECNotif = (() => {
+  "use strict";
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const fmtText = v => window.ECDate ? window.ECDate.replaceInlineDates(v || "") : String(v || "");
+
+  function parseTs(raw) {
+    const str = String(raw || "");
+    const m = str.match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?/);
+    if (m) return { dateStr: m[1], timeStr: m[2] || "08:00", sortKey: `${m[1]} ${m[2] || "08:00"}` };
+    const dStr = window.ECDate ? window.ECDate.todayYmd() : new Date().toLocaleDateString("sv-SE");
+    return { dateStr: dStr, timeStr: "Mới", sortKey: `${dStr} 23:59` };
+  }
+
+  function dateGroupLabel(dStr) {
+    const todayStr = window.ECDate ? window.ECDate.todayYmd() : new Date().toLocaleDateString("sv-SE");
+    const yestDt = new Date(Date.now() - 86400000);
+    const yestStr = yestDt.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+    if (dStr === todayStr) return "HÔM NAY";
+    if (dStr === yestStr) return "HÔM QUA";
+    return window.ECDate ? window.ECDate.date(dStr) : dStr;
+  }
+
+  function renderGroupedHtml(items, emptyText = "Chưa có thông báo mới.") {
+    const list = (Array.isArray(items) ? items : []).map(item => ({
+      ...item,
+      ...parseTs(item.timestamp),
+    }));
+    list.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    if (!list.length) {
+      return `<div style="padding:28px 18px;text-align:center;color:var(--g400);font-size:13px">${esc(emptyText)}</div>`;
+    }
+    const groups = new Map();
+    list.forEach(item => {
+      const g = dateGroupLabel(item.dateStr);
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(item);
+    });
+    let html = "";
+    for (const [gName, gItems] of groups.entries()) {
+      html += `<div class="np-date-group">${esc(gName)}</div>`;
+      html += gItems.map(item => `
+        <div class="np-item ${item.unread ? "unread" : ""}" ${item.attrs || ""}>
+          <div class="np-item-top"><b>${esc(fmtText(item.title))}</b><time>${esc(item.timeStr)}</time></div>
+          <p>${esc(fmtText(item.desc))}</p>
+        </div>
+      `).join("");
+    }
+    return html;
+  }
+
+  function formatTopbarDate(ymd) {
+    const daysVi = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+    const d = ymd && /^\d{4}-\d{2}-\d{2}/.test(ymd)
+      ? new Date(`${ymd.slice(0, 10)}T12:00:00Z`)
+      : new Date();
+    const dow = ymd ? d.getUTCDay() : d.getDay();
+    const dd = String(ymd ? d.getUTCDate() : d.getDate()).padStart(2, "0");
+    const mm = String((ymd ? d.getUTCMonth() : d.getMonth()) + 1).padStart(2, "0");
+    const yyyy = ymd ? d.getUTCFullYear() : d.getFullYear();
+    return `${daysVi[dow]}, ${dd}/${mm}/${yyyy}`;
+  }
+
+  return { renderGroupedHtml, formatTopbarDate };
 })();
 
 window.ECPicker = (() => {

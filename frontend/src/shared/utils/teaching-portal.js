@@ -218,12 +218,12 @@ window.TeachingPortal = (() => {
           ${field("Giờ", name + "Time", parts[1]?.slice(0, 5) || "", "time", extra)}</div></fieldset>`;
       }
       if (type === "time") {
-        return `<div class="tp-field"><label for="${p}-input-${name}">${escape(label)} (HH:mm)</label><input id="${p}-input-${name}" name="${name}" type="text" data-time24 value="${escape(value)}" placeholder="HH:mm" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" aria-describedby="${p}-error-${name}" ${extra}><small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`;
+        return `<div class="tp-field"><label for="${p}-input-${name}">${escape(label)}</label><input id="${p}-input-${name}" name="${name}" type="text" data-time24 value="${escape(value)}" placeholder="HH:mm" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" aria-describedby="${p}-error-${name}" ${extra}><small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`;
       }
-      const control = `<label>${escape(label)}<input name="${name}" type="${type}" value="${escape(value)}" ${extra}${type === "date" ? ` aria-describedby="${p}-error-${name}"` : ""}></label>`;
-      return type === "date"
-        ? `<div class="tp-field">${control}<small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`
-        : control;
+      if (type === "date") {
+        return `<div class="tp-field"><label for="${p}-input-${name}">${escape(label)}</label><input id="${p}-input-${name}" name="${name}" type="date" value="${escape(value)}" aria-describedby="${p}-error-${name}" ${extra}><small id="${p}-error-${name}" class="tp-field-error" data-field-error aria-live="polite" hidden></small></div>`;
+      }
+      return `<label>${escape(label)}<input name="${name}" type="${type}" value="${escape(value)}" ${extra}></label>`;
     }
 
     const validTime = (value) => /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
@@ -399,19 +399,23 @@ window.TeachingPortal = (() => {
       }
       const profile = state.workspace.profile;
       document.getElementById(`${p}-name`).textContent = profile.hoTen;
+      const udName = document.getElementById(`${p}-ud-name`);
+      if (udName) udName.textContent = profile.hoTen;
       document.getElementById(`${p}-avatar`).textContent = AccountUI.initial(
         profile.hoTen,
       );
-      document.getElementById(`${p}-date`).textContent =
-        new Intl.DateTimeFormat("vi-VN", {
-          dateStyle: "full",
-          timeZone: "UTC",
-        }).format(new Date(today() + "T12:00:00Z"));
+      document.getElementById(`${p}-date`).textContent = window.ECNotif
+        ? window.ECNotif.formatTopbarDate(today())
+        : date(today());
       const unread = state.notifications.filter(
         (notification) => !Number(notification.daDoc),
       ).length;
-      document.getElementById(`${p}-unread`).textContent = unread;
-      document.getElementById(`${p}-unread`).hidden = !unread;
+      const badge = document.getElementById(`${p}-unread`);
+      if (badge) {
+        badge.textContent = String(unread > 99 ? "99+" : unread);
+        badge.style.display = unread > 0 ? "grid" : "none";
+      }
+      renderNotificationsPanel();
     }
 
     function sessionRows(sessions) {
@@ -1225,9 +1229,9 @@ window.TeachingPortal = (() => {
         sessions[0];
       modal(
         "Làm đơn mới",
-        `<form id="${p}-request-form"><div class="tp-form-grid">${select("Loại yêu cầu", "loai", cfg.requestModalOptions, type)}<div class="full">${select("Ca học *", "buoiHocId", Object.fromEntries(sessions.map((session) => [session.id, sessionTitle(session)])), selected?.id ?? "")}</div>
-        ${type === cfg.rescheduleType ? field("Ngày đề xuất *", "ngayMoi", selected?.ngay || "", "date", "required") + field("Giờ bắt đầu *", "gioBatDau", selected ? time(selected.gioBatDau) : "", "time", "required") + field("Giờ kết thúc *", "gioKetThuc", selected ? time(selected.gioKetThuc) : "", "time", "required") : ""}
-        ${type === "dieu_chinh_cong" ? field("Check-in đề nghị *", "checkinMoi", selected?.checkinLuc || (selected ? selected.ngay + "T" + selected.gioBatDau : ""), "datetime-local", "required") + field("Check-out đề nghị *", "checkoutMoi", selected?.checkoutLuc || (selected ? selected.ngay + "T" + selected.gioKetThuc : ""), "datetime-local", "required") : ""}
+        `<form id="${p}-request-form"><div class="tp-form-grid"><div class="full">${select("Loại yêu cầu", "loai", cfg.requestModalOptions, type)}</div><div class="full">${select("Ca học *", "buoiHocId", Object.fromEntries(sessions.map((session) => [session.id, sessionTitle(session)])), selected?.id ?? "")}</div>
+        ${type === cfg.rescheduleType ? `<div class="tp-form-row-3 full">${field("Ngày đề xuất *", "ngayMoi", selected?.ngay || "", "date", "required")}${field("Giờ bắt đầu *", "gioBatDau", selected ? time(selected.gioBatDau) : "", "time", "required")}${field("Giờ kết thúc *", "gioKetThuc", selected ? time(selected.gioKetThuc) : "", "time", "required")}</div>` : ""}
+        ${type === "dieu_chinh_cong" ? `<div class="full">${field("Check-in đề nghị *", "checkinMoi", selected?.checkinLuc || (selected ? selected.ngay + "T" + selected.gioBatDau : ""), "datetime-local", "required")}</div><div class="full">${field("Check-out đề nghị *", "checkoutMoi", selected?.checkoutLuc || (selected ? selected.ngay + "T" + selected.gioKetThuc : ""), "datetime-local", "required")}</div>` : ""}
         <div class="full">${textarea("Lý do *", "lyDo", "", 255)}</div></div>${!sessions.length ? empty("Chưa có ca phù hợp theo trạng thái hiện tại để gửi loại yêu cầu này.") : ""}${formFoot()}</form>`,
       );
       dialog.querySelector("[name=lyDo]").required = true;
@@ -1333,10 +1337,15 @@ window.TeachingPortal = (() => {
     }
 
     function accountMenu(open) {
-      document.getElementById(`${p}-account-menu`).hidden = !open;
+      const el = document.getElementById(`${p}-account-menu`);
+      if (el) {
+        el.hidden = !open;
+        el.classList.toggle("show", open);
+      }
       document
         .getElementById(`${p}-avatar`)
-        .setAttribute("aria-expanded", String(open));
+        ?.setAttribute("aria-expanded", String(open));
+      if (open) notifPanel(false);
     }
 
     function viewProfile() {
@@ -1344,12 +1353,33 @@ window.TeachingPortal = (() => {
       AccountUI.view();
     }
 
-    function notificationsModal() {
-      const fmt = v => (window.ECDate ? window.ECDate.replaceInlineDates(v || "") : (v || ""));
-      modal(
-        "Thông báo",
-        `${button("Đánh dấu tất cả đã đọc", "read-all")}<div>${state.notifications.map((notification) => `<div class="tp-row"><div><b>${escape(fmt(notification.tieuDe))}</b><p>${escape(fmt(notification.noiDung))}</p><small>${datetime(notification.createdAt)}</small></div>${Number(notification.daDoc) ? '<span class="tp-muted">Đã đọc</span>' : button("Đánh dấu đã đọc", "read", notification.id)}</div>`).join("") || empty("Chưa có thông báo.")}</div>`,
-      );
+    function renderNotificationsPanel() {
+      const listEl = document.getElementById(`${p}-notif-list`);
+      if (!listEl || !window.ECNotif) return;
+      const items = (state.notifications || []).map((n) => ({
+        id: n.id,
+        title: n.tieuDe,
+        desc: n.noiDung || "",
+        timestamp: n.createdAt,
+        unread: !Number(n.daDoc),
+        attrs: !Number(n.daDoc)
+          ? `data-action="read" data-id="${escape(n.id)}" title="Bấm để đánh dấu đã đọc"`
+          : "",
+      }));
+      listEl.innerHTML = window.ECNotif.renderGroupedHtml(items);
+    }
+
+    function notifPanel(open) {
+      const panel = document.getElementById(`${p}-notif-panel`);
+      if (!panel) return;
+      if (open) {
+        renderNotificationsPanel();
+        accountMenu(false);
+      }
+      panel.classList.toggle("open", open);
+      document
+        .getElementById(`${p}-bell`)
+        ?.setAttribute("aria-expanded", String(open));
     }
 
     function rosterModal(id) {
@@ -1369,7 +1399,7 @@ window.TeachingPortal = (() => {
       );
     }
 
-    async function act(action, id, element) {
+    async function act(action, id, element, event) {
       switch (action) {
         case "print":
           window.print();
@@ -1452,18 +1482,20 @@ window.TeachingPortal = (() => {
           );
           return;
         }
-        case "notifications":
-          notificationsModal();
+        case "notifications": {
+          event?.stopPropagation();
+          const panel = document.getElementById(`${p}-notif-panel`);
+          notifPanel(!panel?.classList.contains("open"));
           return;
+        }
         case "read":
           await api("/communication/notifications/" + id + "/read", "post", {});
           await load();
-          notificationsModal();
           return;
         case "read-all":
           await api("/communication/notifications/read-all", "post", {});
           await load();
-          notificationsModal();
+          toast("Đã đánh dấu đọc tất cả thông báo.");
           return;
         case "reload":
           await load();
@@ -1604,15 +1636,27 @@ window.TeachingPortal = (() => {
 
     document.addEventListener("click", async (event) => {
       if (!event.target.closest(".tp-account")) accountMenu(false);
+      if (
+        !event.target.closest(`#${p}-notif-panel`) &&
+        !event.target.closest('[data-action="notifications"]')
+      ) {
+        notifPanel(false);
+      }
       const element = event.target.closest("[data-action]");
       if (!element || element.disabled) return;
       element.disabled = true;
       try {
-        await act(element.dataset.action, element.dataset.id, element);
+        await act(element.dataset.action, element.dataset.id, element, event);
       } catch (error) {
         toast(error.message);
       } finally {
         element.disabled = false;
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        accountMenu(false);
+        notifPanel(false);
       }
     });
 

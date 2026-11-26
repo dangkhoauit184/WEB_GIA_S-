@@ -59,9 +59,6 @@
     <button type="button" data-screen="staff-approve" data-nav="staff-approve"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span>Duyệt nghỉ cá nhân &amp; Học bù</span></button>
     <button type="button" data-screen="staff-billing" data-nav="staff-billing"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span>Hóa đơn trọn khóa &amp; Thu phí</span></button>
   <?php endif; ?></nav>
-  <div class="side-foot">
-    <button type="button" class="btn sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:var(--g300);padding:6px 10px;font-size:12px;box-shadow:none" id="admin-logout">Đăng xuất</button>
-  </div>
 </aside>
 
 <!-- ═══════════════════════════════════════
