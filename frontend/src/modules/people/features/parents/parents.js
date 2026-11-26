@@ -712,47 +712,139 @@
     }
     function buildQrPaymentCard(quote) {
       const bank = quote.bank;
-      return `<div class="parent-qr-card"><div class="parent-qr-frame"><span class="parent-qr-badge">${bank.isDemo ? "DEMO · KHÔNG CHUYỂN TIỀN" : "VIETQR · NAPAS 247"}</span><div class="parent-qr-visual">${quote.qrDataUrl ? `<img src="${esc(quote.qrDataUrl)}" alt="Mã chuyển khoản học phí">` : '<p>Tài khoản minh họa. Admin cần chọn tài khoản ngân hàng thật để tạo mã chuyển tiền.</p>'}</div></div><div class="parent-qr-meta"><div class="parent-qr-meta-title">Thông tin nhận học phí</div>${item("Ngân hàng",esc(bank.bankName))}${item("Số tài khoản",esc(bank.accountNo))}${item("Chủ tài khoản",esc(bank.accountName))}${item("Số tiền",money(quote.amount))}${item("Nội dung chuyển khoản",`<b>${esc(quote.memo)}</b>`)}</div></div>`;
+      const qrRow = (label, valueHtml) =>
+        `<div class="parent-qr-row"><span class="pqr-lbl">${esc(label)}</span><span class="pqr-val">${valueHtml}</span></div>`;
+      const copyBtn = (val, title) =>
+        `<button type="button" class="pqr-copy-btn" data-action="copy-text" data-copy="${esc(val)}" title="${esc(title)}">Chép</button>`;
+      return `<div class="parent-qr-card">
+        <div class="parent-qr-frame">
+          <span class="parent-qr-badge">${bank.isDemo ? "DEMO · KHÔNG CHUYỂN TIỀN" : "VIETQR · NAPAS 247"}</span>
+          <div class="parent-qr-visual">${quote.qrDataUrl ? `<img src="${esc(quote.qrDataUrl)}" alt="Mã chuyển khoản học phí">` : "<p>Tài khoản minh họa. Admin cần chọn tài khoản ngân hàng thật để tạo mã chuyển tiền.</p>"}</div>
+        </div>
+        <div class="parent-qr-meta">
+          <div class="parent-qr-meta-title">Thông tin chuyển khoản</div>
+          ${qrRow("Ngân hàng", `<strong>${esc(bank.bankName)}</strong>`)}
+          ${qrRow("Số tài khoản", `<strong class="pqr-mono">${esc(bank.accountNo)}</strong>${bank.isDemo ? "" : copyBtn(bank.accountNo, "Sao chép số tài khoản")}`)}
+          ${qrRow("Chủ tài khoản", `<strong>${esc(bank.accountName)}</strong>`)}
+          ${qrRow("Số tiền", `<strong class="pqr-amount">${money(quote.amount)}</strong>`)}
+          ${qrRow("Nội dung CK", `<span class="pqr-memo-pill">${esc(quote.memo)}</span>${copyBtn(quote.memo, "Sao chép nội dung chuyển khoản")}`)}
+        </div>
+      </div>`;
     }
     let paymentPoll;
-    async function showPayos(invoiceId, summary) {
+    async function showPayos(invoiceId, summary, invoiceObj = null) {
       clearInterval(paymentPoll);
       const quote=(await HttpService.post(`/people/parents/invoices/${invoiceId}/checkout`,{})).data;
       const isSepay = quote.mode === 'sepay';
       const title = isSepay ? 'Thanh toán học phí tự động (SePay)' : 'Thanh toán học phí qua payOS';
       const note = isSepay
-        ? 'Quét mã QR bằng ứng dụng ngân hàng, giữ nguyên số tiền và nội dung chuyển khoản. Hệ thống tự động xác nhận qua SePay trong vài giây sau khi tiền vào.'
+        ? 'Quét mã QR bằng ứng dụng ngân hàng, giữ nguyên số tiền và nội dung chuyển khoản. Hệ thống tự động xác nhận ngay khi tiền vào tài khoản.'
         : 'Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống chỉ xác nhận khi đối soát được giao dịch thực tế từ payOS.';
       const portalLink = quote.checkoutUrl
-        ? `<a class="btn p" href="${esc(quote.checkoutUrl)}" target="_blank" rel="noopener noreferrer">Mở cổng payOS</a>`
+        ? `<div class="pay-portal-link-row"><a class="btn p" href="${esc(quote.checkoutUrl)}" target="_blank" rel="noopener noreferrer">Mở cổng payOS</a></div>`
         : '';
-      openDialog(title,`<div class="parent-summary">${summary}</div><div id="payosQr">${buildQrPaymentCard(quote)}<p class="parent-payment-note">${note}</p>${portalLink}</div><p id="payosState" role="status">Đang chờ ngân hàng xác nhận khoản thu…</p><button class="btn" type="button" id="payosCheck">Kiểm tra giao dịch</button>`,null);
+      const invCode = invoiceObj?.code || `#${invoiceId}`;
+      const invCourse = invoiceObj?.course || 'Học phí trọn khóa';
+      const invStudent = student()?.hoTen || '—';
+      const headerStrip = `<div class="parent-qr-invoice-strip">
+        <div class="pqi-left">
+          <div><span class="pqi-code">${esc(invCode)}</span><span class="pqi-course">${esc(invCourse)}</span></div>
+          <div class="pqi-student">Học viên: <strong>${esc(invStudent)}</strong></div>
+        </div>
+        <div class="pqi-total"><small>Cần thanh toán</small><strong>${money(quote.amount)}</strong></div>
+      </div>`;
+      const renderWaitingStatus = (kind, heading, sub) => {
+        const box = $('payosStateBox');
+        if (!box) return;
+        const cls = kind === 'waiting' ? 'is-waiting' : (kind === 'warn' ? 'is-warn' : 'is-error');
+        if (box.dataset.kind === kind && $('payosState') && $('payosSub')) {
+          $('payosState').textContent = heading;
+          $('payosSub').textContent = sub;
+          return;
+        }
+        box.dataset.kind = kind;
+        box.className = `pay-status-box ${cls}`;
+        const iconHtml = kind === 'waiting'
+          ? '<span class="pay-spinner" aria-hidden="true"></span>'
+          : `<span class="pay-status-ico" aria-hidden="true">${kind === 'warn' ? '!' : '✕'}</span>`;
+        const left = box.querySelector('.pay-status-left');
+        if (left) left.innerHTML = `${iconHtml}<div class="pay-status-copy"><strong id="payosState">${esc(heading)}</strong><small id="payosSub">${esc(sub)}</small></div>`;
+      };
+      const renderSuccessView = (remaining) => {
+        const bodyEl = $('payosStage');
+        if (!bodyEl) return;
+        bodyEl.innerHTML = `<div class="pay-success-view" role="status" aria-live="polite">
+          <div class="pay-success-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h3 class="pay-success-title">Thanh toán thành công!</h3>
+          <p class="pay-success-sub">Hệ thống đã tự động xác nhận khoản thu và cập nhật trạng thái hóa đơn.</p>
+          <div class="pay-success-receipt">
+            <div class="psr-row"><span>Mã hóa đơn</span><strong>${esc(invCode)}</strong></div>
+            <div class="psr-row"><span>Học viên</span><strong>${esc(invStudent)}</strong></div>
+            <div class="psr-row"><span>Khóa học</span><strong>${esc(invCourse)}</strong></div>
+            <div class="psr-row"><span>Số tiền đã nhận</span><strong class="psr-paid">${money(quote.amount)}</strong></div>
+            <div class="psr-row"><span>Trạng thái</span><span class="pay-success-pill">✓ Đã thanh toán</span></div>
+            <div class="psr-row"><span>Còn phải thu</span><strong>${money(remaining)}</strong></div>
+          </div>
+        </div>`;
+        const foot = dialog.querySelector('.parent-dialog-foot');
+        if (foot) {
+          foot.innerHTML = `${button('In biên lai', 'print')}<button class="btn p" type="button" data-action="dialog-close">Hoàn tất</button>`;
+        }
+      };
+      openDialog(
+        title,
+        `<div id="payosStage">${headerStrip}<div id="payosQr">${buildQrPaymentCard(quote)}<p class="parent-payment-note">${note}</p>${portalLink}</div><div id="payosStateBox" data-kind="waiting" class="pay-status-box is-waiting" role="status" aria-live="polite"><div class="pay-status-left"><span class="pay-spinner" aria-hidden="true"></span><div class="pay-status-copy"><strong id="payosState">Đang chờ ngân hàng xác nhận thanh toán…</strong><small id="payosSub">Tự động cập nhật sau 2–5 giây khi chuyển khoản thành công · Giữ nguyên màn hình này.</small></div></div><button class="btn sm" type="button" id="payosCheck">Kiểm tra ngay</button></div></div>`,
+        null,
+      );
       let checking=false;
       const update=async(actual=false)=>{
-        if(checking||!dialog.open||!$('payosState'))return;
+        if(checking||!dialog.open||!$('payosStateBox'))return;
         checking=true;
-        const label=$('payosState'),control=$('payosCheck');
-        if(actual)control.disabled=true;
+        const control=$('payosCheck');
+        if(actual && control) {
+          control.disabled=true;
+          control.textContent='Đang kiểm tra…';
+        }
         try {
           const state=(await (actual?HttpService.post(`/people/parents/invoices/${invoiceId}/check-payment`,{}):HttpService.get(`/people/parents/invoices/${invoiceId}/payment-status`))).data;
-          if(!label.isConnected)return;
-          label.textContent=state.paid?'Đã thanh toán · Trung tâm đã xác nhận khoản thu.':state.review||'Đang chờ ngân hàng xác nhận khoản thu. Không chuyển thêm nếu đã chuyển tiền.';
+          if(!$('payosStateBox')?.isConnected)return;
           if(state.paid){
-            clearInterval(paymentPoll);$('payosQr').hidden=true;control.hidden=true;
-            $('payosState').closest('.parent-dialog-body').querySelector('.parent-summary').innerHTML=item('Hóa đơn',`#${invoiceId}`)+item('Trạng thái','Đã thanh toán')+item('Còn phải thu',money(state.remaining));
+            clearInterval(paymentPoll);
+            renderSuccessView(state.remaining);
             await loadData();
+            return;
           }
-          else if(['huy','het_han','that_bai'].includes(state.status)) {
-            clearInterval(paymentPoll);$('payosQr').hidden=true;control.hidden=true;
-            label.textContent='Yêu cầu đã hủy hoặc hết hiệu lực. Không dùng QR cũ; hãy đóng và mở lại hóa đơn để lấy thông tin mới.';
+          if(['huy','het_han','that_bai'].includes(state.status)) {
+            clearInterval(paymentPoll);
+            if($('payosQr')) $('payosQr').hidden=true;
+            if(control) control.hidden=true;
+            renderWaitingStatus('error', 'Yêu cầu thanh toán đã hủy hoặc hết hiệu lực', 'Không dùng mã QR cũ; hãy đóng và mở lại hóa đơn để lấy mã QR mới.');
             await loadData();
+            return;
           }
-        }catch(error){if(label.isConnected)label.textContent=error.message;}
-        finally{checking=false;if(control.isConnected)control.disabled=false;}
+          if(state.review) {
+            renderWaitingStatus('warn', 'Giao dịch cần Admin đối soát', state.review);
+          } else {
+            renderWaitingStatus('waiting', 'Đang chờ ngân hàng xác nhận thanh toán…', 'Tự động cập nhật sau 2–5 giây khi chuyển khoản thành công · Không chuyển thêm nếu bạn đã chuyển.');
+          }
+        }catch(error){
+          if($('payosStateBox')?.isConnected) {
+            renderWaitingStatus('warn', 'Chưa kiểm tra được trạng thái', error.message || 'Vui lòng bấm Kiểm tra ngay để thử lại.');
+          }
+        }
+        finally{
+          checking=false;
+          if(control && control.isConnected) {
+            control.disabled=false;
+            control.textContent='Kiểm tra ngay';
+          }
+        }
       };
       $('payosCheck').addEventListener('click',()=>update(true));
       dialog.addEventListener('close',()=>clearInterval(paymentPoll),{once:true});
-      paymentPoll=setInterval(()=>{if(!dialog.open||!$('payosState'))clearInterval(paymentPoll);else update();},5000);
+      paymentPoll=setInterval(()=>{if(!dialog.open||!$('payosStateBox'))clearInterval(paymentPoll);else update();},3000);
       await update();
     }
 
@@ -829,7 +921,7 @@
       openDialog("Chuyển khoản học phí", '<p role="status">Đang tải thông tin ngân hàng…</p>', null);
       try {
         const quote = (await HttpService.get(`/people/parents/invoices/${Number(id)}/payment-qr`)).data;
-        if(quote.automaticAvailable||['PAYOS', 'SEPAY'].includes(pending?.channel)) { await showPayos(Number(id),summary); return; }
+        if(quote.automaticAvailable||['PAYOS', 'SEPAY'].includes(pending?.channel)) { await showPayos(Number(id),summary,invoice); return; }
         openDialog("Chuyển khoản học phí", `<div class="parent-summary">${summary}</div>${buildQrPaymentCard(quote)}<p class="parent-payment-note">Kiểm tra tên người nhận trên ứng dụng ngân hàng trước khi xác nhận chuyển tiền. Sau đó gửi thông báo để Admin đối soát khoản thu.</p>`, async () => {
           await HttpService.post("/people/parents/payments", {
             hoaDonId: Number(invoice.id), nhaCungCap: "VIETQR_NAPAS", soTien: quote.amount, paymentToken: quote.paymentToken,
@@ -962,6 +1054,25 @@
         case "print":
           window.print();
           break;
+        case "copy-text": {
+          const val = control.dataset.copy || "";
+          if (!val) break;
+          try {
+            await navigator.clipboard.writeText(val);
+            const orig = control.textContent;
+            control.textContent = "Đã chép ✓";
+            control.classList.add("copied");
+            setTimeout(() => {
+              if (control.isConnected) {
+                control.textContent = orig;
+                control.classList.remove("copied");
+              }
+            }, 1500);
+          } catch {
+            notify("Mã: " + val);
+          }
+          break;
+        }
         case "read":
           await busy(control, async () => {
             await HttpService.post(
