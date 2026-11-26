@@ -3,9 +3,15 @@
   const states = { dang_hoc:'Hoạt động', tam_nghi:'Tạm nghỉ', hoan_thanh:'Hoàn thành', nghi_han:'Nghỉ hẳn' };
   const learningStates = { ...states, dang_hoc:'Đang học', da_xep_lop:'Đã xếp lớp', cho_xep_lop:'Chờ xếp lớp', chua_xep_lop:'Chưa xếp lớp' };
   function render(rows) {
-    StaffUI.rows('stuBody', 7, rows.map(row => {
+    StaffUI.rows('stuBody', 5, rows.map(row => {
       const status = row.trangThaiHocTap;
-      return `<tr><td><b>${Admin.esc(row.maHv)}</b></td><td><b>${Admin.esc(row.hoTen)}</b></td><td>${Admin.esc(row.tenCapLop || '—')}<br><small>${Admin.esc(row.truong || '')}</small></td><td>${Admin.esc(row.tenPhuHuynh)}<br><small>${Admin.esc(row.sdtPhuHuynh || '')}</small></td><td>${Admin.esc(row.tenKhoa || 'Chưa đăng ký')}</td><td>${Admin.tag(learningStates[status] || 'Chưa xếp lớp', status === 'dang_hoc' ? 'ok' : 'w')}</td><td><div class="row">${Admin.button('Chi tiết / Sửa', 'edit-student', row.id)}${StaffUI.can('QuanLyLopHoc','add') ? Admin.button('Đăng ký khóa', 'register-course', row.id,'p') : ''}</div></td></tr>`;
+      return `<tr>
+        <td><b>${Admin.esc(row.hoTen)}</b><br><small><span class="code-short">${Admin.esc(row.maHv)}</span> · ${Admin.esc(row.tenCapLop || '—')}${row.truong ? ' · ' + Admin.esc(row.truong) : ''}</small></td>
+        <td>${Admin.esc(row.tenPhuHuynh)}<br><small>${Admin.esc(row.sdtPhuHuynh || '')}</small></td>
+        <td><span class="clamp-2">${Admin.esc(row.tenKhoa || 'Chưa đăng ký')}</span></td>
+        <td>${Admin.tag(learningStates[status] || 'Chưa xếp lớp', status === 'dang_hoc' ? 'ok' : 'w')}</td>
+        <td class="act-col"><div class="act-row">${Admin.button('Sửa', 'edit-student', row.id)}${StaffUI.can('QuanLyLopHoc','add') ? Admin.button('+ ĐK khóa', 'register-course', row.id,'p') : ''}</div></td>
+      </tr>`;
     }));
     Admin.$('stuBody').querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
       if (button.dataset.action === 'edit-student') openStudentForm(Number(button.dataset.id));

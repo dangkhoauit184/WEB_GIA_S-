@@ -60,10 +60,7 @@
     <button type="button" data-screen="staff-billing" data-nav="staff-billing"><span class="nav-icon"><svg class="svg-ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span>Hóa đơn trọn khóa &amp; Thu phí</span></button>
   <?php endif; ?></nav>
   <div class="side-foot">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-      <button type="button" class="btn sm" style="background:rgba(20,184,166,.16);border-color:rgba(94,234,212,.25);color:#5eead4;padding:5px 10px;font-size:11.5px;box-shadow:none" data-act="public-landing">Website Công khai</button>
-      <button type="button" class="btn sm" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:var(--g300);padding:5px 10px;font-size:11.5px;box-shadow:none" id="admin-logout">Đăng xuất</button>
-    </div>
+    <button type="button" class="btn sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:var(--g300);padding:6px 10px;font-size:12px;box-shadow:none" id="admin-logout">Đăng xuất</button>
   </div>
 </aside>
 

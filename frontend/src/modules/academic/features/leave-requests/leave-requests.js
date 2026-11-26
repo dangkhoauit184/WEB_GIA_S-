@@ -25,17 +25,16 @@ window.AdminClassLeave = {
       return true;
     });
     const rows = list.map(row => `<tr>
-      <td><b>Đơn #${row.id}</b></td>
-      <td>${Admin.tag(row.doiTuong === 'hoc_vien' ? 'Nghỉ cá nhân HV' : 'Nghỉ / Đổi lịch GV', row.doiTuong === 'hoc_vien' ? 'i' : 'purple')}</td>
+      <td><b class="code-short">#${row.id}</b><br>${Admin.tag(row.doiTuong === 'hoc_vien' ? 'Nghỉ HV' : 'Đổi lịch GV', row.doiTuong === 'hoc_vien' ? 'i' : 'purple')}</td>
       <td><b>${Admin.esc(row.nguoiGui)}</b>${row.tenHocVien ? `<br><small>HV: ${Admin.esc(row.tenHocVien)}</small>` : ''}</td>
       <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(row.ngay + ' ' + row.gioBatDau.slice(0, 5))}</small></td>
-      <td>${Admin.esc(row.lyDo)}${row.lyDoTuChoi ? `<br><small style="color:var(--err)">Từ chối: ${Admin.esc(row.lyDoTuChoi)}</small>` : ''}</td>
+      <td><span class="clamp-2" title="${Admin.esc(row.lyDo || '')}">${Admin.esc(row.lyDo)}</span>${row.lyDoTuChoi ? `<br><small style="color:var(--err)">Từ chối: ${Admin.esc(row.lyDoTuChoi)}</small>` : ''}</td>
       <td>${Admin.tag(statusLbl[row.trangThai] || row.trangThai, row.trangThai === 'da_duyet' ? 'ok' : (row.trangThai === 'cho_duyet' ? 'w' : 'r'))}</td>
-      <td>${row.trangThai === 'cho_duyet' && StaffUI.can('VanHanhBuoiHoc', 'edit')
-        ? `<div class="row">${Admin.button('Duyệt', 'approve-personal', row.id, 'p')}${Admin.button('Từ chối', 'reject-personal', row.id, 'danger')}</div>`
+      <td class="act-col">${row.trangThai === 'cho_duyet' && StaffUI.can('VanHanhBuoiHoc', 'edit')
+        ? `<div class="act-row">${Admin.button('Duyệt', 'approve-personal', row.id, 'p')}${Admin.button('Từ chối', 'reject-personal', row.id, 'danger')}</div>`
         : '—'}</td>
     </tr>`);
-    StaffUI.rows('staffApproveBody', 7, rows, 'Không có đơn phù hợp bộ lọc.');
+    StaffUI.rows('staffApproveBody', 6, rows, 'Không có đơn phù hợp bộ lọc.');
     Admin.$('staffApproveBody').querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
       const rejected = button.dataset.action === 'reject-personal';
       Admin.formDialog({
@@ -87,22 +86,20 @@ window.AdminClassLeave = {
       renderPersonal();
     }));
 
-    StaffUI.rows('staffClassLeaveBody', 6, classRequests.map(row => `<tr>
-      <td><b>NL-${row.id}</b></td>
-      <td><b>${Admin.esc(row.maLop)}</b> · ${Admin.esc(row.ngay)}</td>
+    StaffUI.rows('staffClassLeaveBody', 5, classRequests.map(row => `<tr>
+      <td><b>${Admin.esc(row.maLop)}</b> · <span class="code-short">NL-${row.id}</span><br><small>${Admin.esc(row.ngay)}</small></td>
       <td>${Admin.esc(row.nguoiGui)}</td>
-      <td>${Admin.esc(row.lyDo)}</td>
+      <td><span class="clamp-2" title="${Admin.esc(row.lyDo || '')}">${Admin.esc(row.lyDo)}</span></td>
       <td>${Admin.tag(statusLbl[row.trangThai] || row.trangThai, row.trangThai === 'da_duyet' ? 'ok' : (row.trangThai === 'cho_duyet' ? 'w' : 'r'))}</td>
-      <td>${Admin.user.role === 'ADMIN' ? '<button type="button" class="btn sm" data-act="set-portal" data-portal="admin" data-screen="admin-exceptions">Mở Admin duyệt</button>' : (row.trangThai === 'cho_duyet' ? 'Chờ Admin xử lý' : 'Đã xử lý')}</td>
+      <td class="act-col">${Admin.user.role === 'ADMIN' ? '<button type="button" class="btn sm" data-act="set-portal" data-portal="admin" data-screen="admin-exceptions">Mở Admin</button>' : `<small>${row.trangThai === 'cho_duyet' ? 'Chờ Admin' : 'Đã xử lý'}</small>`}</td>
     </tr>`), 'Chưa có đơn nghỉ cả lớp nào.');
 
-    StaffUI.rows('makeupStudentsBody', 6, makeups.map(row => `<tr>
-      <td><b>HB-${row.id}</b></td>
-      <td><b>${Admin.esc(row.tenHocVien)}</b></td>
-      <td>${Admin.esc(row.maLop)} · ${Admin.esc(row.ngay)} ${Admin.esc(row.gioBatDau.slice(0, 5))}–${Admin.esc(row.gioKetThuc.slice(0, 5))}</td>
-      <td>${row.donXinNghiId ? 'Đơn #' + row.donXinNghiId : 'Thỏa thuận trực tiếp'}</td>
+    StaffUI.rows('makeupStudentsBody', 5, makeups.map(row => `<tr>
+      <td><b>${Admin.esc(row.tenHocVien)}</b><br><small class="code-short">HB-${row.id}</small></td>
+      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(row.ngay)} ${Admin.esc(row.gioBatDau.slice(0, 5))}–${Admin.esc(row.gioKetThuc.slice(0, 5))}</small></td>
+      <td>${row.donXinNghiId ? 'Đơn #' + row.donXinNghiId : 'Thỏa thuận'}</td>
       <td>${Admin.esc(row.nguoiXep)}</td>
-      <td>${Admin.esc(row.ghiChu || '—')}</td>
+      <td><span class="clamp-2">${Admin.esc(row.ghiChu || '—')}</span></td>
     </tr>`), 'Chưa có buổi học bù cá nhân nào được xếp.');
 
     renderPersonal();

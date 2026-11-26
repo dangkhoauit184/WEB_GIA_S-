@@ -417,7 +417,7 @@ window.TeachingPortal = (() => {
     function sessionRows(sessions) {
       return sessions.map(
         (session) =>
-          `<tr><td><b>${escape(session.maLop)}</b>${cfg.showClassType ? " " + classTypeTag(session.loaiLop) : ""}<br><small>${escape(session.tenLop)}</small></td><td>${date(session.ngay)}</td><td>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</td><td>${session.loai === "bu" ? '<span class="tag purple">Học bù</span>' : "Buổi thường"}</td><td>${escape(formatPlace(session, cfg.placeFallback || "Trực tuyến"))}<br>${escape(session.phongHoc || "")}</td><td>${tag(session.trangThai)}</td><td>${button("Xem ca", "session", session.id)} ${button("Ghi sổ", "log", session.id)}</td></tr>`,
+          `<tr><td><b>${escape(session.maLop)}</b>${cfg.showClassType ? " " + classTypeTag(session.loaiLop) : ""}<br><small>${escape(session.tenLop)}</small></td><td><b>${date(session.ngay)}</b><br><small>${time(session.gioBatDau)}–${time(session.gioKetThuc)} · ${session.loai === "bu" ? "Học bù" : "Thường"}</small></td><td>${escape(formatPlace(session, cfg.placeFallback || "Online"))}${session.phongHoc ? `<br><small>${escape(session.phongHoc)}</small>` : ""}</td><td>${tag(session.trangThai)}</td><td class="act-col"><div class="act-row">${button("Xem ca", "session", session.id)}${button("Ghi sổ", "log", session.id)}</div></td></tr>`,
       );
     }
 
@@ -550,21 +550,19 @@ window.TeachingPortal = (() => {
           button(text.viewScheduleBtn, "tab", "schedule", "p"),
         ) +
         `<div class="tp-stats">${stats.map(([value, label]) => `<div class="card tp-stat"><strong>${value}</strong><span>${label}</span></div>`).join("")}</div>` +
-        `<div class="tp-grid"><div>${todayBanner(sessions)}<div class="card tp-week-assignments"><div class="row-b"><div><h2>Các ca phân công trong tuần</h2><p class="tp-muted">${date(weekStart)} – ${date(addDays(weekStart, 6))}</p></div>${button("Xem thời khóa biểu tuần", "week-schedule")}</div>${table(
+        `<div class="tp-grid"><div>${todayBanner(sessions)}<div class="card tp-week-assignments"><div class="row-b"><div><h2>Các ca phân công trong tuần</h2><p class="tp-muted">${date(weekStart)} – ${date(addDays(weekStart, 6))}</p></div>${button("Xem lịch tuần", "week-schedule")}</div>${table(
           [
-            "Ngày & Giờ lịch",
-            "Mã lớp / Môn học",
-            "Phòng / Cơ sở",
-            cfg.showClassType ? "Loại lớp · Vai trò" : "Vai trò",
+            "Ngày · Giờ",
+            "Lớp · Địa điểm",
+            "Vai trò",
             "Trạng thái",
             "Thao tác",
           ],
           weekSessions.map(
             (session) => `<tr><td><b>${dayLabel(session.ngay)}</b><br><small>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</small></td>
-          <td><b>${escape(session.maLop)}</b><br><small>${escape(session.tenMon)} · ${escape(session.tenLop)}</small></td>
-          <td>${escape(session.phongHoc || "")}<br><small>${escape(formatPlace(session, cfg.placeFallback || "Trực tuyến"))}</small></td>
-          <td>${cfg.showClassType ? classTypeTag(session.loaiLop) + " " : ""}<span class="tag ${session.loai === "bu" ? "purple" : "i"}">${session.loai === "bu" ? escape(text.makeupShiftTag) : escape(text.roleName)}</span></td>
-          <td>${dashboardStatus(session)}</td><td>${button(session.checkinLuc ? "Xem ca" : "Chi tiết ca", "session", session.id, session.ngay === today() && !session.checkoutLuc ? "p" : "")}${session.checkinLuc ? button(text.logBtnLabel, "log", session.id) : ""}</td></tr>`,
+          <td><b>${escape(session.maLop)}</b> · ${escape(session.tenMon)}<br><small>${escape(session.phongHoc ? session.phongHoc + " · " : "")}${escape(formatPlace(session, cfg.placeFallback || "Online"))}</small></td>
+          <td>${cfg.showClassType ? classTypeTag(session.loaiLop) + "<br>" : ""}<span class="tag ${session.loai === "bu" ? "purple" : "i"}">${session.loai === "bu" ? escape(text.makeupShiftTag) : escape(text.roleName)}</span></td>
+          <td>${dashboardStatus(session)}</td><td class="act-col"><div class="act-row">${button(session.checkinLuc ? "Xem ca" : "Chi tiết", "session", session.id, session.ngay === today() && !session.checkoutLuc ? "p" : "")}${session.checkinLuc ? button(text.logBtnLabel, "log", session.id) : ""}</div></td></tr>`,
           ),
         )}</div>
         <div class="card"><h2>${escape(text.dashOpeningsHeading)}</h2>${openingsHtml}</div></div>
@@ -655,7 +653,7 @@ window.TeachingPortal = (() => {
           <div class="seg"><button type="button" class="${view === "week" ? "on" : ""}" data-action="calendar-mode" data-id="week">Lịch Tuần</button><button type="button" class="${view === "month" ? "on" : ""}" data-action="calendar-mode" data-id="month">Lịch Tháng</button><button type="button" class="${view === "list" ? "on" : ""}" data-action="calendar-mode" data-id="list">Danh sách</button></div>
         </div>
         <div class="cal-filter-bar">${select("Lớp học", "class-filter", { "": "Tất cả lớp", ...Object.fromEntries(state.workspace.classes.map((item) => [item.id, item.maLop])) }, state.classFilter)}${button("Đặt lại lọc", "calendar-reset")} ${button("Tải lại lịch", "reload")}</div>
-        <div class="tp-calendar-scroll">${view === "list" ? table(["Lớp", "Ngày", "Giờ", "Loại buổi", "Địa điểm", "Trạng thái", "Thao tác"], sessionRows(sessions.filter((session) => session.ngay.startsWith(selected.slice(0, 7))))) : view === "month" ? `<div class="tp-month-view"><div class="cal-month-head">${headings.map((label) => `<div class="cal-month-head-cell">${label}</div>`).join("")}</div><div class="cal-month-grid">${cells}</div></div>` : `<div class="cal-week-grid">${cells}</div>`}</div>
+        <div class="tp-calendar-scroll">${view === "list" ? table(["Lớp", "Ngày · Giờ", "Địa điểm", "Trạng thái", "Thao tác"], sessionRows(sessions.filter((session) => session.ngay.startsWith(selected.slice(0, 7))))) : view === "month" ? `<div class="tp-month-view"><div class="cal-month-head">${headings.map((label) => `<div class="cal-month-head-cell">${label}</div>`).join("")}</div><div class="cal-month-grid">${cells}</div></div>` : `<div class="cal-week-grid">${cells}</div>`}</div>
       </div>`
       );
     }
@@ -936,27 +934,20 @@ window.TeachingPortal = (() => {
         </div><div class="tp-calendar-scroll">${mode === "month" ? `<div class="tp-month-view"><div class="cal-month-head">${headings.map((label) => `<div class="cal-month-head-cell">${label}</div>`).join("")}</div><div class="cal-month-grid">${cells}</div></div>` : `<div class="cal-week-grid">${cells}</div>`}</div></div></section>`;
     }
 
+    function shortCode(code) {
+      const s = String(code || "");
+      return s.length > 11 ? `${s.slice(0, 7)}…${s.slice(-3)}` : s;
+    }
+
     function classes() {
-      const headers = cfg.showClassType
-        ? [
-            "Mã lớp",
-            "Lớp / Khóa học",
-            "Loại lớp",
-            "Môn · Khối",
-            "Lịch học",
-            "Sĩ số",
-            "Trạng thái",
-            "Thao tác",
-          ]
-        : [
-            "Mã lớp",
-            "Lớp / Khóa học",
-            "Môn · Khối",
-            "Lịch học",
-            "Sĩ số",
-            "Trạng thái",
-            "Thao tác",
-          ];
+      const headers = [
+        "Lớp · Khóa học",
+        "Môn · Khối",
+        "Lịch học",
+        "Sĩ số",
+        "Trạng thái",
+        "Thao tác",
+      ];
       return (
         head(
           screens.myclasses,
@@ -967,7 +958,7 @@ window.TeachingPortal = (() => {
           headers,
           state.workspace.classes.map(
             (item) =>
-              `<tr><td><b>${escape(item.maLop)}</b></td><td>${escape(item.tenLop)}<br><small>${escape(item.tenKhoa || "")}</small></td>${cfg.showClassType ? `<td>${classTypeTag(item.loaiLop)}</td>` : ""}<td>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</td><td>${item.lichHocs.map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join("<br>") || "Chưa có lịch lặp"}</td><td>${item.siSo}</td><td>${tag(item.trangThai)}</td><td>${button("Xem lịch", "class-schedule", item.id)} ${button("Danh sách học viên", "roster", item.id)}</td></tr>`,
+              `<tr><td><b>${escape(item.maLop)}</b>${cfg.showClassType ? " " + classTypeTag(item.loaiLop) : ""}<br><small>${escape(item.tenLop)}${item.tenKhoa ? " · " + escape(item.tenKhoa) : ""}</small></td><td>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</td><td>${item.lichHocs.map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join("<br>") || "Chưa có lịch"}</td><td><b>${item.siSo}</b></td><td>${tag(item.trangThai)}</td><td class="act-col"><div class="act-row">${button("Lịch", "class-schedule", item.id)}${button("Học viên", "roster", item.id)}</div></td></tr>`,
           ),
         )}</div>` +
         availabilityCalendar()
@@ -983,12 +974,10 @@ window.TeachingPortal = (() => {
       const proposalsSection = cfg.hasProposals
         ? `<div class="card"><h2>${escape(text.proposalsHeading)}</h2>${table(
             [
-              "Mã đề xuất",
-              "Yêu cầu",
+              "Đề xuất · Yêu cầu",
               "Học viên",
-              "Môn · Khối",
-              "Hình thức / Lịch học",
-              "Phản hồi của bạn",
+              "Môn · Lịch học",
+              "Phản hồi bạn",
               "Phụ huynh",
               "Thao tác",
             ],
@@ -996,31 +985,20 @@ window.TeachingPortal = (() => {
               const pending =
                 proposal.ttNhanSu === "cho" &&
                 !["huy", "da_chot"].includes(proposal.trangThaiYeuCau);
-              return `<tr><td>DX-${proposal.id}</td><td><b>${escape(proposal.maYc)}</b><br>${escape(proposal.ghiChu || "")}</td><td>${escape(proposal.tenHocVien || proposal.hoTenLienHe || "—")}</td><td>${escape(proposal.tenMon)} · ${escape(proposal.tenCapLop)}</td><td>${proposal.hinhThuc === "online" ? "Trực tuyến" : proposal.hinhThuc === "offline" ? "Trực tiếp" : "Linh hoạt"}<br>${(proposal.lichYeuCau || []).map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join("<br>")}<br><small>${escape(proposal.tenKhuVuc || "")}</small></td><td>${tag(proposal.ttNhanSu)}<br><small>${escape(proposal.lyDoTuChoiNhanSu || "")}</small></td><td>${tag(proposal.ttPhuHuynh)}</td><td>${pending ? button("Đồng ý", "accept", proposal.id, "p") + " " + button("Từ chối", "reject", proposal.id) : escape(proposal.maLop || (proposal.trangThaiYeuCau === "da_chot" ? "Đã chốt đề xuất" : "Đã ghi nhận"))}</td></tr>`;
+              return `<tr><td><b class="code-short" title="${escape(proposal.maYc)}">${escape(shortCode(proposal.maYc))}</b> <small>DX-${proposal.id}</small>${proposal.ghiChu ? `<br><small class="clamp-2">${escape(proposal.ghiChu)}</small>` : ""}</td><td>${escape(proposal.tenHocVien || proposal.hoTenLienHe || "—")}</td><td><b>${escape(proposal.tenMon)} · ${escape(proposal.tenCapLop)}</b><br><small>${(proposal.lichYeuCau || []).map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join(", ")}${proposal.tenKhuVuc ? " · " + escape(proposal.tenKhuVuc) : ""}</small></td><td>${tag(proposal.ttNhanSu)}${proposal.lyDoTuChoiNhanSu ? `<br><small>${escape(proposal.lyDoTuChoiNhanSu)}</small>` : ""}</td><td>${tag(proposal.ttPhuHuynh)}</td><td class="act-col">${pending ? `<div class="act-row">${button("Đồng ý", "accept", proposal.id, "p")}${button("Từ chối", "reject", proposal.id)}</div>` : `<small>${escape(proposal.maLop || (proposal.trangThaiYeuCau === "da_chot" ? "Đã chốt" : "Đã ghi nhận"))}</small>`}</td></tr>`;
             }),
             "Chưa có đề xuất ghép lớp mới từ Giáo vụ.",
           )}</div><div class="card"><h2>${escape(text.opportunitiesHeading)}</h2>${table(
-            cfg.showClassType
-              ? [
-                  "Mã yêu cầu",
-                  "Loại lớp",
-                  "Môn · Khối",
-                  "Hình thức",
-                  "Lịch học",
-                  "Khu vực",
-                  "Thao tác",
-                ]
-              : [
-                  "Mã yêu cầu",
-                  "Môn · Khối",
-                  "Hình thức",
-                  "Lịch học",
-                  "Khu vực",
-                  "Thao tác",
-                ],
+            [
+              "Yêu cầu · Môn · Khối",
+              "Hình thức · Khu vực",
+              "Lịch học",
+              "Mục tiêu",
+              "Thao tác",
+            ],
             state.opportunities.map(
               (item) =>
-                `<tr><td><b>${escape(item.maYc)}</b><br><small>${escape(item.mucTieu || "")}</small></td>${cfg.showClassType ? `<td>${classTypeTag(item.loaiLopMongMuon)}</td>` : ""}<td>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</td><td>${item.hinhThuc === "online" ? "Trực tuyến" : item.hinhThuc === "offline" ? "Trực tiếp" : "Linh hoạt"}</td><td>${item.lichYeuCau.map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join("<br>")}</td><td>${escape(item.tenKhuVuc || "—")}</td><td>${button(text.applyOppBtn, "apply", item.id, "p")}</td></tr>`,
+                `<tr><td><b class="code-short" title="${escape(item.maYc)}">${escape(shortCode(item.maYc))}</b>${cfg.showClassType ? " " + classTypeTag(item.loaiLopMongMuon) : ""}<br><small>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td><td>${item.hinhThuc === "online" ? "Online" : item.hinhThuc === "offline" ? "Trực tiếp" : "Linh hoạt"}<br><small>${escape(item.tenKhuVuc || "—")}</small></td><td>${item.lichYeuCau.map((slot) => `${Number(slot.thu) === 8 ? "CN" : "T" + slot.thu} ${time(slot.gioBatDau)}–${time(slot.gioKetThuc)}`).join("<br>")}</td><td><span class="clamp-2">${escape(item.mucTieu || "—")}</span></td><td class="act-col">${button(text.applyOppBtn, "apply", item.id, "p")}</td></tr>`,
             ),
             text.emptyOpportunities,
           )}</div>`
@@ -1030,28 +1008,26 @@ window.TeachingPortal = (() => {
         head(screens.recruit, text.recruitSubtitle, button("Tải lại", "reload")) +
         `<div class="card"><h2>${escape(text.openShiftsHeading)}</h2>${table(
           [
-            "Mã đề xuất",
-            "Lớp · Môn · Khối",
-            "Ngày & Giờ ca",
-            "Hình thức · Địa điểm",
-            "Vị trí & Yêu cầu",
-            "Điều kiện & Trạng thái",
+            "Đề xuất · Lớp",
+            "Ca học · Địa điểm",
+            "Vị trí · Yêu cầu",
+            "Điều kiện",
             "Thao tác",
           ],
           openShifts.map((item) => {
             const mine = item.donCuaToi;
             const place =
               item.hinhThuc === "online"
-                ? "Trực tuyến (Online)"
+                ? "Online"
                 : `${item.tenCoSo || item.diaDiem || "Trực tiếp"}${item.phongHoc ? " · " + item.phongHoc : ""}${item.tenKhuVuc ? " · " + item.tenKhuVuc : ""}`;
             const statusCell = mine
               ? `${tag(mine.trangThai)}${mine.lyDoTuChoi ? `<span class="tp-elig-note">Lý do: ${escape(mine.lyDoTuChoi)}</span>` : ""}`
               : item.duDieuKien
-                ? '<span class="tag ok">Phù hợp lịch &amp; chuyên môn</span>'
-                : `<span class="tag r">Chưa đủ điều kiện</span><span class="tp-elig-note">${escape((item.lyDoKhongDuDieuKien || []).join(" "))}</span>`;
+                ? '<span class="tag ok">Đủ điều kiện</span>'
+                : `<span class="tag r">Chưa đủ ĐK</span><span class="tp-elig-note">${escape((item.lyDoKhongDuDieuKien || []).join(" "))}</span>`;
             const actionCell = mine
               ? mine.trangThai === "da_duyet"
-                ? button("Xem ca trên lịch", "session", item.buoiHocId, "p")
+                ? button("Xem ca", "session", item.buoiHocId, "p")
                 : '<span class="tp-muted">Đã ứng tuyển</span>'
               : button(
                   text.applyShiftBtn,
@@ -1065,45 +1041,37 @@ window.TeachingPortal = (() => {
                 ? `Trợ giảng (${item.soDaDuyet}/${item.soLuong})`
                 : text.roleName;
             return `<tr>
-              <td><b>${escape(item.maDeXuat)}</b><br><small>${escape(item.tenNguoiTao || "")}</small></td>
-              <td><b>${escape(item.maLop)}</b>${cfg.showClassType ? " " + classTypeTag(item.loaiLop) : ""}<br><small>${escape(item.tenLop)} · ${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
-              <td><b>${date(item.ngay)}</b><br><small>${time(item.gioBatDau)}–${time(item.gioKetThuc)}</small></td>
-              <td>${escape(place)}</td>
-              <td><span class="tag ${roleTagClass}">${escape(roleBadge)}</span><br><small>${escape(item.yeuCau || text.defaultShiftRequirement)}</small></td>
+              <td><b>${escape(item.maLop)}</b> · <span class="code-short">${escape(item.maDeXuat)}</span>${cfg.showClassType ? " " + classTypeTag(item.loaiLop) : ""}<br><small>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
+              <td><b>${date(item.ngay)}</b> <small>${time(item.gioBatDau)}–${time(item.gioKetThuc)}</small><br><small>${escape(place)}</small></td>
+              <td><span class="tag ${roleTagClass}">${escape(roleBadge)}</span><br><small class="clamp-2">${escape(item.yeuCau || text.defaultShiftRequirement)}</small></td>
               <td>${statusCell}</td>
-              <td>${actionCell}</td>
+              <td class="act-col">${actionCell}</td>
             </tr>`;
           }),
           text.emptyOpenShifts,
         )}</div>
-        <div class="card"><h2>Đơn ứng tuyển ca của tôi &amp; Kết quả duyệt</h2>${table(
+        <div class="card"><h2>Đơn ứng tuyển ca của tôi</h2>${table(
           [
-            "Mã đề xuất",
-            "Lớp · Môn · Khối",
-            "Ngày & Giờ ca",
-            "Vị trí",
+            "Đề xuất · Lớp",
+            "Ca học",
             "Lời nhắn",
-            "Trạng thái duyệt",
-            "Kết quả / Lý do từ chối",
+            "Trạng thái · Kết quả",
             "Thao tác",
           ],
           myShiftApps.map((item) => {
             const mine = item.donCuaToi;
             const resultNote =
               mine.trangThai === "da_duyet"
-                ? "Đã phân công chính thức lên thời khóa biểu cá nhân."
+                ? "Đã phân công lên lịch."
                 : mine.trangThai === "tu_choi"
-                  ? `Từ chối: ${mine.lyDoTuChoi || "Chưa đạt yêu cầu."}`
-                  : "Đang chờ Giáo vụ duyệt (chưa hiển thị trên thời khóa biểu).";
+                  ? `Từ chối: ${mine.lyDoTuChoi || "Chưa đạt."}`
+                  : "Chờ Giáo vụ duyệt.";
             return `<tr>
-              <td><b>${escape(item.maDeXuat)}</b></td>
-              <td><b>${escape(item.maLop)}</b>${cfg.showClassType ? " " + classTypeTag(item.loaiLop) : ""}<br><small>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
+              <td><b>${escape(item.maLop)}</b> · <span class="code-short">${escape(item.maDeXuat)}</span>${cfg.showClassType ? " " + classTypeTag(item.loaiLop) : ""}<br><small>${escape(item.tenMon)} · ${escape(item.tenCapLop)}</small></td>
               <td><b>${date(item.ngay)}</b><br><small>${time(item.gioBatDau)}–${time(item.gioKetThuc)}</small></td>
-              <td><span class="tag ${roleTagClass}">${escape(text.roleName)}</span></td>
-              <td>${escape(mine.ghiChu || "—")}</td>
-              <td>${tag(mine.trangThai)}<br><small>${datetime(mine.duyetLuc || mine.createdAt)}</small></td>
-              <td>${escape(resultNote)}</td>
-              <td>${mine.trangThai === "da_duyet" ? button("Xem ca", "session", item.buoiHocId, "p") : "—"}</td>
+              <td><span class="clamp-2">${escape(mine.ghiChu || "—")}</span></td>
+              <td>${tag(mine.trangThai)} <small>${datetime(mine.duyetLuc || mine.createdAt)}</small><br><small>${escape(resultNote)}</small></td>
+              <td class="act-col">${mine.trangThai === "da_duyet" ? button("Xem ca", "session", item.buoiHocId, "p") : "—"}</td>
             </tr>`;
           }),
           "Bạn chưa gửi đơn ứng tuyển ca nào.",
@@ -1133,22 +1101,20 @@ window.TeachingPortal = (() => {
                 ],
                 state.proposals.map(
                   (proposal) =>
-                    `<tr><td>DX-${proposal.id}</td><td>${escape(proposal.maYc)}</td><td>${tag(proposal.ttNhanSu)}</td><td>${tag(proposal.ttPhuHuynh)}</td><td>${escape(proposal.maLop || "—")}</td></tr>`,
+                    `<tr><td>DX-${proposal.id}</td><td><span class="code-short" title="${escape(proposal.maYc)}">${escape(shortCode(proposal.maYc))}</span></td><td>${tag(proposal.ttNhanSu)}</td><td>${tag(proposal.ttPhuHuynh)}</td><td>${escape(proposal.maLop || "—")}</td></tr>`,
                 ),
               )
             : table(
                 [
-                  "Mã đơn",
-                  "Loại đơn",
-                  "Lớp / Buổi học",
+                  "Đơn · Loại",
+                  "Lớp · Buổi",
                   "Nội dung",
-                  "Ngày gửi",
-                  "Trạng thái",
+                  "Trạng thái · Ngày gửi",
                   "Phản hồi",
                 ],
                 rows.map(
                   (request) =>
-                    `<tr><td>${escape(request.ma)}</td><td>${escape(labels[request.loai] || request.loai)}</td><td><b>${escape(request.maLop)}</b><br>${date(request.ngay)}</td><td>${escape(request.lyDo)}</td><td>${datetime(request.createdAt)}</td><td>${tag(request.trangThai)}</td><td>${escape(request.phanHoi || "—")}</td></tr>`,
+                    `<tr><td><b class="code-short">${escape(request.ma)}</b><br><small>${escape(labels[request.loai] || request.loai)}</small></td><td><b>${escape(request.maLop)}</b><br><small>${date(request.ngay)}</small></td><td><span class="clamp-2" title="${escape(request.lyDo || "")}">${escape(request.lyDo)}</span></td><td>${tag(request.trangThai)}<br><small>${datetime(request.createdAt)}</small></td><td><span class="clamp-2">${escape(request.phanHoi || "—")}</span></td></tr>`,
                 ),
               )
         }</div>`
@@ -1167,21 +1133,16 @@ window.TeachingPortal = (() => {
         head("Bảng công cá nhân", "", button("In bảng công", "print")) +
         `<div class="card"><div class="tp-toolbar">${field("Tháng", "timesheet-month", state.month, "month", "required")}<b>${Math.floor(minutes / 60)} giờ ${minutes % 60} phút · ${sessions.filter((session) => session.checkoutLuc).length} ca đã check-out · Kỳ công: ${tag(period)}</b></div>${table(
           [
-            "Ngày",
-            "Lớp",
-            "Giờ lịch",
-            "Check-in",
-            "Check-out",
-            "Hiện diện (phút)",
-            "Phút tính công",
+            "Lớp · Ngày giờ",
+            "Check-in / Out",
+            "Phút công",
             "Đi trễ",
-            "Trạng thái công",
-            "Kỳ công",
+            "Trạng thái · Kỳ",
             "Thao tác",
           ],
           sessions.map(
             (session) =>
-              `<tr><td>${date(session.ngay)}</td><td>${escape(session.maLop)}</td><td>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</td><td>${datetime(session.checkinLuc)}</td><td>${datetime(session.checkoutLuc)}</td><td>${escape(session.soPhutThucTe ?? "—")}</td><td>${workMinutes(session)}</td><td>${session.checkinLuc ? (Number(session.checkinTre) ? tag("cho_duyet", "Đi trễ").replace("Chờ xử lý", "Đi trễ") : tag("hop_le", "Đúng giờ").replace("Hợp lệ", "Đúng giờ")) : "—"}</td><td>${tag(session.trangThaiCong)}</td><td>${tag(session.kyCong)}</td><td>${button("Xem ca", "session", session.id)}${session.quyenYeuCau?.coTheChinhCong ? " " + button("Điều chỉnh", "correction", session.id) : ""}</td></tr>`,
+              `<tr><td><b>${escape(session.maLop)}</b> · ${date(session.ngay)}<br><small>${time(session.gioBatDau)}–${time(session.gioKetThuc)}</small></td><td><small>In: ${datetime(session.checkinLuc)}<br>Out: ${datetime(session.checkoutLuc)}</small></td><td><b>${workMinutes(session)}</b>${session.soPhutThucTe != null ? `<br><small>Hiện diện: ${escape(session.soPhutThucTe)}p</small>` : ""}</td><td>${session.checkinLuc ? (Number(session.checkinTre) ? tag("cho_duyet", "Đi trễ").replace("Chờ xử lý", "Đi trễ") : tag("hop_le", "Đúng giờ").replace("Hợp lệ", "Đúng giờ")) : "—"}</td><td>${tag(session.trangThaiCong)}<br><small>${tag(session.kyCong)}</small></td><td class="act-col"><div class="act-row">${button("Xem ca", "session", session.id)}${session.quyenYeuCau?.coTheChinhCong ? button("Điều chỉnh", "correction", session.id) : ""}</div></td></tr>`,
           ),
         )}</div>`
       );

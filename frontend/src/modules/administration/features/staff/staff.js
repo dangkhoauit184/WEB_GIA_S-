@@ -43,14 +43,12 @@
       (!role || staffRoleName(row) === role)
     );
     Admin.$('staffRows').innerHTML = rows.map(row => `<tr>
-      <td><b>${esc(row.hoTen)}</b></td>
-      <td>${esc(row.email)}<br><small>${esc(row.sdt || '—')}</small></td>
-      <td>${Admin.tag(staffRoleName(row), 'i')}</td>
-      <td style="font-size:12px">${esc(row.chuyenMon || row.gioiThieu || 'Chưa nhập chuyên môn')}<br><small style="color:var(--g500)">${esc(row.lichRanh || 'Chưa nhập lịch rảnh')}</small></td>
-      <td>${row.nhanSuId ? `<b class="mono">${money(row.donGiaGioChuan)}/giờ</b>` : '<small style="color:var(--g500)">Quản trị / Văn phòng</small>'}</td>
-      <td>${Admin.tag(row.status === 'active' ? 'Hoạt động' : (row.status === 'pending' ? 'Chờ kích hoạt' : 'Khóa'), row.status === 'active' ? 'ok' : 'r')}</td>
-      <td><div class="row">${row.nhanSuId ? `<button type="button" class="btn sm p" data-act="open-teacher-profile" data-id="${row.userId}">Đơn giá &amp; Hồ sơ</button>` : ''}<button type="button" class="btn sm" data-act="toggle-staff" data-id="${row.userId}">${row.status === 'active' ? 'Khóa' : 'Kích hoạt'}</button></div></td>
-    </tr>`).join('') || empty(7);
+      <td><b>${esc(row.hoTen)}</b><br>${Admin.tag(staffRoleName(row), 'i')}</td>
+      <td style="overflow-wrap:anywhere"><span style="font-size:12.5px">${esc(row.email)}</span><br><small>${esc(row.sdt || '—')}</small></td>
+      <td><div class="clamp-2" style="font-size:12px" title="${esc((row.chuyenMon || row.gioiThieu || '') + (row.lichRanh ? ' · ' + row.lichRanh : ''))}">${esc(row.chuyenMon || row.gioiThieu || 'Chưa nhập chuyên môn')}<br><small style="color:var(--g500)">${esc(row.lichRanh || 'Chưa có lịch rảnh')}</small></div></td>
+      <td>${row.nhanSuId ? `<b class="mono" style="white-space:nowrap">${money(row.donGiaGioChuan)}/h</b>` : '<small style="color:var(--g500)">Văn phòng</small>'}<br>${Admin.tag(row.status === 'active' ? 'Hoạt động' : (row.status === 'pending' ? 'Chờ duyệt' : 'Khóa'), row.status === 'active' ? 'ok' : 'r')}</td>
+      <td class="act-col"><div class="act-row">${row.nhanSuId ? `<button type="button" class="btn sm p" data-act="open-teacher-profile" data-id="${row.userId}">Hồ sơ</button>` : ''}<button type="button" class="btn sm" data-act="toggle-staff" data-id="${row.userId}">${row.status === 'active' ? 'Khóa' : 'Mở'}</button></div></td>
+    </tr>`).join('') || empty(5);
     Admin.$('staffCount').textContent = `Hiển thị ${rows.length} / ${employees.length} tài khoản`;
   };
 

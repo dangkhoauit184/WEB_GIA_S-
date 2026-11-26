@@ -3,10 +3,11 @@
 (() => {
   const Admin = window.Admin;
   const base = '/api/academic/admissions';
-  const requestStates = { moi:'Mới tiếp nhận', dang_tim:'Đang tìm người dạy', da_de_xuat:'Đã gửi đề xuất', da_chot:'Hai bên đã đồng ý', huy:'Đã hủy' };
-  const registrationStates = { cho_xep_lop:'Chờ Admin xếp lớp', dang_hoc:'Đang học', hoan_thanh:'Hoàn thành', thoi_hoc:'Thôi học' };
+  const requestStates = { moi:'Mới', dang_tim:'Đang tìm GV', da_de_xuat:'Đã đề xuất', da_chot:'Đã chốt', huy:'Đã hủy' };
+  const registrationStates = { cho_xep_lop:'Chờ xếp lớp', dang_hoc:'Đang học', hoan_thanh:'Hoàn thành', thoi_hoc:'Thôi học' };
   const responseStates = { cho:'Chờ phản hồi', dong_y:'Đồng ý', tu_choi:'Từ chối' };
   const units = { theo_buoi:'buổi', theo_gio:'giờ', theo_khoa:'khóa', theo_thang:'tháng' };
+  const shortCode = code => { const s = String(code || ''); return s.length > 12 ? `${s.slice(0, 9)}…` : s; };
   let template;
   let selectedRequest = null;
   let currentStep = 0;
@@ -60,12 +61,19 @@
     if (!Admin.$('reqRows')) return;
     requestRows = data.items;
     if (Admin.$('intakeStep0Count')) Admin.$('intakeStep0Count').textContent = String(data.total ?? data.items.length);
-    Admin.$('reqRows').innerHTML = data.items.map(row => `<tr>
-      <td><b>${Admin.esc(row.maYc)}</b></td><td><b>${Admin.esc(row.tenHocVien || row.hoTenLienHe || 'Khách tư vấn')}</b>${row.maHv ? `<br><small>${Admin.esc(row.maHv)}</small>` : ''}</td>
-      <td>${Admin.esc(row.tenPhuHuynh || row.hoTenLienHe || '—')}<br><small>${Admin.esc(row.sdtLienHe || row.sdtPhuHuynh || '—')}</small></td>
-      <td>${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)}</td><td>${Admin.esc(schedule(row.lichYeuCau))}</td>
-      <td>${Admin.esc(row.tenKhuVuc || 'Chưa chọn')}</td><td>${stateTag(row.trangThai, requestStates)}</td>
-      <td><div class="row">${!['huy', 'da_chot'].includes(row.trangThai) ? Admin.button('Tìm người dạy', 'match-request', row.id, 'p') : ''}${Admin.button('Chi tiết', 'request-detail', row.id)}</div></td></tr>`).join('') || '<tr><td colspan="8" class="admin-empty">Chưa có yêu cầu học. Bấm “Tiếp nhận yêu cầu mới” để nhập nhu cầu.</td></tr>';
+    Admin.$('reqRows').innerHTML = data.items.map(row => {
+      const stuName = row.tenHocVien || row.hoTenLienHe || 'Khách tư vấn';
+      const parName = row.tenPhuHuynh || row.hoTenLienHe || '—';
+      const phone = row.sdtLienHe || row.sdtPhuHuynh || '';
+      const schedText = schedule(row.lichYeuCau);
+      const regionText = row.tenKhuVuc || 'Chưa chọn KV';
+      return `<tr>
+        <td><b>${Admin.esc(stuName)}</b><br><small title="${Admin.esc(row.maYc)}"><span class="code-short">${Admin.esc(shortCode(row.maYc))}</span>${row.maHv ? ` · ${Admin.esc(row.maHv)}` : ''}</small></td>
+        <td>${Admin.esc(parName)}${phone ? `<br><small>${Admin.esc(phone)}</small>` : ''}</td>
+        <td><b>${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)}</b><br><small>${Admin.esc(schedText)} · ${Admin.esc(regionText)}</small></td>
+        <td>${stateTag(row.trangThai, requestStates)}</td>
+        <td class="act-col"><div class="row act-row">${!['huy', 'da_chot'].includes(row.trangThai) ? Admin.button('Tìm GV', 'match-request', row.id, 'p') : ''}${Admin.button('Chi tiết', 'request-detail', row.id)}</div></td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="admin-empty">Chưa có yêu cầu học. Bấm “+ Tiếp nhận yêu cầu” để thêm mới.</td></tr>';
     const pager = Admin.$('admissionsRequestPager');
     pager.innerHTML = Admin.pager(data);
     bindPage(pager, requestFilters, loadRequests);
@@ -106,12 +114,12 @@
     const version = ++matchVersion;
     const id = Number(Admin.$('matchReqSel').value);
     const body = Admin.$('matchBody');
-    body.innerHTML = '<tr><td colspan="5" class="admin-empty">Đang đối chiếu chuyên môn và lịch…</td></tr>';
+    body.innerHTML = '<tr><td colspan="4" class="admin-empty">Đang đối chiếu chuyên môn và lịch…</td></tr>';
     if (!id) {
       selectedRequest = null;
       Admin.$('matchRegion').value = '';
       Admin.$('budgetSel').value = '';
-      body.innerHTML = '<tr><td colspan="5" class="admin-empty">Chọn yêu cầu từ bước 1 để tìm người dạy.</td></tr>';
+      body.innerHTML = '<tr><td colspan="4" class="admin-empty">Chọn yêu cầu từ bước 1 để tìm người dạy.</td></tr>';
       return;
     }
     try {
@@ -119,18 +127,18 @@
       if (version !== matchVersion || !body.isConnected) return;
       selectedRequest = request;
       candidates = rows;
-      Admin.$('matchRegion').value = request.tenKhuVuc || 'Không giới hạn khu vực';
+      Admin.$('matchRegion').value = request.tenKhuVuc || 'Không giới hạn';
       Admin.$('budgetSel').value = budget(request);
       Admin.$('matchTitle').textContent = `Ứng viên phù hợp · ${request.tenMonHoc} · ${request.tenCapLop}`;
-      body.innerHTML = rows.map(row => `<tr><td><b>${Admin.esc(row.hoTen)}</b><br><small>${Admin.esc(row.donViCongTac || '')} · ${row.kinhNghiemNam} năm kinh nghiệm</small></td>
-        <td>${Admin.esc(request.tenMonHoc)} · ${Admin.esc(request.tenCapLop)}<br><small>${Admin.esc(row.gioiThieu || '')}</small></td>
-        <td>${Admin.esc(row.khuVucs.map(region => region.tenKhuVuc).join(', ') || 'Chưa khai báo')}</td>
-        <td>${Admin.tag('Khớp tất cả khung giờ', 'ok')}<br><small>${Admin.esc(schedule(request.lichYeuCau))}</small>${row.nganSachCanThoaThuan ? '<br><small>Ngân sách cần đối chiếu theo đúng đơn vị khi tư vấn.</small>' : ''}</td>
-        <td>${can('add') ? Admin.button('Đề xuất', 'propose', row.id, 'p') : 'Chỉ xem'}</td></tr>`).join('') || '<tr><td colspan="5" class="admin-empty">Chưa có người dạy khớp đầy đủ môn, khối, hình thức, khu vực và lịch yêu cầu.</td></tr>';
+      body.innerHTML = rows.map(row => `<tr>
+        <td><b>${Admin.esc(row.hoTen)}</b><br><small>${Admin.esc(row.donViCongTac || 'Người dạy')} · ${row.kinhNghiemNam} năm KN</small></td>
+        <td>${Admin.esc(row.khuVucs.map(region => region.tenKhuVuc).join(', ') || 'Chưa khai báo')}${row.gioiThieu ? `<br><small class="clamp-2">${Admin.esc(row.gioiThieu)}</small>` : ''}</td>
+        <td>${Admin.tag('Khớp lịch', 'ok')}<br><small>${Admin.esc(schedule(request.lichYeuCau))}</small></td>
+        <td class="act-col">${can('add') ? Admin.button('Đề xuất', 'propose', row.id, 'p') : 'Chỉ xem'}</td></tr>`).join('') || '<tr><td colspan="4" class="admin-empty">Chưa có người dạy khớp đầy đủ chuyên môn, khu vực và lịch yêu cầu.</td></tr>';
       body.querySelectorAll('[data-action="propose"]').forEach(button => button.addEventListener('click', () => propose(Number(button.dataset.id))));
     } catch (error) {
       if (version !== matchVersion || !body.isConnected) return;
-      body.innerHTML = `<tr><td colspan="5" class="form-error">${Admin.esc(error.message)}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="4" class="form-error">${Admin.esc(error.message)}</td></tr>`;
     }
   }
 
@@ -159,16 +167,16 @@
     const countEl = Admin.$(handoff ? 'intakeStep3Count' : 'intakeStep2Count');
     if (countEl) countEl.textContent = String(data.total ?? data.items.length);
     body.innerHTML = data.items.map(row => {
-      const request = `${Admin.esc(row.maYc)}<br><small>${Admin.esc(row.tenHocVien || row.hoTenLienHe || '')}</small>`;
+      const request = `<b>DX-${row.id}</b> · <span class="code-short" title="${Admin.esc(row.maYc)}">${Admin.esc(shortCode(row.maYc))}</span><br><small>${Admin.esc(row.tenHocVien || row.hoTenLienHe || '')}</small>`;
       const ready = row.ttNhanSu === 'dong_y' && row.ttPhuHuynh === 'dong_y' && row.trangThaiYeuCau === 'da_chot';
       const detail = Admin.button('Chi tiết', 'proposal-detail', row.id);
-      if (handoff) return `<tr><td><b>DX-${row.id}</b></td><td>${request}</td><td><b>${Admin.esc(row.tenNguoiDay)}</b></td>
-        <td>${Admin.tag(row.maLop ? `Đã có lớp ${row.maLop}` : '2 bên đã đồng ý', 'ok')}</td><td><div class="row">${detail}${Admin.user.role === 'ADMIN' ? Admin.button('Chuyển Admin xếp lớp', 'handoff-admin', row.id, 'purple') : '<span class="tag i">Chờ Admin xếp lớp</span>'}</div></td></tr>`;
-      return `<tr><td><b>DX-${row.id}</b></td><td>${request}</td><td><b>${Admin.esc(row.tenNguoiDay)}</b></td>
-        <td>${stateTag(row.ttNhanSu, responseStates)}<br><small>${Admin.esc(row.lyDoTuChoiNhanSu || row.nhanSuPhanHoiLuc || '')}</small></td>
-        <td>${stateTag(row.ttPhuHuynh, responseStates)}<br><small>${Admin.esc(row.lyDoTuChoiPhuHuynh || row.phuHuynhPhanHoiLuc || '')}</small></td>
-        <td><div class="row">${detail}${ready ? Admin.button('Chuyển bước 4', 'handoff', row.id, 'p') : ''}</div></td></tr>`;
-    }).join('') || `<tr><td colspan="${handoff ? 5 : 6}" class="admin-empty">${handoff ? 'Chưa có đề xuất được cả hai bên đồng ý.' : 'Chưa có đề xuất người dạy.'}</td></tr>`;
+      if (handoff) return `<tr><td>${request}</td><td><b>${Admin.esc(row.tenNguoiDay)}</b></td>
+        <td>${Admin.tag(row.maLop ? `Lớp ${row.maLop}` : 'Đã chốt', 'ok')}</td><td class="act-col"><div class="row act-row">${detail}${Admin.user.role === 'ADMIN' ? Admin.button('Xếp lớp', 'handoff-admin', row.id, 'purple') : '<span class="tag i">Chờ Admin</span>'}</div></td></tr>`;
+      return `<tr><td>${request}</td><td><b>${Admin.esc(row.tenNguoiDay)}</b></td>
+        <td>${stateTag(row.ttNhanSu, responseStates)}${row.lyDoTuChoiNhanSu ? `<br><small>${Admin.esc(row.lyDoTuChoiNhanSu)}</small>` : ''}</td>
+        <td>${stateTag(row.ttPhuHuynh, responseStates)}${row.lyDoTuChoiPhuHuynh ? `<br><small>${Admin.esc(row.lyDoTuChoiPhuHuynh)}</small>` : ''}</td>
+        <td class="act-col"><div class="row act-row">${detail}${ready ? Admin.button('Bước 4', 'handoff', row.id, 'p') : ''}</div></td></tr>`;
+    }).join('') || `<tr><td colspan="${handoff ? 4 : 5}" class="admin-empty">${handoff ? 'Chưa có đề xuất được hai bên đồng ý.' : 'Chưa có đề xuất người dạy.'}</td></tr>`;
     const pager = Admin.$(handoff ? 'admissionsHandoffPager' : 'admissionsProposalPager');
     pager.innerHTML = Admin.pager(data);
     pager.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => Admin.busy(button, () => loadProposals(Number(button.dataset.page)))));
@@ -321,12 +329,11 @@
   Admin.register('staff-registrations', async () => {
     const data = await Admin.api(`${base}/registrations?${Admin.query(registrationFilters)}`);
     const columns = [
-      { label:'Mã đăng ký', render:row => `<b>DK-${row.id}</b>` },
-      { label:'Học viên', render:row => `<b>${Admin.esc(row.tenHocVien)}</b><br><small>${Admin.esc(row.maHv)}</small>` },
-      { label:'Phụ huynh · SĐT', render:row => `${Admin.esc(row.tenPhuHuynh)}<br><small>${Admin.esc(row.sdtPhuHuynh || '—')}</small>` },
-      { label:'Khóa học', key:'tenKhoa' }, { label:'Học phí trọn khóa', render:row => Admin.money(row.hocPhiSnapshot) },
-      { label:'Ngày đăng ký', render:row => Admin.esc(Admin.date(row.ngayDangKy)) },
-      { label:'Trạng thái', render:row => stateTag(row.trangThai, registrationStates) }, { label:'Lớp', render:row => Admin.esc(row.maLop || 'Chờ Admin xếp lớp') }
+      { label:'Học viên · Mã ĐK', render:row => `<b>${Admin.esc(row.tenHocVien)}</b><br><small>DK-${row.id} · ${Admin.esc(row.maHv)}</small>` },
+      { label:'Phụ huynh', render:row => `${Admin.esc(row.tenPhuHuynh)}<br><small>${Admin.esc(row.sdtPhuHuynh || '—')}</small>` },
+      { label:'Khóa học · Ngày ĐK', render:row => `<b>${Admin.esc(row.tenKhoa)}</b><br><small>${Admin.esc(Admin.date(row.ngayDangKy))}</small>` },
+      { label:'Học phí', render:row => `<b>${Admin.money(row.hocPhiSnapshot)}</b>` },
+      { label:'Trạng thái · Lớp', render:row => `${stateTag(row.trangThai, registrationStates)}<br><small>${Admin.esc(row.maLop || 'Chờ xếp lớp')}</small>` }
     ];
     return { title:'Đăng ký khóa học', html:Admin.heading('Đăng ký khóa học', '') +
       `<div class="card">${filterForm('admissions-registration-filter', registrationFilters, registrationStates)}${Admin.table(columns, data.items, 'Chưa có đăng ký khóa học.')}${Admin.pager(data)}</div>`, bind() {

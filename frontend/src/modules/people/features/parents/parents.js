@@ -405,20 +405,20 @@
         notes()
           .map(
             (row) =>
-              `<tr><td>${esc(row.date)}</td><td><strong>${esc(row.course)}</strong></td><td>${tag(row.attend, row.attend?.startsWith("Vắng") ? "w" : "ok")}</td><td>${esc(row.baiTap || "Chưa giao bài")}<span class="parent-cell-sub">${esc(row.hanNop || "")}</span></td><td class="parent-money">${esc(row.score)}</td><td>${esc(row.comment)}</td><td>${documentLink(row.fileUrl)}</td></tr>`,
+              `<tr><td><strong>${esc(row.course)}</strong><span class="parent-cell-sub">${esc(row.date)}</span></td><td>${tag(row.attend, row.attend?.startsWith("Vắng") ? "w" : "ok")}</td><td>${esc(row.baiTap || "Chưa giao bài")}${row.hanNop ? `<span class="parent-cell-sub">${esc(row.hanNop)}</span>` : ""}</td><td class="parent-money">${esc(row.score)}</td><td><span class="clamp-2" title="${esc(row.comment || "")}">${esc(row.comment)}</span></td><td class="act-col">${documentLink(row.fileUrl)}</td></tr>`,
           )
-          .join("") || emptyRow(7, "Chưa có kết quả buổi học.");
+          .join("") || emptyRow(6, "Chưa có kết quả buổi học.");
     }
     function transactionTag(row) {
       const labels = {
-        khoi_tao: ["Đang khởi tạo", "i"],
+        khoi_tao: ["Khởi tạo", "i"],
         cho_xac_nhan: ["Chờ đối soát", "w"],
         da_xac_nhan: ["Đã xác nhận", "ok"],
         thanh_cong: ["Đã xác nhận", "ok"],
-        that_bai: ["Không thành công", "r"],
+        that_bai: ["Thất bại", "r"],
         huy: ["Đã hủy", "r"],
         het_han: ["Hết hạn", "r"],
-        hoan_tien: ["Đã hoàn tiền", "i"],
+        hoan_tien: ["Hoàn tiền", "i"],
       };
       const [label, tone] = labels[row.status] || ["Đang xử lý", "i"];
       return tag(label, tone);
@@ -435,17 +435,17 @@
                 ? tag("Chờ đối soát", "w")
                 : tag(
                     row.status === "mot_phan"
-                      ? "Đã đóng một phần"
-                      : "Chưa thanh toán",
+                      ? "Đóng 1 phần"
+                      : "Chưa đóng",
                     "w",
                   );
             const pay =
               loaded && remaining > 0
-                ? button("💳 Thanh toán QR", "pay", row.id, "p")
+                ? button("Thanh toán QR", "pay", row.id, "p")
                 : "";
-            return `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(row.course)}</td><td class="parent-money">${money(row.must)}</td><td class="parent-money">${money(row.paid)}</td><td class="parent-money ${remaining ? "parent-due" : ""}">${money(remaining)}</td><td>${esc(row.deadline)}</td><td>${status}</td><td><div class="parent-table-actions">${button("Chi tiết", "invoice", row.id)}${pay}</div></td></tr>`;
+            return `<tr><td><strong>${esc(row.course)}</strong><span class="parent-cell-sub"><span class="code-short">${esc(row.code)}</span></span></td><td class="parent-money">${money(row.must)}</td><td class="parent-money">${money(row.paid)}</td><td class="parent-money ${remaining ? "parent-due" : ""}">${money(remaining)}</td><td>${status}${row.deadline && row.deadline !== "—" ? `<span class="parent-cell-sub">Hạn: ${esc(row.deadline)}</span>` : ""}</td><td class="act-col"><div class="act-row">${button("Chi tiết", "invoice", row.id)}${pay}</div></td></tr>`;
           })
-          .join("") || emptyRow(8, "Chưa có hóa đơn học phí được phát hành.");
+          .join("") || emptyRow(6, "Chưa có hóa đơn học phí được phát hành.");
       const invoiceCodes = new Set(invoices().map((row) => row.code));
       const transactions = data.transactions.filter(
         (row) =>
@@ -455,14 +455,14 @@
         transactions
           .map(
             (row) =>
-              `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(row.invCode)}</td><td>${esc(providerName(row.channel))}</td><td class="parent-money">${money(row.amount)}</td><td>${esc(row.ref)}</td><td>${esc(row.time)}</td><td>${transactionTag(row)}</td></tr>`,
+              `<tr><td><strong class="code-short">${esc(row.code)}</strong><span class="parent-cell-sub">${esc(row.invCode)}</span></td><td>${esc(providerName(row.channel))}${row.ref && row.ref !== "—" ? `<span class="parent-cell-sub code-short">${esc(row.ref)}</span>` : ""}</td><td class="parent-money">${money(row.amount)}</td><td><small>${esc(row.time)}</small></td><td>${transactionTag(row)}</td></tr>`,
           )
-          .join("") || emptyRow(7, "Chưa có giao dịch thanh toán.");
+          .join("") || emptyRow(5, "Chưa có giao dịch thanh toán.");
     }
     function providerName(value) {
       return (
         {
-          VIETQR_NAPAS: "Chuyển khoản ngân hàng",
+          VIETQR_NAPAS: "Chuyển khoản",
           VNPAY_GATEWAY: "VNPay",
           MOMO_BUSINESS: "MoMo",
         }[value] || value
@@ -476,9 +476,9 @@
         rows
           .map(
             (row) =>
-              `<tr><td><strong>${esc(row.code)}</strong></td><td>${esc(student()?.hoTen)}</td><td>${esc(row.session)}</td><td>${esc(row.reason)}</td><td>${esc(row.date)}</td><td>${tag(row.status, row.status === "Đã duyệt" ? "ok" : row.status === "Từ chối" ? "r" : "w")}</td><td>${esc(row.feedback || "—")}</td></tr>`,
+              `<tr><td><strong>${esc(row.session)}</strong><span class="parent-cell-sub"><span class="code-short">${esc(row.code)}</span> · ${esc(student()?.hoTen || "")}</span></td><td><span class="clamp-2" title="${esc(row.reason || "")}">${esc(row.reason)}</span></td><td><small>${esc(row.date)}</small></td><td>${tag(row.status, row.status === "Đã duyệt" ? "ok" : row.status === "Từ chối" ? "r" : "w")}</td><td><span class="clamp-2">${esc(row.feedback || "—")}</span></td></tr>`,
           )
-          .join("") || emptyRow(7, "Chưa có đơn xin nghỉ học.");
+          .join("") || emptyRow(5, "Chưa có đơn xin nghỉ học.");
     }
     function renderNotifications() {
       const unread = notifications.filter((row) => !row.daDoc).length;
@@ -998,7 +998,13 @@
 (() => {
   if (!window.Admin || !window.StaffUI) return;
   function render(rows) {
-    StaffUI.rows('parentsTableBody',7,rows.map(row=>`<tr><td><b>PH-${row.userId}</b></td><td><b>${Admin.esc(row.hoTen)}</b></td><td>${Admin.esc(row.sdt || '—')}<br><small>${Admin.esc(row.email)}</small></td><td>${Admin.esc(row.tenKhuVuc || '—')}<br><small>${Admin.esc(row.diaChi || '')}</small></td><td>${row.soCon} học viên</td><td>${Admin.tag(row.username || 'Chưa cấp tài khoản',row.accountStatus==='active'?'ok':'w')}</td><td>${Admin.button('Chi tiết & Liên kết con','parent-detail',row.userId)}</td></tr>`));
+    StaffUI.rows('parentsTableBody',5,rows.map(row=>`<tr>
+      <td><b>${Admin.esc(row.hoTen)}</b><br><small class="code-short">PH-${row.userId}</small></td>
+      <td>${Admin.esc(row.sdt || '—')} · ${Admin.esc(row.email)}<br><small>${Admin.esc(row.tenKhuVuc || '—')}${row.diaChi ? ' · ' + Admin.esc(row.diaChi) : ''}</small></td>
+      <td><b>${row.soCon}</b> <small>HV</small></td>
+      <td>${Admin.tag(row.username || 'Chưa cấp TK',row.accountStatus==='active'?'ok':'w')}</td>
+      <td class="act-col">${Admin.button('Chi tiết','parent-detail',row.userId)}</td>
+    </tr>`));
     Admin.$('parentsTableBody').querySelectorAll('[data-action]').forEach(button=>button.addEventListener('click',()=>parentDetail(Number(button.dataset.id))));
   }
   StaffUI.register('staff-parents','Hồ sơ Phụ huynh',()=>Admin.api('/api/people/parents'),rows=>{

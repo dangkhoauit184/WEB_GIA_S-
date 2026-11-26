@@ -19,20 +19,17 @@
     const body = Admin.$('adminPayrollBody');
     if (!body) return;
     body.innerHTML = list.map(row => `<tr>
-      <td><b class="mono">${row.id ? 'BC-' + row.id : 'Chưa chốt'}</b></td>
-      <td><b>${esc(row.hoTen)}</b></td>
-      <td>${Admin.tag(roleLabel(row.phanLoai), 'i')}</td>
-      <td><b class="mono">${money(row.donGiaGioChuan)}/giờ</b></td>
-      <td>${row.soBuoi} buổi <small>(${row.soLanTre} trễ)</small></td>
-      <td><b>${Number((Number(row.tongPhut || 0) / 60).toFixed(2))} giờ</b></td>
-      <td><b style="color:var(--ok)">${money(row.thucNhan)}</b></td>
-      <td>${Admin.tag({ mo:'Tạm tính', da_chot:'Đã chốt', da_tra:'Đã chi trả' }[row.trangThai], row.trangThai === 'mo' ? 'w' : (row.trangThai === 'da_chot' ? 'purple' : 'ok'))}</td>
-      <td><div class="row">
+      <td><b>${esc(row.hoTen)}</b><br><small>${Admin.tag(roleLabel(row.phanLoai), 'i')} <span class="code-short">${row.id ? 'BC-' + row.id : 'Chưa chốt'}</span></small></td>
+      <td><b class="mono" style="white-space:nowrap">${money(row.donGiaGioChuan)}/h</b></td>
+      <td><b>${Number((Number(row.tongPhut || 0) / 60).toFixed(2))} giờ</b><br><small>${row.soBuoi} buổi${row.soLanTre ? ` · ${row.soLanTre} trễ` : ''}</small></td>
+      <td><b style="color:var(--ok);white-space:nowrap">${money(row.thucNhan)}</b></td>
+      <td>${Admin.tag({ mo:'Tạm tính', da_chot:'Đã chốt', da_tra:'Đã trả' }[row.trangThai], row.trangThai === 'mo' ? 'w' : (row.trangThai === 'da_chot' ? 'purple' : 'ok'))}</td>
+      <td class="act-col"><div class="act-row">
         ${row.trangThai === 'mo' ? `<button type="button" class="btn p sm" data-act="close-one-payroll" data-id="${row.userId}">Chốt công</button>`
-          : row.trangThai === 'da_chot' ? `<button type="button" class="btn p sm" data-act="mark-payroll-paid" data-id="${row.userId}">Xác nhận trả</button>` : ''}
+          : row.trangThai === 'da_chot' ? `<button type="button" class="btn p sm" data-act="mark-payroll-paid" data-id="${row.userId}">Chi trả</button>` : ''}
         <button type="button" class="btn sm" data-act="print-payslip" data-id="${row.userId}">In phiếu</button>
       </div></td>
-    </tr>`).join('') || empty(9);
+    </tr>`).join('') || empty(6);
   }
 
   function renderRateHistory() {

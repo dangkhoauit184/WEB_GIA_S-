@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   let invoices = [], selected = null, keepSelectedId = null, invFilter = 'all', invQuery = '';
-  const invStatusLabel = { nhap:'Nháp', chua_thanh_toan:'Chưa thanh toán', mot_phan:'Thu một phần', da_thanh_toan:'Đã thu đủ', huy:'Đã hủy' };
+  const invStatusLabel = { nhap:'Nháp', chua_thanh_toan:'Chưa thu', mot_phan:'Thu 1 phần', da_thanh_toan:'Đã thu đủ', huy:'Đã hủy' };
   const invStatusTone = s => s === 'da_thanh_toan' ? 'ok' : (s === 'nhap' ? 'i' : (s === 'huy' ? 'r' : 'w'));
   const kpi = Admin.kpi;
 
@@ -13,9 +13,9 @@
     const paid = invoices.filter(r => r.trangThai === 'da_thanh_toan');
     const totalDebt = unpaid.reduce((acc, r) => acc + Math.max(0, Number(r.phaiThu) - Number(r.daThu)), 0);
     el.innerHTML = [
-      kpi('Tổng hóa đơn khóa', String(invoices.length), `Đã thu đủ ${paid.length} hóa đơn`, '', true),
-      kpi('Hóa đơn nháp', String(draft.length), 'Cần phát hành gửi phụ huynh', 'i'),
-      kpi('Chưa thu đủ', String(unpaid.length), `Còn phải thu ${Admin.money(totalDebt)}`, unpaid.length ? 'r' : 'g'),
+      kpi('Tổng hóa đơn', String(invoices.length), `${paid.length} đã thu đủ`, '', true),
+      kpi('Hóa đơn nháp', String(draft.length), 'Chờ phát hành', 'i'),
+      kpi('Chưa thu đủ', String(unpaid.length), `Còn ${Admin.money(totalDebt)}`, unpaid.length ? 'r' : 'g'),
       kpi('Đã thu đủ', String(paid.length), Admin.money(paid.reduce((a, r) => a + Number(r.daThu || 0), 0)), 'g'),
     ].join('');
   }
@@ -29,17 +29,14 @@
       if (q && ![row.maHd, row.tenHocVien, row.tenKhoa].join(' ').toLowerCase().includes(q)) return false;
       return true;
     });
-    StaffUI.rows('invBody', 7, list.map(row => {
+    StaffUI.rows('invBody', 4, list.map(row => {
       const rem = Math.max(0, Number(row.phaiThu) - Number(row.daThu));
       const isSel = selected && Number(selected.id) === Number(row.id);
       return `<tr class="${isSel ? 'ec-row-selected' : ''}">
-        <td><b>${Admin.esc(row.maHd)}</b></td>
-        <td><b>${Admin.esc(row.tenHocVien)}</b><br><small>${Admin.esc(row.tenKhoa || 'Dữ liệu lịch sử')}</small></td>
-        <td>${Admin.money(row.phaiThu)}</td>
-        <td>${Admin.money(row.daThu)}</td>
-        <td><b style="color:${rem > 0 ? 'var(--err)' : 'var(--ok)'}">${Admin.money(rem)}</b></td>
+        <td><b>${Admin.esc(row.tenHocVien)}</b><br><small><span class="code-short">${Admin.esc(row.maHd)}</span> · ${Admin.esc(row.tenKhoa || 'HĐ cũ')}</small></td>
+        <td><b style="white-space:nowrap">${Admin.money(row.phaiThu)}</b><br><small style="color:${rem > 0 ? 'var(--err)' : 'var(--ok)'};font-weight:600">${rem > 0 ? 'Còn: ' + Admin.money(rem) : 'Đã thu đủ'}</small></td>
         <td>${Admin.tag(invStatusLabel[row.trangThai] || row.trangThai, invStatusTone(row.trangThai))}</td>
-        <td>${Admin.button(isSel ? 'Đang xem' : 'Chi tiết', 'select-invoice', row.id, isSel ? 'p' : '')}</td>
+        <td class="act-col">${Admin.button(isSel ? 'Đang xem' : 'Chi tiết', 'select-invoice', row.id, isSel ? 'p' : '')}</td>
       </tr>`;
     }), 'Chưa có hóa đơn phù hợp bộ lọc.');
     Admin.$('invBody').querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', () => selectInvoice(Number(btn.dataset.id))));
@@ -222,19 +219,17 @@
     const body = Admin.$('adminOnlineTxBody');
     if (!body) return;
     body.innerHTML = list.map(row => `<tr>
-      <td><b class="mono">GD-${row.id}</b><br><small>${esc(Admin.date(row.createdAt))}</small></td>
-      <td><b>${esc(row.maHd)}</b><br><small>HV ${esc(row.tenHocVien || '—')}</small></td>
-      <td>${esc(row.tenPhuHuynh)}</td>
-      <td>${Admin.tag(row.nhaCungCap, 'i')}</td>
-      <td><b style="color:var(--ok)">${money(row.soTien)}</b></td>
-      <td class="mono" style="font-size:11px">${esc(row.maYeuCau)}<br>${transferDetails(row)}</td>
-      <td>${Admin.tag(row.trangThai === 'thanh_cong' ? 'Đã xác nhận · ' + (row.tenAdmin || 'Admin') : ({ cho_xac_nhan:'Chờ đối soát', khoi_tao:'Đang khởi tạo', that_bai:'Thất bại', het_han:'Hết hạn', da_huy:'Đã hủy', huy:'Đã hủy' }[row.trangThai] || row.trangThai), row.trangThai === 'thanh_cong' ? 'ok' : (['cho_xac_nhan', 'khoi_tao'].includes(row.trangThai) ? 'w' : 'r'))}</td>
-      <td>${row.nhaCungCap === 'PAYOS' && row.trangThai !== 'thanh_cong'
-        ? `<div class="row"><button type="button" class="btn p sm" data-act="admin-check-payos" data-id="${row.id}">Kiểm tra payOS</button>${['khoi_tao', 'cho_xac_nhan'].includes(row.trangThai) ? `<button type="button" class="btn sm" data-act="admin-cancel-payos" data-id="${row.id}">Hủy</button>` : ''}</div>`
+      <td><b class="code-short">GD-${row.id}</b><br><small>${esc(Admin.date(row.createdAt))}</small></td>
+      <td><b>${esc(row.maHd)}</b><br><small>${esc(row.tenHocVien || '—')} · PH ${esc(row.tenPhuHuynh || '—')}</small></td>
+      <td><b style="color:var(--ok);white-space:nowrap">${money(row.soTien)}</b><br>${Admin.tag(row.nhaCungCap, 'i')}</td>
+      <td><div class="clamp-2" style="font-size:11.5px" title="${esc(row.maYeuCau)}"><span class="code-short">${esc(row.maYeuCau)}</span><br>${transferDetails(row)}</div></td>
+      <td>${Admin.tag(row.trangThai === 'thanh_cong' ? 'Đã xác nhận' : ({ cho_xac_nhan:'Chờ đối soát', khoi_tao:'Khởi tạo', that_bai:'Thất bại', het_han:'Hết hạn', da_huy:'Đã hủy', huy:'Đã hủy' }[row.trangThai] || row.trangThai), row.trangThai === 'thanh_cong' ? 'ok' : (['cho_xac_nhan', 'khoi_tao'].includes(row.trangThai) ? 'w' : 'r'))}${row.trangThai === 'thanh_cong' && row.tenAdmin ? `<br><small>${esc(row.tenAdmin)}</small>` : ''}</td>
+      <td class="act-col">${row.nhaCungCap === 'PAYOS' && row.trangThai !== 'thanh_cong'
+        ? `<div class="act-row"><button type="button" class="btn p sm" data-act="admin-check-payos" data-id="${row.id}">Kiểm tra</button>${['khoi_tao', 'cho_xac_nhan'].includes(row.trangThai) ? `<button type="button" class="btn sm" data-act="admin-cancel-payos" data-id="${row.id}">Hủy</button>` : ''}</div>`
         : row.trangThai === 'cho_xac_nhan'
-          ? `<button type="button" class="btn p sm" data-act="admin-confirm-tx" data-id="${row.id}">Xác nhận &amp; Lập phiếu thu</button>`
-          : esc(row.thanhToanId ? 'Phiếu thu #' + row.thanhToanId : '—')}</td>
-    </tr>`).join('') || empty(8);
+          ? `<button type="button" class="btn p sm" data-act="admin-confirm-tx" data-id="${row.id}">Xác nhận</button>`
+          : `<small>${esc(row.thanhToanId ? 'Phiếu #' + row.thanhToanId : '—')}</small>`}</td>
+    </tr>`).join('') || empty(6);
   }
 
   function switchPayTab(tab) {

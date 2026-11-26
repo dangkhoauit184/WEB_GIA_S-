@@ -57,6 +57,8 @@
   font-size: 15px;
 }
 .tp-portal .side-foot .btn {
+  width: 100%;
+  justify-content: center;
   background: #ffffff0a;
   color: #cbd5e1;
   border-color: #ffffff1a;
@@ -104,14 +106,21 @@
 }
 .tp-portal .tp-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 20px;
+  align-items: stretch;
 }
 .tp-stat {
   border-left: 4px solid var(--pri);
-  padding: 18px;
+  padding: 16px 18px;
   margin: 0;
+  height: 100%;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
 }
 .tp-stat:nth-child(2) {
   border-left-color: var(--info);
@@ -260,7 +269,7 @@
   margin-bottom: 16px;
 }
 .tp-week-assignments table {
-  min-width: 760px;
+  min-width: 0;
 }
 .tp-week-assignments td small {
   color: var(--g500);

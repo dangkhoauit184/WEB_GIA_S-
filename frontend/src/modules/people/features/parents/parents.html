@@ -85,8 +85,7 @@
             Đơn xin nghỉ học cá nhân
           </button>
         </nav>
-        <div class="side-foot row-b">
-          <a class="btn sm" href="/">Website Công khai</a>
+        <div class="side-foot">
           <button class="btn sm" id="btnLogout" type="button">Đăng xuất</button>
         </div>
       </aside>
@@ -347,13 +346,12 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Ngày học</th>
-                      <th>Lớp · Khóa học</th>
+                      <th>Ngày · Lớp</th>
                       <th>Chuyên cần</th>
                       <th>Bài tập</th>
                       <th>Điểm</th>
                       <th>Nhận xét</th>
-                      <th>Đề bài</th>
+                      <th class="act-col">Đề bài</th>
                     </tr>
                   </thead>
                   <tbody id="learningTableBody"></tbody>
@@ -371,7 +369,7 @@
               <div>
                 <h1>Học phí &amp; Thanh toán</h1>
                 <p class="sub">
-                  Hóa đơn và tình trạng thanh toán của
+                  Hóa đơn và thanh toán của
                   <span data-student-name>con</span>.
                 </p>
               </div>
@@ -381,7 +379,7 @@
                 data-action="enroll-course"
                 data-needs-child
               >
-                + Đăng ký Khóa học &amp; Thanh toán QR
+                + Đăng ký Khóa học &amp; QR
               </button>
             </div>
             <div class="card">
@@ -390,14 +388,12 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Mã hóa đơn</th>
-                      <th>Khóa học</th>
+                      <th>Hóa đơn · Khóa học</th>
                       <th>Phải thu</th>
                       <th>Đã đóng</th>
                       <th>Còn lại</th>
-                      <th>Hạn thanh toán</th>
-                      <th>Trạng thái</th>
-                      <th>Thao tác</th>
+                      <th>Trạng thái · Hạn</th>
+                      <th class="act-col">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody id="invoiceTableBody"></tbody>
@@ -410,11 +406,9 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Mã giao dịch</th>
-                      <th>Hóa đơn</th>
-                      <th>Phương thức</th>
+                      <th>Giao dịch · HĐ</th>
+                      <th>Kênh · Tham chiếu</th>
                       <th>Số tiền</th>
-                      <th>Mã tham chiếu</th>
                       <th>Thời gian</th>
                       <th>Trạng thái</th>
                     </tr>
@@ -450,9 +444,7 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Mã đơn</th>
-                      <th>Học viên</th>
-                      <th>Buổi học</th>
+                      <th>Đơn · Buổi học</th>
                       <th>Lý do</th>
                       <th>Ngày gửi</th>
                       <th>Trạng thái</th>

@@ -17,7 +17,7 @@
 .admissions-detail { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; margin: 0 0 16px; }
 .admissions-detail dt { color: var(--g500); }
 .admissions-detail dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-#staff-intake .g3 { grid-template-columns: 280px minmax(0, 1fr); }
+#staff-intake .g3 { grid-template-columns: 245px minmax(0, 1fr); }
 #staff-intake .ws { cursor: pointer; }
 #staff-intake small { color: var(--g500); }
 #staff-intake .row-b { flex-wrap: wrap; gap: 12px; }

@@ -169,15 +169,13 @@
       return true;
     });
     Admin.$('adminEnrollmentsBody').innerHTML = eRows.map(row => `<tr>
-      <td><b>DK-${row.id}</b></td>
-      <td><b>${Admin.esc(row.hoTen)}</b><br><small>${Admin.esc(row.maHv)}</small></td>
-      <td><span class="mono">${Admin.esc(row.maKhoa)}</span><br><small>${Admin.esc(row.tenKhoa)}</small></td>
-      <td>${Admin.money(row.hocPhiSnapshot)}</td>
-      <td>${Admin.tag(row.maHd ? ({ da_thanh_toan:'Đã thu đủ', mot_phan:'Thu một phần', chua_thanh_toan:'Chưa thu', nhap:'HĐ nháp' }[row.tinhTrangThu] || row.tinhTrangThu) : 'Chưa lập HĐ', row.tinhTrangThu === 'da_thanh_toan' ? 'ok' : 'w')}</td>
+      <td><b>${Admin.esc(row.hoTen)}</b><br><small><span class="code-short">DK-${row.id}</span> · ${Admin.esc(row.maHv)}</small></td>
+      <td><b>${Admin.esc(row.tenKhoa)}</b><br><small class="code-short">${Admin.esc(row.maKhoa)}</small></td>
+      <td><b style="white-space:nowrap">${Admin.money(row.hocPhiSnapshot)}</b><br>${Admin.tag(row.maHd ? ({ da_thanh_toan:'Đã thu đủ', mot_phan:'Thu 1 phần', chua_thanh_toan:'Chưa thu', nhap:'Nháp' }[row.tinhTrangThu] || row.tinhTrangThu) : 'Chưa lập HĐ', row.tinhTrangThu === 'da_thanh_toan' ? 'ok' : 'w')}</td>
       <td>${row.maLop ? Admin.tag(row.maLop, 'purple') : Admin.tag('Chờ xếp lớp', 'r')}</td>
-      <td>${Admin.esc(row.nguoiXep || '—')}<br><small>${Admin.esc(Admin.date(row.xepLuc))}</small></td>
-      <td>${['cho_xep_lop','dang_hoc'].includes(row.trangThai) ? `<button type="button" class="btn sm p" data-act="open-enroll-modal" data-id="${row.id}">${row.maLop ? 'Đổi lớp' : 'Xếp lớp ngay'}</button>` : Admin.tag(row.trangThai)}</td>
-    </tr>`).join('') || empty(8);
+      <td>${Admin.esc(row.nguoiXep || '—')}${row.xepLuc ? `<br><small>${Admin.esc(Admin.date(row.xepLuc))}</small>` : ''}</td>
+      <td class="act-col">${['cho_xep_lop','dang_hoc'].includes(row.trangThai) ? `<button type="button" class="btn sm p" data-act="open-enroll-modal" data-id="${row.id}">${row.maLop ? 'Đổi lớp' : 'Xếp lớp'}</button>` : Admin.tag(row.trangThai)}</td>
+    </tr>`).join('') || empty(6);
 
     const cq = acClassQ.trim().toLowerCase();
     const cRows = classes.filter(r => {
@@ -188,25 +186,23 @@
       return true;
     });
     Admin.$('adminClassesBody').innerHTML = cRows.map(row => `<tr>
-      <td><b>${Admin.esc(row.maLop)}</b><br><small>${Admin.esc(row.tenLop)}</small></td>
-      <td>${Admin.esc(row.tenKhoa || 'Chưa gắn khóa')}<br><small>${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)}</small></td>
+      <td><b>${Admin.esc(row.maLop)}</b><br><small class="clamp-2" title="${Admin.esc(row.tenLop)}">${Admin.esc(row.tenLop)}</small></td>
+      <td>${Admin.esc(row.tenMonHoc)} · ${Admin.esc(row.tenCapLop)}<br><small>${Admin.esc(row.tenKhoa || 'Chưa gắn khóa')}</small></td>
       <td>${Admin.tag(classTypeLabels[row.loaiLop] || row.loaiLop, 'i')}<br><small>${row.hinhThuc === 'online' ? 'Online' : Admin.esc(row.tenCoSo || 'Offline')}</small></td>
       <td>${Admin.esc(row.tenNguoiDayChinh || '—')}</td>
-      <td><b>${row.siSoHienTai}/${row.siSoToiDa}</b></td>
-      <td>${Admin.tag(classStatusLabels[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : (row.trangThai === 'huy' ? 'r' : 'w'))}</td>
-      <td><div class="row"><button type="button" class="btn sm" data-act="open-class-detail" data-id="${row.id}">Chi tiết</button><button type="button" class="btn sm p" data-act="open-class-modal" data-id="${row.id}">Sửa</button></div></td>
-    </tr>`).join('') || empty(7);
+      <td><b>${row.siSoHienTai}/${row.siSoToiDa}</b><br>${Admin.tag(classStatusLabels[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : (row.trangThai === 'huy' ? 'r' : 'w'))}</td>
+      <td class="act-col"><div class="act-row"><button type="button" class="btn sm" data-act="open-class-detail" data-id="${row.id}">Chi tiết</button><button type="button" class="btn sm p" data-act="open-class-modal" data-id="${row.id}">Sửa</button></div></td>
+    </tr>`).join('') || empty(6);
 
     const kq = acCourseQ.trim().toLowerCase();
     const kRows = courses.filter(r => !kq || [r.ma, r.ten, r.moTa].join(' ').toLowerCase().includes(kq));
     Admin.$('adminCoursesBody').innerHTML = kRows.map(row => `<tr>
-      <td><b class="mono">${Admin.esc(row.ma)}</b></td>
-      <td><b>${Admin.esc(row.ten)}</b></td>
-      <td>${Admin.esc(row.moTa || '—')}</td>
-      <td><b style="color:var(--ok)">${Admin.money(row.hocPhi)}</b></td>
-      <td>${Admin.tag(row.isActive ? 'Đang mở ĐK' : 'Tạm đóng', row.isActive ? 'ok' : 'r')}</td>
-      <td><button type="button" class="btn sm" data-act="open-course-modal" data-id="${row.id}">Chi tiết / Sửa</button></td>
-    </tr>`).join('') || empty(6);
+      <td><b>${Admin.esc(row.ten)}</b><br><small class="code-short">${Admin.esc(row.ma)}</small></td>
+      <td><span class="clamp-2" title="${Admin.esc(row.moTa || '')}">${Admin.esc(row.moTa || '—')}</span></td>
+      <td><b style="color:var(--ok);white-space:nowrap">${Admin.money(row.hocPhi)}</b></td>
+      <td>${Admin.tag(row.isActive ? 'Mở ĐK' : 'Tạm đóng', row.isActive ? 'ok' : 'r')}</td>
+      <td class="act-col"><button type="button" class="btn sm" data-act="open-course-modal" data-id="${row.id}">Sửa</button></td>
+    </tr>`).join('') || empty(5);
   }
 
   function switchAcTab(tab) {
@@ -410,21 +406,21 @@
                 <th>Tên danh mục</th>
                 <th>Thông tin chi tiết</th>
                 <th>Trạng thái</th>
-                <th style="text-align:right">Thao tác</th>
+                <th class="act-col">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               ${rows.length ? rows.map(row => `
                 <tr>
                   <td>${Admin.tag(row.typeLabel, row.badge)}</td>
-                  <td><b class="mono" style="color:var(--pri-d)">${Admin.esc(row.code)}</b></td>
+                  <td><b class="code-short" style="color:var(--pri-d)">${Admin.esc(row.code)}</b></td>
                   <td><b>${Admin.esc(row.name)}</b></td>
-                  <td style="font-size:12px;color:var(--g600)">${Admin.esc(row.detail)}</td>
-                  <td>${Admin.tag(row.isActive ? 'Đang sử dụng' : 'Ngừng dùng', row.isActive ? 'ok' : 'r')}</td>
-                  <td style="text-align:right">
-                    <div class="row" style="justify-content:flex-end;gap:6px">
+                  <td style="font-size:12px;color:var(--g600)"><span class="clamp-2" title="${Admin.esc(row.detail)}">${Admin.esc(row.detail)}</span></td>
+                  <td>${Admin.tag(row.isActive ? 'Đang dùng' : 'Ngừng dùng', row.isActive ? 'ok' : 'r')}</td>
+                  <td class="act-col">
+                    <div class="act-row">
                       ${row.key !== 'rooms' ? `<button type="button" class="btn sm" data-act="start-unified-edit" data-key="${Admin.esc(row.key)}" data-id="${row.id}">Sửa</button>` : ''}
-                      ${!['rooms','grades'].includes(row.key) ? `<button type="button" class="btn sm ${row.isActive ? 'danger' : 'p'}" data-act="toggle-unified-active" data-key="${Admin.esc(row.key)}" data-id="${row.id}">${row.isActive ? 'Ngừng dùng' : 'Kích hoạt'}</button>` : ''}
+                      ${!['rooms','grades'].includes(row.key) ? `<button type="button" class="btn sm ${row.isActive ? 'danger' : 'p'}" data-act="toggle-unified-active" data-key="${Admin.esc(row.key)}" data-id="${row.id}">${row.isActive ? 'Ngừng' : 'Mở lại'}</button>` : ''}
                     </div>
                   </td>
                 </tr>

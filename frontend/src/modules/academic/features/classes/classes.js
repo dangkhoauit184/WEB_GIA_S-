@@ -14,14 +14,12 @@
       if (q && ![r.maLop, r.tenLop, r.tenKhoa, r.tenNguoiDayChinh].join(' ').toLowerCase().includes(q)) return false;
       return true;
     });
-    StaffUI.rows('classBody', 7, list.map(row => `<tr>
-      <td><b>${Admin.esc(row.maLop)}</b></td>
-      <td><b>${Admin.esc(row.tenLop)}</b><br><small>${Admin.esc(row.tenKhoa || 'Chưa gắn khóa')}</small></td>
-      <td>${Admin.esc(row.lichTuan || 'Chưa có lịch tuần')}<br><small>${Admin.esc(row.phongHoc || 'Chưa chọn phòng')}</small> ${Admin.tag(states[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : (row.trangThai === 'huy' ? 'r' : 'w'))}</td>
-      <td>${Admin.esc(row.tenNguoiDayChinh || '—')}</td>
-      <td>${Admin.esc(row.tenTroGiang || 'Chưa phân công')}</td>
+    StaffUI.rows('classBody', 5, list.map(row => `<tr>
+      <td><b>${Admin.esc(row.maLop)}</b> · ${Admin.esc(row.tenLop)}<br><small>${Admin.esc(row.tenKhoa || 'Chưa gắn khóa')}</small></td>
+      <td>${Admin.esc(row.lichTuan || 'Chưa có lịch')}<br><small>${Admin.esc(row.phongHoc || 'Chưa chọn phòng')}</small> ${Admin.tag(states[row.trangThai] || row.trangThai, row.trangThai === 'dang_hoc' ? 'ok' : (row.trangThai === 'huy' ? 'r' : 'w'))}</td>
+      <td>${Admin.esc(row.tenNguoiDayChinh || '—')}${row.tenTroGiang ? `<br><small>TG: ${Admin.esc(row.tenTroGiang)}</small>` : ''}</td>
       <td><b>${row.siSoHienTai}/${row.siSoToiDa}</b></td>
-      <td>${Admin.button('Chi tiết', 'class-detail', row.id)}</td>
+      <td class="act-col">${Admin.button('Chi tiết', 'class-detail', row.id)}</td>
     </tr>`), 'Chưa có lớp học phù hợp bộ lọc.');
     Admin.$('classBody').querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => showClass(Number(button.dataset.id))));
   }

@@ -4,7 +4,7 @@
   const esc = Admin.esc, kpi = Admin.kpi;
   const empty = columns => Admin.emptyRow(columns, 'Chưa có dữ liệu phù hợp.');
   const confirmation = Admin.confirmDialog;
-  const decisionLabel = value => ({ cho_duyet:'Chờ Admin duyệt', da_duyet:'Đã duyệt', tu_choi:'Đã từ chối' }[value] || value);
+  const decisionLabel = value => ({ cho_duyet:'Chờ duyệt', da_duyet:'Đã duyệt', tu_choi:'Từ chối' }[value] || value);
 
   let classLeaves = [], corrections = [], closedPayrolls = [];
   let activeTab = 'class-leave', leaveFilter = 'cho_duyet', corrFilter = 'cho_duyet';
@@ -12,30 +12,28 @@
   function renderClassLeave() {
     const list = leaveFilter === 'all' ? classLeaves : classLeaves.filter(r => r.trangThai === 'cho_duyet');
     Admin.$('adminClassLeaveBody').innerHTML = list.map(row => `<tr>
-      <td><b>NL-${row.id}</b></td>
-      <td><b>${esc(row.maLop)}</b> (${esc(row.ngay)})</td>
+      <td><b>${esc(row.maLop)}</b> · <span class="code-short">NL-${row.id}</span><br><small>${esc(row.ngay)}</small></td>
       <td>${esc(row.nguoiGui)}</td>
-      <td>${esc(row.lyDo)}</td>
+      <td><span class="clamp-2" title="${esc(row.lyDo || '')}">${esc(row.lyDo)}</span></td>
       <td>${Admin.tag(decisionLabel(row.trangThai), row.trangThai === 'cho_duyet' ? 'w' : (row.trangThai === 'da_duyet' ? 'ok' : 'r'))}</td>
-      <td>${row.trangThai === 'cho_duyet'
-        ? `<div class="row"><button type="button" class="btn p sm" data-act="approve-leave-or-adj" data-type="class" data-id="${row.id}" data-status="da_duyet">Duyệt nghỉ lớp</button><button type="button" class="btn sm danger" data-act="approve-leave-or-adj" data-type="class" data-id="${row.id}" data-status="tu_choi">Từ chối</button></div>`
-        : 'Đã xử lý'}</td>
-    </tr>`).join('') || empty(6);
+      <td class="act-col">${row.trangThai === 'cho_duyet'
+        ? `<div class="act-row"><button type="button" class="btn p sm" data-act="approve-leave-or-adj" data-type="class" data-id="${row.id}" data-status="da_duyet">Duyệt</button><button type="button" class="btn sm danger" data-act="approve-leave-or-adj" data-type="class" data-id="${row.id}" data-status="tu_choi">Từ chối</button></div>`
+        : '<small>Đã xử lý</small>'}</td>
+    </tr>`).join('') || empty(5);
   }
 
   function renderCorrections() {
     const list = corrFilter === 'all' ? corrections : corrections.filter(r => r.trangThai === 'cho_duyet');
     Admin.$('adminTimeAdjBody').innerHTML = list.map(row => `<tr>
-      <td><b>DC-${row.id}</b></td>
-      <td><b>${esc(row.hoTen)}</b></td>
-      <td>${esc(row.maLop)} (${esc(row.ngay)})</td>
-      <td>${esc(Admin.date(row.checkinMoi))} → ${esc(Admin.date(row.checkoutMoi))}<br><small>${esc(row.lyDo)}</small></td>
-      <td><b>${row.loai === 'huy_cong' ? '0 giờ' : (row.phutDeXuat != null ? Number((Number(row.phutDeXuat) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ giờ')}</b></td>
+      <td><b>${esc(row.hoTen)}</b><br><small class="code-short">DC-${row.id}</small></td>
+      <td><b>${esc(row.maLop)}</b><br><small>${esc(row.ngay)}</small></td>
+      <td><span style="font-size:12px">${esc(Admin.date(row.checkinMoi))} → ${esc(Admin.date(row.checkoutMoi))}</span><br><small class="clamp-2" title="${esc(row.lyDo || '')}">${esc(row.lyDo)}</small></td>
+      <td><b style="white-space:nowrap">${row.loai === 'huy_cong' ? '0 giờ' : (row.phutDeXuat != null ? Number((Number(row.phutDeXuat) / 60).toFixed(2)) + ' giờ' : 'Chưa đủ')}</b></td>
       <td>${Admin.tag(decisionLabel(row.trangThai), row.trangThai === 'cho_duyet' ? 'w' : (row.trangThai === 'da_duyet' ? 'ok' : 'r'))}</td>
-      <td>${row.trangThai === 'cho_duyet'
-        ? `<div class="row"><button type="button" class="btn p sm" data-act="approve-leave-or-adj" data-type="correction" data-id="${row.id}" data-status="da_duyet">Duyệt chỉnh công</button><button type="button" class="btn sm danger" data-act="approve-leave-or-adj" data-type="correction" data-id="${row.id}" data-status="tu_choi">Từ chối</button></div>`
-        : 'Đã xử lý'}</td>
-    </tr>`).join('') || empty(7);
+      <td class="act-col">${row.trangThai === 'cho_duyet'
+        ? `<div class="act-row"><button type="button" class="btn p sm" data-act="approve-leave-or-adj" data-type="correction" data-id="${row.id}" data-status="da_duyet">Duyệt</button><button type="button" class="btn sm danger" data-act="approve-leave-or-adj" data-type="correction" data-id="${row.id}" data-status="tu_choi">Từ chối</button></div>`
+        : '<small>Đã xử lý</small>'}</td>
+    </tr>`).join('') || empty(6);
   }
 
   function switchTab(tab) {
@@ -82,13 +80,12 @@
 
         Admin.$('exceptionsMonth').value = Admin.period;
         Admin.$('adminUnlockBody').innerHTML = closedPayrolls.map(row => `<tr>
-          <td><b class="mono">BC-${row.id}</b></td>
-          <td><b>${esc(row.hoTen)}</b></td>
+          <td><b>${esc(row.hoTen)}</b><br><small class="code-short">BC-${row.id}</small></td>
           <td>${esc(Admin.period)}</td>
-          <td>${esc(row.ghiChu || '—')}</td>
-          <td>${Admin.tag('Đã chốt, chưa trả', 'purple')}</td>
-          <td><button type="button" class="btn purple sm" data-act="unlock-payroll" data-id="${row.id}">Mở khóa bảng công</button></td>
-        </tr>`).join('') || empty(6);
+          <td><span class="clamp-2">${esc(row.ghiChu || '—')}</span></td>
+          <td>${Admin.tag('Đã chốt', 'purple')}</td>
+          <td class="act-col"><button type="button" class="btn purple sm" data-act="unlock-payroll" data-id="${row.id}">Mở khóa</button></td>
+        </tr>`).join('') || empty(5);
 
         Admin.$('adminExcTabs')?.querySelectorAll('[data-ex-tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.exTab)));
         Admin.$('exLeavePills')?.querySelectorAll('[data-lf]').forEach(btn => btn.addEventListener('click', () => {
